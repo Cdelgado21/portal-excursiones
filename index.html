@@ -1,69 +1,74 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Plataforma Integral | Excursiones Delgado</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #eaf4f4;
-            margin: 0;
-            padding: 0;
-        }
-        .login-container {
-            width: 100%;
-            max-width: 400px;
-            margin: 80px auto;
-            background: #fff;
-            border-radius: 12px;
-            padding: 40px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            text-align: center;
-        }
-        img {
-            width: 160px;
-            margin-bottom: 25px;
-        }
-        h2 {
-            color: #02535a;
-            margin-bottom: 30px;
-        }
-        input[type="text"], input[type="password"] {
-            width: 90%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-        button {
-            padding: 12px 24px;
-            background: #02535a;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .frase {
-            margin-top: 30px;
-            font-style: italic;
-            color: #444;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel Principal | Excursiones Delgado</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eaf4f4;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #02535a;
+      color: white;
+      text-align: center;
+      padding: 1rem 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .modules {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+    .module {
+      background-color: #f49859;
+      color: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    .module:hover {
+      background-color: #e07d3c;
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: #777;
+    }
+  </style>
 </head>
 <body>
-    <div class="login-container">
-        <img src="logo_excursiones.png" alt="Excursiones Delgado">
-        <h2>Iniciar sesión</h2>
-        <form>
-            <input type="text" placeholder="Usuario" required><br>
-            <input type="password" placeholder="Contraseña" required><br>
-            <button type="submit">Entrar</button>
-        </form>
-        <div class="frase">“Viajar es vivir dos veces” 🌎✈️</div>
+  <header>
+    <h1>Panel Principal</h1>
+    <p>Plataforma de Servicios Integrales - Excursiones Delgado</p>
+  </header>
+
+  <div class="container">
+    <div class="modules">
+      <a class="module" href="reserva.html">🧾 Reservas</a>
+      <a class="module" href="cotizaciones.html">📄 Cotizaciones</a>
+      <a class="module" href="clientes.html">👥 Clientes</a>
+      <a class="module" href="reportes.html">📊 Reportes</a>
+      <a class="module" href="configuracion.html">⚙️ Configuración</a>
     </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Excursiones Delgado. Todos los derechos reservados.</p>
+  </footer>
 </body>
 </html>
