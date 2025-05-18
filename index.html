@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Panel Principal | Excursiones Delgado</title>
+  <title>Login | Excursiones Delgado</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -11,65 +11,77 @@
       margin: 0;
       padding: 0;
     }
-    header {
-      background-color: #02535a;
-      color: white;
-      text-align: center;
-      padding: 1rem 0;
-    }
-    .container {
-      max-width: 900px;
-      margin: 30px auto;
-      padding: 20px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    }
-    .modules {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      justify-content: center;
-    }
-    .module {
-      background-color: #f49859;
-      color: white;
-      padding: 20px 30px;
+
+    .login-container {
+      width: 100%;
+      max-width: 400px;
+      margin: 80px auto;
+      background: #fff;
+      padding: 40px;
       border-radius: 10px;
-      text-decoration: none;
-      font-size: 18px;
-      font-weight: bold;
-      transition: background-color 0.3s;
-    }
-    .module:hover {
-      background-color: #e07d3c;
-    }
-    footer {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       text-align: center;
-      padding: 1rem;
-      color: #777;
+    }
+
+    .login-container img {
+      width: 180px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      color: #02535a;
+      margin-bottom: 30px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      background-color: #02535a;
+      color: #fff;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .frase {
+      margin-top: 30px;
+      font-style: italic;
+      color: #444;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Panel Principal</h1>
-    <p>Plataforma de Servicios Integrales - Excursiones Delgado</p>
-  </header>
-
-  <div class="container">
-    <div class="modules">
-      <a class="module" href="reserva.html">🧾 Reservas</a>
-      <a class="module" href="cotizaciones.html">📄 Cotizaciones</a>
-      <a class="module" href="clientes.html">👥 Clientes</a>
-      <a class="module" href="reportes.html">📊 Reportes</a>
-      <a class="module" href="configuracion.html">⚙️ Configuración</a>
+  <div class="login-container">
+    <img src="https://excursionesdelgado.com/logo.png" alt="Excursiones Delgado">
+    <h2>Iniciar sesión</h2>
+    <input type="text" id="usuario" placeholder="Usuario">
+    <input type="password" id="clave" placeholder="Contraseña">
+    <button onclick="validarLogin()">Entrar</button>
+    <div class="frase">
+      "Viajar es vivir dos veces" 🌍🚀
     </div>
   </div>
 
-  <footer>
-    <p>&copy; 2025 Excursiones Delgado. Todos los derechos reservados.</p>
-  </footer>
+  <script>
+    function validarLogin() {
+      const usuario = document.getElementById("usuario").value.trim();
+      const clave = document.getElementById("clave").value.trim();
+
+      if (usuario === "admin" && clave === "excursiones") {
+        window.location.href = "menu.html";
+      } else {
+        alert("Usuario o contraseña incorrectos.");
+      }
+    }
+  </script>
 </body>
 </html>
-
