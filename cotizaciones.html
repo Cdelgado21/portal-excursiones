@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Cotizaciones | Excursiones Delgado</title>
   <style>
     body {
@@ -14,21 +14,20 @@
     header {
       background-color: #02535a;
       color: white;
-      padding: 1rem;
       text-align: center;
+      padding: 1rem;
     }
     .content {
-      max-width: 1000px;
+      max-width: 1200px;
       margin: 30px auto;
       background: white;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .boton {
       display: inline-block;
-      margin-top: 20px;
-      margin-right: 10px;
+      margin-top: 10px;
       padding: 10px 20px;
       background-color: #02535a;
       color: white;
@@ -46,17 +45,58 @@
       text-align: left;
     }
     th {
-      background-color: #5f3c88;
+      background-color: #02535a;
       color: white;
     }
-    tbody tr:nth-child(even) {
-      background-color: #f2f2f2;
+    tr:nth-child(even) {
+      background-color: #f4f4f4;
+    }
+    .estado-pendiente {
+      background-color: #ff4d4d;
+      color: white;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 5px;
+      text-align: center;
+    }
+    .estado-proceso {
+      background-color: #ffa500;
+      color: white;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 5px;
+      text-align: center;
+    }
+    .estado-enviada {
+      background-color: #4caf50;
+      color: white;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 5px;
+      text-align: center;
+    }
+    .btn-accion {
+      padding: 6px 12px;
+      margin: 3px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-tomar {
+      background-color: #02535a;
+      color: white;
+    }
+    .btn-enviada {
+      background-color: #f49859;
+      color: white;
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Módulo de Cotizaciones</h1>
+    <p id="saludo"></p>
   </header>
 
   <div class="content">
@@ -68,28 +108,95 @@
   </div>
 
   <script>
-    fetch("https://script.google.com/macros/s/AKfycbwbj52laOjGP8Y9Kyxp4vY6VgpHwuDxRl9RQ5tm_O_lS8r0p-0cuVqjPjZ2t9F6WCLw/exec?action=cotizaciones")
-      .then(response => response.json())
+    const usuario = prompt("¿Cuál es tu nombre? (Yare, Yuliana, Cristopher, Tatiana, Geansury o Marcela)").trim();
+    document.getElementById("saludo").innerText = "¡Bienvenida, " + usuario + "!";
+
+    fetch("https://script.google.com/macros/s/TU_DEPLOY_ID/exec?action=cotizaciones")
+      .then(res => res.json())
       .then(data => {
-        if (!data.length) {
-          document.getElementById("tabla-cotizaciones").innerHTML = "No hay cotizaciones registradas.";
+        const filtradas = data.filter(row =>
+          row.ESTADO === "Pendiente" || row.ESTADO === "En Proceso"
+        );
+
+        if (!filtradas.length) {
+          document.getElementById("tabla-cotizaciones").innerHTML = "No hay cotizaciones pendientes.";
           return;
         }
 
-        const headers = Object.keys(data[0]);
+        let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Cliente</th>
+              <th>Destino</th>
+              <th>Adultos</th>
+              <th>Niños</th>
+              <th>Teléfono</th>
+              <th>Fechas</th>
+              <th>Estado</th>
+              <th>Encargado</th>
+              <th>Observaciones</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+        `;
 
-        let html = `<table><thead><tr>` +
-          headers.map(h => `<th>${h}</th>`).join("") +
-          `</tr></thead><tbody>` +
-          data.map(row => `<tr>` + headers.map(h => `<td>${row[h] || ""}</td>`).join("") + `</tr>`).join("") +
-          `</tbody></table>`;
+        filtradas.forEach(row => {
+          const estadoClass = row.ESTADO === "Pendiente" ? "estado-pendiente"
+                            : row.ESTADO === "En Proceso" ? "estado-proceso"
+                            : "estado-enviada";
 
+          let acciones = "";
+          if (row.ESTADO === "Pendiente") {
+            acciones = `<button class="btn-accion btn-tomar" onclick="marcarProceso('${row.NUMERO_COTIZACION}')">Tomar</button>`;
+          } else if (row.ESTADO === "En Proceso" && row.ENCARGADO === usuario) {
+            acciones = `<button class="btn-accion btn-enviada" onclick="marcarEnviada('${row.NUMERO_COTIZACION}')">Marcar Enviada</button>`;
+          } else {
+            acciones = "-";
+          }
+
+          html += `
+            <tr>
+              <td>${row.NUMERO_COTIZACION}</td>
+              <td>${row.NOMBRE_COMPLETO}</td>
+              <td>${row.DESTINO}</td>
+              <td>${row.CANTIDAD_DE_PERSONAS_ADULTAS || 0}</td>
+              <td>${row.CANTIDAD_DE_NIÑOS || 0}</td>
+              <td>${row.NUMERO_DE_TELÉFONO_CLIENTE}</td>
+              <td>${row.RANGO_DE_FECHAS_DE_VIAJE}</td>
+              <td><div class="${estadoClass}">${row.ESTADO}</div></td>
+              <td>${row.ENCARGADO || "-"}</td>
+              <td>${row.OBSERVACIONES || "-"}</td>
+              <td>${acciones}</td>
+            </tr>
+          `;
+        });
+
+        html += `</tbody></table>`;
         document.getElementById("tabla-cotizaciones").innerHTML = html;
-      })
-      .catch(err => {
-        console.error("Error cargando datos:", err);
-        document.getElementById("tabla-cotizaciones").innerHTML = "Error al cargar las cotizaciones.";
       });
+
+    function marcarProceso(codigo) {
+      const url = `https://script.google.com/macros/s/TU_DEPLOY_ID/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
+      fetch(url)
+        .then(r => r.text())
+        .then(msg => {
+          alert(msg);
+          location.reload();
+        });
+    }
+
+    function marcarEnviada(codigo) {
+      const url = `https://script.google.com/macros/s/TU_DEPLOY_ID/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
+      fetch(url)
+        .then(r => r.text())
+        .then(msg => {
+          alert(msg);
+          location.reload();
+        });
+    }
   </script>
 </body>
 </html>
