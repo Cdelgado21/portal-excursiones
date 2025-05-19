@@ -3,94 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cotizaciones | Excursiones Delgado</title>
+  <title>Módulo de Cotizaciones</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #eaf4f4;
-      margin: 0;
-      padding: 0;
-    }
-    header {
-      background-color: #02535a;
-      color: white;
-      text-align: center;
-      padding: 1rem;
-    }
-    .content {
-      max-width: 1200px;
-      margin: 30px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    .boton {
-      display: inline-block;
-      margin-top: 10px;
-      padding: 10px 20px;
-      background-color: #02535a;
-      color: white;
-      text-decoration: none;
-      border-radius: 6px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: left;
-    }
-    th {
-      background-color: #02535a;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f4f4f4;
-    }
-    .estado-pendiente {
-      background-color: #ff4d4d;
-      color: white;
-      font-weight: bold;
-      padding: 5px 10px;
-      border-radius: 5px;
-      text-align: center;
-    }
-    .estado-proceso {
-      background-color: #ffa500;
-      color: white;
-      font-weight: bold;
-      padding: 5px 10px;
-      border-radius: 5px;
-      text-align: center;
-    }
-    .estado-enviada {
-      background-color: #4caf50;
-      color: white;
-      font-weight: bold;
-      padding: 5px 10px;
-      border-radius: 5px;
-      text-align: center;
-    }
-    .btn-accion {
-      padding: 6px 12px;
-      margin: 3px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .btn-tomar {
-      background-color: #02535a;
-      color: white;
-    }
-    .btn-enviada {
-      background-color: #f49859;
-      color: white;
-    }
+    body { font-family: Arial, sans-serif; background-color: #eaf4f4; margin: 0; padding: 0; }
+    header { background-color: #02535a; color: white; text-align: center; padding: 1rem; }
+    .content { max-width: 1200px; margin: 30px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .boton { display: inline-block; margin-top: 10px; padding: 10px 20px; background-color: #02535a; color: white; text-decoration: none; border-radius: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+    th { background-color: #02535a; color: white; }
+    tr:nth-child(even) { background-color: #f4f4f4; }
+    .estado-pendiente { background-color: #ff4d4d; color: white; font-weight: bold; padding: 5px 10px; border-radius: 5px; text-align: center; }
+    .estado-proceso { background-color: #ffa500; color: white; font-weight: bold; padding: 5px 10px; border-radius: 5px; text-align: center; }
+    .estado-enviada { background-color: #4caf50; color: white; font-weight: bold; padding: 5px 10px; border-radius: 5px; text-align: center; }
+    .btn-accion { padding: 6px 12px; margin: 3px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn-tomar { background-color: #02535a; color: white; }
+    .btn-enviada { background-color: #f49859; color: white; }
   </style>
 </head>
 <body>
@@ -101,9 +29,7 @@
 
   <div class="content">
     <a class="boton" href="https://forms.gle/JhFVUNE5s6Dh6Kgn6" target="_blank">➕ Agregar Cotización</a>
-
     <div id="tabla-cotizaciones">Cargando cotizaciones...</div>
-
     <a class="boton" href="menu.html">← Volver al Menú</a>
   </div>
 
@@ -114,12 +40,10 @@
     fetch("https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?action=cotizaciones")
       .then(res => res.json())
       .then(data => {
-        const filtradas = data.filter(row =>
-          row.ESTADO === "Pendiente" || row.ESTADO === "En Proceso"
-        );
+        const filtradas = data.filter(row => row.ESTADO === "Pendiente" || row.ESTADO === "En Proceso");
 
         if (!filtradas.length) {
-          document.getElementById("tabla-cotizaciones").innerHTML = "No hay cotizaciones pendientes.";
+          document.getElementById("tabla-cotizaciones").innerHTML = "No hay cotizaciones pendientes o en proceso.";
           return;
         }
 
@@ -148,24 +72,22 @@
                             : row.ESTADO === "En Proceso" ? "estado-proceso"
                             : "estado-enviada";
 
-          let acciones = "";
+          let acciones = "-";
           if (row.ESTADO === "Pendiente") {
             acciones = `<button class="btn-accion btn-tomar" onclick="marcarProceso('${row.NUMERO_COTIZACION}')">Tomar</button>`;
           } else if (row.ESTADO === "En Proceso" && row.ENCARGADO === usuario) {
             acciones = `<button class="btn-accion btn-enviada" onclick="marcarEnviada('${row.NUMERO_COTIZACION}')">Marcar Enviada</button>`;
-          } else {
-            acciones = "-";
           }
 
           html += `
             <tr>
               <td>${row.NUMERO_COTIZACION}</td>
-              <td>${row.NOMBRE_COMPLETO}</td>
-              <td>${row.DESTINO}</td>
+              <td>${row.NOMBRE_COMPLETO || "-"}</td>
+              <td>${row.DESTINO || "-"}</td>
               <td>${row.CANTIDAD_DE_PERSONAS_ADULTAS || 0}</td>
               <td>${row.CANTIDAD_DE_NIÑOS || 0}</td>
-              <td>${row.NUMERO_DE_TELÉFONO_CLIENTE}</td>
-              <td>${row.RANGO_DE_FECHAS_DE_VIAJE}</td>
+              <td>${row.NUMERO_DE_TELÉFONO_CLIENTE || "-"}</td>
+              <td>${row.RANGO_DE_FECHAS_DE_VIAJE || "-"}</td>
               <td><div class="${estadoClass}">${row.ESTADO}</div></td>
               <td>${row.ENCARGADO || "-"}</td>
               <td>${row.OBSERVACIONES || "-"}</td>
@@ -180,22 +102,12 @@
 
     function marcarProceso(codigo) {
       const url = `https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
-      fetch(url)
-        .then(r => r.text())
-        .then(msg => {
-          alert(msg);
-          location.reload();
-        });
+      fetch(url).then(r => r.text()).then(alert).then(() => location.reload());
     }
 
     function marcarEnviada(codigo) {
-      const url = `https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5D/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
-      fetch(url)
-        .then(r => r.text())
-        .then(msg => {
-          alert(msg);
-          location.reload();
-        });
+      const url = `https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
+      fetch(url).then(r => r.text()).then(alert).then(() => location.reload());
     }
   </script>
 </body>
