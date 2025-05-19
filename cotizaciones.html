@@ -111,7 +111,7 @@
     const usuario = prompt("¿Cuál es tu nombre? (Yare, Yuliana, Cristopher, Tatiana, Geansury o Marcela)").trim();
     document.getElementById("saludo").innerText = "¡Bienvenida, " + usuario + "!";
 
-    fetch("https://script.google.com/macros/s/TU_DEPLOY_ID/exec?action=cotizaciones")
+    fetch("https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?action=cotizaciones")
       .then(res => res.json())
       .then(data => {
         const filtradas = data.filter(row =>
