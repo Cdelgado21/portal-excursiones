@@ -81,11 +81,10 @@
           html += `
             <tr>
               <td>${row.NUMERO_COTIZACION}</td>
-              <td>${row.NOMBRE_COMPLETO || "-"}</td>
+              <td>${row.NUMERO_DE_TELÉFONO_CLIENTE || "-"}</td>
               <td>${row.DESTINO || "-"}</td>
               <td>${row.CANTIDAD_DE_PERSONAS_ADULTAS || 0}</td>
               <td>${row.CANTIDAD_DE_NIÑOS || 0}</td>
-              <td>${row.NUMERO_DE_TELÉFONO_CLIENTE || "-"}</td>
               <td>${row.RANGO_DE_FECHAS_DE_VIAJE || "-"}</td>
               <td><div class="${estadoClass}">${row.ESTADO}</div></td>
               <td>${row.ENCARGADO || "-"}</td>
