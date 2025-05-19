@@ -35,7 +35,7 @@
 
   <script>
     const usuario = prompt("¿Cuál es tu nombre? (Yare, Yuliana, Cristopher, Tatiana, Geansury o Marcela)").trim();
-    document.getElementById("saludo").innerText = "¡Bienvenida, " + usuario + "!";
+    document.getElementById("saludo").innerText = "¡Bienvenid@, " + usuario + "!";
 
     fetch("https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cotizaciones")
       .then(res => res.json())
@@ -52,11 +52,10 @@
           <thead>
             <tr>
               <th>Código</th>
-              <th>Cliente</th>
+              <th>Teléfono</th>
               <th>Destino</th>
               <th>Adultos</th>
               <th>Niños</th>
-              <th>Teléfono</th>
               <th>Fechas</th>
               <th>Estado</th>
               <th>Encargado</th>
