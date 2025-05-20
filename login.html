@@ -84,9 +84,48 @@
       margin-top: 10px;
       color: #02535a;
       text-decoration: none;
+      cursor: pointer;
     }
     .forgot-link:hover {
       text-decoration: underline;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      max-width: 350px;
+      text-align: center;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .modal-content input {
+      margin-bottom: 10px;
+    }
+    .modal button {
+      width: auto;
+      margin-top: 10px;
+    }
+    .mensaje {
+      font-size: 14px;
+      margin-top: 8px;
+      font-weight: bold;
+    }
+    .mensaje.ok {
+      color: green;
+    }
+    .mensaje.error {
+      color: red;
     }
   </style>
 </head>
@@ -107,7 +146,18 @@
     </div>
 
     <button onclick="iniciarSesion()">Ingresar</button>
-    <a href="mailto:boletosexcursionesdelgado@gmail.com?subject=Recuperación de clave" class="forgot-link">¿Olvidaste tu contraseña?</a>
+    <span class="forgot-link" onclick="abrirModal()">¿Olvidaste tu contraseña?</span>
+  </div>
+
+  <!-- Modal de recuperación -->
+  <div class="modal" id="modalRecuperacion">
+    <div class="modal-content">
+      <h3>Recuperar contraseña</h3>
+      <input type="text" id="usuarioRecuperacion" placeholder="Nombre de usuario" />
+      <button onclick="enviarRecuperacion()">Enviar</button>
+      <button onclick="cerrarModal()">Cerrar</button>
+      <div id="mensajeRecuperacion" class="mensaje"></div>
+    </div>
   </div>
 
   <script>
@@ -118,6 +168,30 @@
       const icon = document.getElementById("icono-ojo");
       const visibleIcon = "ojo-cerrado.png";
       const hiddenIcon = "ojo.png";
+
+      if (pass.type === "password") {
+        pass.type = "text";
+        icon.src = visibleIcon;
+        icon.alt = "Ocultar";
+      } else {
+        pass.type = "password";
+        icon.src = hiddenIcon;
+        icon.alt = "Mostrar";
+      }
+    }
+
+    function iniciarSesion() {
+      const usuario = document.getElementById("usuario").value.trim();
+      const clave = document.getElementById("clave").value.trim();
+      const errorDiv = document.getElementById("error");
+
+      if (!usuario || !clave) {
+        errorDiv.innerText = "Por favor completa ambos campos";
+        errorDiv.style.display = "block";
+        return;
+
+
+
 
       if (pass.type === "password") {
         pass.type = "text";
