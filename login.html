@@ -157,120 +157,103 @@
     </div>
   </div>
 
-  <script>
-    const URL_WEBAPP = "https://script.google.com/macros/s/AKfycbyKRcTbeSUdTcvo7JRHWr_fK-X9HEICoJAToZlD9wFUIVqgs5GdiUtEx9kE9uv97MeQ/exec";
+<script>
+  const URL_WEBAPP = "https://script.google.com/macros/s/AKfycbyKRcTbeSUdTcvo7JRHWr_fK-X9HEICoJAToZlD9wFUIVqgs5GdiUtEx9kE9uv97MeQ/exec";
 
-    function togglePassword() {
-      const pass = document.getElementById("clave");
-      const icon = document.getElementById("icono-ojo");
-      const visibleIcon = "ojo-cerrado.png";
-      const hiddenIcon = "ojo.png";
+  function togglePassword() {
+    const pass = document.getElementById("clave");
+    const icon = document.getElementById("icono-ojo");
+    const visibleIcon = "ojo-cerrado.png";
+    const hiddenIcon = "ojo.png";
 
-      if (pass.type === "password") {
-        pass.type = "text";
-        icon.src = visibleIcon;
-        icon.alt = "Ocultar";
-      } else {
-        pass.type = "password";
-        icon.src = hiddenIcon;
-        icon.alt = "Mostrar";
-      }
+    if (pass.type === "password") {
+      pass.type = "text";
+      icon.src = visibleIcon;
+      icon.alt = "Ocultar";
+    } else {
+      pass.type = "password";
+      icon.src = hiddenIcon;
+      icon.alt = "Mostrar";
     }
-
-    function iniciarSesion() {
-      const usuario = document.getElementById("usuario").value.trim();
-      const clave = document.getElementById("clave").value.trim();
-      const errorDiv = document.getElementById("error");
-
-      if (!usuario || !clave) {
-        errorDiv.innerText = "Por favor completa ambos campos";
-        errorDiv.style.display = "block";
-        return;
-      }
-
-      fetch(`${URL_WEBAPP}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            sessionStorage.setItem("usuario", data.usuario);
-            sessionStorage.setItem("nombre", data.nombre);
-            sessionStorage.setItem("rol", data.rol);
-            sessionStorage.setItem("accesos", JSON.stringify(data.accesos));
-            window.location.href = "menu.html";
-          } else {
-            errorDiv.innerText = data.mensaje || "Credenciales incorrectas";
-            errorDiv.style.display = "block";
-          }
-        })
-        .catch(error => {
-          console.error(error);
-          errorDiv.innerText = "Error de conexión con el servidor";
-          errorDiv.style.display = "block";
-        });
-    }
-
-    function abrirModal() {
-      document.getElementById("modalRecuperacion").style.display = "flex";
-      document.getElementById("usuarioRecuperacion").value = "";
-      document.getElementById("mensajeRecuperacion").innerText = "";
-    }
-
-    function cerrarModal() {
-      document.getElementById("modalRecuperacion").style.display = "none";
-    }
-
-    function enviarRecuperacion() {
-      const usuario = document.getElementById("usuarioRecuperacion").value.trim();
-      const mensaje = document.getElementById("mensajeRecuperacion");
-
-      if (!usuario) {
-        mensaje.innerText = "Por favor indica tu nombre de usuario";
-        mensaje.className = "mensaje error";
-        return;
-      }
-
-      const datos = new URLSearchParams();
-datos.append("accion", "recuperarClave");
-datos.append("usuario", usuario);
-
-fetch(URL_WEBAPP, {
-  method: "POST",
-  body: datos
-})
-.then(r => r.text())
-.then(msg => {
-  const mensaje = document.getElementById("mensajeRecuperacion");
-  if (msg.includes("✔️")) {
-    mensaje.innerText = "📩 Clave enviada al correo registrado.";
-    mensaje.className = "mensaje ok";
-  } else {
-    mensaje.innerText = "❌ Usuario no encontrado.";
-    mensaje.className = "mensaje error";
   }
-})
-.catch(err => {
-  console.error(err);
-  const mensaje = document.getElementById("mensajeRecuperacion");
-  mensaje.innerText = "❌ Error al intentar enviar el correo.";
-  mensaje.className = "mensaje error";
-});
-      .then(r => r.text())
-      .then(msg => {
-        if (msg.includes("✔️")) {
-          mensaje.innerText = "📩 Clave enviada al correo registrado.";
-          mensaje.className = "mensaje ok";
+
+  function iniciarSesion() {
+    const usuario = document.getElementById("usuario").value.trim();
+    const clave = document.getElementById("clave").value.trim();
+    const errorDiv = document.getElementById("error");
+
+    if (!usuario || !clave) {
+      errorDiv.innerText = "Por favor completa ambos campos";
+      errorDiv.style.display = "block";
+      return;
+    }
+
+    fetch(`${URL_WEBAPP}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          sessionStorage.setItem("usuario", data.usuario);
+          sessionStorage.setItem("nombre", data.nombre);
+          sessionStorage.setItem("rol", data.rol);
+          sessionStorage.setItem("accesos", JSON.stringify(data.accesos));
+          window.location.href = "menu.html";
         } else {
-          mensaje.innerText = "❌ Usuario no encontrado.";
-          mensaje.className = "mensaje error";
+          errorDiv.innerText = data.mensaje || "Credenciales incorrectas";
+          errorDiv.style.display = "block";
         }
       })
-      .catch(err => {
-        console.error(err);
-        mensaje.innerText = "❌ Error al intentar enviar el correo.";
-        mensaje.className = "mensaje error";
+      .catch(error => {
+        console.error(error);
+        errorDiv.innerText = "Error de conexión con el servidor";
+        errorDiv.style.display = "block";
       });
+  }
+
+  function abrirModal() {
+    document.getElementById("modalRecuperacion").style.display = "flex";
+    document.getElementById("usuarioRecuperacion").value = "";
+    document.getElementById("mensajeRecuperacion").innerText = "";
+  }
+
+  function cerrarModal() {
+    document.getElementById("modalRecuperacion").style.display = "none";
+  }
+
+  function enviarRecuperacion() {
+    const usuario = document.getElementById("usuarioRecuperacion").value.trim();
+    const mensaje = document.getElementById("mensajeRecuperacion");
+
+    if (!usuario) {
+      mensaje.innerText = "Por favor indica tu nombre de usuario";
+      mensaje.className = "mensaje error";
+      return;
     }
-  </script>
+
+    const datos = new URLSearchParams();
+    datos.append("accion", "recuperarClave");
+    datos.append("usuario", usuario);
+
+    fetch(URL_WEBAPP, {
+      method: "POST",
+      body: datos
+    })
+    .then(r => r.text())
+    .then(msg => {
+      if (msg.includes("✔️")) {
+        mensaje.innerText = "📩 Clave enviada al correo registrado.";
+        mensaje.className = "mensaje ok";
+      } else {
+        mensaje.innerText = "❌ Usuario no encontrado.";
+        mensaje.className = "mensaje error";
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      mensaje.innerText = "❌ Error al intentar enviar el correo.";
+      mensaje.className = "mensaje error";
+    });
+  }
+</script>
 
 </body>
 </html>
