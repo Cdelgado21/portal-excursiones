@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Iniciar Sesión</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eaf4f4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .login-container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 400px;
+    }
+    h2 {
+      text-align: center;
+      color: #02535a;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #02535a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #014b52;
+    }
+    .error {
+      color: red;
+      text-align: center;
+      margin-bottom: 10px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <h2>Iniciar Sesión</h2>
+    <div id="error" class="error">Credenciales incorrectas o usuario inactivo</div>
+    <input type="text" id="usuario" placeholder="Usuario" required />
+    <input type="password" id="clave" placeholder="Contraseña" required />
+    <button onclick="iniciarSesion()">Ingresar</button>
+  </div>
+
+  <script>
+    const URL_WEBAPP = "https://script.google.com/macros/s/YOUR_WEBAPP_ID/exec"; // ← cambia esto por tu Web App
+
+    function iniciarSesion() {
+      const usuario = document.getElementById("usuario").value.trim();
+      const clave = document.getElementById("clave").value.trim();
+      const errorDiv = document.getElementById("error");
+
+      if (!usuario || !clave) {
+        errorDiv.innerText = "Por favor completa ambos campos";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      // Enviar solicitud al Web App para validar
+      fetch(`${URL_WEBAPP}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            // Guardar datos en sesión
+            sessionStorage.setItem("usuario", data.usuario);
+            sessionStorage.setItem("nombre", data.nombre);
+            sessionStorage.setItem("rol", data.rol);
+            sessionStorage.setItem("accesos", JSON.stringify(data.accesos));
+
+            // Redirigir al menú
+            window.location.href = "menu.html";
+          } else {
+            errorDiv.innerText = data.mensaje || "Credenciales incorrectas o usuario inactivo";
+            errorDiv.style.display = "block";
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          errorDiv.innerText = "Error de conexión con el servidor";
+          errorDiv.style.display = "block";
+        });
+    }
+  </script>
+
+</body>
+</html>
