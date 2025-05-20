@@ -9,6 +9,161 @@
       font-family: Arial, sans-serif;
       background-color: #eaf4f4;
       margin: 0;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+    }
+    .login-container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.15);
+      width: 100%;
+      max-width: 400px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .login-container img {
+      max-width: 100px;
+      margin-bottom: 10px;
+    }
+    h2 {
+      color: #02535a;
+      margin: 10px 0 5px 0;
+    }
+    .subtitulo {
+      color: #5f9296;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    .password-field {
+      position: relative;
+    }
+    .toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 10px;
+      transform: translateY(-50%);
+      cursor: pointer;
+      font-size: 18px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #02535a;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #014b52;
+    }
+    .error {
+      color: red;
+      margin-bottom: 15px;
+      display: none;
+    }
+    .forgot-link {
+      font-size: 13px;
+      display: block;
+      margin-top: 10px;
+      color: #02535a;
+      text-decoration: none;
+    }
+    .forgot-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <img src="logo-excursiones.png" alt="Excursiones Delgado">
+    <h2>Iniciar Sesión</h2>
+    <div class="subtitulo">Sistema Integral de Excursiones Delgado</div>
+
+    <div id="error" class="error">Credenciales incorrectas</div>
+
+    <input type="text" id="usuario" placeholder="Usuario" required />
+
+    <div class="password-field">
+      <input type="password" id="clave" placeholder="Contraseña" required />
+      <span class="toggle-password" onclick="togglePassword()">👁️</span>
+    </div>
+
+    <button onclick="iniciarSesion()">Ingresar</button>
+    <a href="mailto:boletosexcursionesdelgado@gmail.com?subject=Recuperación de clave" class="forgot-link">¿Olvidaste tu contraseña?</a>
+  </div>
+
+  <script>
+    const URL_WEBAPP = "https://script.google.com/macros/s/AKfycbyKRcTbeSUdTcvo7JRHWr_fK-X9HEICoJAToZlD9wFUIVqgs5GdiUtEx9kE9uv97MeQ/exec";
+
+    function togglePassword() {
+      const pass = document.getElementById("clave");
+      pass.type = pass.type === "password" ? "text" : "password";
+    }
+
+    function iniciarSesion() {
+      const usuario = document.getElementById("usuario").value.trim();
+      const clave = document.getElementById("clave").value.trim();
+      const errorDiv = document.getElementById("error");
+
+      if (!usuario || !clave) {
+        errorDiv.innerText = "Por favor completa ambos campos";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      fetch(`${URL_WEBAPP}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            sessionStorage.setItem("usuario", data.usuario);
+            sessionStorage.setItem("nombre", data.nombre);
+            sessionStorage.setItem("rol", data.rol);
+            sessionStorage.setItem("accesos", JSON.stringify(data.accesos));
+            window.location.href = "menu.html";
+          } else {
+            errorDiv.innerText = data.mensaje || "Credenciales incorrectas";
+            errorDiv.style.display = "block";
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          errorDiv.innerText = "Error de conexión con el servidor";
+          errorDiv.style.display = "block";
+        });
+    }
+  </script>
+
+</body>
+</html>
+
+
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - Excursiones Delgado</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eaf4f4;
+      margin: 0;
       display: flex;
       align-items: center;
       justify-content: center;
