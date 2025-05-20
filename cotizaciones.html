@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cotizaciones | Excursiones Delgado</title>
+  <title>Módulo de Cotizaciones</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -92,13 +92,13 @@
       color: white;
     }
     .notificacion {
-      margin-top: 15px;
+      margin-top: 20px;
       padding: 12px;
-      background-color: #d9f9d9;
-      border: 1px solid #57a957;
-      color: #256029;
+      border-radius: 6px;
+      background-color: #dff0d8;
+      color: #3c763d;
       font-weight: bold;
-      border-radius: 5px;
+      text-align: center;
       display: none;
     }
   </style>
@@ -111,8 +111,10 @@
 
   <div class="content">
     <a class="boton" href="https://forms.gle/JhFVUNE5s6Dh6Kgn6" target="_blank">➕ Agregar Cotización</a>
+
     <div id="notificacion" class="notificacion"></div>
     <div id="tabla-cotizaciones">Cargando cotizaciones...</div>
+
     <a class="boton" href="menu.html">← Volver al Menú</a>
   </div>
 
@@ -120,10 +122,17 @@
     const usuario = prompt("¿Cuál es tu nombre? (Yare, Yuliana, Cristopher, Tatiana, Geansury o Marcela)").trim();
     document.getElementById("saludo").innerText = "¡Bienvenida, " + usuario + "!";
 
-    const endpoint = "https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec";
+    function mostrarMensaje(texto) {
+      const div = document.getElementById("notificacion");
+      div.innerText = texto;
+      div.style.display = "block";
+      setTimeout(() => {
+        div.style.display = "none";
+      }, 3000);
+    }
 
     function cargarCotizaciones() {
-      fetch(endpoint + "?accion=cotizaciones")
+      fetch("https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cotizaciones")
         .then(res => res.json())
         .then(data => {
           const filtradas = data.filter(row =>
@@ -159,17 +168,19 @@
                               : row.ESTADO === "En Proceso" ? "estado-proceso"
                               : "estado-enviada";
 
-            let acciones = "-";
+            let acciones = "";
             if (row.ESTADO === "Pendiente") {
               acciones = `<button class="btn-accion btn-tomar" onclick="marcarProceso('${row.NUMERO_COTIZACION}')">Tomar</button>`;
             } else if (row.ESTADO === "En Proceso" && row.ENCARGADO === usuario) {
               acciones = `<button class="btn-accion btn-enviada" onclick="marcarEnviada('${row.NUMERO_COTIZACION}')">Marcar Enviada</button>`;
+            } else {
+              acciones = "-";
             }
 
             html += `
               <tr>
                 <td>${row.NUMERO_COTIZACION}</td>
-                <td>${row.NUMERO_DE_TELÉFONO_CLIENTE || "-"}</td>
+                <td>${row.NUMERO_DE_TELÉFONO_CLIENTE}</td>
                 <td>${row.DESTINO}</td>
                 <td>${row.CANTIDAD_DE_PERSONAS_ADULTAS || 0}</td>
                 <td>${row.CANTIDAD_DE_NIÑOS || 0}</td>
@@ -187,34 +198,35 @@
         });
     }
 
-    function mostrarNotificacion(texto) {
-      const div = document.getElementById("notificacion");
-      div.innerText = texto;
-      div.style.display = "block";
-      setTimeout(() => div.style.display = "none", 5000);
-    }
-
     function marcarProceso(codigo) {
-      const url = `${endpoint}?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
+      const url = `https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
       fetch(url)
         .then(r => r.text())
         .then(msg => {
-          mostrarNotificacion(`Te has asignado la cotización ${codigo}.`);
-          cargarCotizaciones();
+          if (msg.includes("✅")) {
+            mostrarMensaje(`Te acabas de asignar la cotización ${codigo}`);
+            setTimeout(() => {
+              cargarCotizaciones();
+            }, 1000);
+          } else {
+            alert(msg);
+            cargarCotizaciones();
+          }
         });
     }
 
     function marcarEnviada(codigo) {
-      const url = `${endpoint}?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
+      const url = `https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
       fetch(url)
         .then(r => r.text())
         .then(msg => {
-          mostrarNotificacion(`Has marcado como enviada la cotización ${codigo}.`);
-          cargarCotizaciones();
+          alert(msg);
+          setTimeout(() => {
+            cargarCotizaciones();
+          }, 1000);
         });
     }
 
-    // Inicia la carga al abrir
     cargarCotizaciones();
   </script>
 </body>
