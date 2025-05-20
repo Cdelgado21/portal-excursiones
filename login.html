@@ -24,7 +24,7 @@
       text-align: center;
     }
     .login-container img.logo {
-      max-width: 160px;
+      max-width: 140px;
       margin-bottom: 10px;
     }
     h2 {
@@ -45,20 +45,20 @@
       font-size: 16px;
       box-sizing: border-box;
     }
-    .password-wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+    .input-group {
+      position: relative;
     }
-    .password-wrapper input {
-      flex: 1;
-      margin-bottom: 0;
+    .input-group input {
+      padding-right: 40px;
     }
-    .toggle-password {
+    .input-group img.toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
       cursor: pointer;
-      width: 30px;
-      height: 30px;
     }
     button {
       width: 100%;
@@ -69,7 +69,6 @@
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
-      margin-top: 15px;
     }
     button:hover {
       background-color: #014b52;
@@ -102,7 +101,7 @@
 
     <input type="text" id="usuario" placeholder="Usuario" required />
 
-    <div class="password-wrapper">
+    <div class="input-group">
       <input type="password" id="clave" placeholder="Contraseña" required />
       <img id="icono-ojo" class="toggle-password" src="ojo.png" alt="Mostrar" onclick="togglePassword()" />
     </div>
@@ -116,16 +115,18 @@
 
     function togglePassword() {
       const pass = document.getElementById("clave");
-      const icono = document.getElementById("icono-ojo");
+      const icon = document.getElementById("icono-ojo");
+      const visibleIcon = "ojo-cerrado.png";
+      const hiddenIcon = "ojo.png";
 
       if (pass.type === "password") {
         pass.type = "text";
-        icono.src = "ojo-cerrado.png"; // ojo tachado
-        icono.alt = "Ocultar";
+        icon.src = visibleIcon;
+        icon.alt = "Ocultar";
       } else {
         pass.type = "password";
-        icono.src = "ojo.png"; // ojo normal
-        icono.alt = "Mostrar";
+        icon.src = hiddenIcon;
+        icon.alt = "Mostrar";
       }
     }
 
