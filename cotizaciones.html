@@ -103,97 +103,35 @@
     <a class="boton" href="https://forms.gle/JhFVUNE5s6Dh6Kgn6" target="_blank">➕ Agregar Cotización</a>
     <div id="tabla-cotizaciones">Cargando cotizaciones...</div>
     <a class="boton" href="menu.html">← Volver al Menú</a>
+    <div id="alerta" style="display:none; background:#02535a; color:white; padding:10px; margin-bottom:15px; border-radius:5px;"></div>
   </div>
 
  <script>
   const usuario = prompt("¿Cuál es tu nombre? (Yare, Yuliana, Cristopher, Tatiana, Geansury o Marcela)").trim();
   document.getElementById("saludo").innerText = "¡Bienvenida, " + usuario + "!";
 
-  function mostrarAlerta(mensaje) {
-    const alerta = document.createElement("div");
-    alerta.innerText = mensaje;
-    alerta.style.backgroundColor = "#4caf50";
-    alerta.style.color = "white";
-    alerta.style.padding = "12px";
-    alerta.style.borderRadius = "6px";
-    alerta.style.marginTop = "15px";
-    alerta.style.fontWeight = "bold";
-    alerta.style.boxShadow = "0 0 10px rgba(0,0,0,0.1)";
-    alerta.style.textAlign = "center";
-    document.getElementById("tabla-cotizaciones").prepend(alerta);
-    setTimeout(() => alerta.remove(), 3000);
+  function mostrarAlerta(mensaje, colorFondo = '#02535a') {
+    const alerta = document.getElementById("alerta");
+    alerta.style.display = "block";
+    alerta.style.backgroundColor = colorFondo;
+    alerta.innerHTML = mensaje;
+
+    setTimeout(() => {
+      alerta.style.display = "none";
+    }, 3000);
   }
-
-  fetch("https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cotizaciones")
-    .then(res => res.json())
-    .then(data => {
-      const filtradas = data.filter(row =>
-        row.ESTADO === "Pendiente" || row.ESTADO === "En Proceso"
-      );
-
-      if (!filtradas.length) {
-        document.getElementById("tabla-cotizaciones").innerHTML = "No hay cotizaciones pendientes.";
-        return;
-      }
-
-      let html = `
-      <table>
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Teléfono</th>
-            <th>Destino</th>
-            <th>Adultos</th>
-            <th>Niños</th>
-            <th>Fechas</th>
-            <th>Estado</th>
-            <th>Encargado</th>
-            <th>Observaciones</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-      `;
-
-      filtradas.forEach(row => {
-        const estadoClass = row.ESTADO === "Pendiente" ? "estado-pendiente"
-                          : row.ESTADO === "En Proceso" ? "estado-proceso"
-                          : "estado-enviada";
-
-        let acciones = "-";
-        if (row.ESTADO === "Pendiente") {
-          acciones = `<button class="btn-accion btn-tomar" onclick="marcarProceso('${row.NUMERO_COTIZACION}')">Tomar</button>`;
-        } else if (row.ESTADO === "En Proceso" && row.ENCARGADO === usuario) {
-          acciones = `<button class="btn-accion btn-enviada" onclick="marcarEnviada('${row.NUMERO_COTIZACION}')">Marcar Enviada</button>`;
-        }
-
-        html += `
-          <tr>
-            <td>${row.NUMERO_COTIZACION}</td>
-            <td>${row.NUMERO_DE_TELÉFONO_CLIENTE || '-'}</td>
-            <td>${row.DESTINO}</td>
-            <td>${row.CANTIDAD_DE_PERSONAS_ADULTAS || 0}</td>
-            <td>${row.CANTIDAD_DE_NIÑOS || 0}</td>
-            <td>${row.RANGO_DE_FECHAS_DE_VIAJE}</td>
-            <td><div class="${estadoClass}">${row.ESTADO}</div></td>
-            <td>${row.ENCARGADO || "-"}</td>
-            <td>${row.OBSERVACIONES || "-"}</td>
-            <td>${acciones}</td>
-          </tr>
-        `;
-      });
-
-      html += `</tbody></table>`;
-      document.getElementById("tabla-cotizaciones").innerHTML = html;
-    });
 
   function marcarProceso(codigo) {
     const url = `https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
     fetch(url)
       .then(r => r.text())
       .then(msg => {
-        mostrarAlerta(`✅ Te asignaste la cotización ${codigo}`);
-        setTimeout(() => location.reload(), 2500);
+        if (msg.includes("✅")) {
+          mostrarAlerta(`✅ Te has asignado la cotización <b>${codigo}</b>.`, "#4caf50");
+        } else {
+          mostrarAlerta(msg, "#e53935");
+        }
+        actualizarCotizaciones(); // recargar sin refrescar toda la página
       });
   }
 
@@ -202,10 +140,82 @@
     fetch(url)
       .then(r => r.text())
       .then(msg => {
-        alert("✅ Cotización marcada como enviada");
-        location.reload();
+        if (msg.includes("✅")) {
+          mostrarAlerta(`📤 Cotización <b>${codigo}</b> marcada como enviada.`, "#5c6bc0");
+        } else {
+          mostrarAlerta(msg, "#e53935");
+        }
+        actualizarCotizaciones();
       });
   }
+
+  function actualizarCotizaciones() {
+    fetch("https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?action=cotizaciones")
+      .then(res => res.json())
+      .then(data => {
+        const filtradas = data.filter(row =>
+          row.ESTADO === "Pendiente" || row.ESTADO === "En Proceso"
+        );
+
+        if (!filtradas.length) {
+          document.getElementById("tabla-cotizaciones").innerHTML = "No hay cotizaciones pendientes.";
+          return;
+        }
+
+        let html = `
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Teléfono</th>
+              <th>Destino</th>
+              <th>Adultos</th>
+              <th>Niños</th>
+              <th>Fechas</th>
+              <th>Estado</th>
+              <th>Encargado</th>
+              <th>Observaciones</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+        `;
+
+        filtradas.forEach(row => {
+          const estadoClass = row.ESTADO === "Pendiente" ? "estado-pendiente"
+                            : row.ESTADO === "En Proceso" ? "estado-proceso"
+                            : "estado-enviada";
+
+          let acciones = "-";
+          if (row.ESTADO === "Pendiente") {
+            acciones = `<button class="btn-accion btn-tomar" onclick="marcarProceso('${row.NUMERO_COTIZACION}')">Tomar</button>`;
+          } else if (row.ESTADO === "En Proceso" && row.ENCARGADO === usuario) {
+            acciones = `<button class="btn-accion btn-enviada" onclick="marcarEnviada('${row.NUMERO_COTIZACION}')">Marcar Enviada</button>`;
+          }
+
+          html += `
+            <tr>
+              <td>${row.NUMERO_COTIZACION}</td>
+              <td>${row.NUMERO_DE_TELÉFONO_CLIENTE || "-"}</td>
+              <td>${row.DESTINO}</td>
+              <td>${row.CANTIDAD_DE_PERSONAS_ADULTAS || 0}</td>
+              <td>${row.CANTIDAD_DE_NIÑOS || 0}</td>
+              <td>${row.RANGO_DE_FECHAS_DE_VIAJE}</td>
+              <td><div class="${estadoClass}">${row.ESTADO}</div></td>
+              <td>${row.ENCARGADO || "-"}</td>
+              <td>${row.OBSERVACIONES || "-"}</td>
+              <td>${acciones}</td>
+            </tr>
+          `;
+        });
+
+        html += `</tbody></table>`;
+        document.getElementById("tabla-cotizaciones").innerHTML = html;
+      });
+  }
+
+  // Recargar cotizaciones al inicio también
+  actualizarCotizaciones();
 </script>
 </body>
 </html>
