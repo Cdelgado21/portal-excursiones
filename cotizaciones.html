@@ -122,6 +122,8 @@
     const usuario = prompt("¿Cuál es tu nombre? (Yare, Yuliana, Cristopher, Tatiana, Geansury o Marcela)").trim();
     document.getElementById("saludo").innerText = "¡Bienvenida, " + usuario + "!";
 
+    const URL_WEBAPP = "https://script.google.com/macros/s/AKfycbw8_B9BrfiSeQZEN1PkqT0CcyViH5cJTjAJcjiINFuiOmOX9Mqaz077UBKC_g80zzc/exec";
+
     function mostrarMensaje(texto) {
       const div = document.getElementById("notificacion");
       div.innerText = texto;
@@ -132,7 +134,7 @@
     }
 
     function cargarCotizaciones() {
-      fetch("https://script.google.com/macros/s/AKfycbw8_B9BrfiSeQZEN1PkqT0CcyViH5cJTjAJcjiINFuiOmOX9Mqaz077UBKC_g80zzc/exec?accion=cotizaciones")
+      fetch(`${URL_WEBAPP}?accion=cotizaciones`)
         .then(res => res.json())
         .then(data => {
           const filtradas = data.filter(row =>
@@ -195,31 +197,47 @@
 
           html += `</tbody></table>`;
           document.getElementById("tabla-cotizaciones").innerHTML = html;
+        })
+        .catch(err => {
+          document.getElementById("tabla-cotizaciones").innerText = "Error al cargar cotizaciones.";
+          console.error(err);
         });
     }
 
     function marcarProceso(codigo) {
-      const url = `https://script.google.com/macros/s/AKfycbw8_B9BrfiSeQZEN1PkqT0CcyViH5cJTjAJcjiINFuiOmOX9Mqaz077UBKC_g80zzc/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
+      const url = `${URL_WEBAPP}?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
       fetch(url)
         .then(r => r.text())
         .then(msg => {
-          if (msg.includes("✅")) {
+          if (msg.includes("Estado actualizado")) {
             mostrarMensaje(`Te acabas de asignar la cotización ${codigo}`);
-            cargarCotizaciones();
+            setTimeout(() => {
+              cargarCotizaciones();
+            }, 1000);
           } else {
             alert(msg);
             cargarCotizaciones();
           }
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Error de conexión");
         });
     }
 
     function marcarEnviada(codigo) {
-      const url = `https://script.google.com/macros/s/AKfycbw8_B9BrfiSeQZEN1PkqT0CcyViH5cJTjAJcjiINFuiOmOX9Mqaz077UBKC_g80zzc/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
+      const url = `${URL_WEBAPP}?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
       fetch(url)
         .then(r => r.text())
         .then(msg => {
-          mostrarMensaje(`✅ Cotización ${codigo} marcada como enviada`);
-          cargarCotizaciones();
+          alert(msg);
+          setTimeout(() => {
+            cargarCotizaciones();
+          }, 1000);
+        })
+        .catch(err => {
+          console.error(err);
+          alert("Error de conexión");
         });
     }
 
