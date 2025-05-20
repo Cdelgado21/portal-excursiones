@@ -142,80 +142,79 @@
   </div>
 
   <script>
-  <script>
-  const url = "https://script.google.com/macros/s/AKfycbw8Me5CyT3RP7U_mRPoaxPYFF-Ail84JHGJ37a3mtC5axLhjhWMyo6MhBG0FKptrg3t/exec";
+    const url = "https://script.google.com/macros/s/AKfycbw8Me5CyT3RP7U_mRPoaxPYFF-Ail84JHGJ37a3mtC5axLhjhWMyo6MhBG0FKptrg3t/exec";
 
-  function toggleClave() {
-    const input = document.getElementById("clave");
-    input.type = input.type === "password" ? "text" : "password";
-  }
-
-  function iniciarSesion() {
-    const usuario = document.getElementById("usuario").value.trim().toLowerCase();
-    const clave = document.getElementById("clave").value.trim();
-
-    if (!usuario || !clave) {
-      alert("⚠️ Debes ingresar usuario y contraseña.");
-      return;
+    function toggleClave() {
+      const input = document.getElementById("clave");
+      input.type = input.type === "password" ? "text" : "password";
     }
 
-    fetch(`${url}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          alert(`✅ ¡Bienvenido ${data.nombre}!`);
+    function iniciarSesion() {
+      const usuario = document.getElementById("usuario").value.trim().toLowerCase();
+      const clave = document.getElementById("clave").value.trim();
 
-          // Aquí puedes redirigir al usuario según su rol:
-          if (data.rol === "admin") {
-            location.href = "menu.html"; // Ajusta según corresponda
-          } else if (data.rol === "cotizador") {
-            location.href = "cotizaciones.html"; // Ejemplo
+      if (!usuario || !clave) {
+        alert("⚠️ Debes ingresar usuario y contraseña.");
+        return;
+      }
+
+      fetch(`${url}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert(`✅ ¡Bienvenido ${data.nombre}!`);
+
+            // Redirección según rol
+            if (data.rol === "admin") {
+              location.href = "menu.html";
+            } else if (data.rol === "cotizador") {
+              location.href = "cotizaciones.html";
+            } else {
+              location.href = "panel.html";
+            }
           } else {
-            location.href = "panel.html"; // Por defecto
+            alert("❌ " + data.mensaje);
           }
-        } else {
-          alert("❌ " + data.mensaje);
-        }
-      })
-      .catch(error => {
-        console.error("Error:", error);
-        alert("❌ Error al intentar iniciar sesión.");
-      });
-  }
-
-  function abrirModal() {
-    document.getElementById("modalRecuperacion").style.display = "flex";
-    document.getElementById("mensajeRecuperar").textContent = "";
-  }
-
-  function cerrarModal() {
-    document.getElementById("modalRecuperacion").style.display = "none";
-  }
-
-  function enviarRecuperacion() {
-    const usuario = document.getElementById("usuarioRecuperar").value.trim();
-    const mensaje = document.getElementById("mensajeRecuperar");
-
-    if (!usuario) {
-      mensaje.textContent = "⚠️ Ingresa tu usuario.";
-      return;
+        })
+        .catch(error => {
+          console.error("Error:", error);
+          alert("❌ Error al intentar iniciar sesión.");
+        });
     }
 
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accion: "recuperarClave", usuario })
-    })
-      .then(res => res.text())
-      .then(msg => {
-        mensaje.style.color = msg.includes("✔️") ? "green" : "red";
-        mensaje.textContent = msg;
+    function abrirModal() {
+      document.getElementById("modalRecuperacion").style.display = "flex";
+      document.getElementById("mensajeRecuperar").textContent = "";
+    }
+
+    function cerrarModal() {
+      document.getElementById("modalRecuperacion").style.display = "none";
+    }
+
+    function enviarRecuperacion() {
+      const usuario = document.getElementById("usuarioRecuperar").value.trim();
+      const mensaje = document.getElementById("mensajeRecuperar");
+
+      if (!usuario) {
+        mensaje.textContent = "⚠️ Ingresa tu usuario.";
+        return;
+      }
+
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accion: "recuperarClave", usuario })
       })
-      .catch(err => {
-        mensaje.textContent = "Error al enviar el correo.";
-        console.error("Error:", err);
-      });
-  }
-</script>
+        .then(res => res.text())
+        .then(msg => {
+          mensaje.style.color = msg.includes("✔️") ? "green" : "red";
+          mensaje.textContent = msg;
+        })
+        .catch(err => {
+          mensaje.textContent = "Error al enviar el correo.";
+          console.error("Error:", err);
+        });
+    }
+  </script>
 </body>
 </html>
