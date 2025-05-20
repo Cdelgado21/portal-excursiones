@@ -205,9 +205,7 @@
         .then(msg => {
           if (msg.includes("✅")) {
             mostrarMensaje(`Te acabas de asignar la cotización ${codigo}`);
-            setTimeout(() => {
-              cargarCotizaciones();
-            }, 1000);
+            cargarCotizaciones();
           } else {
             alert(msg);
             cargarCotizaciones();
@@ -220,10 +218,8 @@
       fetch(url)
         .then(r => r.text())
         .then(msg => {
-          alert(msg);
-          setTimeout(() => {
-            cargarCotizaciones();
-          }, 1000);
+          mostrarMensaje(`✅ Cotización ${codigo} marcada como enviada`);
+          cargarCotizaciones();
         });
     }
 
