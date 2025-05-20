@@ -110,18 +110,37 @@
   </header>
 
   <div class="content">
+    <!-- Selector de usuario -->
+    <div id="selector-usuario" style="margin-bottom: 20px;">
+      <label for="usuario">Selecciona tu nombre:</label>
+      <select id="usuario">
+        <option value="">-- Selecciona --</option>
+        <option value="Yare">Yare</option>
+        <option value="Yuliana">Yuliana</option>
+        <option value="Cristopher">Cristopher</option>
+        <option value="Tatiana">Tatiana</option>
+        <option value="Geansury">Geansury</option>
+        <option value="Marcela">Marcela</option>
+      </select>
+      <button onclick="confirmarUsuario()">Ingresar</button>
+    </div>
+
+    <!-- Botón para agregar nueva cotización -->
     <a class="boton" href="https://forms.gle/JhFVUNE5s6Dh6Kgn6" target="_blank">➕ Agregar Cotización</a>
 
+    <!-- Notificación -->
     <div id="notificacion" class="notificacion"></div>
+
+    <!-- Tabla de cotizaciones -->
     <div id="tabla-cotizaciones">Cargando cotizaciones...</div>
 
+    <!-- Botón de volver -->
     <a class="boton" href="menu.html">← Volver al Menú</a>
   </div>
 
   <script>
-
-
     const URL_WEBAPP = "https://script.google.com/macros/s/AKfycbx-NpRem-QeNszVORfjS5RL6_hkmKHKdPPVj8lDJzQUPY1AcFUCjydlVnLg-9IYOovr/exec";
+    let usuario = "";
 
     function mostrarMensaje(texto) {
       const div = document.getElementById("notificacion");
@@ -131,33 +150,19 @@
         div.style.display = "none";
       }, 3000);
     }
-<div id="selector-usuario" style="margin-bottom: 20px;">
-  <label for="usuario">Selecciona tu nombre:</label>
-  <select id="usuario">
-    <option value="">-- Selecciona --</option>
-    <option value="Yare">Yare</option>
-    <option value="Yuliana">Yuliana</option>
-    <option value="Cristopher">Cristopher</option>
-    <option value="Tatiana">Tatiana</option>
-    <option value="Geansury">Geansury</option>
-    <option value="Marcela">Marcela</option>
-  </select>
-  <button onclick="confirmarUsuario()">Ingresar</button>
-</div>
 
-    let usuario = "";
+    function confirmarUsuario() {
+      const seleccion = document.getElementById("usuario").value;
+      if (!seleccion) {
+        alert("Por favor selecciona tu nombre para continuar.");
+        return;
+      }
+      usuario = seleccion;
+      document.getElementById("saludo").innerText = "¡Bienvenida, " + usuario + "!";
+      document.getElementById("selector-usuario").style.display = "none";
+      cargarCotizaciones();
+    }
 
-function confirmarUsuario() {
-  const seleccion = document.getElementById("usuario").value;
-  if (!seleccion) {
-    alert("Por favor selecciona tu nombre para continuar.");
-    return;
-  }
-  usuario = seleccion;
-  document.getElementById("saludo").innerText = "¡Bienvenida, " + usuario + "!";
-  document.getElementById("selector-usuario").style.display = "none";
-  cargarCotizaciones();
-}
     function cargarCotizaciones() {
       fetch(`${URL_WEBAPP}?accion=cotizaciones`)
         .then(res => res.json())
@@ -265,8 +270,6 @@ function confirmarUsuario() {
           alert("Error de conexión");
         });
     }
-
-    cargarCotizaciones();
   </script>
 </body>
 </html>
