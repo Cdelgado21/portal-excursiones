@@ -124,7 +124,7 @@
     setTimeout(() => alerta.remove(), 3000);
   }
 
-  fetch("https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?accion=cotizaciones")
+  fetch("https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cotizaciones")
     .then(res => res.json())
     .then(data => {
       const filtradas = data.filter(row =>
@@ -188,7 +188,7 @@
     });
 
   function marcarProceso(codigo) {
-    const url = `https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
+    const url = `https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
     fetch(url)
       .then(r => r.text())
       .then(msg => {
@@ -198,7 +198,7 @@
   }
 
   function marcarEnviada(codigo) {
-    const url = `https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
+    const url = `https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
     fetch(url)
       .then(r => r.text())
       .then(msg => {
