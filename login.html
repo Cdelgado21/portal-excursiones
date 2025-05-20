@@ -212,10 +212,16 @@
       datos.append("accion", "recuperarClave");
       datos.append("usuario", usuario);
 
-      fetch(URL_WEBAPP, {
-        method: "POST",
-        body: datos
-      })
+      fetch('https://script.google.com/macros/s/AKfycbw8Me5CyT3RP7U_mRPoaxPYFF-Ail84JHGJ37a3mtC5axLhjhWMyo6MhBG0FKptrg3t/exec', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    accion: 'recuperarClave',
+    usuario: usuarioIngresado
+  })
+})
       .then(r => r.text())
       .then(msg => {
         if (msg.includes("✔️")) {
