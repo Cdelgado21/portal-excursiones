@@ -90,7 +90,6 @@
       text-decoration: underline;
     }
 
-    /* Modal */
     .modal {
       display: none;
       position: fixed;
@@ -139,7 +138,6 @@
     <div id="error" class="error">Credenciales incorrectas</div>
 
     <input type="text" id="usuario" placeholder="Usuario" required />
-
     <div class="input-group">
       <input type="password" id="clave" placeholder="Contraseña" required />
       <img id="icono-ojo" class="toggle-password" src="ojo.png" alt="Mostrar" onclick="togglePassword()" />
@@ -149,7 +147,6 @@
     <span class="forgot-link" onclick="abrirModal()">¿Olvidaste tu contraseña?</span>
   </div>
 
-  <!-- Modal de recuperación -->
   <div class="modal" id="modalRecuperacion">
     <div class="modal-content">
       <h3>Recuperar contraseña</h3>
@@ -168,30 +165,6 @@
       const icon = document.getElementById("icono-ojo");
       const visibleIcon = "ojo-cerrado.png";
       const hiddenIcon = "ojo.png";
-
-      if (pass.type === "password") {
-        pass.type = "text";
-        icon.src = visibleIcon;
-        icon.alt = "Ocultar";
-      } else {
-        pass.type = "password";
-        icon.src = hiddenIcon;
-        icon.alt = "Mostrar";
-      }
-    }
-
-    function iniciarSesion() {
-      const usuario = document.getElementById("usuario").value.trim();
-      const clave = document.getElementById("clave").value.trim();
-      const errorDiv = document.getElementById("error");
-
-      if (!usuario || !clave) {
-        errorDiv.innerText = "Por favor completa ambos campos";
-        errorDiv.style.display = "block";
-        return;
-
-
-
 
       if (pass.type === "password") {
         pass.type = "text";
@@ -234,6 +207,51 @@
           errorDiv.innerText = "Error de conexión con el servidor";
           errorDiv.style.display = "block";
         });
+    }
+
+    function abrirModal() {
+      document.getElementById("modalRecuperacion").style.display = "flex";
+      document.getElementById("usuarioRecuperacion").value = "";
+      document.getElementById("mensajeRecuperacion").innerText = "";
+    }
+
+    function cerrarModal() {
+      document.getElementById("modalRecuperacion").style.display = "none";
+    }
+
+    function enviarRecuperacion() {
+      const usuario = document.getElementById("usuarioRecuperacion").value.trim();
+      const mensaje = document.getElementById("mensajeRecuperacion");
+
+      if (!usuario) {
+        mensaje.innerText = "Por favor indica tu nombre de usuario";
+        mensaje.className = "mensaje error";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("accion", "recuperarClave");
+      formData.append("usuario", usuario);
+
+      fetch(URL_WEBAPP, {
+        method: "POST",
+        body: formData
+      })
+      .then(r => r.text())
+      .then(msg => {
+        if (msg.includes("✔️")) {
+          mensaje.innerText = "📩 Clave enviada al correo registrado.";
+          mensaje.className = "mensaje ok";
+        } else {
+          mensaje.innerText = "❌ Usuario no encontrado.";
+          mensaje.className = "mensaje error";
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        mensaje.innerText = "❌ Error al intentar enviar el correo.";
+        mensaje.className = "mensaje error";
+      });
     }
   </script>
 
