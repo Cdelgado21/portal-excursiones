@@ -74,45 +74,11 @@
     }
 
     .forgot {
+      display: block;
       margin-top: 10px;
       font-size: 13px;
       color: #02535a;
-      cursor: pointer;
       text-decoration: underline;
-    }
-
-    .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
-      background-color: rgba(0,0,0,0.6);
-      display: none;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      text-align: center;
-      width: 90%;
-      max-width: 400px;
-    }
-
-    .modal-content input {
-      width: calc(100% - 20px);
-    }
-
-    .modal-content .mensaje {
-      margin-top: 10px;
-      font-size: 14px;
-      color: red;
-    }
-
-    .modal-content button {
-      width: 45%;
-      margin: 10px 5px 0;
     }
   </style>
 </head>
@@ -128,8 +94,8 @@
     </div>
     <button onclick="iniciarSesion()">Ingresar</button>
     <a class="forgot" href="https://forms.gle/7iESjc1ouV3iJ6AR6" target="_blank">
-  ¿Olvidaste tu contraseña?
-</a>
+      ¿Olvidaste tu contraseña?
+    </a>
   </div>
 
   <script>
@@ -155,7 +121,6 @@
           if (data.success) {
             alert(`✅ ¡Bienvenido ${data.nombre}!`);
 
-            // Redirección según rol
             if (data.rol === "admin") {
               location.href = "menu.html";
             } else if (data.rol === "cotizador") {
@@ -172,27 +137,7 @@
           alert("❌ Error al intentar iniciar sesión.");
         });
     }
-
-      if (!usuario) {
-        mensaje.textContent = "⚠️ Ingresa tu usuario.";
-        return;
-      }
-
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accion: "recuperarClave", usuario })
-      })
-        .then(res => res.text())
-        .then(msg => {
-          mensaje.style.color = msg.includes("✔️") ? "green" : "red";
-          mensaje.textContent = msg;
-        })
-        .catch(err => {
-          mensaje.textContent = "Error al enviar el correo.";
-          console.error("Error:", err);
-        });
-    }
   </script>
 </body>
 </html>
+
