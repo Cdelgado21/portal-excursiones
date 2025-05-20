@@ -105,98 +105,107 @@
     <a class="boton" href="menu.html">← Volver al Menú</a>
   </div>
 
-  <script>
-    const usuario = prompt("¿Cuál es tu nombre? (Yare, Yuliana, Cristopher, Tatiana, Geansury o Marcela)").trim();
-    document.getElementById("saludo").innerText = "¡Bienvenid@, " + usuario + "!";
+ <script>
+  const usuario = prompt("¿Cuál es tu nombre? (Yare, Yuliana, Cristopher, Tatiana, Geansury o Marcela)").trim();
+  document.getElementById("saludo").innerText = "¡Bienvenida, " + usuario + "!";
 
-    function cargarCotizaciones() {
-      fetch("https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cotizaciones")
-        .then(res => res.json())
-        .then(data => {
-          const filtradas = data.filter(row =>
-            row.ESTADO === "Pendiente" || row.ESTADO === "En Proceso"
-          );
+  function mostrarAlerta(mensaje) {
+    const alerta = document.createElement("div");
+    alerta.innerText = mensaje;
+    alerta.style.backgroundColor = "#4caf50";
+    alerta.style.color = "white";
+    alerta.style.padding = "12px";
+    alerta.style.borderRadius = "6px";
+    alerta.style.marginTop = "15px";
+    alerta.style.fontWeight = "bold";
+    alerta.style.boxShadow = "0 0 10px rgba(0,0,0,0.1)";
+    alerta.style.textAlign = "center";
+    document.getElementById("tabla-cotizaciones").prepend(alerta);
+    setTimeout(() => alerta.remove(), 3000);
+  }
 
-          if (!filtradas.length) {
-            document.getElementById("tabla-cotizaciones").innerHTML = "No hay cotizaciones pendientes.";
-            return;
-          }
+  fetch("https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?accion=cotizaciones")
+    .then(res => res.json())
+    .then(data => {
+      const filtradas = data.filter(row =>
+        row.ESTADO === "Pendiente" || row.ESTADO === "En Proceso"
+      );
 
-          let html = `
-          <table>
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Teléfono</th>
-                <th>Destino</th>
-                <th>Adultos</th>
-                <th>Niños</th>
-                <th>Fechas</th>
-                <th>Estado</th>
-                <th>Encargado</th>
-                <th>Observaciones</th>
-                <th>Acción</th>
-              </tr>
-            </thead>
-            <tbody>
-          `;
+      if (!filtradas.length) {
+        document.getElementById("tabla-cotizaciones").innerHTML = "No hay cotizaciones pendientes.";
+        return;
+      }
 
-          filtradas.forEach(row => {
-            const estadoClass = row.ESTADO === "Pendiente" ? "estado-pendiente"
-                              : row.ESTADO === "En Proceso" ? "estado-proceso"
-                              : "estado-enviada";
+      let html = `
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Teléfono</th>
+            <th>Destino</th>
+            <th>Adultos</th>
+            <th>Niños</th>
+            <th>Fechas</th>
+            <th>Estado</th>
+            <th>Encargado</th>
+            <th>Observaciones</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+      `;
 
-            let acciones = "";
-            if (row.ESTADO === "Pendiente") {
-              acciones = `<button class="btn-accion btn-tomar" onclick="marcarProceso('${row.NUMERO_COTIZACION}')">Tomar</button>`;
-            } else if (row.ESTADO === "En Proceso" && row.ENCARGADO === usuario) {
-              acciones = `<button class="btn-accion btn-enviada" onclick="marcarEnviada('${row.NUMERO_COTIZACION}')">Marcar Enviada</button>`;
-            } else {
-              acciones = "-";
-            }
+      filtradas.forEach(row => {
+        const estadoClass = row.ESTADO === "Pendiente" ? "estado-pendiente"
+                          : row.ESTADO === "En Proceso" ? "estado-proceso"
+                          : "estado-enviada";
 
-            html += `
-              <tr>
-                <td>${row.NUMERO_COTIZACION}</td>
-                <td>${row.NUMERO_DE_TELÉFONO_CLIENTE || "-"}</td>
-                <td>${row.DESTINO}</td>
-                <td>${row.CANTIDAD_DE_PERSONAS_ADULTAS || 0}</td>
-                <td>${row.CANTIDAD_DE_NIÑOS || 0}</td>
-                <td>${row.RANGO_DE_FECHAS_DE_VIAJE}</td>
-                <td><div class="${estadoClass}">${row.ESTADO}</div></td>
-                <td>${row.ENCARGADO || "-"}</td>
-                <td>${row.OBSERVACIONES || "-"}</td>
-                <td>${acciones}</td>
-              </tr>
-            `;
-          });
+        let acciones = "-";
+        if (row.ESTADO === "Pendiente") {
+          acciones = `<button class="btn-accion btn-tomar" onclick="marcarProceso('${row.NUMERO_COTIZACION}')">Tomar</button>`;
+        } else if (row.ESTADO === "En Proceso" && row.ENCARGADO === usuario) {
+          acciones = `<button class="btn-accion btn-enviada" onclick="marcarEnviada('${row.NUMERO_COTIZACION}')">Marcar Enviada</button>`;
+        }
 
-          html += `</tbody></table>`;
-          document.getElementById("tabla-cotizaciones").innerHTML = html;
-        });
-    }
+        html += `
+          <tr>
+            <td>${row.NUMERO_COTIZACION}</td>
+            <td>${row.NUMERO_DE_TELÉFONO_CLIENTE || '-'}</td>
+            <td>${row.DESTINO}</td>
+            <td>${row.CANTIDAD_DE_PERSONAS_ADULTAS || 0}</td>
+            <td>${row.CANTIDAD_DE_NIÑOS || 0}</td>
+            <td>${row.RANGO_DE_FECHAS_DE_VIAJE}</td>
+            <td><div class="${estadoClass}">${row.ESTADO}</div></td>
+            <td>${row.ENCARGADO || "-"}</td>
+            <td>${row.OBSERVACIONES || "-"}</td>
+            <td>${acciones}</td>
+          </tr>
+        `;
+      });
 
-    cargarCotizaciones();
+      html += `</tbody></table>`;
+      document.getElementById("tabla-cotizaciones").innerHTML = html;
+    });
 
-    function marcarProceso(codigo) {
-      const url = `https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
-      fetch(url)
-        .then(r => r.text())
-        .then(msg => {
-          alert(`✅ Te acabas de asignar la cotización N°${codigo}.\n\n` + msg);
-          cargarCotizaciones();
-        });
-    }
+  function marcarProceso(codigo) {
+    const url = `https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
+    fetch(url)
+      .then(r => r.text())
+      .then(msg => {
+        mostrarAlerta(`✅ Te asignaste la cotización ${codigo}`);
+        setTimeout(() => location.reload(), 2500);
+      });
+  }
 
-    function marcarEnviada(codigo) {
-      const url = `https://script.google.com/macros/s/AKfycbwGf6XKWBEbR-7zU3HFU8Fuf11DWhctv3OdznAf8aHfKN-lQ8KiU0PekJHH4V_tDHup/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
-      fetch(url)
-        .then(r => r.text())
-        .then(msg => {
-          alert(msg);
-          cargarCotizaciones();
-        });
-    }
-  </script>
+  function marcarEnviada(codigo) {
+    const url = `https://script.google.com/macros/s/AKfycbyG8u1Za9MjwIYTFc57HfGDKDFsokVtoxtSAefPSFfzjHNMAc6VD7s8AgsPmUTr50-5/exec?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=Enviada&encargado=${encodeURIComponent(usuario)}`;
+    fetch(url)
+      .then(r => r.text())
+      .then(msg => {
+        alert("✅ Cotización marcada como enviada");
+        location.reload();
+      });
+  }
+</script>
 </body>
 </html>
