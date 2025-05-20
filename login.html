@@ -229,14 +229,11 @@
         return;
       }
 
-      const formData = new FormData();
-      formData.append("accion", "recuperarClave");
-      formData.append("usuario", usuario);
-
       fetch(URL_WEBAPP, {
-        method: "POST",
-        body: formData
-      })
+  method: "POST",
+  contentType: "application/json",
+  body: JSON.stringify({ accion: "recuperarClave", usuario: usuario })
+})
       .then(r => r.text())
       .then(msg => {
         if (msg.includes("✔️")) {
