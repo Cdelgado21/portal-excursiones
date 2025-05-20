@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login - Excursiones Delgado</title>
+  <title>Iniciar Sesión</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -16,109 +16,66 @@
     .login-container {
       background: white;
       padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.15);
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
       width: 100%;
       max-width: 400px;
-      box-sizing: border-box;
       text-align: center;
     }
-    .login-container img.logo {
-      max-width: 140px;
+    .login-container img {
+      width: 120px;
       margin-bottom: 10px;
     }
     h2 {
+      margin-bottom: 5px;
       color: #02535a;
-      margin: 10px 0 5px 0;
     }
-    .subtitulo {
-      color: #5f9296;
+    p.subtitulo {
+      margin-top: 0;
+      color: #666;
       font-size: 14px;
-      margin-bottom: 20px;
     }
     input {
-      width: 100%;
+      width: calc(100% - 20px);
       padding: 12px;
-      margin-bottom: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
       border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
-      box-sizing: border-box;
+      font-size: 15px;
     }
-    .input-group {
+    .password-wrapper {
       position: relative;
     }
-    .input-group input {
-      padding-right: 40px;
-    }
-    .input-group img.toggle-password {
+    .password-wrapper img {
       position: absolute;
       top: 50%;
-      right: 12px;
+      right: 15px;
       transform: translateY(-50%);
-      width: 24px;
-      height: 24px;
+      width: 20px;
       cursor: pointer;
     }
-    button {
-      width: 100%;
-      padding: 12px;
+    .btn {
       background-color: #02535a;
       color: white;
+      padding: 12px;
+      width: 100%;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       font-size: 16px;
       cursor: pointer;
+      margin-top: 10px;
     }
-    button:hover {
-      background-color: #014b52;
-    }
-    .error {
-      color: red;
-      margin-bottom: 15px;
-      display: none;
-    }
-    .forgot-link {
+    .recuperar {
+      margin-top: 10px;
       font-size: 13px;
-      display: block;
-      margin-top: 10px;
       color: #02535a;
-      text-decoration: none;
       cursor: pointer;
-    }
-    .forgot-link:hover {
       text-decoration: underline;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
-    .modal-content {
-      background: white;
-      padding: 25px;
-      border-radius: 8px;
-      max-width: 350px;
-      text-align: center;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-    }
-    .modal-content input {
-      margin-bottom: 10px;
-    }
-    .modal button {
-      width: auto;
-      margin-top: 10px;
     }
     .mensaje {
       font-size: 14px;
-      margin-top: 8px;
-      font-weight: bold;
+      margin-top: 10px;
+      display: block;
     }
     .mensaje.ok {
       color: green;
@@ -126,134 +83,155 @@
     .mensaje.error {
       color: red;
     }
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .modal-content button {
+      background-color: #02535a;
+      color: white;
+      padding: 8px 15px;
+      border: none;
+      border-radius: 5px;
+      margin: 10px 5px 0;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
-
   <div class="login-container">
-    <img src="LOGO SIED.JPG" alt="Excursiones Delgado" class="logo">
+    <img src="LOGO SIED.JPG" alt="Logo Excursiones Delgado">
     <h2>Iniciar Sesión</h2>
-    <div class="subtitulo">Sistema Integral de Excursiones Delgado</div>
-
-    <div id="error" class="error">Credenciales incorrectas</div>
-
-    <input type="text" id="usuario" placeholder="Usuario" required />
-    <div class="input-group">
-      <input type="password" id="clave" placeholder="Contraseña" required />
-      <img id="icono-ojo" class="toggle-password" src="ojo.png" alt="Mostrar" onclick="togglePassword()" />
+    <p class="subtitulo">Sistema Integral de Excursiones Delgado</p>
+    <input type="text" id="usuario" placeholder="Usuario" />
+    <div class="password-wrapper">
+      <input type="password" id="clave" placeholder="Contraseña" />
+      <img src="https://cdn-icons-png.flaticon.com/512/709/709612.png" id="icono-ojo" onclick="togglePassword()" alt="Mostrar" />
     </div>
-
-    <button onclick="iniciarSesion()">Ingresar</button>
-    <span class="forgot-link" onclick="abrirModal()">¿Olvidaste tu contraseña?</span>
+    <div id="error" class="mensaje error" style="display:none;"></div>
+    <button class="btn" onclick="iniciarSesion()">Ingresar</button>
+    <p class="recuperar" onclick="abrirModal()">¿Olvidaste tu contraseña?</p>
   </div>
 
+  <!-- Modal recuperación -->
   <div class="modal" id="modalRecuperacion">
     <div class="modal-content">
       <h3>Recuperar contraseña</h3>
-      <input type="text" id="usuarioRecuperacion" placeholder="Nombre de usuario" />
+      <input type="text" id="usuarioRecuperacion" placeholder="Tu nombre de usuario" />
+      <div id="mensajeRecuperacion" class="mensaje"></div>
       <button onclick="enviarRecuperacion()">Enviar</button>
       <button onclick="cerrarModal()">Cerrar</button>
-      <div id="mensajeRecuperacion" class="mensaje"></div>
     </div>
   </div>
 
-<script>
-  const URL_WEBAPP = "https://script.google.com/macros/s/AKfycbyKRcTbeSUdTcvo7JRHWr_fK-X9HEICoJAToZlD9wFUIVqgs5GdiUtEx9kE9uv97MeQ/exec";
+  <script>
+    const URL_WEBAPP = "https://script.google.com/macros/s/AKfycbyKRcTbeSUdTcvo7JRHWr_fK-X9HEICoJAToZlD9wFUIVqgs5GdiUtEx9kE9uv97MeQ/exec";
 
-  function togglePassword() {
-    const pass = document.getElementById("clave");
-    const icon = document.getElementById("icono-ojo");
-    const visibleIcon = "ojo-cerrado.png";
-    const hiddenIcon = "ojo.png";
+    function togglePassword() {
+      const pass = document.getElementById("clave");
+      const icon = document.getElementById("icono-ojo");
+      const visibleIcon = "https://cdn-icons-png.flaticon.com/512/159/159604.png";
+      const hiddenIcon = "https://cdn-icons-png.flaticon.com/512/709/709612.png";
 
-    if (pass.type === "password") {
-      pass.type = "text";
-      icon.src = visibleIcon;
-      icon.alt = "Ocultar";
-    } else {
-      pass.type = "password";
-      icon.src = hiddenIcon;
-      icon.alt = "Mostrar";
-    }
-  }
-
-  function iniciarSesion() {
-    const usuario = document.getElementById("usuario").value.trim();
-    const clave = document.getElementById("clave").value.trim();
-    const errorDiv = document.getElementById("error");
-
-    if (!usuario || !clave) {
-      errorDiv.innerText = "Por favor completa ambos campos";
-      errorDiv.style.display = "block";
-      return;
+      if (pass.type === "password") {
+        pass.type = "text";
+        icon.src = visibleIcon;
+        icon.alt = "Ocultar";
+      } else {
+        pass.type = "password";
+        icon.src = hiddenIcon;
+        icon.alt = "Mostrar";
+      }
     }
 
-    fetch(`${URL_WEBAPP}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          sessionStorage.setItem("usuario", data.usuario);
-          sessionStorage.setItem("nombre", data.nombre);
-          sessionStorage.setItem("rol", data.rol);
-          sessionStorage.setItem("accesos", JSON.stringify(data.accesos));
-          window.location.href = "menu.html";
-        } else {
-          errorDiv.innerText = data.mensaje || "Credenciales incorrectas";
+    function iniciarSesion() {
+      const usuario = document.getElementById("usuario").value.trim();
+      const clave = document.getElementById("clave").value.trim();
+      const errorDiv = document.getElementById("error");
+
+      if (!usuario || !clave) {
+        errorDiv.innerText = "Por favor completa ambos campos";
+        errorDiv.style.display = "block";
+        return;
+      }
+
+      fetch(`${URL_WEBAPP}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            sessionStorage.setItem("usuario", data.usuario);
+            sessionStorage.setItem("nombre", data.nombre);
+            sessionStorage.setItem("rol", data.rol);
+            sessionStorage.setItem("accesos", JSON.stringify(data.accesos));
+            window.location.href = "menu.html";
+          } else {
+            errorDiv.innerText = data.mensaje || "Credenciales incorrectas";
+            errorDiv.style.display = "block";
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          errorDiv.innerText = "Error de conexión con el servidor";
           errorDiv.style.display = "block";
+        });
+    }
+
+    function abrirModal() {
+      document.getElementById("modalRecuperacion").style.display = "flex";
+      document.getElementById("usuarioRecuperacion").value = "";
+      document.getElementById("mensajeRecuperacion").innerText = "";
+    }
+
+    function cerrarModal() {
+      document.getElementById("modalRecuperacion").style.display = "none";
+    }
+
+    function enviarRecuperacion() {
+      const usuario = document.getElementById("usuarioRecuperacion").value.trim();
+      const mensaje = document.getElementById("mensajeRecuperacion");
+
+      if (!usuario) {
+        mensaje.innerText = "Por favor indica tu nombre de usuario";
+        mensaje.className = "mensaje error";
+        return;
+      }
+
+      const datos = new URLSearchParams();
+      datos.append("accion", "recuperarClave");
+      datos.append("usuario", usuario);
+
+      fetch(URL_WEBAPP, {
+        method: "POST",
+        body: datos
+      })
+      .then(r => r.text())
+      .then(msg => {
+        if (msg.includes("✔️")) {
+          mensaje.innerText = "📩 Clave enviada al correo registrado.";
+          mensaje.className = "mensaje ok";
+        } else {
+          mensaje.innerText = "❌ Usuario no encontrado.";
+          mensaje.className = "mensaje error";
         }
       })
-      .catch(error => {
-        console.error(error);
-        errorDiv.innerText = "Error de conexión con el servidor";
-        errorDiv.style.display = "block";
-      });
-  }
-
-  function abrirModal() {
-    document.getElementById("modalRecuperacion").style.display = "flex";
-    document.getElementById("usuarioRecuperacion").value = "";
-    document.getElementById("mensajeRecuperacion").innerText = "";
-  }
-
-  function cerrarModal() {
-    document.getElementById("modalRecuperacion").style.display = "none";
-  }
-
-  function enviarRecuperacion() {
-    const usuario = document.getElementById("usuarioRecuperacion").value.trim();
-    const mensaje = document.getElementById("mensajeRecuperacion");
-
-    if (!usuario) {
-      mensaje.innerText = "Por favor indica tu nombre de usuario";
-      mensaje.className = "mensaje error";
-      return;
-    }
-
-    const datos = new URLSearchParams();
-    datos.append("accion", "recuperarClave");
-    datos.append("usuario", usuario);
-
-    fetch(URL_WEBAPP, {
-      method: "POST",
-      body: datos
-    })
-    .then(r => r.text())
-    .then(msg => {
-      if (msg.includes("✔️")) {
-        mensaje.innerText = "📩 Clave enviada al correo registrado.";
-        mensaje.className = "mensaje ok";
-      } else {
-        mensaje.innerText = "❌ Usuario no encontrado.";
+      .catch(err => {
+        console.error(err);
+        mensaje.innerText = "❌ Error al intentar enviar el correo.";
         mensaje.className = "mensaje error";
-      }
-    })
-    .catch(err => {
-      console.error(err);
-      mensaje.innerText = "❌ Error al intentar enviar el correo.";
-      mensaje.className = "mensaje error";
-    });
-  }
-</script>
-
+      });
+    }
+  </script>
 </body>
 </html>
