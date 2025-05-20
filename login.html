@@ -229,11 +229,31 @@
         return;
       }
 
-      fetch(URL_WEBAPP, {
+      const datos = new URLSearchParams();
+datos.append("accion", "recuperarClave");
+datos.append("usuario", usuario);
+
+fetch(URL_WEBAPP, {
   method: "POST",
-  contentType: "application/json",
-  body: JSON.stringify({ accion: "recuperarClave", usuario: usuario })
+  body: datos
 })
+.then(r => r.text())
+.then(msg => {
+  const mensaje = document.getElementById("mensajeRecuperacion");
+  if (msg.includes("✔️")) {
+    mensaje.innerText = "📩 Clave enviada al correo registrado.";
+    mensaje.className = "mensaje ok";
+  } else {
+    mensaje.innerText = "❌ Usuario no encontrado.";
+    mensaje.className = "mensaje error";
+  }
+})
+.catch(err => {
+  console.error(err);
+  const mensaje = document.getElementById("mensajeRecuperacion");
+  mensaje.innerText = "❌ Error al intentar enviar el correo.";
+  mensaje.className = "mensaje error";
+});
       .then(r => r.text())
       .then(msg => {
         if (msg.includes("✔️")) {
