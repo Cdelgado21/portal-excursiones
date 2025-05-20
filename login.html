@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Iniciar Sesión</title>
+  <title>Login - Excursiones Delgado</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -14,163 +14,202 @@
       place-items: center;
     }
     .login-container {
-      background: white;
+      background-color: white;
       padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
       text-align: center;
-    }
-    .login-container img {
-      width: 120px;
-      margin-bottom: 10px;
-    }
-    h2 {
-      margin-bottom: 5px;
-      color: #02535a;
-    }
-    p.subtitulo {
-      margin-top: 0;
-      color: #666;
-      font-size: 14px;
-    }
-    input {
-      width: calc(100% - 20px);
-      padding: 12px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-    }
-    .password-wrapper {
+      width: 350px;
       position: relative;
     }
-    .password-wrapper img {
+    .login-container img {
+      width: 110px;
+      margin-bottom: 10px;
+    }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .password-container {
+      position: relative;
+    }
+    .password-container img {
       position: absolute;
       top: 50%;
-      right: 15px;
+      right: 12px;
       transform: translateY(-50%);
-      width: 20px;
       cursor: pointer;
+      width: 20px;
     }
-    .btn {
+    button {
       background-color: #02535a;
       color: white;
       padding: 12px;
-      width: 100%;
       border: none;
-      border-radius: 5px;
-      font-size: 16px;
+      border-radius: 6px;
       cursor: pointer;
+      font-size: 14px;
+      width: 100%;
       margin-top: 10px;
     }
-    .recuperar {
-      margin-top: 10px;
+    .forgot-link {
+      margin-top: 15px;
       font-size: 13px;
       color: #02535a;
       cursor: pointer;
       text-decoration: underline;
     }
-    .mensaje {
-      font-size: 14px;
-      margin-top: 10px;
-      display: block;
-    }
-    .mensaje.ok {
-      color: green;
-    }
-    .mensaje.error {
-      color: red;
-    }
+
     .modal {
       display: none;
       position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
       justify-content: center;
       align-items: center;
     }
+
     .modal-content {
       background: white;
-      padding: 30px;
-      border-radius: 10px;
-      width: 100%;
-      max-width: 400px;
+      padding: 20px;
+      border-radius: 8px;
       text-align: center;
+      width: 300px;
     }
-    .modal-content button {
-      background-color: #02535a;
-      color: white;
-      padding: 8px 15px;
-      border: none;
-      border-radius: 5px;
-      margin: 10px 5px 0;
-      cursor: pointer;
+
+    .modal input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+    }
+
+    .modal .buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+
+    .modal .buttons button {
+      width: 48%;
+    }
+
+    .mensaje-recuperacion {
+      margin-top: 10px;
+      font-size: 13px;
     }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <img src="LOGO SIED.JPG" alt="Logo Excursiones Delgado">
-    <h2>Iniciar Sesión</h2>
-    <p class="subtitulo">Sistema Integral de Excursiones Delgado</p>
-    <input type="text" id="usuario" placeholder="Usuario" />
-    <div class="password-wrapper">
-      <input type="password" id="clave" placeholder="Contraseña" />
-      <img src="https://cdn-icons-png.flaticon.com/512/709/709612.png" id="icono-ojo" onclick="togglePassword()" alt="Mostrar" />
-    </div>
-    <div id="error" class="mensaje error" style="display:none;"></div>
-    <button class="btn" onclick="iniciarSesion()">Ingresar</button>
-    <p class="recuperar" onclick="abrirModal()">¿Olvidaste tu contraseña?</p>
+
+<div class="login-container">
+  <img src="LOGO SIED.JPG" alt="Logo Excursiones Delgado" />
+  <h2>Iniciar Sesión</h2>
+  <p>Sistema Integral de Excursiones Delgado</p>
+
+  <input type="text" id="usuario" placeholder="Usuario" />
+
+  <div class="password-container">
+    <input type="password" id="clave" placeholder="Contraseña" />
+    <img src="https://cdn-icons-png.flaticon.com/512/709/709612.png" onclick="togglePassword()" id="toggle-icon" alt="Ver contraseña">
   </div>
 
-  <!-- Modal recuperación -->
-  <div class="modal" id="modalRecuperacion">
-    <div class="modal-content">
-      <h3>Recuperar contraseña</h3>
-      <input type="text" id="usuarioRecuperacion" placeholder="Tu nombre de usuario" />
-      <div id="mensajeRecuperacion" class="mensaje"></div>
+  <button onclick="iniciarSesion()">Ingresar</button>
+  <p class="forgot-link" onclick="abrirModal()">¿Olvidaste tu contraseña?</p>
+</div>
+
+<!-- Modal de recuperación -->
+<div class="modal" id="modalRecuperacion">
+  <div class="modal-content">
+    <h3>Recuperar contraseña</h3>
+    <input type="text" id="usuarioRecuperar" placeholder="Ingrese su usuario">
+    <div class="buttons">
       <button onclick="enviarRecuperacion()">Enviar</button>
       <button onclick="cerrarModal()">Cerrar</button>
     </div>
+    <div class="mensaje-recuperacion" id="mensajeRecuperacion"></div>
   </div>
+</div>
 
 <script>
-  function enviarRecuperacion() {
-    const input = document.getElementById("usuarioRecuperacion");
-    const usuarioIngresado = input.value.trim().toLowerCase();
+  const URL_WEBAPP = "https://script.google.com/macros/s/AKfycbw8Me5CyT3RP7U_mRPoaxPYFF-Ail84JHGJ37a3mtC5axLhjhWMyo6MhBG0FKptrg3t/exec";
 
-    if (!usuarioIngresado) {
-      mostrarError("Por favor escribe tu usuario.");
-      return;
+  function iniciarSesion() {
+    const usuario = document.getElementById("usuario").value.trim().toLowerCase();
+    const clave = document.getElementById("clave").value.trim();
+
+    fetch(`${URL_WEBAPP}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          localStorage.setItem("usuario", data.usuario);
+          localStorage.setItem("rol", data.rol);
+          localStorage.setItem("nombre", data.nombre);
+          localStorage.setItem("accesos", JSON.stringify(data.accesos));
+          window.location.href = "menu.html";
+        } else {
+          alert(data.mensaje);
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Error al intentar iniciar sesión.");
+      });
+  }
+
+  function togglePassword() {
+    const input = document.getElementById("clave");
+    const icon = document.getElementById("toggle-icon");
+    if (input.type === "password") {
+      input.type = "text";
+      icon.src = "https://cdn-icons-png.flaticon.com/512/565/565655.png";
+    } else {
+      input.type = "password";
+      icon.src = "https://cdn-icons-png.flaticon.com/512/709/709612.png";
     }
+  }
 
-    fetch("https://script.google.com/macros/s/AKfycbw8Me5CyT3RP7U_mRPoaxPYFF-Ail84JHGJ37a3mtC5axLhjhWMyo6MhBG0FKptrg3t/exec", {
+  function abrirModal() {
+    document.getElementById("modalRecuperacion").style.display = "flex";
+    document.getElementById("mensajeRecuperacion").innerHTML = "";
+    document.getElementById("usuarioRecuperar").value = "";
+  }
+
+  function cerrarModal() {
+    document.getElementById("modalRecuperacion").style.display = "none";
+  }
+
+  function enviarRecuperacion() {
+    const usuarioIngresado = document.getElementById("usuarioRecuperar").value.trim().toLowerCase();
+    const data = {
+      accion: "recuperarClave",
+      usuario: usuarioIngresado
+    };
+
+    fetch(URL_WEBAPP, {
       method: "POST",
+      body: JSON.stringify(data),
       headers: {
         "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        accion: "recuperarClave",
-        usuario: usuarioIngresado
-      })
-    })
-    .then(res => res.text())
-    .then(respuesta => {
-      if (respuesta.includes("✔️ Clave enviada")) {
-        mostrarExito("✅ Revisa tu correo electrónico.");
-        setTimeout(() => cerrarModal(), 3000);
-      } else {
-        mostrarError("❌ " + respuesta);
       }
     })
-    .catch(err => {
-      console.error(err);
-      mostrarError("❌ Error al intentar enviar el correo.");
+    .then(response => response.text())
+    .then(texto => {
+      const mensajeDiv = document.getElementById("mensajeRecuperacion");
+      mensajeDiv.innerHTML = texto.includes("✔️")
+        ? `<span style="color:green">${texto}</span>`
+        : `<span style="color:red">${texto}</span>`;
+    })
+    .catch(error => {
+      console.error(error);
+      document.getElementById("mensajeRecuperacion").innerHTML = `<span style="color:red">❌ Error al intentar enviar el correo.</span>`;
     });
   }
 </script>
 
- </body>
+</body>
 </html>
