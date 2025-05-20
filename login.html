@@ -2,62 +2,82 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login - Excursiones Delgado</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Iniciar Sesión - Excursiones Delgado</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #eaf4f4;
-      margin: 0;
       height: 100vh;
+      margin: 0;
       display: grid;
       place-items: center;
     }
+
     .login-container {
       background-color: white;
       padding: 30px;
       border-radius: 12px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
       text-align: center;
-      width: 350px;
-      position: relative;
+      width: 100%;
+      max-width: 400px;
     }
+
     .login-container img {
-      width: 110px;
+      width: 80px;
       margin-bottom: 10px;
     }
-    input[type="text"], input[type="password"] {
+
+    .login-container h2 {
+      margin-bottom: 5px;
+      color: #02535a;
+    }
+
+    .login-container p {
+      margin-top: 0;
+      color: #555;
+      font-size: 14px;
+    }
+
+    input {
       width: 100%;
-      padding: 12px;
-      margin: 10px 0;
+      padding: 10px;
+      margin: 8px 0;
+      box-sizing: border-box;
       border: 1px solid #ccc;
       border-radius: 6px;
       font-size: 14px;
     }
-    .password-container {
+
+    .password-wrapper {
       position: relative;
     }
-    .password-container img {
+
+    .password-wrapper img {
       position: absolute;
       top: 50%;
       right: 12px;
+      width: 20px;
+      height: 20px;
       transform: translateY(-50%);
       cursor: pointer;
-      width: 20px;
     }
+
     button {
       background-color: #02535a;
       color: white;
-      padding: 12px;
+      padding: 10px;
+      width: 100%;
       border: none;
       border-radius: 6px;
+      font-size: 15px;
       cursor: pointer;
-      font-size: 14px;
-      width: 100%;
       margin-top: 10px;
     }
-    .forgot-link {
-      margin-top: 15px;
+
+    .link {
+      margin-top: 10px;
       font-size: 13px;
       color: #02535a;
       cursor: pointer;
@@ -68,146 +88,150 @@
       display: none;
       position: fixed;
       top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
       justify-content: center;
       align-items: center;
     }
 
     .modal-content {
       background: white;
-      padding: 20px;
-      border-radius: 8px;
+      padding: 25px;
+      border-radius: 10px;
       text-align: center;
-      width: 300px;
+      max-width: 350px;
+      width: 90%;
     }
 
-    .modal input {
-      width: 100%;
-      padding: 10px;
+    .modal-content input {
       margin: 10px 0;
     }
 
-    .modal .buttons {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 10px;
+    .modal-content button {
+      margin: 5px 5px 0;
+      width: auto;
+      padding: 8px 16px;
     }
 
-    .modal .buttons button {
-      width: 48%;
-    }
-
-    .mensaje-recuperacion {
-      margin-top: 10px;
+    .error {
+      color: red;
       font-size: 13px;
+      margin-top: 5px;
+    }
+
+    .success {
+      color: green;
+      font-size: 13px;
+      margin-top: 5px;
     }
   </style>
 </head>
 <body>
 
-<div class="login-container">
-  <img src="LOGO SIED.JPG" alt="Logo Excursiones Delgado" />
-  <h2>Iniciar Sesión</h2>
-  <p>Sistema Integral de Excursiones Delgado</p>
+  <div class="login-container">
+    <img src="LOGO SIED.JPG" alt="Logo Excursiones Delgado">
+    <h2>Iniciar Sesión</h2>
+    <p>Sistema Integral de Excursiones Delgado</p>
 
-  <input type="text" id="usuario" placeholder="Usuario" />
+    <input type="text" id="usuario" placeholder="Usuario" />
+    
+    <div class="password-wrapper">
+      <input type="password" id="clave" placeholder="Contraseña" />
+      <img id="togglePassword" src="https://cdn-icons-png.flaticon.com/512/709/709612.png" alt="Ver" />
+    </div>
 
-  <div class="password-container">
-    <input type="password" id="clave" placeholder="Contraseña" />
-    <img src="https://cdn-icons-png.flaticon.com/512/709/709612.png" onclick="togglePassword()" id="toggle-icon" alt="Ver contraseña">
+    <button onclick="iniciarSesion()">Ingresar</button>
+
+    <div class="link" onclick="abrirModal()">¿Olvidaste tu contraseña?</div>
+
+    <div id="errorMensaje" class="error"></div>
   </div>
 
-  <button onclick="iniciarSesion()">Ingresar</button>
-  <p class="forgot-link" onclick="abrirModal()">¿Olvidaste tu contraseña?</p>
-</div>
-
-<!-- Modal de recuperación -->
-<div class="modal" id="modalRecuperacion">
-  <div class="modal-content">
-    <h3>Recuperar contraseña</h3>
-    <input type="text" id="usuarioRecuperar" placeholder="Ingrese su usuario">
-    <div class="buttons">
+  <!-- Modal Recuperación -->
+  <div class="modal" id="modalRecuperacion">
+    <div class="modal-content">
+      <h3>Recuperar contraseña</h3>
+      <input type="text" id="usuarioRecuperar" placeholder="Usuario" />
+      <div id="mensajeRecuperacion" class="error"></div>
       <button onclick="enviarRecuperacion()">Enviar</button>
       <button onclick="cerrarModal()">Cerrar</button>
     </div>
-    <div class="mensaje-recuperacion" id="mensajeRecuperacion"></div>
   </div>
-</div>
 
-<script>
-   function iniciarSesion() {
-    const usuario = document.getElementById("usuario").value.trim().toLowerCase();
-    const clave = document.getElementById("clave").value.trim();
+  <script>
+    const url = "https://script.google.com/macros/s/AKfycbw8Me5CyT3RP7U_mRPoaxPYFF-Ail84JHGJ37a3mtC5axLhjhWMyo6MhBG0FKptrg3t/exec";
 
-    fetch(`${URL_WEBAPP}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          localStorage.setItem("usuario", data.usuario);
-          localStorage.setItem("rol", data.rol);
-          localStorage.setItem("nombre", data.nombre);
-          localStorage.setItem("accesos", JSON.stringify(data.accesos));
-          window.location.href = "menu.html";
-        } else {
-          alert(data.mensaje);
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        alert("Error al intentar iniciar sesión.");
-      });
-  }
+    function iniciarSesion() {
+      const usuario = document.getElementById("usuario").value.trim();
+      const clave = document.getElementById("clave").value.trim();
 
-  function togglePassword() {
-    const input = document.getElementById("clave");
-    const icon = document.getElementById("toggle-icon");
-    if (input.type === "password") {
-      input.type = "text";
-      icon.src = "https://cdn-icons-png.flaticon.com/512/565/565655.png";
-    } else {
-      input.type = "password";
-      icon.src = "https://cdn-icons-png.flaticon.com/512/709/709612.png";
+      fetch(`${url}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            localStorage.setItem("usuario", data.usuario);
+            localStorage.setItem("nombre", data.nombre);
+            localStorage.setItem("rol", data.rol);
+            localStorage.setItem("accesos", JSON.stringify(data.accesos));
+            window.location.href = "menu.html";
+          } else {
+            document.getElementById("errorMensaje").innerText = data.mensaje;
+          }
+        })
+        .catch(err => {
+          document.getElementById("errorMensaje").innerText = "Error de conexión.";
+        });
     }
-  }
 
-  function abrirModal() {
-    document.getElementById("modalRecuperacion").style.display = "flex";
-    document.getElementById("mensajeRecuperacion").innerHTML = "";
-    document.getElementById("usuarioRecuperar").value = "";
-  }
-
-  function cerrarModal() {
-    document.getElementById("modalRecuperacion").style.display = "none";
-  }
-
-  function enviarRecuperacion() {
-    const usuarioIngresado = document.getElementById("usuarioRecuperar").value.trim().toLowerCase();
-    const data = {
-      accion: "recuperarClave",
-      usuario: usuarioIngresado
-    };
-
-    fetch(URL_WEBAPP, {
-      method: "POST",
-      body: JSON.stringify(data),
-      headers: {
-        "Content-Type": "application/json"
-      }
-    })
-    .then(response => response.text())
-    .then(texto => {
-      const mensajeDiv = document.getElementById("mensajeRecuperacion");
-      mensajeDiv.innerHTML = texto.includes("✔️")
-        ? `<span style="color:green">${texto}</span>`
-        : `<span style="color:red">${texto}</span>`;
-    })
-    .catch(error => {
-      console.error(error);
-      document.getElementById("mensajeRecuperacion").innerHTML = `<span style="color:red">❌ Error al intentar enviar el correo.</span>`;
+    document.getElementById("togglePassword").addEventListener("click", () => {
+      const input = document.getElementById("clave");
+      input.type = input.type === "password" ? "text" : "password";
     });
-  }
-</script>
 
+    function abrirModal() {
+      document.getElementById("modalRecuperacion").style.display = "flex";
+    }
+
+    function cerrarModal() {
+      document.getElementById("modalRecuperacion").style.display = "none";
+      document.getElementById("mensajeRecuperacion").innerText = "";
+      document.getElementById("usuarioRecuperar").value = "";
+    }
+
+    function enviarRecuperacion() {
+      const usuario = document.getElementById("usuarioRecuperar").value.trim();
+      const mensaje = document.getElementById("mensajeRecuperacion");
+
+      if (!usuario) {
+        mensaje.innerText = "Por favor ingresa tu usuario.";
+        return;
+      }
+
+      fetch(url, {
+        method: "POST",
+        body: JSON.stringify({
+          accion: "recuperarClave",
+          usuario: usuario
+        }),
+        headers: {
+          "Content-Type": "application/json"
+        },
+      })
+      .then(res => res.text())
+      .then(txt => {
+        if (txt.includes("✔️")) {
+          mensaje.className = "success";
+        } else {
+          mensaje.className = "error";
+        }
+        mensaje.innerText = txt;
+      })
+      .catch(() => {
+        mensaje.className = "error";
+        mensaje.innerText = "Error al enviar el correo.";
+      });
+    }
+  </script>
 </body>
 </html>
