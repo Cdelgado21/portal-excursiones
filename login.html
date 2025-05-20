@@ -127,18 +127,9 @@
       <img src="https://cdn-icons-png.flaticon.com/512/709/709612.png" onclick="toggleClave()" id="ojo" alt="Ver" />
     </div>
     <button onclick="iniciarSesion()">Ingresar</button>
-    <p class="forgot" onclick="abrirModal()">¿Olvidaste tu contraseña?</p>
-  </div>
-
-  <!-- Modal -->
-  <div class="modal" id="modalRecuperacion">
-    <div class="modal-content">
-      <h3>Recuperar contraseña</h3>
-      <input type="text" id="usuarioRecuperar" placeholder="Ingresa tu usuario" />
-      <p class="mensaje" id="mensajeRecuperar"></p>
-      <button onclick="enviarRecuperacion()">Enviar</button>
-      <button onclick="cerrarModal()">Cerrar</button>
-    </div>
+    <a class="forgot" href="https://forms.gle/7iESjc1ouV3iJ6AR6" target="_blank">
+  ¿Olvidaste tu contraseña?
+</a>
   </div>
 
   <script>
@@ -181,19 +172,6 @@
           alert("❌ Error al intentar iniciar sesión.");
         });
     }
-
-    function abrirModal() {
-      document.getElementById("modalRecuperacion").style.display = "flex";
-      document.getElementById("mensajeRecuperar").textContent = "";
-    }
-
-    function cerrarModal() {
-      document.getElementById("modalRecuperacion").style.display = "none";
-    }
-
-    function enviarRecuperacion() {
-      const usuario = document.getElementById("usuarioRecuperar").value.trim();
-      const mensaje = document.getElementById("mensajeRecuperar");
 
       if (!usuario) {
         mensaje.textContent = "⚠️ Ingresa tu usuario.";
