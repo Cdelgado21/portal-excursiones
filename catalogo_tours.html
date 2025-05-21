@@ -1,107 +1,135 @@
-function doPost(e) {
-  try {
-    const datos = JSON.parse(e.postData.contents);
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Catálogo de Tours</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eaf4f4;
+      margin: 0; padding: 40px;
+    }
+    .container {
+      background: #fff;
+      max-width: 900px;
+      margin: auto;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+    }
+    h2 { text-align: center; color: #02535a; }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    input, textarea {
+      width: 100%; padding: 10px; margin-top: 5px;
+      border: 1px solid #ccc; border-radius: 5px;
+    }
+    button {
+      background: #02535a; color: white;
+      padding: 10px 20px; border: none; border-radius: 6px;
+      font-size: 16px; margin-top: 20px; cursor: pointer;
+    }
+    table {
+      width: 100%; border-collapse: collapse; margin-top: 30px;
+    }
+    th, td {
+      border: 1px solid #ccc; padding: 10px; text-align: left;
+    }
+    th { background-color: #02535a; color: white; }
+    .mensaje { margin-top: 15px; font-weight: bold; text-align: center; }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>➕ Agregar Tour al Catálogo</h2>
+    <form id="form-tours">
+      <label>Nombre del Tour:</label>
+      <input type="text" name="nombre_tour" required>
+      
+      <label>Incluye:</label>
+      <textarea name="incluye" required></textarea>
 
-    // Si es solicitud para agregar nuevo tour
-    if (datos.tipo === "nuevo_tour") {
-      const catalogoSheet = SpreadsheetApp.openById("1k8bkyL7ggbrDfRsDnma4_Lc2TlFJHOzrDslkOr4N3eE").getSheetByName("Catálogo de Tours");
-      catalogoSheet.appendRow([
-        datos.nombre_tour,
-        datos.incluye,
-        datos.itinerario,
-        datos.no_incluye || '',
-        datos.politicas || '',
-        datos.precio_base
-      ]);
-      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+      <label>Itinerario:</label>
+      <textarea name="itinerario" required></textarea>
+
+      <label>No Incluye:</label>
+      <textarea name="no_incluye"></textarea>
+
+      <label>Políticas:</label>
+      <textarea name="politicas"></textarea>
+
+      <label>Precio Base:</label>
+      <input type="number" name="precio_base" required>
+
+      <button type="submit">Guardar Tour</button>
+    </form>
+
+    <div class="mensaje" id="mensaje"></div>
+
+    <h2>📋 Tours Registrados</h2>
+    <div id="tabla-tours">Cargando tours...</div>
+  </div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbyGOULYc5d5Qu9a7wALXqP37C6O2Cz8yz6EHMvkMPwSN5ipWxCIiUv2fatQA8KTdc7kFg/exec";
+
+    document.getElementById("form-tours").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const formData = Object.fromEntries(new FormData(e.target));
+      formData.tipo = "nuevo_tour";
+
+      const mensaje = document.getElementById("mensaje");
+      mensaje.textContent = "Enviando...";
+      mensaje.className = "mensaje";
+
+      fetch(scriptURL, {
+        method: "POST",
+        body: JSON.stringify(formData),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          mensaje.textContent = "✅ Tour agregado correctamente.";
+          mensaje.classList.add("success");
+          e.target.reset();
+          cargarTours();
+        } else {
+          mensaje.textContent = "❌ Error al guardar el tour.";
+          mensaje.classList.add("error");
+        }
+      })
+      .catch(err => {
+        mensaje.textContent = "❌ Error de conexión.";
+        mensaje.classList.add("error");
+      });
+    });
+
+    function cargarTours() {
+      fetch(`${scriptURL}?accion=ver_catalogo`)
+        .then(res => res.json())
+        .then(tours => {
+          let html = `<table><thead>
+            <tr><th>Nombre</th><th>Incluye</th><th>Itinerario</th><th>Precio Base</th></tr>
+          </thead><tbody>`;
+          tours.forEach(row => {
+            html += `<tr>
+              <td>${row.nombre}</td>
+              <td>${row.incluye}</td>
+              <td>${row.itinerario}</td>
+              <td>$${row.precio_base}</td>
+            </tr>`;
+          });
+          html += `</tbody></table>`;
+          document.getElementById("tabla-tours").innerHTML = html;
+        })
+        .catch(() => {
+          document.getElementById("tabla-tours").innerText = "❌ No se pudo cargar el catálogo.";
+        });
     }
 
-    const SHEET_ID = '1Bx-fin4jHqkAA-On6a2Kel3G2EIsTirPLq2NxB02LXY';
-    const PLANTILLA_ID = '1-ylMqKxOVwHxdBFLloqSMphs95x2l8N_JaLOnMvK_rs';
-    const hoja = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Cotizaciones");
-
-    // 1. Guardar datos en Google Sheets
-    const fila = [
-      new Date(),
-      datos.cliente,
-      datos.telefono,
-      datos.correo,
-      datos.tour,
-      datos.fecha_salida,
-      datos.fecha_regreso,
-      datos.adultos,
-      datos.ninos,
-      datos.aerolinea,
-      datos.equipaje,
-      datos.observaciones
-    ];
-    hoja.appendRow(fila);
-
-    // 2. Buscar datos del catálogo de tours
-    const catalogo = SpreadsheetApp.openById("1k8bkyL7ggbrDfRsDnma4_Lc2TlFJHOzrDslkOr4N3eE").getSheetByName("Catálogo de Tours").getDataRange().getValues();
-    let infoTour = {};
-
-    for (let i = 1; i < catalogo.length; i++) {
-      if (catalogo[i][0].toLowerCase().trim() === datos.tour.toLowerCase().trim()) {
-        infoTour = {
-          incluye: catalogo[i][1],
-          itinerario: catalogo[i][2],
-          no_incluye: catalogo[i][3],
-          politicas: catalogo[i][4],
-          precio_base: catalogo[i][5]
-        };
-        break;
-      }
-    }
-
-    // 3. Generar documento a partir de plantilla
-    const copia = DriveApp.getFileById(AKfycbxghvot-BAWzvktlJZGM7qg55ns0Zmm-q-Iv40EE4rXWUoQ3Wsae65o9voePxlkTPlY4g).makeCopy(`Cotizacion_${datos.tour}_${datos.cliente}_${Date.now()}`);
-    const docId = copia.getId();
-    const documento = DocumentApp.openById(docId);
-    const cuerpo = documento.getBody();
-
-    // Reemplazos básicos de texto
-    const reemplazos = {
-      '{{cliente}}': datos.cliente,
-      '{{telefono}}': datos.telefono,
-      '{{correo}}': datos.correo,
-      '{{tour}}': datos.tour,
-      '{{fecha_salida}}': datos.fecha_salida,
-      '{{fecha_regreso}}': datos.fecha_regreso,
-      '{{adultos}}': datos.adultos,
-      '{{ninos}}': datos.ninos,
-      '{{aerolinea}}': datos.aerolinea,
-      '{{equipaje}}': datos.equipaje,
-      '{{observaciones}}': datos.observaciones || 'Sin observaciones.',
-      '{{incluye}}': infoTour.incluye || '---',
-      '{{no_incluye}}': infoTour.no_incluye || '---',
-      '{{itinerario}}': infoTour.itinerario || '---',
-      '{{politicas}}': infoTour.politicas || '---',
-      '{{precio_base}}': infoTour.precio_base || '---'
-    };
-
-    for (let marcador in reemplazos) {
-      cuerpo.replaceText(marcador, reemplazos[marcador]);
-    }
-
-    documento.saveAndClose();
-
-    // 4. Convertir a PDF
-    const pdf = DriveApp.getFileById(docId).getAs(MimeType.PDF);
-    const carpetaDestino = DriveApp.getRootFolder();
-    const archivoPDF = carpetaDestino.createFile(pdf);
-    archivoPDF.setName(`Cotizacion_${datos.tour}_${datos.cliente}.pdf`);
-    const pdfUrl = archivoPDF.getUrl();
-
-    // 5. Enviar correo
-    GmailApp.sendEmail(datos.correo, '📄 Cotización solicitada - Excursiones Delgado',
-      `Hola ${datos.cliente},\n\nAdjunto encontrarás tu cotización solicitada.\n\nGracias por confiar en nosotros.\n\nEquipo Excursiones Delgado.`,
-      { attachments: [archivoPDF] });
-
-    return ContentService.createTextOutput(JSON.stringify({ success: true, pdfUrl })).setMimeType(ContentService.MimeType.JSON);
-
-  } catch (error) {
-    Logger.log("❌ Error: " + error);
-    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.message })).setMimeType(ContentService.MimeType.JSON);
-  }
-}
+    cargarTours();
+  </script>
+</body>
+</html>
