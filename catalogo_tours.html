@@ -55,7 +55,7 @@ function doPost(e) {
     }
 
     // 3. Generar documento a partir de plantilla
-    const copia = DriveApp.getFileById(PLANTILLA_ID).makeCopy(`Cotizacion_${datos.tour}_${datos.cliente}_${Date.now()}`);
+    const copia = DriveApp.getFileById(AKfycbxghvot-BAWzvktlJZGM7qg55ns0Zmm-q-Iv40EE4rXWUoQ3Wsae65o9voePxlkTPlY4g).makeCopy(`Cotizacion_${datos.tour}_${datos.cliente}_${Date.now()}`);
     const docId = copia.getId();
     const documento = DocumentApp.openById(docId);
     const cuerpo = documento.getBody();
