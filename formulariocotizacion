@@ -121,7 +121,7 @@
       mensajeDiv.textContent = "Enviando cotización...";
       mensajeDiv.className = "mensaje";
 
-      fetch("https://script.google.com/macros/s/1Bx-fin4jHqkAA-On6a2Kel3G2EIsTirPLq2NxB02LXY/exec", {
+      fetch("https://script.google.com/macros/s/AKfycbyGOULYc5d5Qu9a7wALXqP37C6O2Cz8yz6EHMvkMPwSN5ipWxCIiUv2fatQA8KTdc7kFg/exec", {
         method: "POST",
         body: JSON.stringify(datos),
         headers: { "Content-Type": "application/json" }
