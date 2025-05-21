@@ -110,7 +110,6 @@
   </header>
 
   <div class="content">
-    <!-- Selector de usuario -->
     <div id="selector-usuario" style="margin-bottom: 20px;">
       <label for="usuario">Selecciona tu nombre:</label>
       <select id="usuario">
@@ -125,21 +124,15 @@
       <button onclick="confirmarUsuario()">Ingresar</button>
     </div>
 
-    <!-- Botón para agregar nueva cotización -->
     <a class="boton" href="https://forms.gle/JhFVUNE5s6Dh6Kgn6" target="_blank">➕ Agregar Cotización</a>
-
-    <!-- Notificación -->
     <div id="notificacion" class="notificacion"></div>
-
-    <!-- Tabla de cotizaciones -->
     <div id="tabla-cotizaciones">Cargando cotizaciones...</div>
-
-    <!-- Botón de volver -->
     <a class="boton" href="menu.html">← Volver al Menú</a>
   </div>
 
   <script>
     const URL_WEBAPP = "https://script.google.com/macros/s/AKfycbx-NpRem-QeNszVORfjS5RL6_hkmKHKdPPVj8lDJzQUPY1AcFUCjydlVnLg-9IYOovr/exec";
+    const FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLScJpp-3D01JvdLsYPqiTpYOM_DE7gksSWtyP7YY7gqlNSK5PQ/viewform";
     let usuario = "";
 
     function mostrarMensaje(texto) {
@@ -167,10 +160,7 @@
       fetch(`${URL_WEBAPP}?accion=cotizaciones`)
         .then(res => res.json())
         .then(data => {
-          const filtradas = data.filter(row =>
-            row.ESTADO === "Pendiente" || row.ESTADO === "En Proceso"
-          );
-
+          const filtradas = data.filter(row => row.ESTADO === "Pendiente" || row.ESTADO === "En Proceso");
           if (!filtradas.length) {
             document.getElementById("tabla-cotizaciones").innerHTML = "No hay cotizaciones pendientes.";
             return;
@@ -196,17 +186,22 @@
           `;
 
           filtradas.forEach(row => {
-            const estadoClass = row.ESTADO === "Pendiente" ? "estado-pendiente"
-                              : row.ESTADO === "En Proceso" ? "estado-proceso"
-                              : "estado-enviada";
+            const estadoClass = row.ESTADO === "Pendiente" ? "estado-pendiente" : row.ESTADO === "En Proceso" ? "estado-proceso" : "estado-enviada";
 
-            let acciones = "";
+            const urlForm = `${FORM_URL}?usp=pp_url` +
+              `&entry.1383463080=${encodeURIComponent(usuario)}` +
+              `&entry.16281197=${encodeURIComponent(row.NUMERO_DE_TELÉFONO_CLIENTE || '')}` +
+              `&entry.1652954426=${encodeURIComponent(row.DESTINO || '')}` +
+              `&entry.868337938=${encodeURIComponent(row.CANTIDAD_DE_PERSONAS_ADULTAS || 0)}` +
+              `&entry.906801452=${encodeURIComponent(row.CANTIDAD_DE_NIÑOS || 0)}` +
+              `&entry.801769350=${encodeURIComponent(row.OBSERVACIONES || '')}` +
+              `&entry.506052686=${encodeURIComponent(usuario)}`;
+
+            let acciones = "-";
             if (row.ESTADO === "Pendiente") {
-              acciones = `<button class="btn-accion btn-tomar" onclick="marcarProceso('${row.NUMERO_COTIZACION}')">Tomar</button>`;
+              acciones = `<button class='btn-accion btn-tomar' onclick="marcarProcesoYIr('${row.NUMERO_COTIZACION}', '${urlForm}')">Tomar</button>`;
             } else if (row.ESTADO === "En Proceso" && row.ENCARGADO === usuario) {
-              acciones = `<button class="btn-accion btn-enviada" onclick="marcarEnviada('${row.NUMERO_COTIZACION}')">Marcar Enviada</button>`;
-            } else {
-              acciones = "-";
+              acciones = `<button class='btn-accion btn-enviada' onclick="marcarEnviada('${row.NUMERO_COTIZACION}')">Marcar Enviada</button>`;
             }
 
             html += `
@@ -234,24 +229,16 @@
         });
     }
 
-    function marcarProceso(codigo) {
-      const url = `${URL_WEBAPP}?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
-      fetch(url)
+    function marcarProcesoYIr(codigo, url) {
+      const urlUpdate = `${URL_WEBAPP}?accion=cambiarEstado&codigo=${codigo}&nuevoEstado=En%20Proceso&encargado=${encodeURIComponent(usuario)}`;
+      fetch(urlUpdate)
         .then(r => r.text())
         .then(msg => {
-          if (msg.includes("Estado actualizado")) {
-            mostrarMensaje(`Te acabas de asignar la cotización ${codigo}`);
-            setTimeout(() => {
-              cargarCotizaciones();
-            }, 1000);
-          } else {
-            alert(msg);
+          mostrarMensaje(`Te acabas de asignar la cotización ${codigo}`);
+          setTimeout(() => {
+            window.open(url, '_blank');
             cargarCotizaciones();
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          alert("Error de conexión");
+          }, 800);
         });
     }
 
