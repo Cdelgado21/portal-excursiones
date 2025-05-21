@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Formulario de Cotización</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      margin: 0;
+      padding: 40px;
+    }
+    .form-container {
+      background: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #02535a;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .mensaje {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: bold;
+    }
+    .success { color: green; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Formulario de Cotización</h2>
+    <form id="cotizacionForm">
+
+      <!-- Cliente -->
+      <label>Nombre completo:</label>
+      <input type="text" name="cliente" required>
+
+      <label>Teléfono:</label>
+      <input type="text" name="telefono" required>
+
+      <label>Correo electrónico:</label>
+      <input type="email" name="correo" required>
+
+      <!-- Tour -->
+      <label>Tour:</label>
+      <select name="tour" required>
+        <option value="">-- Selecciona --</option>
+        <option value="Medellín">Medellín</option>
+        <option value="Cartagena">Cartagena</option>
+        <option value="Santo Domingo">Santo Domingo</option>
+      </select>
+
+      <label>Fecha de salida:</label>
+      <input type="date" name="fecha_salida" required>
+
+      <label>Fecha de regreso:</label>
+      <input type="date" name="fecha_regreso" required>
+
+      <label>Cantidad de adultos:</label>
+      <input type="number" name="adultos" min="0" required>
+
+      <label>Cantidad de niños:</label>
+      <input type="number" name="ninos" min="0">
+
+      <!-- Aerolínea y equipaje -->
+      <label>Aerolínea:</label>
+      <input type="text" name="aerolinea">
+
+      <label>Equipaje incluido:</label>
+      <select name="equipaje">
+        <option value="">-- Selecciona --</option>
+        <option value="10kg mano">10kg mano</option>
+        <option value="23kg documentado">23kg documentado</option>
+      </select>
+
+      <label>Observaciones adicionales:</label>
+      <textarea name="observaciones"></textarea>
+
+      <button type="submit">Generar Cotización</button>
+    </form>
+    <div class="mensaje" id="mensaje"></div>
+  </div>
+
+  <script>
+    document.getElementById("cotizacionForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+
+      const form = e.target;
+      const datos = Object.fromEntries(new FormData(form));
+      const mensajeDiv = document.getElementById("mensaje");
+
+      mensajeDiv.textContent = "Enviando cotización...";
+      mensajeDiv.className = "mensaje";
+
+      fetch("https://script.google.com/macros/s/YOUR_WEBAPP_DEPLOYMENT_ID/exec", {
+        method: "POST",
+        body: JSON.stringify(datos),
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          mensajeDiv.textContent = "✅ Cotización generada y enviada correctamente.";
+          mensajeDiv.classList.add("success");
+          window.open(data.pdfUrl, '_blank');
+        } else {
+          mensajeDiv.textContent = "❌ Error al generar la cotización.";
+          mensajeDiv.classList.add("error");
+        }
+      })
+      .catch(err => {
+        mensajeDiv.textContent = "❌ Error de conexión.";
+        mensajeDiv.classList.add("error");
+        console.error(err);
+      });
+    });
+  </script>
+</body>
+</html>
