@@ -1,0 +1,107 @@
+function doPost(e) {
+  try {
+    const datos = JSON.parse(e.postData.contents);
+
+    // Si es solicitud para agregar nuevo tour
+    if (datos.tipo === "nuevo_tour") {
+      const catalogoSheet = SpreadsheetApp.openById("1k8bkyL7ggbrDfRsDnma4_Lc2TlFJHOzrDslkOr4N3eE").getSheetByName("Catálogo de Tours");
+      catalogoSheet.appendRow([
+        datos.nombre_tour,
+        datos.incluye,
+        datos.itinerario,
+        datos.no_incluye || '',
+        datos.politicas || '',
+        datos.precio_base
+      ]);
+      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const SHEET_ID = '1Bx-fin4jHqkAA-On6a2Kel3G2EIsTirPLq2NxB02LXY';
+    const PLANTILLA_ID = '1-ylMqKxOVwHxdBFLloqSMphs95x2l8N_JaLOnMvK_rs';
+    const hoja = SpreadsheetApp.openById(SHEET_ID).getSheetByName("Cotizaciones");
+
+    // 1. Guardar datos en Google Sheets
+    const fila = [
+      new Date(),
+      datos.cliente,
+      datos.telefono,
+      datos.correo,
+      datos.tour,
+      datos.fecha_salida,
+      datos.fecha_regreso,
+      datos.adultos,
+      datos.ninos,
+      datos.aerolinea,
+      datos.equipaje,
+      datos.observaciones
+    ];
+    hoja.appendRow(fila);
+
+    // 2. Buscar datos del catálogo de tours
+    const catalogo = SpreadsheetApp.openById("1k8bkyL7ggbrDfRsDnma4_Lc2TlFJHOzrDslkOr4N3eE").getSheetByName("Catálogo de Tours").getDataRange().getValues();
+    let infoTour = {};
+
+    for (let i = 1; i < catalogo.length; i++) {
+      if (catalogo[i][0].toLowerCase().trim() === datos.tour.toLowerCase().trim()) {
+        infoTour = {
+          incluye: catalogo[i][1],
+          itinerario: catalogo[i][2],
+          no_incluye: catalogo[i][3],
+          politicas: catalogo[i][4],
+          precio_base: catalogo[i][5]
+        };
+        break;
+      }
+    }
+
+    // 3. Generar documento a partir de plantilla
+    const copia = DriveApp.getFileById(PLANTILLA_ID).makeCopy(`Cotizacion_${datos.tour}_${datos.cliente}_${Date.now()}`);
+    const docId = copia.getId();
+    const documento = DocumentApp.openById(docId);
+    const cuerpo = documento.getBody();
+
+    // Reemplazos básicos de texto
+    const reemplazos = {
+      '{{cliente}}': datos.cliente,
+      '{{telefono}}': datos.telefono,
+      '{{correo}}': datos.correo,
+      '{{tour}}': datos.tour,
+      '{{fecha_salida}}': datos.fecha_salida,
+      '{{fecha_regreso}}': datos.fecha_regreso,
+      '{{adultos}}': datos.adultos,
+      '{{ninos}}': datos.ninos,
+      '{{aerolinea}}': datos.aerolinea,
+      '{{equipaje}}': datos.equipaje,
+      '{{observaciones}}': datos.observaciones || 'Sin observaciones.',
+      '{{incluye}}': infoTour.incluye || '---',
+      '{{no_incluye}}': infoTour.no_incluye || '---',
+      '{{itinerario}}': infoTour.itinerario || '---',
+      '{{politicas}}': infoTour.politicas || '---',
+      '{{precio_base}}': infoTour.precio_base || '---'
+    };
+
+    for (let marcador in reemplazos) {
+      cuerpo.replaceText(marcador, reemplazos[marcador]);
+    }
+
+    documento.saveAndClose();
+
+    // 4. Convertir a PDF
+    const pdf = DriveApp.getFileById(docId).getAs(MimeType.PDF);
+    const carpetaDestino = DriveApp.getRootFolder();
+    const archivoPDF = carpetaDestino.createFile(pdf);
+    archivoPDF.setName(`Cotizacion_${datos.tour}_${datos.cliente}.pdf`);
+    const pdfUrl = archivoPDF.getUrl();
+
+    // 5. Enviar correo
+    GmailApp.sendEmail(datos.correo, '📄 Cotización solicitada - Excursiones Delgado',
+      `Hola ${datos.cliente},\n\nAdjunto encontrarás tu cotización solicitada.\n\nGracias por confiar en nosotros.\n\nEquipo Excursiones Delgado.`,
+      { attachments: [archivoPDF] });
+
+    return ContentService.createTextOutput(JSON.stringify({ success: true, pdfUrl })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    Logger.log("❌ Error: " + error);
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: error.message })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
