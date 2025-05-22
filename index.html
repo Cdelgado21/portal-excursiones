@@ -80,6 +80,14 @@
         window.location.href = "menu.html";
       } else {
         alert("Usuario o contraseña incorrectos.");
+export default {
+  async fetch(request) {
+    return new Response("¡Hola desde el Worker!", {
+      headers: { "content-type": "text/plain" },
+    });
+  },
+};
+        
       }
     }
   </script>
