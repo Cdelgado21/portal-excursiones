@@ -1,41 +1,55 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Catálogo de Tours</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #eaf4f4;
-      margin: 0; padding: 40px;
+      background-color: #eaf4f4;
+      padding: 40px;
     }
     .container {
-      background: #fff;
-      max-width: 900px;
+      max-width: 700px;
       margin: auto;
+      background: white;
       padding: 25px;
       border-radius: 10px;
-      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
-    h2 { text-align: center; color: #02535a; }
-    label { display: block; margin-top: 15px; font-weight: bold; }
-    input, textarea {
-      width: 100%; padding: 10px; margin-top: 5px;
-      border: 1px solid #ccc; border-radius: 5px;
+    h2 {
+      color: #02535a;
+      text-align: center;
+    }
+    label {
+      margin-top: 15px;
+      font-weight: bold;
+      display: block;
+    }
+    textarea, input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
     button {
-      background: #02535a; color: white;
-      padding: 10px 20px; border: none; border-radius: 6px;
-      font-size: 16px; margin-top: 20px; cursor: pointer;
+      margin-top: 20px;
+      background-color: #02535a;
+      color: white;
+      border: none;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
     }
-    table {
-      width: 100%; border-collapse: collapse; margin-top: 30px;
+    .mensaje {
+      margin-top: 20px;
+      font-weight: bold;
+      text-align: center;
     }
-    th, td {
-      border: 1px solid #ccc; padding: 10px; text-align: left;
-    }
-    th { background-color: #02535a; color: white; }
-    .mensaje { margin-top: 15px; font-weight: bold; text-align: center; }
     .success { color: green; }
     .error { color: red; }
   </style>
@@ -43,93 +57,69 @@
 <body>
   <div class="container">
     <h2>➕ Agregar Tour al Catálogo</h2>
-    <form id="form-tours">
-      <label>Nombre del Tour:</label>
-      <input type="text" name="nombre_tour" required>
-      
-      <label>Incluye:</label>
-      <textarea name="incluye" required></textarea>
 
-      <label>Itinerario:</label>
-      <textarea name="itinerario" required></textarea>
+    <label>Nombre del Tour:</label>
+    <input type="text" id="nombre" required>
 
-      <label>No Incluye:</label>
-      <textarea name="no_incluye"></textarea>
+    <label>Incluye:</label>
+    <textarea id="incluye" rows="4"></textarea>
 
-      <label>Políticas:</label>
-      <textarea name="politicas"></textarea>
+    <label>Itinerario:</label>
+    <textarea id="itinerario" rows="3"></textarea>
 
-      <label>Precio Base:</label>
-      <input type="number" name="precio_base" required>
+    <label>No Incluye:</label>
+    <textarea id="noIncluye" rows="3"></textarea>
 
-      <button type="submit">Guardar Tour</button>
-    </form>
+    <label>Políticas:</label>
+    <textarea id="politicas" rows="3"></textarea>
+
+    <label>Precio Base:</label>
+    <input type="number" id="precioBase" min="0" />
+
+    <button onclick="guardarTour()">Guardar Tour</button>
 
     <div class="mensaje" id="mensaje"></div>
-
-    <h2>📋 Tours Registrados</h2>
-    <div id="tabla-tours">Cargando tours...</div>
   </div>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbyGOULYc5d5Qu9a7wALXqP37C6O2Cz8yz6EHMvkMPwSN5ipWxCIiUv2fatQA8KTdc7kFg/exec";
-
-    document.getElementById("form-tours").addEventListener("submit", function(e) {
-      e.preventDefault();
-      const formData = Object.fromEntries(new FormData(e.target));
-      formData.tipo = "nuevo_tour";
-
+    function guardarTour() {
       const mensaje = document.getElementById("mensaje");
-      mensaje.textContent = "Enviando...";
+      mensaje.textContent = "Enviando datos...";
       mensaje.className = "mensaje";
 
-      fetch(scriptURL, {
+      const datos = {
+        tipo: "nuevo_tour",
+        nombre_tour: document.getElementById("nombre").value,
+        incluye: document.getElementById("incluye").value,
+        itinerario: document.getElementById("itinerario").value,
+        no_incluye: document.getElementById("noIncluye").value,
+        politicas: document.getElementById("politicas").value,
+        precio_base: document.getElementById("precioBase").value
+      };
+
+      fetch("https://catalogotours.cris-delgado21.workers.dev/", {
         method: "POST",
-        body: JSON.stringify(formData),
-        headers: { "Content-Type": "application/json" }
+        body: JSON.stringify(datos),
+        headers: {
+          "Content-Type": "application/json"
+        }
       })
-      .then(r => r.json())
-      .then(data => {
-        if (data.success) {
-          mensaje.textContent = "✅ Tour agregado correctamente.";
+      .then(res => res.json())
+      .then(res => {
+        if (res.success) {
+          mensaje.textContent = "✅ Tour agregado exitosamente.";
           mensaje.classList.add("success");
-          e.target.reset();
-          cargarTours();
         } else {
           mensaje.textContent = "❌ Error al guardar el tour.";
           mensaje.classList.add("error");
         }
       })
       .catch(err => {
+        console.error(err);
         mensaje.textContent = "❌ Error de conexión.";
         mensaje.classList.add("error");
       });
-    });
-
-    function cargarTours() {
-      fetch(`${scriptURL}?accion=ver_catalogo`)
-        .then(res => res.json())
-        .then(tours => {
-          let html = `<table><thead>
-            <tr><th>Nombre</th><th>Incluye</th><th>Itinerario</th><th>Precio Base</th></tr>
-          </thead><tbody>`;
-          tours.forEach(row => {
-            html += `<tr>
-              <td>${row.nombre}</td>
-              <td>${row.incluye}</td>
-              <td>${row.itinerario}</td>
-              <td>$${row.precio_base}</td>
-            </tr>`;
-          });
-          html += `</tbody></table>`;
-          document.getElementById("tabla-tours").innerHTML = html;
-        })
-        .catch(() => {
-          document.getElementById("tabla-tours").innerText = "❌ No se pudo cargar el catálogo.";
-        });
     }
-
-    cargarTours();
   </script>
 </body>
 </html>
