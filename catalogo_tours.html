@@ -1,125 +1,73 @@
-  <!DOCTYPE html>
-  <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Catálogo de Tours</title>
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background-color: #eaf4f4;
-        padding: 40px;
-      }
-      .container {
-        max-width: 700px;
-        margin: auto;
-        background: white;
-        padding: 25px;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      }
-      h2 {
-        color: #02535a;
-        text-align: center;
-      }
-      label {
-        margin-top: 15px;
-        font-weight: bold;
-        display: block;
-      }
-      textarea, input {
-        width: 100%;
-        padding: 10px;
-        margin-top: 5px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-      }
-      button {
-        margin-top: 20px;
-        background-color: #02535a;
-        color: white;
-        border: none;
-        padding: 12px;
-        width: 100%;
-        font-size: 16px;
-        border-radius: 6px;
-        cursor: pointer;
-      }
-      .mensaje {
-        margin-top: 20px;
-        font-weight: bold;
-        text-align: center;
-      }
-      .success { color: green; }
-      .error { color: red; }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h2>➕ Agregar Tour al Catálogo</h2>
-  
+ <!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Agregar Tour</title>
+  <style>
+    body { font-family: Arial; background: #f0f7f7; padding: 40px; }
+    .container { background: white; padding: 25px; border-radius: 10px; max-width: 600px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    textarea, input { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
+    button { margin-top: 20px; background: #02535a; color: white; border: none; padding: 12px; width: 100%; border-radius: 6px; font-size: 16px; }
+    .msg { margin-top: 15px; font-weight: bold; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>➕ Agregar Tour al Catálogo</h2>
+    <form id="formTour">
       <label>Nombre del Tour:</label>
-      <input type="text" id="nombre" required>
-  
+      <input name="nombre_tour" required>
+
       <label>Incluye:</label>
-      <textarea id="incluye" rows="4"></textarea>
-  
+      <textarea name="incluye" required></textarea>
+
       <label>Itinerario:</label>
-      <textarea id="itinerario" rows="3"></textarea>
-  
+      <textarea name="itinerario" required></textarea>
+
       <label>No Incluye:</label>
-      <textarea id="noIncluye" rows="3"></textarea>
-  
+      <textarea name="no_incluye" required></textarea>
+
       <label>Políticas:</label>
-      <textarea id="politicas" rows="3"></textarea>
-  
+      <textarea name="politicas" required></textarea>
+
       <label>Precio Base:</label>
-      <input type="number" id="precioBase" min="0" />
-  
-      <button onclick="guardarTour()">Guardar Tour</button>
-  
-      <div class="mensaje" id="mensaje"></div>
-    </div>
-  
-    <script>
-      function guardarTour() {
-        const mensaje = document.getElementById("mensaje");
-        mensaje.textContent = "Enviando datos...";
-        mensaje.className = "mensaje";
-  
-        const datos = {
-          tipo: "nuevo_tour",
-          nombre_tour: document.getElementById("nombre").value,
-          incluye: document.getElementById("incluye").value,
-          itinerario: document.getElementById("itinerario").value,
-          no_incluye: document.getElementById("noIncluye").value,
-          politicas: document.getElementById("politicas").value,
-          precio_base: document.getElementById("precioBase").value
-        };
-  
-        fetch("https://catalogotours.cris-delgado21.workers.dev/", {
-          method: "POST",
-          body: JSON.stringify(datos),
-          headers: {
-            "Content-Type": "application/json"
-          }
-        })
-        .then(res => res.json())
-        .then(res => {
-          if (res.success) {
-            mensaje.textContent = "✅ Tour agregado exitosamente.";
-            mensaje.classList.add("success");
-          } else {
-            mensaje.textContent = "❌ Error al guardar el tour.";
-            mensaje.classList.add("error");
-          }
-        })
-        .catch(err => {
-          console.error(err);
-          mensaje.textContent = "❌ Error de conexión.";
-          mensaje.classList.add("error");
-        });
-      }
-    </script>
-  </body>
-  </html>
+      <input type="number" name="precio_base" required>
+
+      <button type="submit">Guardar Tour</button>
+    </form>
+
+    <div class="msg" id="respuesta"></div>
+  </div>
+
+  <script>
+    document.getElementById("formTour").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const datos = Object.fromEntries(new FormData(e.target).entries());
+      datos.tipo = "nuevo_tour"; // <- esto es fundamental
+
+      fetch("https://catalogotours.cris-delgado21.workers.dev", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos)
+      })
+      .then(res => res.json())
+      .then(data => {
+        const msg = document.getElementById("respuesta");
+        if (data.success) {
+          msg.textContent = "✅ Tour guardado correctamente.";
+          msg.style.color = "green";
+          e.target.reset();
+        } else {
+          msg.textContent = "❌ Error: " + (data.error || "no se pudo guardar");
+          msg.style.color = "red";
+        }
+      })
+      .catch(err => {
+        document.getElementById("respuesta").textContent = "❌ Error de conexión.";
+        console.error(err);
+      });
+    });
+  </script>
+</body>
+</html>
