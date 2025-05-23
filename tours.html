@@ -5,6 +5,8 @@
   <title>Catálogo de Tours</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -23,6 +25,24 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+    .acciones {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .btn-agregar, .btn-exportar, .btn-imprimir, .btn-descargar, select {
+      background: #02535a;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-exportar { background: #f49859; }
+    .btn-imprimir { background: #5f9296; }
+    .btn-descargar { background: #f5e2b8; color: black; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -36,13 +56,6 @@
     th {
       background: #02535a;
       color: white;
-    }
-    .btn-agregar {
-      background: #02535a;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 6px;
       cursor: pointer;
     }
     .btn-estado {
@@ -51,73 +64,39 @@
       border-radius: 5px;
       cursor: pointer;
       color: white;
+      transition: background 0.3s;
     }
     .activo { background: #28a745; }
     .inactivo { background: #dc3545; }
-
+    .activo:hover { background: #218838; }
+    .inactivo:hover { background: #c82333; }
     .icon-btn {
       background: none;
       border: none;
       cursor: pointer;
       font-size: 1.1em;
     }
-
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-    }
-    .modal-content {
-      background: white;
-      padding: 30px;
-      max-width: 500px;
-      margin: 5% auto;
-      border-radius: 15px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-    .modal-content h3 {
-      margin-top: 0;
-      color: #02535a;
-      text-align: center;
-    }
-    .modal input, .modal textarea {
-      width: 100%;
-      margin-bottom: 15px;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 14px;
-    }
-    .modal button {
-      padding: 10px 15px;
-      margin-right: 10px;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .guardar-btn {
-      background-color: #02535a;
-      color: white;
-    }
-    .cancelar-btn {
-      background-color: #f49859;
-      color: white;
-    }
   </style>
 </head>
 <body>
   <h2>Catálogo de Tours</h2>
-  <div class="tabla-container">
-    <button class="btn-agregar" onclick="mostrarModal()">+ Nuevo Tour</button>
-    <table>
+  <div class="tabla-container" id="tablaContainer">
+    <div class="acciones">
+      <button class="btn-agregar" onclick="mostrarModal()">+ Nuevo Tour</button>
+      <select id="filtroEstado" onchange="cargarTours()">
+        <option value="TODOS">Mostrar todos</option>
+        <option value="ACTIVO">Solo activos</option>
+        <option value="INACTIVO">Solo inactivos</option>
+      </select>
+      <button class="btn-exportar" onclick="exportarTabla()">📄 Exportar PDF</button>
+      <button class="btn-descargar" onclick="descargarCSV()">📁 Descargar Excel</button>
+      <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+    <table id="tablaTours">
       <thead>
         <tr>
-          <th>Nombre</th>
-          <th>Precio</th>
+          <th onclick="ordenarPor('nombre')">Nombre</th>
+          <th onclick="ordenarPor('precio')">Precio</th>
           <th>Duración</th>
           <th>Incluye</th>
           <th>Estado</th>
@@ -131,122 +110,44 @@
     </table>
   </div>
 
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <h3 id="modal-title">Agregar nuevo tour</h3>
-      <input type="text" id="nombre" placeholder="Nombre del tour">
-      <input type="number" id="precio" placeholder="Precio">
-      <input type="text" id="duracion" placeholder="Duración (ej. 4 días / 3 noches)">
-      <textarea id="incluye" rows="4" placeholder="Incluye (ej. Hotel, traslados...)"></textarea>
-      <div style="text-align: right;">
-        <button class="guardar-btn" onclick="guardarTour()">Guardar</button>
-        <button class="cancelar-btn" onclick="cerrarModal()">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717",
-      storageBucket: "tours-460717.appspot.com",
-      messagingSenderId: "1000749333444",
-      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
-    };
+    let ordenActual = { campo: '', asc: true };
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    let editandoId = null;
-
-    function cargarTours() {
-      db.collection("tours").get().then((querySnapshot) => {
-        const tbody = document.getElementById("tabla-body");
-        tbody.innerHTML = "";
-        if (querySnapshot.empty) {
-          tbody.innerHTML = '<tr><td colspan="7">No hay tours disponibles.</td></tr>';
-          return;
-        }
-        querySnapshot.forEach((doc) => {
-          const tour = doc.data();
-          const fila = document.createElement("tr");
-          fila.innerHTML = `
-            <td>${tour.nombre || '-'}</td>
-            <td>$${tour.precio || '-'}</td>
-            <td>${tour.duracion || '-'}</td>
-            <td>${tour.incluye || '-'}</td>
-            <td>
-              <button class="btn-estado ${tour.estado === 'ACTIVO' ? 'activo' : 'inactivo'}">
-                ${tour.estado || 'Sin estado'}
-              </button>
-            </td>
-            <td><button class="icon-btn" onclick="editarTour('${doc.id}', ${JSON.stringify(tour).replace(/"/g, '&quot;')})">🖉</button></td>
-            <td><button class="icon-btn" onclick="eliminarTour('${doc.id}')">🗑️</button></td>
-          `;
-          tbody.appendChild(fila);
-        });
+    function exportarTabla() {
+      html2canvas(document.getElementById("tablaContainer")).then(canvas => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jspdf.jsPDF('landscape');
+        const imgProps= pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight);
+        pdf.save("catalogo_tours.pdf");
       });
     }
 
-    function mostrarModal() {
-      editandoId = null;
-      document.getElementById('modal-title').innerText = "Agregar nuevo tour";
-      document.getElementById('nombre').value = "";
-      document.getElementById('precio').value = "";
-      document.getElementById('duracion').value = "";
-      document.getElementById('incluye').value = "";
-      document.getElementById('modal').style.display = 'block';
-    }
-
-    function cerrarModal() {
-      document.getElementById('modal').style.display = 'none';
-    }
-
-    function guardarTour() {
-      const nombre = document.getElementById("nombre").value.trim();
-      const precio = parseFloat(document.getElementById("precio").value);
-      const duracion = document.getElementById("duracion").value.trim();
-      const incluye = document.getElementById("incluye").value.trim();
-      const estado = "ACTIVO";
-
-      if (!nombre || !precio || !duracion || !incluye) {
-        alert("Por favor completa todos los campos correctamente.");
-        return;
-      }
-
-      const data = { nombre, precio, duracion, incluye, estado };
-
-      if (editandoId) {
-        db.collection("tours").doc(editandoId).update(data).then(() => {
-          cerrarModal();
-          cargarTours();
+    function descargarCSV() {
+      let csv = 'Nombre,Precio,Duración,Incluye,Estado\n';
+      document.querySelectorAll("#tabla-body tr").forEach(row => {
+        let data = [];
+        row.querySelectorAll("td").forEach((td, i) => {
+          if (i < 5) data.push(td.innerText);
         });
-      } else {
-        db.collection("tours").add(data).then(() => {
-          cerrarModal();
-          cargarTours();
-        });
-      }
+        csv += data.join(",") + "\n";
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'catalogo_tours.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
     }
 
-    function editarTour(id, tour) {
-      editandoId = id;
-      document.getElementById('modal-title').innerText = "Editar tour";
-      document.getElementById('nombre').value = tour.nombre || "";
-      document.getElementById('precio').value = tour.precio || "";
-      document.getElementById('duracion').value = tour.duracion || "";
-      document.getElementById('incluye').value = tour.incluye || "";
-      document.getElementById('modal').style.display = 'block';
+    function ordenarPor(campo) {
+      ordenActual.asc = ordenActual.campo === campo ? !ordenActual.asc : true;
+      ordenActual.campo = campo;
+      cargarTours();
     }
-
-    function eliminarTour(id) {
-      if (confirm("¿Estás seguro de que deseas eliminar este tour?")) {
-        db.collection("tours").doc(id).delete().then(() => cargarTours());
-      }
-    }
-
-    cargarTours();
   </script>
 </body>
 </html>
-
