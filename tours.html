@@ -42,6 +42,9 @@
       cursor: pointer;
       margin-right: auto;
     }
+    .btn-exportar::after { content: "\1F4BE"; } /* floppy disk icon */
+    .btn-descargar::after { content: "\1F4C1"; }
+    .btn-imprimir::after { content: "\1F5A8"; }
     .btn-exportar, .btn-descargar, .btn-imprimir {
       background: #02535a;
       color: white;
@@ -54,9 +57,6 @@
       align-items: center;
       justify-content: center;
     }
-    .btn-exportar::after { content: "\1F5B1"; } /* ícono PDF */
-    .btn-descargar::after { content: "\1F4E5"; } /* ícono carpeta con flecha */
-    .btn-imprimir::after { content: "\1F5A8"; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -80,11 +80,7 @@
     }
     .dropdown-filter {
       display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      width: max-content;
-      z-index: 10;
+      margin-top: 5px;
     }
     .btn-estado {
       padding: 5px 10px;
@@ -118,20 +114,20 @@
     }
     .modal-content {
       background: #fff;
-      padding: 20px;
+      padding: 30px;
       border-radius: 8px;
-      width: 300px;
+      width: 500px;
       display: flex;
       flex-direction: column;
     }
     .modal-content input {
       margin-bottom: 10px;
-      padding: 8px;
+      padding: 10px;
       border: 1px solid #ccc;
     }
     .modal-content button {
       margin-top: 10px;
-      padding: 8px;
+      padding: 10px;
       background: #02535a;
       color: white;
       border: none;
@@ -207,56 +203,55 @@
       };
       if (tourActualId) db.collection("tours").doc(tourActualId).update(datos);
       else db.collection("tours").add(datos);
+      alert("¡Tour guardado exitosamente!");
       document.getElementById("modalTour").style.display = "none";
-      cargarTours();
+      location.reload();
     }
 
     function abrirEditor(id, data) {
       mostrarModal(data, id);
     }
 
-    function cambiarEstado(id, estadoActual) {
-      const nuevo = estadoActual === "ACTIVO" ? "INACTIVO" : "ACTIVO";
-      db.collection("tours").doc(id).update({ estado: nuevo }).then(() => cargarTours());
+    function toggleFiltro(colIndex) {
+      const selects = document.querySelectorAll('.dropdown-filter');
+      selects[colIndex].style.display = selects[colIndex].style.display === 'inline-block' ? 'none' : 'inline-block';
     }
 
-    function eliminarTour(id) {
-      if (confirm("¿Deseas eliminar este tour?")) {
-        db.collection("tours").doc(id).delete().then(() => cargarTours());
-      }
-    }
-
-    function cargarTours() {
-      const tbody = document.getElementById("tabla-body");
-      tbody.innerHTML = "<tr><td colspan='7'>Cargando tours...</td></tr>";
-
-      db.collection("tours").get().then(snapshot => {
-        const rows = [];
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const row = `
-            <tr>
-              <td>${data.nombre || ""}</td>
-              <td>$${data.precio || "-"}</td>
-              <td>${data.duracion || "-"}</td>
-              <td>${data.incluye || "-"}</td>
-              <td>
-                <button class="btn-estado ${data.estado === 'ACTIVO' ? 'activo' : 'inactivo'}"
-                  onclick="cambiarEstado('${doc.id}', '${data.estado}')">
-                  ${data.estado}
-                </button>
-              </td>
-              <td><button class="icon-btn" onclick='abrirEditor("${doc.id}", ${JSON.stringify(data)})'>✏️</button></td>
-              <td><button class="icon-btn" onclick='eliminarTour("${doc.id}")'>🗑️</button></td>
-            </tr>
-          `;
-          rows.push(row);
-        });
-        tbody.innerHTML = rows.join("") || "<tr><td colspan='7'>No hay tours disponibles.</td></tr>";
+    function filtrarTablaSelect(colIndex, select) {
+      const filtro = select.value.toLowerCase();
+      const filas = document.querySelectorAll('#tablaTours tbody tr');
+      filas.forEach(fila => {
+        const celdas = fila.querySelectorAll('td');
+        const texto = celdas[colIndex]?.textContent.toLowerCase();
+        fila.style.display = filtro === '' || texto.includes(filtro) ? '' : 'none';
       });
     }
 
-    cargarTours();
+    function exportarTabla() {
+      import('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(({ jsPDF }) => {
+        html2canvas(document.querySelector("#tablaTours")).then(canvas => {
+          const imgData = canvas.toDataURL("image/png");
+          const pdf = new jsPDF();
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+          pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+          pdf.save("tours.pdf");
+        });
+      });
+    }
+
+    function descargarCSV() {
+      const filas = document.querySelectorAll("#tablaTours tr");
+      const csv = Array.from(filas).map(row =>
+        Array.from(row.cells).map(cell => cell.textContent.trim()).join(",")
+      ).join("\n");
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "tours.csv";
+      a.click();
+    }
   </script>
 </body>
 </html>
