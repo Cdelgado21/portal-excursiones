@@ -54,8 +54,8 @@
       align-items: center;
       justify-content: center;
     }
-    .btn-exportar::after { content: "\1F4C4"; }
-    .btn-descargar::after { content: "\1F4C1"; }
+    .btn-exportar::after { content: "\1F5B1"; } /* ícono PDF */
+    .btn-descargar::after { content: "\1F4E5"; } /* ícono carpeta con flecha */
     .btn-imprimir::after { content: "\1F5A8"; }
     table {
       width: 100%;
@@ -80,7 +80,11 @@
     }
     .dropdown-filter {
       display: none;
-      margin-top: 5px;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      width: max-content;
+      z-index: 10;
     }
     .btn-estado {
       padding: 5px 10px;
@@ -204,13 +208,56 @@
       if (tourActualId) db.collection("tours").doc(tourActualId).update(datos);
       else db.collection("tours").add(datos);
       document.getElementById("modalTour").style.display = "none";
+      cargarTours();
     }
 
     function abrirEditor(id, data) {
       mostrarModal(data, id);
     }
 
-    // (Resto del código sin cambios...)
+    function cambiarEstado(id, estadoActual) {
+      const nuevo = estadoActual === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+      db.collection("tours").doc(id).update({ estado: nuevo }).then(() => cargarTours());
+    }
+
+    function eliminarTour(id) {
+      if (confirm("¿Deseas eliminar este tour?")) {
+        db.collection("tours").doc(id).delete().then(() => cargarTours());
+      }
+    }
+
+    function cargarTours() {
+      const tbody = document.getElementById("tabla-body");
+      tbody.innerHTML = "<tr><td colspan='7'>Cargando tours...</td></tr>";
+
+      db.collection("tours").get().then(snapshot => {
+        const rows = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const row = `
+            <tr>
+              <td>${data.nombre || ""}</td>
+              <td>$${data.precio || "-"}</td>
+              <td>${data.duracion || "-"}</td>
+              <td>${data.incluye || "-"}</td>
+              <td>
+                <button class="btn-estado ${data.estado === 'ACTIVO' ? 'activo' : 'inactivo'}"
+                  onclick="cambiarEstado('${doc.id}', '${data.estado}')">
+                  ${data.estado}
+                </button>
+              </td>
+              <td><button class="icon-btn" onclick='abrirEditor("${doc.id}", ${JSON.stringify(data)})'>✏️</button></td>
+              <td><button class="icon-btn" onclick='eliminarTour("${doc.id}")'>🗑️</button></td>
+            </tr>
+          `;
+          rows.push(row);
+        });
+        tbody.innerHTML = rows.join("") || "<tr><td colspan='7'>No hay tours disponibles.</td></tr>";
+      });
+    }
+
+    cargarTours();
   </script>
 </body>
 </html>
+
