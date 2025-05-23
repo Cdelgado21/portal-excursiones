@@ -125,6 +125,51 @@
   </div>
 
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function cargarTours() {
+      db.collection("tours").onSnapshot(snapshot => {
+        const tbody = document.getElementById("tabla-body");
+        tbody.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${data.nombre || "-"}</td>
+            <td>$${data.precio || "-"}</td>
+            <td>${data.duracion || "-"}</td>
+            <td>${data.incluye || "-"}</td>
+            <td><button class="btn-estado ${data.estado === 'ACTIVO' ? 'activo' : 'inactivo'}" onclick="toggleEstado('${doc.id}', '${data.estado}')">${data.estado || 'Sin estado'}</button></td>
+            <td><button onclick="editarTour('${doc.id}')">✏️</button></td>
+            <td><button onclick="eliminarTour('${doc.id}')">🗑️</button></td>
+          `;
+          tbody.appendChild(fila);
+        });
+        actualizarFiltros();
+      });
+    }
+
+    function toggleEstado(id, estadoActual) {
+      const nuevoEstado = estadoActual === "ACTIVO" ? "INACTIVO" : "ACTIVO";
+      db.collection("tours").doc(id).update({ estado: nuevoEstado });
+    }
+
+    function eliminarTour(id) {
+      if (confirm("¿Estás seguro de eliminar este tour?")) {
+        db.collection("tours").doc(id).delete();
+      }
+    }
+
+    function editarTour(id) {
+      alert("Función para editar tour con ID: " + id);
+    }
+
     function exportarTabla() {
       html2canvas(document.getElementById("tablaContainer")).then(canvas => {
         const imgData = canvas.toDataURL("image/png");
@@ -166,7 +211,7 @@
       });
     }
 
-    window.onload = function() {
+    function actualizarFiltros() {
       const header = document.querySelectorAll("#tablaTours thead select");
       header.forEach((select, i) => {
         const valoresUnicos = new Set();
@@ -177,8 +222,8 @@
         select.innerHTML = '<option value="">Todos</option>' + Array.from(valoresUnicos).sort().map(v => `<option value="${v}">${v}</option>`).join("");
       });
     }
+
+    window.onload = cargarTours;
   </script>
 </body>
 </html>
-
-
