@@ -167,7 +167,7 @@
           <button onclick="descargarCSV()">Descargar CSV</button>
         </div>
       </div>
-      <button class="btn-descarga" onclick="window.print()">🖨️</button>
+      <button class="btn-descarga" onclick="window.print()">🖰️</button>
     </div>
     <table id="tablaTours">
       <thead>
@@ -234,11 +234,10 @@
         incluye: document.getElementById("incluye").value,
         estado: "ACTIVO"
       };
-      if (tourActualId) db.collection("tours").doc(tourActualId).update(datos);
-      else db.collection("tours").add(datos);
-      alert("¡Tour guardado exitosamente!");
+      if (tourActualId) db.collection("tours").doc(tourActualId).update(datos).then(() => cargarTours());
+      else db.collection("tours").add(datos).then(() => cargarTours());
+      alert("\u00a1Tour guardado exitosamente!");
       cerrarModal();
-      location.reload();
     }
 
     function abrirEditor(id, data) {
@@ -248,7 +247,7 @@
     function exportarTabla() {
       html2canvas(document.querySelector("#tablaTours")).then(canvas => {
         const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF();
+        const pdf = new jspdf.jsPDF();
         const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
@@ -274,6 +273,11 @@
       dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
     }
 
+    function cambiarEstado(id, estadoActual) {
+      const nuevoEstado = estadoActual === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
+      db.collection("tours").doc(id).update({ estado: nuevoEstado }).then(() => cargarTours());
+    }
+
     function cargarTours() {
       db.collection("tours").get().then((querySnapshot) => {
         const tbody = document.getElementById("tabla-body");
@@ -290,9 +294,13 @@
             <td>$${tour.precio || '-'}</td>
             <td>${tour.duracion || '-'}</td>
             <td>${tour.incluye || '-'}</td>
-            <td><span class="btn-estado ${tour.estado === 'ACTIVO' ? 'activo' : 'inactivo'}">${tour.estado}</span></td>
+            <td>
+              <button class="btn-estado ${tour.estado === 'ACTIVO' ? 'activo' : 'inactivo'}" onclick="cambiarEstado('${doc.id}', '${tour.estado}')">
+                ${tour.estado || 'Sin estado'}
+              </button>
+            </td>
             <td><button class="icon-btn" onclick="abrirEditor('${doc.id}', ${JSON.stringify(tour).replace(/"/g, '&quot;')})">🖉</button></td>
-            <td><button class="icon-btn" onclick="db.collection('tours').doc('${doc.id}').delete().then(() => location.reload())">🗑️</button></td>
+            <td><button class="icon-btn" onclick="db.collection('tours').doc('${doc.id}').delete().then(() => cargarTours())">🗑️</button></td>
           `;
           tbody.appendChild(fila);
         });
