@@ -79,15 +79,21 @@
 
   <script>
     const urlAppsScript = 'https://script.google.com/macros/s/AKfycbxhyot_tours1-BAWzk1tu17GMQgn55m9zm-q_V40EfArXuoI9hwse6sG9voePXlx1PYTY4g/exec?tipo=listar%20tours';
+    const urlProxy = 'https://proxy-tours.cris-delgado21.workers.dev/?url=' + encodeURIComponent(urlAppsScript);
 
-fetch('https://proxy-tours.cris-delgado21.workers.dev/?url=' + encodeURIComponent(urlAppsScript))
-  .then(response => response.json())
-  .then(data => cargarTablaTours(data))
-  .catch(error => {
-    console.error('Error al cargar tours:', error);
-    document.getElementById('tabla-body').innerHTML =
-      '<tr><td colspan="4">Error al cargar tours.</td></tr>';
-        });
+    fetch(urlProxy)
+      .then(response => {
+        if (!response.ok) throw new Error("Respuesta no válida del servidor");
+        return response.json();
+      })
+      .then(data => {
+        cargarTablaTours(data);
+      })
+      .catch(error => {
+        console.error('Error al cargar tours:', error);
+        document.getElementById('tabla-body').innerHTML =
+          '<tr><td colspan="4">Error al cargar tours.</td></tr>';
+      });
 
     function cargarTablaTours(tours) {
       const tbody = document.getElementById('tabla-body');
@@ -119,18 +125,16 @@ fetch('https://proxy-tours.cris-delgado21.workers.dev/?url=' + encodeURIComponen
 
     function agregarTour() {
       alert('Aquí se abriría un formulario emergente para agregar un nuevo tour.');
-      // Puedes implementar un modal con HTML/CSS si lo deseas.
     }
 
     function cambiarEstado(id, estadoActual) {
       alert(`Aquí cambiarías el estado del tour con ID: ${id}`);
-      // Podrías implementar la lógica para activar/desactivar usando otro endpoint.
     }
 
     function editarTour(id) {
       alert(`Aquí editarías el tour con ID: ${id}`);
-      // Redirigir a un formulario de edición o mostrar un modal.
     }
   </script>
 </body>
 </html>
+
