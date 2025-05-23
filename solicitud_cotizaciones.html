@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Solicitudes de Cotización</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -17,7 +17,9 @@
     th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
     th { background-color: #02535a; color: white; }
     .estado-pendiente { background-color: #ff4d4d; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
+    .estado-proceso { background-color: #ffa500; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
     .container { max-width: 1000px; margin: auto; }
+    .btn-cotizar { background-color: #f49859; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -70,6 +72,9 @@
           <th>Embajador(a)</th>
           <th>Estado</th>
           <th>Registro</th>
+          <th>Encargado</th>
+          <th>Fecha Asignación</th>
+          <th>Acción</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -128,7 +133,9 @@
         observaciones,
         embajador,
         estado: "Pendiente",
-        registro: fechaRegistro
+        registro: fechaRegistro,
+        encargado: "",
+        fecha_asignacion: null
       });
 
       alert("Solicitud registrada correctamente.");
@@ -151,11 +158,25 @@
           <td>${d.ninos}</td>
           <td>${d.observaciones}</td>
           <td>${d.embajador}</td>
-          <td><div class="estado-pendiente">${d.estado}</div></td>
+          <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
           <td>${d.registro?.toDate().toLocaleString()}</td>
+          <td>${d.encargado || '-'}</td>
+          <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
+          <td><button class="btn-cotizar" onclick="marcarEnProcesoYRedirigir('${doc.id}', '${d.numero}')">Tomar</button></td>
         `;
         tabla.appendChild(fila);
       });
+    }
+
+    async function marcarEnProcesoYRedirigir(id, numero) {
+      const encargado = prompt("¿Cuál es tu nombre?");
+      if (!encargado) return;
+      await db.collection("cotizaciones").doc(id).update({
+        estado: "En Proceso",
+        encargado: encargado,
+        fecha_asignacion: new Date()
+      });
+      window.location.href = `cotizaciones.html?codigo=${encodeURIComponent(numero)}`;
     }
 
     cargarDestinos();
