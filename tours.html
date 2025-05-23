@@ -69,19 +69,15 @@
     th {
       background: #02535a;
       color: white;
-      cursor: pointer;
     }
-    th .dropdown-filter {
-      background: url("data:image/svg+xml;utf8,<svg fill='black' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right center;
-      -webkit-appearance: none;
-      -moz-appearance: none;
+    .dropdown-filter {
+      width: 100%;
+      border: none;
+      background: transparent;
+      background: url("data:image/svg+xml;utf8,<svg fill='white' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right center;
       appearance: none;
       text-indent: -9999px;
-      padding: 5px 20px 5px 5px;
-      background-color: white;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      width: 100%;
+      cursor: pointer;
     }
     .btn-estado {
       padding: 5px 10px;
@@ -152,7 +148,7 @@
             <td>${data.duracion || "-"}</td>
             <td>${data.incluye || "-"}</td>
             <td><button class="btn-estado ${data.estado === 'ACTIVO' ? 'activo' : 'inactivo'}" onclick="toggleEstado('${doc.id}', '${data.estado}')">${data.estado || 'Sin estado'}</button></td>
-            <td><button onclick="editarTour('${doc.id}')">✏️</button></td>
+            <td><button onclick="editarTour('${doc.id}', ${JSON.stringify(data).replace(/"/g, '&quot;')})">✏️</button></td>
             <td><button onclick="eliminarTour('${doc.id}')">🗑️</button></td>
           `;
           tbody.appendChild(fila);
@@ -172,16 +168,18 @@
       }
     }
 
-    function editarTour(id) {
-      console.log("Editar tour:", id);
-      alert("Función de edición en progreso para el ID: " + id);
+    function editarTour(id, data) {
+      const nuevoNombre = prompt("Editar nombre del tour:", data.nombre);
+      if (nuevoNombre !== null) {
+        db.collection("tours").doc(id).update({ nombre: nuevoNombre });
+      }
     }
 
     function exportarTabla() {
       html2canvas(document.getElementById("tablaContainer")).then(canvas => {
         const imgData = canvas.toDataURL("image/png");
         const pdf = new jspdf.jsPDF('landscape');
-        const imgProps= pdf.getImageProperties(imgData);
+        const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight);
@@ -234,4 +232,5 @@
   </script>
 </body>
 </html>
+
 
