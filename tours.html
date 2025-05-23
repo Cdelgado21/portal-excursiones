@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <title>Catálogo de Tours</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -78,63 +80,9 @@
   </div>
 
   <script>
-    const urlAppsScript = 'https://script.google.com/macros/s/AKfycbxhyot_tours1-BAWzk1tu17GMQgn55m9zm-q_V40EfArXuoI9hwse6sG9voePXlx1PYTY4g/exec?tipo=listar%20tours';
-    const urlProxy = 'https://proxy-tours.cris-delgado21.workers.dev/?url=' + encodeURIComponent(urlAppsScript);
-
-    fetch(urlProxy)
-      .then(response => {
-        if (!response.ok) throw new Error("Respuesta no válida del servidor");
-        return response.json();
-      })
-      .then(data => {
-        cargarTablaTours(data);
-      })
-      .catch(error => {
-        console.error('Error al cargar tours:', error);
-        document.getElementById('tabla-body').innerHTML =
-          '<tr><td colspan="4">Error al cargar tours.</td></tr>';
-      });
-
-    function cargarTablaTours(tours) {
-      const tbody = document.getElementById('tabla-body');
-      tbody.innerHTML = '';
-
-      if (!tours || tours.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4">No hay tours disponibles.</td></tr>';
-        return;
-      }
-
-      tours.forEach(tour => {
-        const fila = document.createElement('tr');
-
-        fila.innerHTML = `
-          <td>${tour.nombre}</td>
-          <td>${tour.precio}</td>
-          <td>
-            <button class="btn-estado ${tour.estado === 'Activo' ? 'activo' : 'inactivo'}"
-              onclick="cambiarEstado('${tour.id}', '${tour.estado}')">
-              ${tour.estado}
-            </button>
-          </td>
-          <td><button onclick="editarTour('${tour.id}')">Editar</button></td>
-        `;
-
-        tbody.appendChild(fila);
-      });
-    }
-
-    function agregarTour() {
-      alert('Aquí se abriría un formulario emergente para agregar un nuevo tour.');
-    }
-
-    function cambiarEstado(id, estadoActual) {
-      alert(`Aquí cambiarías el estado del tour con ID: ${id}`);
-    }
-
-    function editarTour(id) {
-      alert(`Aquí editarías el tour con ID: ${id}`);
-    }
-  </script>
-</body>
-</html>
+    // 🔐 Reemplaza esto con tus datos reales de configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "TU_DOMINIO.firebaseapp.com",
+      pro
 
