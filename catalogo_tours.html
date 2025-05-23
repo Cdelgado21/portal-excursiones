@@ -46,7 +46,7 @@
       const datos = Object.fromEntries(new FormData(e.target).entries());
       datos.tipo = "nuevo_tour"; // <- esto es fundamental
 
-      fetch("https://catalogotours.cris-delgado21.workers.dev", {
+     fetch("https://proxy-excursiones.cris-delgado21.workers.dev", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(datos)
