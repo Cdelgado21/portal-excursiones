@@ -42,9 +42,9 @@
       cursor: pointer;
       margin-right: auto;
     }
-    .btn-exportar::after { content: "\1F4C4"; } /* page facing up icon */
-    .btn-descargar::after { content: "\1F4C3"; } /* page with curl icon */
-    .btn-imprimir::after { content: "\1F5B6"; } /* printer icon */
+    .btn-exportar::after { content: "\1F4C4"; }
+    .btn-descargar::after { content: "\1F4C3"; }
+    .btn-imprimir::after { content: "\1F5B6"; }
     .btn-exportar, .btn-descargar, .btn-imprimir {
       background: #02535a;
       color: white;
@@ -125,14 +125,22 @@
       padding: 10px;
       border: 1px solid #ccc;
     }
+    .modal-content .btn-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 15px;
+    }
     .modal-content button {
-      margin-top: 10px;
       padding: 10px;
       background: #02535a;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
+    }
+    .btn-cancelar {
+      background: #999;
     }
   </style>
 </head>
@@ -169,7 +177,10 @@
       <input type="text" id="precio" placeholder="Precio" />
       <input type="text" id="duracion" placeholder="Duración" />
       <input type="text" id="incluye" placeholder="Incluye" />
-      <button onclick="guardarTour()">Guardar</button>
+      <div class="btn-row">
+        <button onclick="guardarTour()">Guardar</button>
+        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+      </div>
     </div>
   </div>
 
@@ -193,6 +204,10 @@
       tourActualId = id;
     }
 
+    function cerrarModal() {
+      document.getElementById("modalTour").style.display = "none";
+    }
+
     function guardarTour() {
       const datos = {
         nombre: document.getElementById("nombre").value,
@@ -204,7 +219,7 @@
       if (tourActualId) db.collection("tours").doc(tourActualId).update(datos);
       else db.collection("tours").add(datos);
       alert("¡Tour guardado exitosamente!");
-      document.getElementById("modalTour").style.display = "none";
+      cerrarModal();
       location.reload();
     }
 
@@ -250,6 +265,37 @@
       a.download = "tours.csv";
       a.click();
     }
+
+    function cargarTours() {
+      db.collection("tours").get().then((querySnapshot) => {
+        const tbody = document.getElementById("tabla-body");
+        tbody.innerHTML = "";
+        if (querySnapshot.empty) {
+          tbody.innerHTML = '<tr><td colspan="7">No hay tours disponibles.</td></tr>';
+          return;
+        }
+        querySnapshot.forEach((doc) => {
+          const tour = doc.data();
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${tour.nombre || '-'}</td>
+            <td>$${tour.precio || '-'}</td>
+            <td>${tour.duracion || '-'}</td>
+            <td>${tour.incluye || '-'}</td>
+            <td><span class="btn-estado ${tour.estado === 'ACTIVO' ? 'activo' : 'inactivo'}">${tour.estado}</span></td>
+            <td><button class="icon-btn" onclick="abrirEditor('${doc.id}', ${JSON.stringify(tour).replace(/"/g, '&quot;')})">🖉</button></td>
+            <td><button class="icon-btn" onclick="db.collection('tours').doc('${doc.id}').delete().then(() => location.reload())">🗑️</button></td>
+          `;
+          tbody.appendChild(fila);
+        });
+      });
+    }
+
+    window.onload = cargarTours;
+  </script>
+</body>
+</html>
+
   </script>
 </body>
 </html>
