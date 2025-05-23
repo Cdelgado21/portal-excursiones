@@ -13,6 +13,29 @@
       background: #f0f7f7;
       padding: 30px;
     }
+    .menu-bar {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      background-color: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .menu-bar img {
+      height: 50px;
+      margin-right: 20px;
+      cursor: pointer;
+    }
+    .menu-bar button {
+      margin-right: 10px;
+      padding: 10px 15px;
+      border: none;
+      background-color: #02535a;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
     h2 {
       text-align: center;
       color: #02535a;
@@ -84,7 +107,6 @@
       border: 1px solid #ccc;
       padding: 10px;
       text-align: left;
-      vertical-align: middle;
     }
     th {
       background: #02535a;
@@ -96,7 +118,6 @@
       border-radius: 5px;
       cursor: pointer;
       color: white;
-      transition: background 0.3s;
     }
     .activo { background: #28a745; }
     .inactivo { background: #dc3545; }
@@ -110,10 +131,8 @@
       display: none;
       position: fixed;
       z-index: 9999;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
       background-color: rgba(0, 0, 0, 0.6);
       justify-content: center;
       align-items: center;
@@ -157,13 +176,22 @@
       body {
         padding: 10mm;
       }
-      .acciones {
+      .acciones, .menu-bar {
         display: none;
       }
     }
   </style>
 </head>
 <body>
+  <div class="menu-bar">
+    <img src="https://i.imgur.com/hg8Mcdo.png" alt="Excursiones Delgado" onclick="window.location.href='menu.html'" />
+    <button onclick="window.location.href='menu.html'">Menú</button>
+    <button onclick="window.location.href='tours.html'">Tours</button>
+    <button onclick="window.location.href='cotizaciones.html'">Cotizaciones</button>
+    <button onclick="window.location.href='reservas.html'">Reservas</button>
+    <button onclick="window.location.href='clientes.html'">Clientes</button>
+  </div>
+
   <h2>Catálogo de Tours</h2>
   <div class="tabla-container" id="tablaContainer">
     <div class="acciones">
@@ -244,7 +272,7 @@
       };
       if (tourActualId) db.collection("tours").doc(tourActualId).update(datos).then(() => cargarTours());
       else db.collection("tours").add(datos).then(() => cargarTours());
-      alert("\u00a1Tour guardado exitosamente!");
+      alert("¡Tour guardado exitosamente!");
       cerrarModal();
     }
 
@@ -325,4 +353,3 @@
   </script>
 </body>
 </html>
-
