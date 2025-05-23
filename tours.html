@@ -53,9 +53,9 @@
       align-items: center;
       justify-content: center;
     }
-    .btn-exportar::after { content: "📄"; }
-    .btn-descargar::after { content: "📁"; }
-    .btn-imprimir::after { content: "🖨️"; }
+    .btn-exportar::after { content: "\1F4C4"; }
+    .btn-descargar::after { content: "\1F4C1"; }
+    .btn-imprimir::after { content: "\1F5A8"; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -72,10 +72,16 @@
       cursor: pointer;
     }
     th .dropdown-filter {
-      width: 100%;
-      padding: 5px;
-      border: none;
+      background: url("data:image/svg+xml;utf8,<svg fill='black' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right center;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      text-indent: -9999px;
+      padding: 5px 20px 5px 5px;
+      background-color: white;
+      border: 1px solid #ccc;
       border-radius: 4px;
+      width: 100%;
     }
     .btn-estado {
       padding: 5px 10px;
@@ -167,7 +173,8 @@
     }
 
     function editarTour(id) {
-      alert("Función para editar tour con ID: " + id);
+      console.log("Editar tour:", id);
+      alert("Función de edición en progreso para el ID: " + id);
     }
 
     function exportarTabla() {
@@ -219,7 +226,7 @@
           const td = row.querySelectorAll("td")[i];
           if (td) valoresUnicos.add(td.innerText.trim());
         });
-        select.innerHTML = '<option value="">Todos</option>' + Array.from(valoresUnicos).sort().map(v => `<option value="${v}">${v}</option>`).join("");
+        select.innerHTML = '<option value=""></option>' + Array.from(valoresUnicos).sort().map(v => `<option value="${v}">${v}</option>`).join("");
       });
     }
 
@@ -227,3 +234,4 @@
   </script>
 </body>
 </html>
+
