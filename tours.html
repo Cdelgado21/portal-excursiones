@@ -80,9 +80,75 @@
   </div>
 
   <script>
-    // 🔐 Reemplaza esto con tus datos reales de configuración de Firebase
+    // 🔐 Tu configuración real de Firebase
     const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_DOMINIO.firebaseapp.com",
-      pro
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.appspot.com",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291",
+      measurementId: "G-CKZL71VG1W"
+    };
 
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function cargarTours() {
+      db.collection("tours").get().then((querySnapshot) => {
+        const tbody = document.getElementById("tabla-body");
+        tbody.innerHTML = "";
+        if (querySnapshot.empty) {
+          tbody.innerHTML = '<tr><td colspan="4">No hay tours disponibles.</td></tr>';
+          return;
+        }
+        querySnapshot.forEach((doc) => {
+          const tour = doc.data();
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${tour.nombre}</td>
+            <td>$${tour.precio}</td>
+            <td>
+              <button class="btn-estado ${tour.estado === 'ACTIVO' ? 'activo' : 'inactivo'}">
+                ${tour.estado}
+              </button>
+            </td>
+            <td><button onclick="editarTour('${doc.id}')">Editar</button></td>
+          `;
+          tbody.appendChild(fila);
+        });
+      }).catch((error) => {
+        console.error("Error al cargar tours:", error);
+        document.getElementById("tabla-body").innerHTML =
+          '<tr><td colspan="4">Error al cargar tours.</td></tr>';
+      });
+    }
+
+    function agregarTour() {
+      const nombre = prompt("Nombre del tour:");
+      const precio = prompt("Precio:");
+      const estado = "ACTIVO";
+
+      if (nombre && precio) {
+        db.collection("tours").add({
+          nombre,
+          precio: parseFloat(precio),
+          estado
+        }).then(() => {
+          alert("Tour agregado exitosamente.");
+          cargarTours();
+        }).catch((error) => {
+          alert("Error al agregar tour: " + error);
+        });
+      }
+    }
+
+    function editarTour(id) {
+      alert("Aquí podrías implementar la edición del tour con ID: " + id);
+    }
+
+    // Carga automática al abrir
+    cargarTours();
+  </script>
+</body>
+</html>
