@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Catálogo de Tours</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f7f7;
+      padding: 30px;
+    }
+
+    h2 {
+      text-align: center;
+      color: #02535a;
+    }
+
+    .tabla-container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background: #02535a;
+      color: white;
+    }
+
+    .btn-agregar {
+      background: #02535a;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+
+    .btn-estado {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .activo {
+      background-color: green;
+    }
+
+    .inactivo {
+      background-color: gray;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0;
+      top: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      width: 90%;
+      max-width: 500px;
+      border-radius: 10px;
+    }
+
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .msg {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Catálogo de Tours</h2>
+  <div class="tabla-container">
+    <button class="btn-agregar" onclick="abrirModal()">➕ Nuevo Tour</button>
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Precio</th>
+          <th>Estado</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tablaTours"></tbody>
+    </table>
+    <div class="msg" id="mensajeTabla"></div>
+  </div>
+
+  <!-- Modal para agregar tour -->
+  <div class="modal" id="modalNuevoTour">
+    <div class="modal-content">
+      <h3>Agregar Nuevo Tour</h3>
+      <form id="formNuevoTour">
+        <label>Nombre del Tour:</label>
+        <input name="nombre_tour" required>
+        <label>Incluye:</label>
+        <textarea name="incluye" required></textarea>
+        <label>Itinerario:</label>
+        <textarea name="itinerario" required></textarea>
+        <label>No Incluye:</label>
+        <textarea name="no_incluye"></textarea>
+        <label>Políticas:</label>
+        <textarea name="politicas"></textarea>
+        <label>Precio Base:</label>
+        <input name="precio_base" type="number" required>
+        <button type="submit">Guardar Tour</button>
+        <div class="msg" id="msgNuevoTour"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const URL_PROXY = "https://proxy-excursiones.cris-delgado21.workers.dev";
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxghvot-BAWzvkt1JzGM7Qg55nS0zmm-q-Iv40EE4rXuUO9hWsae65o9voePx1k1PYIY4g/exec";
+
+    function cargarTours() {
+      fetch(`${URL_SCRIPT}?tipo=listar_tours`)
+        .then(res => res.json())
+        .then(data => {
+          const tbody = document.getElementById("tablaTours");
+          const mensaje = document.getElementById("mensajeTabla");
+          tbody.innerHTML = "";
+          if (!data || !data.length) {
+            mensaje.textContent = "No hay tours disponibles.";
+            return;
+          }
+          data.forEach(row => {
+            const estado = (row[6] || "").trim();
+            tbody.innerHTML += `
+              <tr>
+                <td>${row[0]}</td>
+                <td>$${row[5]}</td>
+                <td>${estado}</td>
+                <td>
+                  <button class="btn-estado ${estado === "Activo" ? "activo" : "inactivo"}" onclick="cambiarEstado('${row[0]}', '${estado === "Activo" ? "Inactivo" : "Activo"}')">
+                    ${estado === "Activo" ? "Desactivar" : "Activar"}
+                  </button>
+                </td>
+              </tr>
+            `;
+          });
+        })
+        .catch(err => {
+          document.getElementById("mensajeTabla").textContent = "Error al cargar tours.";
+          console.error(err);
+        });
+    }
+
+    function abrirModal() {
+      document.getElementById("modalNuevoTour").style.display = "flex";
+    }
+
+    window.onclick = function(e) {
+      const modal = document.getElementById("modalNuevoTour");
+      if (e.target === modal) modal.style.display = "none";
+    };
+
+    document.getElementById("formNuevoTour").addEventListener("submit", function(e) {
+      e.preventDefault();
+      const datos = Object.fromEntries(new FormData(e.target).entries());
+      datos.tipo = "nuevo_tour";
+      document.getElementById("msgNuevoTour").textContent = "Guardando...";
+
+      fetch(URL_PROXY, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos)
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            document.getElementById("msgNuevoTour").textContent = "✅ Tour agregado";
+            e.target.reset();
+            cargarTours();
+            setTimeout(() => {
+              document.getElementById("modalNuevoTour").style.display = "none";
+            }, 1000);
+          } else {
+            document.getElementById("msgNuevoTour").textContent = "❌ Error: " + (data.error || "no se pudo guardar");
+          }
+        })
+        .catch(() => {
+          document.getElementById("msgNuevoTour").textContent = "❌ Error de conexión.";
+        });
+    });
+
+    function cambiarEstado(nombre, nuevoEstado) {
+      const datos = {
+        tipo: "cambiar_estado_tour",
+        nombre_tour: nombre,
+        estado: nuevoEstado
+      };
+      fetch(URL_PROXY, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(datos)
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            cargarTours();
+          } else {
+            alert("❌ Error al cambiar estado");
+          }
+        })
+        .catch(err => {
+          console.error("Error:", err);
+          alert("❌ Error de conexión");
+        });
+    }
+
+    // Cargar los tours al inicio
+    cargarTours();
+  </script>
+</body>
+</html>
