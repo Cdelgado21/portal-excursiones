@@ -1,9 +1,3 @@
 name = "portal-excursiones"
 main = "worker.js"
 compatibility_date = "2024-05-22"
-
-[build]
-command = ""
-
-[env.production]
-workers_dev = true
