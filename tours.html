@@ -40,9 +40,23 @@
       border-radius: 6px;
       cursor: pointer;
     }
-    .btn-exportar { background: #f49859; }
-    .btn-imprimir { background: #5f9296; }
-    .btn-descargar { background: #f5e2b8; color: black; }
+    .btn-exportar, .btn-descargar, .btn-imprimir {
+      padding: 10px;
+      font-size: 18px;
+    }
+    .btn-exportar::after { content: "📄"; }
+    .btn-descargar::after { content: "📁"; }
+    .btn-imprimir::after { content: "🖨️"; }
+    .btn-exportar::before, .btn-descargar::before, .btn-imprimir::before {
+      display: none;
+    }
+    .btn-exportar, .btn-descargar, .btn-imprimir {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -57,6 +71,12 @@
       background: #02535a;
       color: white;
       cursor: pointer;
+    }
+    th input {
+      width: 100%;
+      padding: 4px;
+      border: none;
+      border-radius: 4px;
     }
     .btn-estado {
       padding: 5px 10px;
@@ -88,18 +108,18 @@
         <option value="ACTIVO">Solo activos</option>
         <option value="INACTIVO">Solo inactivos</option>
       </select>
-      <button class="btn-exportar" onclick="exportarTabla()">📄 Exportar PDF</button>
-      <button class="btn-descargar" onclick="descargarCSV()">📁 Descargar Excel</button>
-      <button class="btn-imprimir" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn-exportar" onclick="exportarTabla()"></button>
+      <button class="btn-descargar" onclick="descargarCSV()"></button>
+      <button class="btn-imprimir" onclick="window.print()"></button>
     </div>
     <table id="tablaTours">
       <thead>
         <tr>
-          <th onclick="ordenarPor('nombre')">Nombre</th>
-          <th onclick="ordenarPor('precio')">Precio</th>
-          <th>Duración</th>
-          <th>Incluye</th>
-          <th>Estado</th>
+          <th onclick="ordenarPor('nombre')">Nombre<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(0, this.value)"></th>
+          <th onclick="ordenarPor('precio')">Precio<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(1, this.value)"></th>
+          <th>Duración<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(2, this.value)"></th>
+          <th>Incluye<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(3, this.value)"></th>
+          <th>Estado<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(4, this.value)"></th>
           <th>Editar</th>
           <th>Eliminar</th>
         </tr>
@@ -148,6 +168,17 @@
       ordenActual.campo = campo;
       cargarTours();
     }
+
+    function filtrarTabla(col, valor) {
+      const rows = document.querySelectorAll("#tabla-body tr");
+      rows.forEach(row => {
+        const cell = row.querySelectorAll("td")[col];
+        if (cell) {
+          row.style.display = cell.innerText.toLowerCase().includes(valor.toLowerCase()) ? "" : "none";
+        }
+      });
+    }
   </script>
 </body>
 </html>
+
