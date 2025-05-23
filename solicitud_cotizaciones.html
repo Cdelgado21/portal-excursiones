@@ -168,34 +168,33 @@
           <td>${d.encargado || '-'}</td>
           <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
           <td>
-            ${desactivar ? '<button class="btn-cotizar" disabled>Tomado</button>' : `
-              <select id="select-${doc.id}">
-                <option value="">-- Cotizador --</option>
-                <option value="Cristopher">Cristopher</option>
-                <option value="Marcela">Marcela</option>
-                <option value="Yare">Yare</option>
-                <option value="Yuliana">Yuliana</option>
-                <option value="Tatiana">Tatiana</option>
-                <option value="Geansury">Geansury</option>
-              </select>
-              <button class="btn-cotizar" onclick="marcarEnProcesoYRedirigir('${doc.id}', '${d.numero}')">Tomar</button>`}
+            ${desactivar ? '<button class="btn-cotizar" disabled>Tomado</button>' : `<button class="btn-cotizar" onclick="seleccionarCotizador('${doc.id}', '${d.numero}')">Tomar</button>`}
           </td>
         `;
         tabla.appendChild(fila);
       });
     }
 
-    async function marcarEnProcesoYRedirigir(id, numero) {
-      const select = document.getElementById(`select-${id}`);
-      const encargado = select ? select.value : "";
-      if (!encargado) return alert("Por favor seleccione el nombre del cotizador.");
+    function seleccionarCotizador(id, numero) {
+      const nombres = ["Cristopher", "Marcela", "Yare", "Yuliana", "Tatiana", "Geansury"];
+      let opciones = nombres.map(nombre => `<option value="${nombre}">${nombre}</option>`).join('');
+      const html = `<label>Selecciona tu nombre:</label><select id="cotizadorSelect">${opciones}</select>`;
+      const div = document.createElement("div");
+      div.innerHTML = html;
+      const confirmBox = document.createElement("div");
+      confirmBox.innerHTML = `<div style="padding:20px;background:white;border-radius:8px;max-width:300px;margin:auto;text-align:center;"><h4>Confirmar acción</h4>${html}<br><br><button onclick="confirmarCotizador('${id}','${numero}')">Confirmar</button></div>`;
+      document.body.appendChild(confirmBox);
+    }
+
+    async function confirmarCotizador(id, numero) {
+      const encargado = document.getElementById("cotizadorSelect").value;
+      if (!encargado) return alert("Debes seleccionar un cotizador.");
       await db.collection("cotizaciones").doc(id).update({
         estado: "En Proceso",
-        encargado: encargado,
+        encargado,
         fecha_asignacion: new Date()
       });
-      cargarCotizaciones();
-      window.location.href = `cotizaciones.html?codigo=${encodeURIComponent(numero)}`;
+      location.href = `cotizaciones.html?codigo=${encodeURIComponent(numero)}`;
     }
 
     cargarDestinos();
