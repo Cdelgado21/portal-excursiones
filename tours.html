@@ -28,6 +28,7 @@
     .acciones {
       display: flex;
       justify-content: flex-end;
+      align-items: center;
       flex-wrap: wrap;
       gap: 10px;
       margin-bottom: 10px;
@@ -74,11 +75,12 @@
     }
     .icono-filtro {
       font-size: 14px;
-      float: right;
+      margin-left: 5px;
       cursor: pointer;
     }
     .dropdown-filter {
       display: none;
+      margin-top: 5px;
     }
     .btn-estado {
       padding: 5px 10px;
@@ -112,11 +114,11 @@
     <table id="tablaTours">
       <thead>
         <tr>
-          <th>Nombre <span class="icono-filtro" onclick="toggleFiltro(0)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(0, this)"></select></th>
-          <th>Precio <span class="icono-filtro" onclick="toggleFiltro(1)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(1, this)"></select></th>
-          <th>Duración <span class="icono-filtro" onclick="toggleFiltro(2)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(2, this)"></select></th>
-          <th>Incluye <span class="icono-filtro" onclick="toggleFiltro(3)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(3, this)"></select></th>
-          <th>Estado <span class="icono-filtro" onclick="toggleFiltro(4)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(4, this)"></select></th>
+          <th>Nombre <span class="icono-filtro" onclick="toggleFiltro(0)">▼</span><select class="dropdown-filter" onchange="filtrarTablaSelect(0, this)"></select></th>
+          <th>Precio <span class="icono-filtro" onclick="toggleFiltro(1)">▼</span><select class="dropdown-filter" onchange="filtrarTablaSelect(1, this)"></select></th>
+          <th>Duración <span class="icono-filtro" onclick="toggleFiltro(2)">▼</span><select class="dropdown-filter" onchange="filtrarTablaSelect(2, this)"></select></th>
+          <th>Incluye <span class="icono-filtro" onclick="toggleFiltro(3)">▼</span><select class="dropdown-filter" onchange="filtrarTablaSelect(3, this)"></select></th>
+          <th>Estado <span class="icono-filtro" onclick="toggleFiltro(4)">▼</span><select class="dropdown-filter" onchange="filtrarTablaSelect(4, this)"></select></th>
           <th>Editar</th>
           <th>Eliminar</th>
         </tr>
@@ -149,13 +151,24 @@
             <td>${data.duracion || "-"}</td>
             <td>${data.incluye || "-"}</td>
             <td><button class="btn-estado ${data.estado === 'ACTIVO' ? 'activo' : 'inactivo'}" onclick="toggleEstado('${doc.id}', '${data.estado}')">${data.estado || 'Sin estado'}</button></td>
-            <td><button onclick="editarTour('${doc.id}', ${JSON.stringify(data).replace(/"/g, '&quot;')})">✏️</button></td>
+            <td><button onclick="abrirEditor('${doc.id}', ${JSON.stringify(data).replace(/"/g, '&quot;')})">✏️</button></td>
             <td><button onclick="eliminarTour('${doc.id}')">🗑️</button></td>
           `;
           tbody.appendChild(fila);
         });
         actualizarFiltros();
       });
+    }
+
+    function abrirEditor(id, data) {
+      const campos = ['nombre', 'precio', 'duracion', 'incluye'];
+      const nuevosValores = {};
+      for (const campo of campos) {
+        const valor = prompt(`Editar ${campo}:`, data[campo] || "");
+        if (valor !== null) nuevosValores[campo] = valor;
+        else return;
+      }
+      db.collection("tours").doc(id).update(nuevosValores);
     }
 
     function toggleFiltro(i) {
@@ -171,21 +184,6 @@
     function eliminarTour(id) {
       if (confirm("¿Estás seguro de eliminar este tour?")) {
         db.collection("tours").doc(id).delete();
-      }
-    }
-
-    function editarTour(id, data) {
-      const nuevoNombre = prompt("Editar nombre del tour:", data.nombre);
-      const nuevoPrecio = prompt("Editar precio:", data.precio);
-      const nuevaDuracion = prompt("Editar duración:", data.duracion);
-      const nuevoIncluye = prompt("Editar incluye:", data.incluye);
-      if (nuevoNombre !== null) {
-        db.collection("tours").doc(id).update({
-          nombre: nuevoNombre,
-          precio: nuevoPrecio,
-          duracion: nuevaDuracion,
-          incluye: nuevoIncluye
-        });
       }
     }
 
