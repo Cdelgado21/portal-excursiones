@@ -65,19 +65,20 @@
       border: 1px solid #ccc;
       padding: 10px;
       text-align: left;
+      vertical-align: middle;
     }
     th {
       background: #02535a;
       color: white;
+      position: relative;
+    }
+    .icono-filtro {
+      font-size: 14px;
+      float: right;
+      cursor: pointer;
     }
     .dropdown-filter {
-      width: 100%;
-      border: none;
-      background: transparent;
-      background: url("data:image/svg+xml;utf8,<svg fill='white' height='16' viewBox='0 0 24 24' width='16' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right center;
-      appearance: none;
-      text-indent: -9999px;
-      cursor: pointer;
+      display: none;
     }
     .btn-estado {
       padding: 5px 10px;
@@ -111,11 +112,11 @@
     <table id="tablaTours">
       <thead>
         <tr>
-          <th>Nombre<br><select class="dropdown-filter" onchange="filtrarTablaSelect(0, this)"></select></th>
-          <th>Precio<br><select class="dropdown-filter" onchange="filtrarTablaSelect(1, this)"></select></th>
-          <th>Duración<br><select class="dropdown-filter" onchange="filtrarTablaSelect(2, this)"></select></th>
-          <th>Incluye<br><select class="dropdown-filter" onchange="filtrarTablaSelect(3, this)"></select></th>
-          <th>Estado<br><select class="dropdown-filter" onchange="filtrarTablaSelect(4, this)"></select></th>
+          <th>Nombre <span class="icono-filtro" onclick="toggleFiltro(0)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(0, this)"></select></th>
+          <th>Precio <span class="icono-filtro" onclick="toggleFiltro(1)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(1, this)"></select></th>
+          <th>Duración <span class="icono-filtro" onclick="toggleFiltro(2)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(2, this)"></select></th>
+          <th>Incluye <span class="icono-filtro" onclick="toggleFiltro(3)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(3, this)"></select></th>
+          <th>Estado <span class="icono-filtro" onclick="toggleFiltro(4)">▼</span><br><select class="dropdown-filter" onchange="filtrarTablaSelect(4, this)"></select></th>
           <th>Editar</th>
           <th>Eliminar</th>
         </tr>
@@ -157,6 +158,11 @@
       });
     }
 
+    function toggleFiltro(i) {
+      const select = document.querySelectorAll("thead select")[i];
+      select.style.display = select.style.display === "inline-block" ? "none" : "inline-block";
+    }
+
     function toggleEstado(id, estadoActual) {
       const nuevoEstado = estadoActual === "ACTIVO" ? "INACTIVO" : "ACTIVO";
       db.collection("tours").doc(id).update({ estado: nuevoEstado });
@@ -170,8 +176,16 @@
 
     function editarTour(id, data) {
       const nuevoNombre = prompt("Editar nombre del tour:", data.nombre);
+      const nuevoPrecio = prompt("Editar precio:", data.precio);
+      const nuevaDuracion = prompt("Editar duración:", data.duracion);
+      const nuevoIncluye = prompt("Editar incluye:", data.incluye);
       if (nuevoNombre !== null) {
-        db.collection("tours").doc(id).update({ nombre: nuevoNombre });
+        db.collection("tours").doc(id).update({
+          nombre: nuevoNombre,
+          precio: nuevoPrecio,
+          duracion: nuevaDuracion,
+          incluye: nuevoIncluye
+        });
       }
     }
 
@@ -225,6 +239,7 @@
           if (td) valoresUnicos.add(td.innerText.trim());
         });
         select.innerHTML = '<option value=""></option>' + Array.from(valoresUnicos).sort().map(v => `<option value="${v}">${v}</option>`).join("");
+        select.style.display = "none";
       });
     }
 
@@ -232,5 +247,4 @@
   </script>
 </body>
 </html>
-
 
