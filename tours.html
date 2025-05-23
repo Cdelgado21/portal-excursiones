@@ -27,36 +27,35 @@
     }
     .acciones {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
-    .btn-agregar, .btn-exportar, .btn-imprimir, .btn-descargar, select {
+    .btn-agregar {
       background: #02535a;
       color: white;
       border: none;
       padding: 10px 15px;
       border-radius: 6px;
       cursor: pointer;
+      margin-right: auto;
     }
     .btn-exportar, .btn-descargar, .btn-imprimir {
-      padding: 10px;
+      background: #02535a;
+      color: white;
+      border: none;
+      width: 42px;
+      height: 42px;
+      border-radius: 6px;
       font-size: 18px;
-    }
-    .btn-exportar::after { content: "📄"; }
-    .btn-descargar::after { content: "📁"; }
-    .btn-imprimir::after { content: "🖨️"; }
-    .btn-exportar::before, .btn-descargar::before, .btn-imprimir::before {
-      display: none;
-    }
-    .btn-exportar, .btn-descargar, .btn-imprimir {
-      width: 48px;
-      height: 48px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
+    .btn-exportar::after { content: "📄"; }
+    .btn-descargar::after { content: "📁"; }
+    .btn-imprimir::after { content: "🖨️"; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -72,9 +71,9 @@
       color: white;
       cursor: pointer;
     }
-    th input {
+    th .dropdown-filter {
       width: 100%;
-      padding: 4px;
+      padding: 5px;
       border: none;
       border-radius: 4px;
     }
@@ -103,11 +102,6 @@
   <div class="tabla-container" id="tablaContainer">
     <div class="acciones">
       <button class="btn-agregar" onclick="mostrarModal()">+ Nuevo Tour</button>
-      <select id="filtroEstado" onchange="cargarTours()">
-        <option value="TODOS">Mostrar todos</option>
-        <option value="ACTIVO">Solo activos</option>
-        <option value="INACTIVO">Solo inactivos</option>
-      </select>
       <button class="btn-exportar" onclick="exportarTabla()"></button>
       <button class="btn-descargar" onclick="descargarCSV()"></button>
       <button class="btn-imprimir" onclick="window.print()"></button>
@@ -115,11 +109,11 @@
     <table id="tablaTours">
       <thead>
         <tr>
-          <th onclick="ordenarPor('nombre')">Nombre<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(0, this.value)"></th>
-          <th onclick="ordenarPor('precio')">Precio<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(1, this.value)"></th>
-          <th>Duración<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(2, this.value)"></th>
-          <th>Incluye<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(3, this.value)"></th>
-          <th>Estado<br><input type="text" placeholder="Filtrar" onkeyup="filtrarTabla(4, this.value)"></th>
+          <th>Nombre<br><select class="dropdown-filter" onchange="filtrarTablaSelect(0, this)"></select></th>
+          <th>Precio<br><select class="dropdown-filter" onchange="filtrarTablaSelect(1, this)"></select></th>
+          <th>Duración<br><select class="dropdown-filter" onchange="filtrarTablaSelect(2, this)"></select></th>
+          <th>Incluye<br><select class="dropdown-filter" onchange="filtrarTablaSelect(3, this)"></select></th>
+          <th>Estado<br><select class="dropdown-filter" onchange="filtrarTablaSelect(4, this)"></select></th>
           <th>Editar</th>
           <th>Eliminar</th>
         </tr>
@@ -131,8 +125,6 @@
   </div>
 
   <script>
-    let ordenActual = { campo: '', asc: true };
-
     function exportarTabla() {
       html2canvas(document.getElementById("tablaContainer")).then(canvas => {
         const imgData = canvas.toDataURL("image/png");
@@ -163,22 +155,30 @@
       window.URL.revokeObjectURL(url);
     }
 
-    function ordenarPor(campo) {
-      ordenActual.asc = ordenActual.campo === campo ? !ordenActual.asc : true;
-      ordenActual.campo = campo;
-      cargarTours();
-    }
-
-    function filtrarTabla(col, valor) {
+    function filtrarTablaSelect(col, select) {
+      const valor = select.value;
       const rows = document.querySelectorAll("#tabla-body tr");
       rows.forEach(row => {
         const cell = row.querySelectorAll("td")[col];
         if (cell) {
-          row.style.display = cell.innerText.toLowerCase().includes(valor.toLowerCase()) ? "" : "none";
+          row.style.display = valor === "" || cell.innerText.trim() === valor ? "" : "none";
         }
+      });
+    }
+
+    window.onload = function() {
+      const header = document.querySelectorAll("#tablaTours thead select");
+      header.forEach((select, i) => {
+        const valoresUnicos = new Set();
+        document.querySelectorAll(`#tabla-body tr`).forEach(row => {
+          const td = row.querySelectorAll("td")[i];
+          if (td) valoresUnicos.add(td.innerText.trim());
+        });
+        select.innerHTML = '<option value="">Todos</option>' + Array.from(valoresUnicos).sort().map(v => `<option value="${v}">${v}</option>`).join("");
       });
     }
   </script>
 </body>
 </html>
+
 
