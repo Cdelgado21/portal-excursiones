@@ -16,6 +16,7 @@
     table { width: 100%; border-collapse: collapse; margin-top: 40px; background: white; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
     th { background-color: #02535a; color: white; }
+    .estado-pendiente { background-color: #ff4d4d; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
     .container { max-width: 1000px; margin: auto; }
   </style>
 </head>
@@ -28,7 +29,7 @@
       <input type="text" id="telefono" required>
 
       <label for="destino">Destino:</label>
-      <input type="text" id="destino" required>
+      <select id="destino" required><option value="">Cargando...</option></select>
 
       <label for="fechas">Rango de Fechas del Viaje:</label>
       <input type="text" id="fechas" required>
@@ -67,6 +68,8 @@
           <th>Niños</th>
           <th>Observaciones</th>
           <th>Embajador(a)</th>
+          <th>Estado</th>
+          <th>Registro</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -84,19 +87,34 @@
 
     const form = document.getElementById("cotizacionForm");
     const tabla = document.querySelector("#tablaCotizaciones tbody");
+    const destinoSelect = document.getElementById("destino");
+
+    async function cargarDestinos() {
+      const snapshot = await db.collection("tours").get();
+      destinoSelect.innerHTML = '<option value="">Seleccione un destino</option>';
+      snapshot.forEach(doc => {
+        const tour = doc.data();
+        if (tour.nombre) {
+          const opt = document.createElement("option");
+          opt.value = tour.nombre;
+          opt.textContent = tour.nombre;
+          destinoSelect.appendChild(opt);
+        }
+      });
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const telefono = document.getElementById("telefono").value;
-      const destino = document.getElementById("destino").value;
+      const destino = destinoSelect.value;
       const fechas = document.getElementById("fechas").value;
       const adultos = document.getElementById("adultos").value;
       const ninos = document.getElementById("ninos").value;
       const observaciones = document.getElementById("observaciones").value;
       const embajador = document.getElementById("embajador").value;
-
-      const year = new Date().getFullYear();
+      const fechaRegistro = new Date();
+      const year = fechaRegistro.getFullYear();
       const snapshot = await db.collection("cotizaciones").get();
       const numero = `COT-${String(snapshot.size + 1).padStart(3, '0')}-${year}`;
 
@@ -108,7 +126,9 @@
         adultos,
         ninos,
         observaciones,
-        embajador
+        embajador,
+        estado: "Pendiente",
+        registro: fechaRegistro
       });
 
       alert("Solicitud registrada correctamente.");
@@ -118,7 +138,7 @@
 
     async function cargarCotizaciones() {
       tabla.innerHTML = "";
-      const snapshot = await db.collection("cotizaciones").orderBy("numero").get();
+      const snapshot = await db.collection("cotizaciones").orderBy("registro", "desc").get();
       snapshot.forEach(doc => {
         const d = doc.data();
         const fila = document.createElement("tr");
@@ -131,11 +151,14 @@
           <td>${d.ninos}</td>
           <td>${d.observaciones}</td>
           <td>${d.embajador}</td>
+          <td><div class="estado-pendiente">${d.estado}</div></td>
+          <td>${d.registro?.toDate().toLocaleString()}</td>
         `;
         tabla.appendChild(fila);
       });
     }
 
+    cargarDestinos();
     cargarCotizaciones();
   </script>
 </body>
