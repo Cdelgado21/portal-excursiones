@@ -57,17 +57,6 @@
         <option value="Geansury">Geansury</option>
       </select>
 
-      <label for="encargado">Cotizador(a):</label>
-      <select id="encargado" required>
-        <option value="">Seleccione</option>
-        <option value="Cristopher">Cristopher</option>
-        <option value="Marcela">Marcela</option>
-        <option value="Yare">Yare</option>
-        <option value="Yuliana">Yuliana</option>
-        <option value="Tatiana">Tatiana</option>
-        <option value="Geansury">Geansury</option>
-      </select>
-
       <button type="submit">Enviar solicitud</button>
     </form>
 
@@ -131,7 +120,6 @@
       const ninos = document.getElementById("ninos").value;
       const observaciones = document.getElementById("observaciones").value;
       const embajador = document.getElementById("embajador").value;
-      const encargado = document.getElementById("encargado").value;
       const fechaRegistro = new Date();
       const year = fechaRegistro.getFullYear();
       const snapshot = await db.collection("cotizaciones").get();
@@ -186,8 +174,8 @@
     }
 
     async function marcarEnProcesoYRedirigir(id, numero) {
-      const encargado = document.getElementById("encargado").value;
-      if (!encargado) return alert("Por favor seleccione su nombre en el formulario antes de tomar una solicitud.");
+      const encargado = prompt("Por favor, indique su nombre para continuar:");
+      if (!encargado) return alert("Nombre requerido para continuar.");
       await db.collection("cotizaciones").doc(id).update({
         estado: "En Proceso",
         encargado: encargado,
@@ -202,4 +190,3 @@
   </script>
 </body>
 </html>
-
