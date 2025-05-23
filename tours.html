@@ -80,16 +80,16 @@
   <script>
     const urlAppsScript = 'https://script.google.com/macros/s/AKfycbxhyot_tours1-BAWzk1tu17GMQgn55m9zm-q_V40EfArXuoI9hwse6sG9voePXlx1PYTY4g/exec?tipo=listar%20tours';
 
-    fetch('https://proxy-tours.cris-delgado21.workers.dev/?url=' + encodeURIComponent(urlAppsScript))
-      .then(response => response.json())
-      .then(data => {
-        cargarTablaTours(data);
-      })
-      .catch(error => {
-        console.error('Error al cargar tours:', error);
-        document.getElementById('tabla-body').innerHTML =
-          '<tr><td colspan="4">Error al cargar tours.</td></tr>';
-      });
+    const urlAppsScript = 'https://script.google.com/macros/s/AKfycbxhyot_tours1-BAWzk1tu17GMQgn55m9zm-q_V40EfArXuoI9hwse6sG9voePXlx1PYTY4g/exec?tipo=listar%20tours';
+
+fetch('https://proxy-tours.cris-delgado21.workers.dev/?url=' + encodeURIComponent(urlAppsScript))
+  .then(response => response.json())
+  .then(data => cargarTablaTours(data))
+  .catch(error => {
+    console.error('Error al cargar tours:', error);
+    document.getElementById('tabla-body').innerHTML =
+      '<tr><td colspan="4">Error al cargar tours.</td></tr>';
+        });
 
     function cargarTablaTours(tours) {
       const tbody = document.getElementById('tabla-body');
