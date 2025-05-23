@@ -2,85 +2,49 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Nueva Solicitud de Cotización</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solicitudes de Cotización</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f7f7;
-      margin: 0;
-      padding: 20px;
-    }
-    .form-container {
-      max-width: 600px;
-      margin: auto;
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h2 {
-      text-align: center;
-      color: #02535a;
-    }
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    input, textarea, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 14px;
-    }
-    button {
-      margin-top: 20px;
-      width: 100%;
-      background-color: #02535a;
-      color: white;
-      border: none;
-      padding: 12px;
-      font-size: 16px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .mensaje {
-      margin-top: 20px;
-      text-align: center;
-      font-weight: bold;
-      color: green;
-    }
+    body { font-family: Arial, sans-serif; background-color: #f0f7f7; padding: 20px; }
+    h2 { text-align: center; color: #02535a; }
+    form { background: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 15px; color: #02535a; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
+    button { margin-top: 20px; padding: 10px 20px; background-color: #02535a; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 40px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background-color: #02535a; color: white; }
+    .container { max-width: 1000px; margin: auto; }
   </style>
 </head>
 <body>
-  <div class="form-container">
-    <h2>Nueva Solicitud de Cotización</h2>
-    <form id="formulario">
-      <label for="telefono">Teléfono del Cliente:</label>
-      <input type="tel" id="telefono" required>
+  <div class="container">
+    <h2>Solicitudes de Cotización</h2>
+
+    <form id="cotizacionForm">
+      <label for="telefono">Número de Teléfono:</label>
+      <input type="text" id="telefono" required>
 
       <label for="destino">Destino:</label>
       <input type="text" id="destino" required>
 
-      <label for="fechas">Rango de Fechas de Viaje:</label>
+      <label for="fechas">Rango de Fechas del Viaje:</label>
       <input type="text" id="fechas" required>
 
-      <label for="adultos">Cantidad de Adultos:</label>
-      <input type="number" id="adultos" required min="1">
+      <label for="adultos">Cantidad de Personas Adultas:</label>
+      <input type="number" id="adultos" required>
 
       <label for="ninos">Cantidad de Niños:</label>
-      <input type="number" id="ninos" required min="0">
+      <input type="number" id="ninos">
 
       <label for="observaciones">Observaciones:</label>
-      <textarea id="observaciones" rows="3"></textarea>
+      <textarea id="observaciones"></textarea>
 
       <label for="embajador">Embajador(a) a cargo:</label>
       <select id="embajador" required>
-        <option value="">-- Selecciona --</option>
+        <option value="">Seleccione</option>
         <option value="Cristopher">Cristopher</option>
         <option value="Marcela">Marcela</option>
         <option value="Yare">Yare</option>
@@ -89,9 +53,24 @@
         <option value="Geansury">Geansury</option>
       </select>
 
-      <button type="submit">Enviar Solicitud</button>
-      <div class="mensaje" id="mensaje"></div>
+      <button type="submit">Enviar solicitud</button>
     </form>
+
+    <table id="tablaCotizaciones">
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Teléfono</th>
+          <th>Destino</th>
+          <th>Fechas</th>
+          <th>Adultos</th>
+          <th>Niños</th>
+          <th>Observaciones</th>
+          <th>Embajador(a)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <script>
@@ -103,40 +82,62 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    function generarCodigo() {
+    const form = document.getElementById("cotizacionForm");
+    const tabla = document.querySelector("#tablaCotizaciones tbody");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const telefono = document.getElementById("telefono").value;
+      const destino = document.getElementById("destino").value;
+      const fechas = document.getElementById("fechas").value;
+      const adultos = document.getElementById("adultos").value;
+      const ninos = document.getElementById("ninos").value;
+      const observaciones = document.getElementById("observaciones").value;
+      const embajador = document.getElementById("embajador").value;
+
       const year = new Date().getFullYear();
-      return db.collection("solicitudes").get().then(snapshot => {
-        const count = snapshot.size + 1;
-        return `COT-${String(count).padStart(3, '0')}-${year}`;
+      const snapshot = await db.collection("cotizaciones").get();
+      const numero = `COT-${String(snapshot.size + 1).padStart(3, '0')}-${year}`;
+
+      await db.collection("cotizaciones").add({
+        numero,
+        telefono,
+        destino,
+        fechas,
+        adultos,
+        ninos,
+        observaciones,
+        embajador
+      });
+
+      alert("Solicitud registrada correctamente.");
+      form.reset();
+      cargarCotizaciones();
+    });
+
+    async function cargarCotizaciones() {
+      tabla.innerHTML = "";
+      const snapshot = await db.collection("cotizaciones").orderBy("numero").get();
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${d.numero}</td>
+          <td>${d.telefono}</td>
+          <td>${d.destino}</td>
+          <td>${d.fechas}</td>
+          <td>${d.adultos}</td>
+          <td>${d.ninos}</td>
+          <td>${d.observaciones}</td>
+          <td>${d.embajador}</td>
+        `;
+        tabla.appendChild(fila);
       });
     }
 
-    document.getElementById("formulario").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const mensaje = document.getElementById("mensaje");
-
-      const datos = {
-        NUMERO_DE_TELÉFONO_CLIENTE: document.getElementById("telefono").value,
-        DESTINO: document.getElementById("destino").value,
-        RANGO_DE_FECHAS_DE_VIAJE: document.getElementById("fechas").value,
-        CANTIDAD_DE_PERSONAS_ADULTAS: parseInt(document.getElementById("adultos").value),
-        CANTIDAD_DE_NIÑOS: parseInt(document.getElementById("ninos").value),
-        OBSERVACIONES: document.getElementById("observaciones").value,
-        ENCARGADO: document.getElementById("embajador").value,
-        ESTADO: "Pendiente"
-      };
-
-      try {
-        const codigo = await generarCodigo();
-        datos.NUMERO_COTIZACION = codigo;
-        await db.collection("solicitudes").add(datos);
-        mensaje.innerText = `Solicitud enviada con éxito. Código: ${codigo}`;
-        document.getElementById("formulario").reset();
-      } catch (error) {
-        console.error("Error al guardar:", error);
-        mensaje.innerText = "Hubo un error al enviar la solicitud.";
-      }
-    });
+    cargarCotizaciones();
   </script>
 </body>
 </html>
+
