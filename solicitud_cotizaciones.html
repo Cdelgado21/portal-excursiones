@@ -20,6 +20,7 @@
     .estado-proceso { background-color: #ffa500; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
     .container { max-width: 1000px; margin: auto; }
     .btn-cotizar { background-color: #f49859; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-cotizar[disabled] { background-color: #ccc; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -56,6 +57,17 @@
         <option value="Geansury">Geansury</option>
       </select>
 
+      <label for="encargado">Cotizador(a):</label>
+      <select id="encargado" required>
+        <option value="">Seleccione</option>
+        <option value="Cristopher">Cristopher</option>
+        <option value="Marcela">Marcela</option>
+        <option value="Yare">Yare</option>
+        <option value="Yuliana">Yuliana</option>
+        <option value="Tatiana">Tatiana</option>
+        <option value="Geansury">Geansury</option>
+      </select>
+
       <button type="submit">Enviar solicitud</button>
     </form>
 
@@ -72,6 +84,7 @@
           <th>Embajador(a)</th>
           <th>Estado</th>
           <th>Registro</th>
+          <th>Tiempo en espera</th>
           <th>Encargado</th>
           <th>Fecha Asignación</th>
           <th>Acción</th>
@@ -118,6 +131,7 @@
       const ninos = document.getElementById("ninos").value;
       const observaciones = document.getElementById("observaciones").value;
       const embajador = document.getElementById("embajador").value;
+      const encargado = document.getElementById("encargado").value;
       const fechaRegistro = new Date();
       const year = fechaRegistro.getFullYear();
       const snapshot = await db.collection("cotizaciones").get();
@@ -148,7 +162,9 @@
       const snapshot = await db.collection("cotizaciones").orderBy("registro", "desc").get();
       snapshot.forEach(doc => {
         const d = doc.data();
+        const tiempoEspera = d.registro ? `${Math.floor((new Date() - d.registro.toDate()) / 60000)} min` : '-';
         const fila = document.createElement("tr");
+        const desactivar = d.estado === "En Proceso";
         fila.innerHTML = `
           <td>${d.numero}</td>
           <td>${d.telefono}</td>
@@ -160,22 +176,24 @@
           <td>${d.embajador}</td>
           <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
           <td>${d.registro?.toDate().toLocaleString()}</td>
+          <td>${tiempoEspera}</td>
           <td>${d.encargado || '-'}</td>
           <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
-          <td><button class="btn-cotizar" onclick="marcarEnProcesoYRedirigir('${doc.id}', '${d.numero}')">Tomar</button></td>
+          <td><button class="btn-cotizar" onclick="marcarEnProcesoYRedirigir('${doc.id}', '${d.numero}')" ${desactivar ? 'disabled' : ''}>Tomar</button></td>
         `;
         tabla.appendChild(fila);
       });
     }
 
     async function marcarEnProcesoYRedirigir(id, numero) {
-      const encargado = prompt("¿Cuál es tu nombre?");
-      if (!encargado) return;
+      const encargado = document.getElementById("encargado").value;
+      if (!encargado) return alert("Por favor seleccione su nombre en el formulario antes de tomar una solicitud.");
       await db.collection("cotizaciones").doc(id).update({
         estado: "En Proceso",
         encargado: encargado,
         fecha_asignacion: new Date()
       });
+      cargarCotizaciones();
       window.location.href = `cotizaciones.html?codigo=${encodeURIComponent(numero)}`;
     }
 
