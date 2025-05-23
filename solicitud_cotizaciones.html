@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Nueva Solicitud de Cotización</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f7f7;
+      margin: 0;
+      padding: 20px;
+    }
+    .form-container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #02535a;
+    }
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      background-color: #02535a;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .mensaje {
+      margin-top: 20px;
+      text-align: center;
+      font-weight: bold;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Nueva Solicitud de Cotización</h2>
+    <form id="formulario">
+      <label for="telefono">Teléfono del Cliente:</label>
+      <input type="tel" id="telefono" required>
+
+      <label for="destino">Destino:</label>
+      <input type="text" id="destino" required>
+
+      <label for="fechas">Rango de Fechas de Viaje:</label>
+      <input type="text" id="fechas" required>
+
+      <label for="adultos">Cantidad de Adultos:</label>
+      <input type="number" id="adultos" required min="1">
+
+      <label for="ninos">Cantidad de Niños:</label>
+      <input type="number" id="ninos" required min="0">
+
+      <label for="observaciones">Observaciones:</label>
+      <textarea id="observaciones" rows="3"></textarea>
+
+      <label for="embajador">Embajador(a) a cargo:</label>
+      <select id="embajador" required>
+        <option value="">-- Selecciona --</option>
+        <option value="Cristopher">Cristopher</option>
+        <option value="Marcela">Marcela</option>
+        <option value="Yare">Yare</option>
+        <option value="Yuliana">Yuliana</option>
+        <option value="Tatiana">Tatiana</option>
+        <option value="Geansury">Geansury</option>
+      </select>
+
+      <button type="submit">Enviar Solicitud</button>
+      <div class="mensaje" id="mensaje"></div>
+    </form>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function generarCodigo() {
+      const year = new Date().getFullYear();
+      return db.collection("solicitudes").get().then(snapshot => {
+        const count = snapshot.size + 1;
+        return `COT-${String(count).padStart(3, '0')}-${year}`;
+      });
+    }
+
+    document.getElementById("formulario").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const mensaje = document.getElementById("mensaje");
+
+      const datos = {
+        NUMERO_DE_TELÉFONO_CLIENTE: document.getElementById("telefono").value,
+        DESTINO: document.getElementById("destino").value,
+        RANGO_DE_FECHAS_DE_VIAJE: document.getElementById("fechas").value,
+        CANTIDAD_DE_PERSONAS_ADULTAS: parseInt(document.getElementById("adultos").value),
+        CANTIDAD_DE_NIÑOS: parseInt(document.getElementById("ninos").value),
+        OBSERVACIONES: document.getElementById("observaciones").value,
+        ENCARGADO: document.getElementById("embajador").value,
+        ESTADO: "Pendiente"
+      };
+
+      try {
+        const codigo = await generarCodigo();
+        datos.NUMERO_COTIZACION = codigo;
+        await db.collection("solicitudes").add(datos);
+        mensaje.innerText = `Solicitud enviada con éxito. Código: ${codigo}`;
+        document.getElementById("formulario").reset();
+      } catch (error) {
+        console.error("Error al guardar:", error);
+        mensaje.innerText = "Hubo un error al enviar la solicitud.";
+      }
+    });
+  </script>
+</body>
+</html>
