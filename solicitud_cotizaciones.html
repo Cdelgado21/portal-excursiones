@@ -131,87 +131,41 @@
   }
 
   // 3. Registrar nueva cotización
- form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  const telefono = document.getElementById("telefono").value;
-  const destino = destinoSelect.value;
-  const fechas = document.getElementById("fechas").value;
-  const adultos = document.getElementById("adultos").value;
-  const ninos = document.getElementById("ninos").value;
-  const observaciones = document.getElementById("observaciones").value;
-  const embajador = document.getElementById("embajador").value;
-  const fechaRegistro = new Date();
+    const telefono = document.getElementById("telefono").value;
+    const destino = destinoSelect.value;
+    const fechas = document.getElementById("fechas").value;
+    const adultos = document.getElementById("adultos").value;
+    const ninos = document.getElementById("ninos").value;
+    const observaciones = document.getElementById("observaciones").value;
+    const embajador = document.getElementById("embajador").value;
+    const fechaRegistro = new Date();
 
-  if (cotizacionEditandoId) {
-    // 🔄 ACTUALIZAR cotización existente
-    await db.collection("cotizaciones").doc(cotizacionEditandoId).update({
+    const year = fechaRegistro.getFullYear();
+    const snapshot = await db.collection("cotizaciones").get();
+    const numero = COT-${String(snapshot.size + 1).padStart(3, '0')}-${year};
+
+    await db.collection("cotizaciones").add({
+      numero,
       telefono,
       destino,
       fechas,
       adultos,
       ninos,
       observaciones,
-      embajador
-    });
-
-    alert("Cotización actualizada correctamente.");
-    cotizacionEditandoId = null;
-  } else {
-
-    async function generarNumeroCotizacion() {
-  const snapshot = await db.collection("cotizaciones").get();
-  let maxNum = 0;
-
-  snapshot.forEach(doc => {
-    const match = doc.data().numero?.match(/^COT-(\d+)-\d{4}$/);
-    if (match) {
-      const num = parseInt(match[1]);
-      if (num > maxNum) maxNum = num;
-    }
-  });
-
-  const year = new Date().getFullYear();
-  return `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
-}
-
-// Solo UNA función de envío del formulario
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const telefono = document.getElementById("telefono").value;
-  const destino = destinoSelect.value;
-  const fechas = document.getElementById("fechas").value;
-  const adultos = document.getElementById("adultos").value;
-  const ninos = document.getElementById("ninos").value;
-  const observaciones = document.getElementById("observaciones").value;
-  const embajador = document.getElementById("embajador").value;
-  const fechaRegistro = new Date();
-
-  if (cotizacionEditandoId) {
-    await db.collection("cotizaciones").doc(cotizacionEditandoId).update({
-      telefono, destino, fechas, adultos, ninos, observaciones, embajador
-    });
-
-    alert("Cotización actualizada correctamente.");
-    cotizacionEditandoId = null;
-  } else {
-    const numero = await generarNumeroCotizacion();
-
-    await db.collection("cotizaciones").add({
-      numero, telefono, destino, fechas, adultos, ninos, observaciones,
-      embajador, estado: "Pendiente", registro: fechaRegistro,
-      encargado: "", fecha_asignacion: null
+      embajador,
+      estado: "Pendiente",
+      registro: fechaRegistro,
+      encargado: "",
+      fecha_asignacion: null
     });
 
     alert("Solicitud registrada correctamente.");
-  }
-
-  form.reset();
-  document.querySelector("#cotizacionForm button[type='submit']").textContent = "Enviar solicitud";
-  cargarCotizaciones();
-});
-
+    form.reset();
+    cargarCotizaciones();
+  });
 
 // 4. Mostrar cotizaciones en tabla
 async function cargarCotizaciones() {
@@ -222,7 +176,7 @@ async function cargarCotizaciones() {
     const tiempoEspera = d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min" : '-';
     const fila = document.createElement("tr");
 
-    fila.innerHTML = `
+    fila.innerHTML = 
       <td>${d.numero}</td>
       <td>${d.telefono}</td>
       <td>${d.destino}</td>
@@ -239,38 +193,33 @@ async function cargarCotizaciones() {
       <td>
         ${d.estado === "En Proceso"
           ? '<button class="btn-cotizar" disabled>En Proceso</button>'
-          : `<button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>`}
+          : <button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>}
       </td>
 <td>
   ${d.estado === "Pendiente"
-    ? `<button class="btn-cotizar" onclick="editarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">✏️</button>`
+    ? <button class="btn-cotizar" onclick="editarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">✏️</button>
     : ''}
 </td>
 <td>
   ${d.estado === "Pendiente"
-    ? `<button class="btn-cotizar" onclick="eliminarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">🗑️</button>`
+    ? <button class="btn-cotizar" onclick="eliminarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">🗑️</button>
     : ''}
 </td>
 
-    `;
+    ;
     tabla.appendChild(fila);
   }); // ← ESTA LÍNEA ES CLAVE
 }
 
 let cotizacionEditandoId = null;
 
-const snapshot = await db.collection("cotizaciones").get();
-let maxNum = 0;
+async function editarCotizacion(id) {
+  const doc = await db.collection("cotizaciones").doc(id).get();
+  if (!doc.exists) return alert("Cotización no encontrada");
 
-snapshot.forEach(doc => {
-  const match = doc.data().numero?.match(/^COT-(\d+)-\d{4}$/);
-  if (match) {
-    const num = parseInt(match[1]);
-    if (num > maxNum) maxNum = num;
-  }
-});
+  const data = doc.data();
 
-const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
+  // Rellenar formulario
   document.getElementById("telefono").value = data.telefono;
   document.getElementById("destino").value = data.destino;
   document.getElementById("fechas").value = data.fechas;
@@ -281,7 +230,6 @@ const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
 
   cotizacionEditandoId = id;
 
-
   // Cambiar botón
   const btn = document.querySelector("#cotizacionForm button[type='submit']");
   btn.textContent = "Actualizar solicitud";
@@ -291,7 +239,7 @@ const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
   function mostrarVentanaCotizador(id, numero) {
     const nombres = ["Cristopher", "Marcela", "Yare", "Yuliana", "Tatiana", "Geansury"];
     const ventana = window.open("", "Cotizador", "width=400,height=280");
-    ventana.document.write(`
+    ventana.document.write(
       <html><head><title>Confirmar</title>
       <style>
         body { font-family: Arial; padding: 20px; background: #f0f7f7; color: #02535a; }
@@ -300,11 +248,11 @@ const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
       </style></head><body>
       <h3>Selecciona tu nombre</h3>
       <select id="cotizador">
-        ${nombres.map(n => `<option value="${n}">${n}</option>`).join('')}
+        ${nombres.map(n => <option value="${n}">${n}</option>).join('')}
       </select>
       <button onclick="window.opener.confirmarCotizadorDesdeVentana('${id}', '${numero}', document.getElementById('cotizador').value); window.close();">Confirmar</button>
       </body></html>
-    `);
+    );
   }
 
   // 6. Asignar cotización
@@ -316,6 +264,8 @@ const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
       fecha_asignacion: new Date()
     });
     cargarCotizaciones();
+  }
+
 }
 
 async function eliminarCotizacion(id) {
@@ -324,12 +274,67 @@ async function eliminarCotizacion(id) {
     cargarCotizaciones();
   }
 }
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
+  const telefono = document.getElementById("telefono").value;
+  const destino = destinoSelect.value;
+  const fechas = document.getElementById("fechas").value;
+  const adultos = document.getElementById("adultos").value;
+  const ninos = document.getElementById("ninos").value;
+  const observaciones = document.getElementById("observaciones").value;
+  const embajador = document.getElementById("embajador").value;
+  const fechaRegistro = new Date();
+
+  if (cotizacionEditandoId) {
+    // Actualizar existente
+    await db.collection("cotizaciones").doc(cotizacionEditandoId).update({
+      telefono,
+      destino,
+      fechas,
+      adultos,
+      ninos,
+      observaciones,
+      embajador
+    });
+
+    alert("Cotización actualizada correctamente.");
+    cotizacionEditandoId = null;
+  } else {
+    // Nueva cotización
+    const year = fechaRegistro.getFullYear();
+    const snapshot = await db.collection("cotizaciones").get();
+    const numero = COT-${String(snapshot.size + 1).padStart(3, '0')}-${year};
+
+    await db.collection("cotizaciones").add({
+      numero,
+      telefono,
+      destino,
+      fechas,
+      adultos,
+      ninos,
+      observaciones,
+      embajador,
+      estado: "Pendiente",
+      registro: fechaRegistro,
+      encargado: "",
+      fecha_asignacion: null
+    });
+
+    alert("Solicitud registrada correctamente.");
+  }
+
+  form.reset();
+  document.querySelector("#cotizacionForm button[type='submit']").textContent = "Enviar solicitud";
+  cargarCotizaciones();
+});
   
   // 7. Inicializar
   cargarDestinos();
   cargarCotizaciones();
 </script>
+
+
 
   </body>
 </html>
