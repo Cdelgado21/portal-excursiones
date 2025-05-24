@@ -113,146 +113,130 @@
     </table>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    function cargarDestinos() {
-      const selectDestino = document.getElementById("destino");
-      db.collection("tours").get().then((querySnapshot) => {
-        selectDestino.innerHTML = '<option value="">Seleccione un destino</option>';
-        querySnapshot.forEach((doc) => {
-          const nombre = doc.data().nombre;
-          if (nombre) {
-            const option = document.createElement("option");
-            option.value = nombre;
-            option.textContent = nombre;
-            selectDestino.appendChild(option);
-          }
-        });
-      });
-    }
+  function abrirModalAsignacion(id) {
+    document.getElementById('modal').style.display = 'flex';
+    document.getElementById('modal').dataset.id = id;
+  }
 
-    document.getElementById("formularioSolicitud").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const telefono = document.getElementById("telefono").value;
-      const destino = document.getElementById("destino").value;
-      const fechas = document.getElementById("fechas").value;
-      const adultos = parseInt(document.getElementById("adultos").value);
-      const ninos = parseInt(document.getElementById("ninos").value);
-      const observaciones = document.getElementById("observaciones").value;
-      const embajador = document.getElementById("embajador").value;
+  function confirmarAsignacion() {
+    const id = document.getElementById('modal').dataset.id;
+    const encargado = document.getElementById('selectorEncargado').value;
+    if (!encargado) return alert("Selecciona tu nombre");
 
-      if (!telefono || !destino || !fechas || isNaN(adultos) || isNaN(ninos) || !embajador) {
-        alert("Por favor complete todos los campos obligatorios.");
-        return;
-      }
-
-      const numero = `COT-${Date.now()}`;
-      const timestamp = new Date();
-      const nuevaSolicitud = {
-        numero,
-        telefono,
-        destino,
-        fechas,
-        adultos,
-        ninos,
-        observaciones,
-        embajador,
-        estado: "Pendiente",
-        registro: firebase.firestore.Timestamp.fromDate(timestamp),
-        encargado: "-",
-        fecha_asignacion: null
-      };
-
-      try {
-        await db.collection("solicitudes").add(nuevaSolicitud);
-        alert("✅ ¡Solicitud registrada exitosamente!");
-        document.getElementById("formularioSolicitud").reset();
-        cargarSolicitudes();
-      } catch (error) {
-        console.error("Error al guardar:", error);
-        alert("❌ Error al guardar la solicitud. Intente nuevamente.");
-      }
-    });
-
-    function cargarSolicitudes() {
-      db.collection("solicitudes").orderBy("registro", "desc").get().then(snapshot => {
-        const tbody = document.getElementById("cuerpoTabla");
-        tbody.innerHTML = "";
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const row = document.createElement("tr");
-          const tiempoEnMinutos = Math.floor((Date.now() - data.registro.toDate()) / 60000);
-          row.innerHTML = `
-            <td>${data.numero}</td>
-            <td>${data.telefono}</td>
-            <td>${data.destino}</td>
-            <td>${data.fechas}</td>
-            <td>${data.adultos}</td>
-            <td>${data.ninos}</td>
-            <td>${data.observaciones || "-"}</td>
-            <td>${data.embajador}</td>
-            <td><span class="${data.estado === 'Pendiente' ? 'estado-pendiente' : 'estado-proceso'}">${data.estado}</span></td>
-            <td>${data.registro.toDate().toLocaleString()}</td>
-            <td>${data.estado === "Pendiente" ? tiempoEnMinutos + " min" : "-"}</td>
-            <td>${data.encargado || "-"}</td>
-            <td>${data.fecha_asignacion ? data.fecha_asignacion.toDate().toLocaleString() : "-"}</td>
-            <td><button class="btn-cotizar">Tomar</button></td>
-            <td><button>✏️</button></td>
-            <td><button>🗑️</button></td>
-          `;
-          tbody.appendChild(row);
-        });
-      });
-    }
-
-    function imprimirTabla() {
-      const tabla = document.getElementById("tablaSolicitudes");
-      const win = window.open("", "_blank");
-      win.document.write('<html><head><title>Imprimir Tabla</title></head><body>');
-      win.document.write(tabla.outerHTML);
-      win.document.write('</body></html>');
-      win.document.close();
-      win.print();
-    }
-
-    function descargarPDF() {
-      html2canvas(document.querySelector("#tablaSolicitudes")).then(canvas => {
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jspdf.jsPDF();
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth() - 20;
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, "PNG", 10, 10, pdfWidth, pdfHeight);
-        pdf.save("solicitudes.pdf");
-      });
-    }
-
-    function descargarExcel() {
-      const tabla = document.getElementById("tablaSolicitudes");
-      const filas = tabla.querySelectorAll("tr");
-      const csv = Array.from(filas).map(row =>
-        Array.from(row.cells).map(cell => cell.innerText).join(",")
-      ).join("\n");
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "solicitudes.csv";
-      a.click();
-    }
-
-    window.onload = () => {
-      cargarDestinos();
+    db.collection("solicitudes").doc(id).update({
+      estado: "En Proceso",
+      encargado: encargado,
+      fecha_asignacion: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      alert("Cotización asignada correctamente a " + encargado);
+      document.getElementById('modal').style.display = 'none';
       cargarSolicitudes();
+    });
+  }
+
+  function editarSolicitud(id, data) {
+    document.getElementById("telefono").value = data.telefono;
+    document.getElementById("destino").value = data.destino;
+    document.getElementById("fechas").value = data.fechas;
+    document.getElementById("adultos").value = data.adultos;
+    document.getElementById("ninos").value = data.ninos;
+    document.getElementById("observaciones").value = data.observaciones;
+    document.getElementById("embajador").value = data.embajador;
+    document.getElementById("formularioSolicitud").onsubmit = function(e) {
+      e.preventDefault();
+      db.collection("solicitudes").doc(id).update({
+        telefono: document.getElementById("telefono").value,
+        destino: document.getElementById("destino").value,
+        fechas: document.getElementById("fechas").value,
+        adultos: parseInt(document.getElementById("adultos").value),
+        ninos: parseInt(document.getElementById("ninos").value),
+        observaciones: document.getElementById("observaciones").value,
+        embajador: document.getElementById("embajador").value
+      }).then(() => {
+        alert("Solicitud actualizada correctamente.");
+        document.getElementById("formularioSolicitud").reset();
+        document.getElementById("formularioSolicitud").onsubmit = enviarNuevaSolicitud;
+        cargarSolicitudes();
+      });
     };
-  </script>
+  }
+
+  function eliminarSolicitud(id) {
+    if (!confirm("¿Estás seguro de que deseas eliminar esta solicitud?")) return;
+    db.collection("solicitudes").doc(id).delete().then(() => {
+      alert("Solicitud eliminada correctamente.");
+      cargarSolicitudes();
+    });
+  }
+
+  function cargarSolicitudes() {
+    db.collection("solicitudes").orderBy("registro", "desc").get().then(snapshot => {
+      const tbody = document.getElementById("cuerpoTabla");
+      tbody.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = document.createElement("tr");
+        const tiempoEnMinutos = Math.floor((Date.now() - data.registro.toDate()) / 60000);
+        row.innerHTML = `
+          <td>${data.numero}</td>
+          <td>${data.telefono}</td>
+          <td>${data.destino}</td>
+          <td>${data.fechas}</td>
+          <td>${data.adultos}</td>
+          <td>${data.ninos}</td>
+          <td>${data.observaciones || "-"}</td>
+          <td>${data.embajador}</td>
+          <td><span class="${data.estado === 'Pendiente' ? 'estado-pendiente' : 'estado-proceso'}">${data.estado}</span></td>
+          <td>${data.registro.toDate().toLocaleString()}</td>
+          <td>${data.estado === "Pendiente" ? tiempoEnMinutos + " min" : "-"}</td>
+          <td>${data.encargado || "-"}</td>
+          <td>${data.fecha_asignacion ? data.fecha_asignacion.toDate().toLocaleString() : "-"}</td>
+          <td>${data.estado === 'Pendiente' ? `<button class='btn-cotizar' onclick='abrirModalAsignacion("${doc.id}")'>Tomar</button>` : '-'}</td>
+          <td>${data.estado === 'Pendiente' ? `<button onclick='editarSolicitud("${doc.id}", ${JSON.stringify(data).replace(/'/g, "\'")})'>✏️</button>` : '-'}</td>
+          <td>${data.estado === 'Pendiente' ? `<button onclick='eliminarSolicitud("${doc.id}")'>🗑️</button>` : '-'}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    });
+  }
+
+  function enviarNuevaSolicitud(e) {
+    e.preventDefault();
+    const numero = `COT-${Date.now()}`;
+    const data = {
+      numero,
+      telefono: document.getElementById("telefono").value,
+      destino: document.getElementById("destino").value,
+      fechas: document.getElementById("fechas").value,
+      adultos: parseInt(document.getElementById("adultos").value),
+      ninos: parseInt(document.getElementById("ninos").value),
+      observaciones: document.getElementById("observaciones").value,
+      embajador: document.getElementById("embajador").value,
+      estado: "Pendiente",
+      encargado: "-",
+      registro: firebase.firestore.Timestamp.now(),
+      fecha_asignacion: null
+    };
+    db.collection("solicitudes").add(data).then(() => {
+      alert("Solicitud guardada con éxito.");
+      document.getElementById("formularioSolicitud").reset();
+      cargarSolicitudes();
+    });
+  }
+
+  document.getElementById("formularioSolicitud").addEventListener("submit", enviarNuevaSolicitud);
+  window.onload = cargarSolicitudes;
+</script>
+
 </body>
 </html>
 
