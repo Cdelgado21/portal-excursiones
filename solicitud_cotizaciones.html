@@ -109,7 +109,6 @@
   const form = document.getElementById("cotizacionForm");
   const tabla = document.querySelector("#tablaCotizaciones tbody");
   const destinoSelect = document.getElementById("destino");
-
   let cotizacionEditandoId = null;
 
   async function cargarDestinos() {
@@ -131,10 +130,10 @@
     const snapshot = await db.collection("cotizaciones").orderBy("registro", "desc").get();
     snapshot.forEach(doc => {
       const d = doc.data();
-const tiempoEspera = d.tiempo_respuesta_min !== undefined 
-  ? `${d.tiempo_respuesta_min} min` 
-  : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min" 
-  : '-';
+      const tiempoEspera = d.tiempo_respuesta_min !== undefined
+        ? `${d.tiempo_respuesta_min} min`
+        : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min"
+        : '-';
       const fila = document.createElement("tr");
 
       fila.innerHTML = `
@@ -152,42 +151,19 @@ const tiempoEspera = d.tiempo_respuesta_min !== undefined
         <td>${d.encargado || '-'}</td>
         <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
         <td>
-   <td>
-  ${d.estado === "Pendiente"
-    ? `<button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>`
-    : ''}
-</td>
-<td>
-  ${d.estado === "Pendiente"
-    ? `<button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>`
-    : ''}
-</td>
+          ${d.estado === "Pendiente"
+            ? `<button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>`
+            : ''}
+        </td>
+        <td>
+          ${d.estado === "Pendiente"
+            ? `<button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>`
+            : ''}
+        </td>
       `;
       tabla.appendChild(fila);
     });
   }
-// Enviar correo a los compañeros
-const destinatarios = ["cris.delgado21@gmail.com", "yullianagomez@gmail.com"];
-const asunto = `Excursiones Delgado | Nueva cotización: ${numero}`;
-const cuerpo = `
-  <h3>Se ha registrado una nueva solicitud de cotización</h3>
-  <p><strong>Número:</strong> ${numero}</p>
-  <p><strong>Teléfono:</strong> ${telefono}</p>
-  <p><strong>Destino:</strong> ${destino}</p>
-  <p><strong>Personas Adultas:</strong> ${adultos}</p>
-  <p><strong>Niños:</strong> ${ninos || '0'}</p>
-  <p><strong>Observaciones:</strong> ${observaciones || 'Ninguna'}</p>
-  <p><strong>Embajadora:</strong> ${embajador}</p>
-  <p><a href="${window.location.origin}/solicitud_cotizaciones.html" target="_blank">Ir al sistema</a></p>
-`;
-
-// Apps Script Web App que envía correos
-fetch('https://script.google.com/macros/s/AKfycbz-obxfQ8Uybt1BVz3SHhtKnf8ZoTvo9RtSy__5GrCzP5V_nZ8EKztIw7DtxIfpglc/exec', {
-  method: 'POST',
-  mode: 'no-cors',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ to: destinatarios, subject: asunto, html: cuerpo })
-});
 
   async function editarCotizacion(id) {
     const doc = await db.collection("cotizaciones").doc(id).get();
@@ -233,20 +209,20 @@ fetch('https://script.google.com/macros/s/AKfycbz-obxfQ8Uybt1BVz3SHhtKnf8ZoTvo9R
   }
 
   async function confirmarCotizadorDesdeVentana(id, numero, encargado) {
-  if (!encargado) return alert("Debes seleccionar un cotizador.");
+    if (!encargado) return alert("Debes seleccionar un cotizador.");
+    const doc = await db.collection("cotizaciones").doc(id).get();
+    const data = doc.data();
+    const fechaAsignacion = new Date();
+    const tiempoRespuestaMin = data.registro ? Math.floor((fechaAsignacion - data.registro.toDate()) / 60000) : 0;
 
-  const doc = await db.collection("cotizaciones").doc(id).get();
-  const data = doc.data();
-  const fechaAsignacion = new Date();
-
-  const tiempoRespuestaMin = data.registro ? Math.floor((fechaAsignacion - data.registro.toDate()) / 60000) : 0;
-
-  await db.collection("cotizaciones").doc(id).update({
-    estado: "En Proceso",
-    encargado,
-    fecha_asignacion: fechaAsignacion,
-    tiempo_respuesta_min: tiempoRespuestaMin
-  })
+    await db.collection("cotizaciones").doc(id).update({
+      estado: "En Proceso",
+      encargado,
+      fecha_asignacion: fechaAsignacion,
+      tiempo_respuesta_min: tiempoRespuestaMin
+    });
+    cargarCotizaciones();
+  }
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -283,6 +259,27 @@ fetch('https://script.google.com/macros/s/AKfycbz-obxfQ8Uybt1BVz3SHhtKnf8ZoTvo9R
         estado: "Pendiente", registro: fechaRegistro, encargado: "", fecha_asignacion: null
       });
 
+      // Enviar correo
+      const destinatarios = ["cris.delgado21@gmail.com", "yullianagomez@gmail.com"];
+      const asunto = `Excursiones Delgado | Nueva cotización: ${numero}`;
+      const cuerpo = `
+        <h3>Se ha registrado una nueva solicitud de cotización</h3>
+        <p><strong>Número:</strong> ${numero}</p>
+        <p><strong>Teléfono:</strong> ${telefono}</p>
+        <p><strong>Destino:</strong> ${destino}</p>
+        <p><strong>Personas Adultas:</strong> ${adultos}</p>
+        <p><strong>Niños:</strong> ${ninos || '0'}</p>
+        <p><strong>Observaciones:</strong> ${observaciones || 'Ninguna'}</p>
+        <p><strong>Embajadora:</strong> ${embajador}</p>
+        <p><a href="${window.location.origin}/solicitud_cotizaciones.html" target="_blank">Ir al sistema</a></p>
+      `;
+      fetch('https://script.google.com/macros/s/AKfycbz-obxfQ8Uybt1BVz3SHhtKnf8ZoTvo9RtSy__5GrCzP5V_nZ8EKztIw7DtxIfpglc/exec', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: destinatarios, subject: asunto, html: cuerpo })
+      });
+
       alert("Solicitud registrada correctamente.");
     }
 
@@ -293,8 +290,8 @@ fetch('https://script.google.com/macros/s/AKfycbz-obxfQ8Uybt1BVz3SHhtKnf8ZoTvo9R
 
   cargarDestinos();
   cargarCotizaciones();
-    
 </script>
+
 
 </body>
 </html>
