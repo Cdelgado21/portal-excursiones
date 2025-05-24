@@ -151,15 +151,20 @@
         <td>${d.encargado || '-'}</td>
         <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
         <td>
-          ${d.estado === "Pendiente"
-            ? `<button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>`
-            : ''}
-        </td>
-        <td>
-          ${d.estado === "Pendiente"
-            ? `<button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>`
-            : ''}
-        </td>
+  ${d.estado === "Pendiente"
+    ? `<button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>`
+    : '<button class="btn-cotizar" disabled>En Proceso</button>'}
+</td>
+<td>
+  ${d.estado === "Pendiente"
+    ? `<button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>`
+    : ''}
+</td>
+<td>
+  ${d.estado === "Pendiente"
+    ? `<button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>`
+    : ''}
+</td>
       `;
       tabla.appendChild(fila);
     });
