@@ -169,8 +169,7 @@
             if (num > maxNum) maxNum = num;
           }
         });
-        const year = fechaRegistro.getFullYear();
-        const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
+       const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
 
         await db.collection("cotizaciones").add({
           numero, telefono, destino, fechas, adultos, ninos, observaciones, embajador,
