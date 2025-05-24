@@ -73,33 +73,32 @@
 
       <button type="submit">Enviar solicitud</button>
     </form>
-
-<div style="overflow-x: auto; margin: 40px auto 0 auto; max-width: 95%;">
-  <table id="tablaCotizaciones" style="margin: 0 auto;">
+<h2 style="margin-top: 60px;">Cotizaciones Registradas</h2>
+<div style="overflow-x: auto; margin: 20px auto; max-width: 100%;">
+  <table id="tablaCotizaciones" style="width: 100%; margin: 0 auto;">
+    <thead>
+      <tr>
+        <th>Número</th>
+        <th>Teléfono</th>
+        <th>Destino</th>
+        <th>Fechas</th>
+        <th>Adultos</th>
+        <th>Niños</th>
+        <th>Observaciones</th>
+        <th>Embajador(a)</th>
+        <th>Estado</th>
+        <th>Registro</th>
+        <th>Tiempo en espera</th>
+        <th>Encargado</th>
+        <th>Fecha Asignación</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
   </table>
 </div>
 
-      <thead>
-        <tr>
-          <th>Número</th>
-          <th>Teléfono</th>
-          <th>Destino</th>
-          <th>Fechas</th>
-          <th>Adultos</th>
-          <th>Niños</th>
-          <th>Observaciones</th>
-          <th>Embajador(a)</th>
-          <th>Estado</th>
-          <th>Registro</th>
-          <th>Tiempo en espera</th>
-          <th>Encargado</th>
-          <th>Fecha Asignación</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+
 <script>
   // 1. Configuración de Firebase
   const firebaseConfig = {
