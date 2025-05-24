@@ -131,18 +131,34 @@
   }
 
   // 3. Registrar nueva cotización
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+ form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-    const telefono = document.getElementById("telefono").value;
-    const destino = destinoSelect.value;
-    const fechas = document.getElementById("fechas").value;
-    const adultos = document.getElementById("adultos").value;
-    const ninos = document.getElementById("ninos").value;
-    const observaciones = document.getElementById("observaciones").value;
-    const embajador = document.getElementById("embajador").value;
-    const fechaRegistro = new Date();
+  const telefono = document.getElementById("telefono").value;
+  const destino = destinoSelect.value;
+  const fechas = document.getElementById("fechas").value;
+  const adultos = document.getElementById("adultos").value;
+  const ninos = document.getElementById("ninos").value;
+  const observaciones = document.getElementById("observaciones").value;
+  const embajador = document.getElementById("embajador").value;
+  const fechaRegistro = new Date();
 
+  if (cotizacionEditandoId) {
+    // 🔄 ACTUALIZAR cotización existente
+    await db.collection("cotizaciones").doc(cotizacionEditandoId).update({
+      telefono,
+      destino,
+      fechas,
+      adultos,
+      ninos,
+      observaciones,
+      embajador
+    });
+
+    alert("Cotización actualizada correctamente.");
+    cotizacionEditandoId = null;
+  } else {
+    // 🆕 CREAR nueva cotización
     const year = fechaRegistro.getFullYear();
     const snapshot = await db.collection("cotizaciones").get();
     const numero = `COT-${String(snapshot.size + 1).padStart(3, '0')}-${year}`;
@@ -163,9 +179,13 @@
     });
 
     alert("Solicitud registrada correctamente.");
-    form.reset();
-    cargarCotizaciones();
-  });
+  }
+
+  form.reset();
+  document.querySelector("#cotizacionForm button[type='submit']").textContent = "Enviar solicitud";
+  cargarCotizaciones();
+});
+
 
 // 4. Mostrar cotizaciones en tabla
 async function cargarCotizaciones() {
