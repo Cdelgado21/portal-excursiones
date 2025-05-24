@@ -268,17 +268,18 @@
       const destinatarios = ["cris.delgado21@gmail.com", "yullianagomez@gmail.com"];
       const asunto = `Excursiones Delgado | Nueva cotización: ${numero}`;
 const cuerpo = `
-  <h2 style="color:#02535a;"> ¡Nueva solicitud de cotización!</h2>
-  <p><strong> Número:</strong> ${numero}</p>
-  <p><strong> Teléfono:</strong> ${telefono}</p>
-  <p><strong> Destino:</strong> ${destino}</p>
-  <p><strong> Adultos:</strong> ${adultos}</p>
-  <p><strong> Niños:</strong> ${ninos}</p>
-  <p><strong> Observaciones:</strong> ${observaciones}</p>
-  <p><strong> Embajadora:</strong> ${embajador}</p>
-  <a href="${window.location.origin}/solicitud_cotizaciones.html" target="_blank" style="display:inline-block; padding:12px 20px; margin-top:15px; background-color:#f49859; color:white; text-decoration:none; border-radius:8px; font-weight:bold;"> Ver en el sistema</a>
-  <p style="margin-top:20px; font-size:12px; color:#888;">Equipo Excursiones Delgado |  Gracias por tu compromiso</p>
+  <h2 style="color:#02535a;">¡Nueva solicitud de cotización!</h2>
+  <p><strong>Número:</strong> ${numero}</p>
+  <p><strong>Teléfono:</strong> ${telefono}</p>
+  <p><strong>Destino:</strong> ${destino}</p>
+  <p><strong>Adultos:</strong> ${adultos}</p>
+  <p><strong>Niños:</strong> ${ninos}</p>
+  <p><strong>Observaciones:</strong> ${observaciones}</p>
+  <p><strong>Embajadora:</strong> ${embajador}</p>
+  <a href="${window.location.origin}/solicitud_cotizaciones.html" target="_blank" style="display:inline-block; padding:12px 20px; margin-top:15px; background-color:#f49859; color:white; text-decoration:none; border-radius:8px; font-weight:bold;">Ver en el sistema</a>
+  <p style="margin-top:20px; font-size:12px; color:#888;">Equipo Excursiones Delgado | Gracias por tu compromiso</p>
 `;
+
 
    fetch('https://correo-cotizaciones.cris-delgado21.workers.dev', {
   method: 'POST',
