@@ -48,7 +48,60 @@
 
     <h2>Solicitudes de Cotización</h2>
 
-    <!-- Aquí iría el formulario y la tabla -->
+    <form id="formSolicitud">
+      <label for="telefono">Número de Teléfono:</label>
+      <input type="tel" id="telefono" required />
+
+      <label for="destino">Destino:</label>
+      <input type="text" id="destino" required />
+
+      <label for="fechas">Fechas:</label>
+      <input type="text" id="fechas" required />
+
+      <label for="adultos">Adultos:</label>
+      <input type="number" id="adultos" required />
+
+      <label for="ninos">Niños:</label>
+      <input type="number" id="ninos" />
+
+      <label for="observaciones">Observaciones:</label>
+      <textarea id="observaciones"></textarea>
+
+      <label for="embajador">Embajador:</label>
+      <select id="embajador" required>
+        <option value="">Seleccione</option>
+        <option value="Cristopher">Cristopher</option>
+        <option value="Marcela">Marcela</option>
+        <option value="Yare">Yare</option>
+        <option value="Yuliana">Yuliana</option>
+        <option value="Tatiana">Tatiana</option>
+        <option value="Geansury">Geansury</option>
+      </select>
+
+      <button type="submit">Enviar Solicitud</button>
+    </form>
+
+    <table id="tablaCotizaciones">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Teléfono</th>
+          <th>Destino</th>
+          <th>Fechas</th>
+          <th>Adultos</th>
+          <th>Niños</th>
+          <th>Observaciones</th>
+          <th>Embajador</th>
+          <th>Estado</th>
+          <th>Registro</th>
+          <th>Tiempo en Espera</th>
+          <th>Encargado</th>
+          <th>Fecha Asignación</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tablaBody"></tbody>
+    </table>
 
     <div id="modal">
       <div id="modal-content">
