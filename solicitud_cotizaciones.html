@@ -176,37 +176,36 @@ async function cargarCotizaciones() {
     const tiempoEspera = d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min" : '-';
     const fila = document.createElement("tr");
 
-    fila.innerHTML = 
-      <td>${d.numero}</td>
-      <td>${d.telefono}</td>
-      <td>${d.destino}</td>
-      <td>${d.fechas}</td>
-      <td>${d.adultos}</td>
-      <td>${d.ninos}</td>
-      <td>${d.observaciones}</td>
-      <td>${d.embajador}</td>
-      <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
-      <td>${d.registro?.toDate().toLocaleString()}</td>
-      <td>${tiempoEspera}</td>
-      <td>${d.encargado || '-'}</td>
-      <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
-      <td>
-        ${d.estado === "En Proceso"
-          ? '<button class="btn-cotizar" disabled>En Proceso</button>'
-          : <button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>}
-      </td>
-<td>
-  ${d.estado === "Pendiente"
-    ? <button class="btn-cotizar" onclick="editarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">✏️</button>
-    : ''}
-</td>
-<td>
-  ${d.estado === "Pendiente"
-    ? <button class="btn-cotizar" onclick="eliminarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">🗑️</button>
-    : ''}
-</td>
-
-    ;
+fila.innerHTML = `
+  <td>${d.numero}</td>
+  <td>${d.telefono}</td>
+  <td>${d.destino}</td>
+  <td>${d.fechas}</td>
+  <td>${d.adultos}</td>
+  <td>${d.ninos}</td>
+  <td>${d.observaciones}</td>
+  <td>${d.embajador}</td>
+  <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
+  <td>${d.registro?.toDate().toLocaleString()}</td>
+  <td>${tiempoEspera}</td>
+  <td>${d.encargado || '-'}</td>
+  <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
+  <td>
+    ${d.estado === "En Proceso"
+      ? '<button class="btn-cotizar" disabled>En Proceso</button>'
+      : `<button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>`}
+  </td>
+  <td>
+    ${d.estado === "Pendiente"
+      ? `<button class="btn-cotizar" onclick="editarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">✏️</button>`
+      : ''}
+  </td>
+  <td>
+    ${d.estado === "Pendiente"
+      ? `<button class="btn-cotizar" onclick="eliminarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">🗑️</button>`
+      : ''}
+  </td>
+`;
     tabla.appendChild(fila);
   }); // ← ESTA LÍNEA ES CLAVE
 }
