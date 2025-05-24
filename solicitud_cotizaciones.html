@@ -2,113 +2,53 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Solicitud de Cotizaciones</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solicitudes de Cotización</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f7f7;
-      margin: 0;
-      padding: 20px;
-    }
-    h2 {
-      text-align: center;
-      color: #02535a;
-    }
-    .formulario, .tabla-container {
-      max-width: 1200px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 30px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    input, select {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-    button {
-      background-color: #02535a;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    button.btn-cotizar {
-      background-color: #f49859;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
-      vertical-align: middle;
-    }
-    th {
-      background-color: #02535a;
-      color: white;
-    }
-    .estado-pendiente {
-      background: #dc3545;
-      color: white;
-      font-weight: bold;
-      padding: 4px 8px;
-      border-radius: 5px;
-    }
-    .estado-proceso {
-      background: #ffc107;
-      color: black;
-      font-weight: bold;
-      padding: 4px 8px;
-      border-radius: 5px;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 999;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      justify-content: center;
-      align-items: center;
-    }
-    .modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
-      width: 300px;
-      text-align: center;
-    }
-    .modal-content select {
-      margin: 10px 0;
-    }
+    body { font-family: Arial, sans-serif; background-color: #f0f7f7; padding: 20px; }
+    h2 { text-align: center; color: #02535a; }
+    form { background: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 15px; color: #02535a; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
+    button { margin-top: 20px; padding: 10px 20px; background-color: #02535a; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 40px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background-color: #02535a; color: white; }
+    .estado-pendiente { background-color: #ff4d4d; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
+    .estado-proceso { background-color: #ffa500; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
+    .container { max-width: 1000px; margin: auto; }
+    .btn-cotizar { background-color: #f49859; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-cotizar[disabled] { background-color: #ccc; cursor: not-allowed; }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>Solicitudes de Cotización</h2>
 
-  <h2>Solicitud de Cotizaciones</h2>
+    <form id="cotizacionForm">
+      <label for="telefono">Número de Teléfono:</label>
+      <input type="text" id="telefono" required>
 
-  <div class="formulario">
-    <form id="formularioSolicitud">
-      <input type="text" id="telefono" placeholder="Teléfono del cliente" required />
-      <input type="text" id="destino" placeholder="Destino" required />
-      <input type="text" id="fechas" placeholder="Rango de fechas del viaje" required />
-      <input type="number" id="adultos" placeholder="Cantidad de adultos" required />
-      <input type="number" id="ninos" placeholder="Cantidad de niños" />
-      <input type="text" id="observaciones" placeholder="Observaciones" />
+      <label for="destino">Destino:</label>
+      <select id="destino" required><option value="">Cargando...</option></select>
+
+      <label for="fechas">Rango de Fechas del Viaje:</label>
+      <input type="text" id="fechas" required>
+
+      <label for="adultos">Cantidad de Personas Adultas:</label>
+      <input type="number" id="adultos" required>
+
+      <label for="ninos">Cantidad de Niños:</label>
+      <input type="number" id="ninos">
+
+      <label for="observaciones">Observaciones:</label>
+      <textarea id="observaciones"></textarea>
+
+      <label for="embajador">Embajador(a) a cargo:</label>
       <select id="embajador" required>
-        <option value="">Embajador(a) a cargo</option>
+        <option value="">Seleccione</option>
         <option value="Cristopher">Cristopher</option>
         <option value="Marcela">Marcela</option>
         <option value="Yare">Yare</option>
@@ -116,12 +56,11 @@
         <option value="Tatiana">Tatiana</option>
         <option value="Geansury">Geansury</option>
       </select>
+
       <button type="submit">Enviar solicitud</button>
     </form>
-  </div>
 
-  <div class="tabla-container">
-    <table>
+    <table id="tablaCotizaciones">
       <thead>
         <tr>
           <th>Número</th>
@@ -138,29 +77,10 @@
           <th>Encargado</th>
           <th>Fecha Asignación</th>
           <th>Acción</th>
-          <th>Editar</th>
-          <th>Eliminar</th>
         </tr>
       </thead>
-      <tbody id="cuerpoTabla"></tbody>
+      <tbody></tbody>
     </table>
-  </div>
-
-  <div class="modal" id="modal">
-    <div class="modal-content">
-      <h3>Confirmar acción</h3>
-      <p>Selecciona tu nombre:</p>
-      <select id="selectorEncargado">
-        <option value="">Seleccionar</option>
-        <option value="Cristopher">Cristopher</option>
-        <option value="Marcela">Marcela</option>
-        <option value="Yare">Yare</option>
-        <option value="Yuliana">Yuliana</option>
-        <option value="Tatiana">Tatiana</option>
-        <option value="Geansury">Geansury</option>
-      </select>
-      <button onclick="confirmarAsignacion()">Confirmar</button>
-    </div>
   </div>
 
   <script>
@@ -172,121 +92,133 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    function abrirModalAsignacion(id) {
-      document.getElementById('modal').style.display = 'flex';
-      document.getElementById('modal').dataset.id = id;
-    }
+    const form = document.getElementById("cotizacionForm");
+    const tabla = document.querySelector("#tablaCotizaciones tbody");
+    const destinoSelect = document.getElementById("destino");
 
-    function confirmarAsignacion() {
-      const id = document.getElementById('modal').dataset.id;
-      const encargado = document.getElementById('selectorEncargado').value;
-      if (!encargado) return alert("Selecciona tu nombre");
-      db.collection("solicitudes").doc(id).update({
-        estado: "En Proceso",
-        encargado: encargado,
-        fecha_asignacion: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => {
-        alert("Cotización asignada a " + encargado);
-        document.getElementById('modal').style.display = 'none';
-        cargarSolicitudes();
+    async function cargarDestinos() {
+      const snapshot = await db.collection("tours").get();
+      destinoSelect.innerHTML = '<option value="">Seleccione un destino</option>';
+      snapshot.forEach(doc => {
+        const tour = doc.data();
+        if (tour.nombre) {
+          const opt = document.createElement("option");
+          opt.value = tour.nombre;
+          opt.textContent = tour.nombre;
+          destinoSelect.appendChild(opt);
+        }
       });
     }
 
-    function editarSolicitud(id, data) {
-      document.getElementById("telefono").value = data.telefono;
-      document.getElementById("destino").value = data.destino;
-      document.getElementById("fechas").value = data.fechas;
-      document.getElementById("adultos").value = data.adultos;
-      document.getElementById("ninos").value = data.ninos;
-      document.getElementById("observaciones").value = data.observaciones;
-      document.getElementById("embajador").value = data.embajador;
-      document.getElementById("formularioSolicitud").onsubmit = function(e) {
-        e.preventDefault();
-        db.collection("solicitudes").doc(id).update({
-          telefono: document.getElementById("telefono").value,
-          destino: document.getElementById("destino").value,
-          fechas: document.getElementById("fechas").value,
-          adultos: parseInt(document.getElementById("adultos").value),
-          ninos: parseInt(document.getElementById("ninos").value),
-          observaciones: document.getElementById("observaciones").value,
-          embajador: document.getElementById("embajador").value
-        }).then(() => {
-          alert("Solicitud actualizada.");
-          document.getElementById("formularioSolicitud").reset();
-          document.getElementById("formularioSolicitud").onsubmit = enviarNuevaSolicitud;
-          cargarSolicitudes();
-        });
-      };
-    }
-
-    function eliminarSolicitud(id) {
-      if (!confirm("¿Eliminar esta solicitud?")) return;
-      db.collection("solicitudes").doc(id).delete().then(() => {
-        alert("Eliminado correctamente.");
-        cargarSolicitudes();
-      });
-    }
-
-    function cargarSolicitudes() {
-      db.collection("solicitudes").orderBy("registro", "desc").get().then(snapshot => {
-        const tbody = document.getElementById("cuerpoTabla");
-        tbody.innerHTML = "";
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const tiempoEnMinutos = data.estado === "Pendiente" ? Math.floor((Date.now() - data.registro.toDate()) / 60000) + " min" : "-";
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${data.numero}</td>
-            <td>${data.telefono}</td>
-            <td>${data.destino}</td>
-            <td>${data.fechas}</td>
-            <td>${data.adultos}</td>
-            <td>${data.ninos}</td>
-            <td>${data.observaciones || "-"}</td>
-            <td>${data.embajador}</td>
-            <td><span class="${data.estado === 'Pendiente' ? 'estado-pendiente' : 'estado-proceso'}">${data.estado}</span></td>
-            <td>${data.registro.toDate().toLocaleString()}</td>
-            <td>${tiempoEnMinutos}</td>
-            <td>${data.encargado || "-"}</td>
-            <td>${data.fecha_asignacion ? data.fecha_asignacion.toDate().toLocaleString() : "-"}</td>
-            <td>${data.estado === 'Pendiente' ? `<button class='btn-cotizar' onclick='abrirModalAsignacion("${doc.id}")'>Tomar</button>` : '-'}</td>
-            <td>${data.estado === 'Pendiente' ? `<button onclick='editarSolicitud("${doc.id}", ${JSON.stringify(data).replace(/'/g, "\'")})'>✏️</button>` : '-'}</td>
-            <td>${data.estado === 'Pendiente' ? `<button onclick='eliminarSolicitud("${doc.id}")'>🗑️</button>` : '-'}</td>
-          `;
-          tbody.appendChild(row);
-        });
-      });
-    }
-
-    function enviarNuevaSolicitud(e) {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const numero = `COT-${Date.now()}`;
-      const data = {
+
+      const telefono = document.getElementById("telefono").value;
+      const destino = destinoSelect.value;
+      const fechas = document.getElementById("fechas").value;
+      const adultos = document.getElementById("adultos").value;
+      const ninos = document.getElementById("ninos").value;
+      const observaciones = document.getElementById("observaciones").value;
+      const embajador = document.getElementById("embajador").value;
+      const fechaRegistro = new Date();
+      const year = fechaRegistro.getFullYear();
+      const snapshot = await db.collection("cotizaciones").get();
+      const numero = `COT-${String(snapshot.size + 1).padStart(3, '0')}-${year}`;
+
+      await db.collection("cotizaciones").add({
         numero,
-        telefono: document.getElementById("telefono").value,
-        destino: document.getElementById("destino").value,
-        fechas: document.getElementById("fechas").value,
-        adultos: parseInt(document.getElementById("adultos").value),
-        ninos: parseInt(document.getElementById("ninos").value),
-        observaciones: document.getElementById("observaciones").value,
-        embajador: document.getElementById("embajador").value,
+        telefono,
+        destino,
+        fechas,
+        adultos,
+        ninos,
+        observaciones,
+        embajador,
         estado: "Pendiente",
-        encargado: "-",
-        registro: firebase.firestore.Timestamp.now(),
+        registro: fechaRegistro,
+        encargado: "",
         fecha_asignacion: null
-      };
-      db.collection("solicitudes").add(data).then(() => {
-        alert("Guardado con éxito.");
-        document.getElementById("formularioSolicitud").reset();
-        cargarSolicitudes();
+      });
+
+      // Notificar por correo a los cotizadores
+      fetch("https://formsubmit.co/ajax/cris.delgado21@gmail.com", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: "Nueva solicitud de cotización",
+          message: `Se ha registrado una nueva solicitud con número: ${numero}`
+        })
+      });
+
+      alert("Solicitud registrada correctamente.");
+      form.reset();
+      cargarCotizaciones();
+    });
+
+    async function cargarCotizaciones() {
+      tabla.innerHTML = "";
+      const snapshot = await db.collection("cotizaciones").orderBy("registro", "desc").get();
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        const tiempoEspera = d.registro ? `${Math.floor((new Date() - d.registro.toDate()) / 60000)} min` : '-';
+        const fila = document.createElement("tr");
+        const desactivar = d.estado === "En Proceso";
+        fila.innerHTML = `
+          <td>${d.numero}</td>
+          <td>${d.telefono}</td>
+          <td>${d.destino}</td>
+          <td>${d.fechas}</td>
+          <td>${d.adultos}</td>
+          <td>${d.ninos}</td>
+          <td>${d.observaciones}</td>
+          <td>${d.embajador}</td>
+          <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
+          <td>${d.registro?.toDate().toLocaleString()}</td>
+          <td>${tiempoEspera}</td>
+          <td>${d.encargado || '-'}</td>
+          <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
+          <td>
+            ${desactivar ? '<button class="btn-cotizar" disabled>En Proceso</button>' : `<button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>`}
+          </td>
+        `;
+        tabla.appendChild(fila);
       });
     }
 
-    document.getElementById("formularioSolicitud").addEventListener("submit", enviarNuevaSolicitud);
-    window.onload = cargarSolicitudes;
-  </script>
+    function mostrarVentanaCotizador(id, numero) {
+      const nombres = ["Cristopher", "Marcela", "Yare", "Yuliana", "Tatiana", "Geansury"];
+      const ventana = window.open("", "ConfirmarCotizador", "width=400,height=280");
+      ventana.document.write(`
+        <html><head><title>Confirmar acción</title>
+        <style>
+          body { font-family: Arial; padding: 20px; background: #f0f7f7; color: #02535a; }
+          select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; }
+          button { background-color: #02535a; color: white; border: none; }
+        </style>
+        </head><body>
+        <h3>Confirmar acción</h3>
+        <label for="cotizador">Selecciona tu nombre:</label>
+        <select id="cotizador">
+          ${nombres.map(n => `<option value="${n}">${n}</option>`).join('')}
+        </select>
+        <button onclick="window.opener.confirmarCotizadorDesdeVentana('${id}', '${numero}', document.getElementById('cotizador').value); window.close();">Confirmar</button>
+        </body></html>
+      `);
+    }
 
+    async function confirmarCotizadorDesdeVentana(id, numero, encargado) {
+      if (!encargado) return alert("Debes seleccionar un cotizador.");
+      await db.collection("cotizaciones").doc(id).update({
+        estado: "En Proceso",
+        encargado,
+        fecha_asignacion: new Date()
+      });
+      location.href = `cotizaciones.html?codigo=${encodeURIComponent(numero)}`;
+    }
+
+    cargarDestinos();
+    cargarCotizaciones();
+  </script>
 </body>
 </html>
-
 
