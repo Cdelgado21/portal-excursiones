@@ -143,7 +143,6 @@
     const embajador = document.getElementById("embajador").value;
     const fechaRegistro = new Date();
 
-    const year = fechaRegistro.getFullYear();
 const year = fechaRegistro.getFullYear();
 const snapshot = await db.collection("cotizaciones").get();
 const numero = `COT-${String(snapshot.size + 1).padStart(3, '0')}-${year}`;
