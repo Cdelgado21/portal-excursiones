@@ -23,18 +23,15 @@
     .btn-cotizar[disabled] { background-color: #ccc; cursor: not-allowed; }
   </style>
 </head>
+
 <body>
-<div style="background: white; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 30px;">
-  <div style="flex: 1;">
-    <img src="LOGO SIED.JPG" alt="Excursiones Delgado" style="height: 60px;" onclick="window.location.href='menu.html'" />
+  <div class="menu-bar">
+    <img src="LOGO SIED.JPG" alt="Excursiones Delgado" onclick="window.location.href='menu.html'" />
+    <button onclick="window.location.href='menu.html'">Menú</button>
+    <button onclick="window.location.href='cotizaciones.html'">Cotizaciones</button>
+    <button onclick="window.location.href='reservas.html'">Reservas</button>
+    <button onclick="window.location.href='clientes.html'">Clientes</button>
   </div>
-  <div style="flex: 1; text-align: right;">
-    <button onclick="window.location.href='menu.html'" style="background-color:#02535a; color:white; padding:10px 15px; border:none; border-radius:6px; margin:5px;">Menú</button>
-    <button onclick="window.location.href='solicitud_cotizaciones.html'" style="background-color:#02535a; color:white; padding:10px 15px; border:none; border-radius:6px; margin:5px;">Cotizaciones</button>
-    <button onclick="window.location.href='reservas.html'" style="background-color:#02535a; color:white; padding:10px 15px; border:none; border-radius:6px; margin:5px;">Reservas</button>
-    <button onclick="window.location.href='clientes.html'" style="background-color:#02535a; color:white; padding:10px 15px; border:none; border-radius:6px; margin:5px;">Clientes</button>
-  </div>
-</div>
   
   <div class="container">
     <h2>Solicitudes de Cotización</h2>
