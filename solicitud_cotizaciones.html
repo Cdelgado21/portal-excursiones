@@ -160,35 +160,22 @@
   } else {
     // 🆕 CREAR nueva cotización
     const year = fechaRegistro.getFullYear();
-const snapshot = await db.collection("cotizaciones").get();
-let maxNum = 0;
+       const snapshot = await db.collection("cotizaciones").get();
+        let maxNum = 0;
+        snapshot.forEach(doc => {
+          const match = doc.data().numero?.match(/^COT-(\d+)-\d{4}$/);
+          if (match) {
+            const num = parseInt(match[1]);
+            if (num > maxNum) maxNum = num;
+          }
+        });
+        const year = fechaRegistro.getFullYear();
+        const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
 
-snapshot.forEach(doc => {
-  const match = doc.data().numero?.match(/^COT-(\d+)-\d{4}$/);
-  if (match) {
-    const num = parseInt(match[1]);
-    if (num > maxNum) maxNum = num;
-  }
-});
-
-const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
-
-
-    await db.collection("cotizaciones").add({
-      numero,
-      telefono,
-      destino,
-      fechas,
-      adultos,
-      ninos,
-      observaciones,
-      embajador,
-      estado: "Pendiente",
-      registro: fechaRegistro,
-      encargado: "",
-      fecha_asignacion: null
-    });
-
+        await db.collection("cotizaciones").add({
+          numero, telefono, destino, fechas, adultos, ninos, observaciones, embajador,
+          estado: "Pendiente", registro: fechaRegistro, encargado: "", fecha_asignacion: null
+        });
     alert("Solicitud registrada correctamente.");
   }
 
