@@ -7,124 +7,216 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f7f7;
-      padding: 0;
-      margin: 0;
-    }
-    header {
-      background-color: #02535a;
-      color: white;
-      text-align: center;
-      padding: 15px;
-    }
-    nav {
-      background-color: #5f9296;
-      display: flex;
-      justify-content: center;
-      padding: 10px;
-      gap: 10px;
-    }
-    nav button {
-      background-color: #02535a;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .container {
-      max-width: 900px;
-      margin: 30px auto;
-      background: white;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 0 12px rgba(0,0,0,0.1);
-    }
-    h2 {
-      color: #02535a;
-      text-align: center;
-    }
-    label {
-      font-weight: bold;
-      margin-top: 15px;
-      display: block;
-    }
-    input, textarea, select {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-    }
-    .btn-container {
-      text-align: center;
-      margin-top: 20px;
-    }
-    .btn {
-      background-color: #02535a;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      margin: 5px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    .btn:hover {
-      background-color: #013e43;
-    }
+    body { font-family: Arial, sans-serif; background-color: #f0f7f7; padding: 20px; }
+    h2 { text-align: center; color: #02535a; }
+    form { background: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 15px; color: #02535a; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
+    button { margin-top: 20px; padding: 10px 20px; background-color: #02535a; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 40px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background-color: #02535a; color: white; }
+    .estado-pendiente { background-color: #ff4d4d; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
+    .estado-proceso { background-color: #ffa500; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
+    .container { max-width: 1000px; margin: auto; }
+    .btn-cotizar { background-color: #f49859; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-cotizar[disabled] { background-color: #ccc; cursor: not-allowed; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Sistema Integral de Excursiones Delgado</h1>
-  </header>
-
-  <nav>
-    <button onclick="window.location.href='menu.html'">Menú</button>
-    <button onclick="window.location.href='tours.html'">Tours</button>
-    <button onclick="window.location.href='cotizaciones.html'">Cotizaciones</button>
-    <button onclick="window.location.href='reservas.html'">Reservas</button>
-    <button onclick="window.location.href='clientes.html'">Clientes</button>
-  </nav>
-
   <div class="container">
-    <h2>Solicitud de Cotización</h2>
-    <form id="cotizacionForm">
-      <label for="nombreCliente">Nombre del Cliente:</label>
-      <input type="text" id="nombreCliente" name="nombreCliente" required>
+    <h2>Solicitudes de Cotización</h2>
 
-      <label for="telefono">Teléfono:</label>
-      <input type="text" id="telefono" name="telefono" required>
+    <form id="cotizacionForm">
+      <label for="telefono">Número de Teléfono:</label>
+      <input type="text" id="telefono" required>
 
       <label for="destino">Destino:</label>
-      <input type="text" id="destino" name="destino" required>
+      <select id="destino" required><option value="">Cargando...</option></select>
 
-      <label for="cantidadPersonas">Cantidad de Personas:</label>
-      <input type="number" id="cantidadPersonas" name="cantidadPersonas" required>
+      <label for="fechas">Rango de Fechas del Viaje:</label>
+      <input type="text" id="fechas" required>
+
+      <label for="adultos">Cantidad de Personas Adultas:</label>
+      <input type="number" id="adultos" required>
+
+      <label for="ninos">Cantidad de Niños:</label>
+      <input type="number" id="ninos">
 
       <label for="observaciones">Observaciones:</label>
-      <textarea id="observaciones" name="observaciones" rows="4"></textarea>
+      <textarea id="observaciones"></textarea>
 
-      <div class="btn-container">
-        <button type="submit" class="btn">Guardar</button>
-        <button type="button" class="btn" onclick="imprimirTabla()">Imprimir Tabla</button>
-      </div>
+      <label for="embajador">Embajador(a) a cargo:</label>
+      <select id="embajador" required>
+        <option value="">Seleccione</option>
+        <option value="Cristopher">Cristopher</option>
+        <option value="Marcela">Marcela</option>
+        <option value="Yare">Yare</option>
+        <option value="Yuliana">Yuliana</option>
+        <option value="Tatiana">Tatiana</option>
+        <option value="Geansury">Geansury</option>
+      </select>
+
+      <button type="submit">Enviar solicitud</button>
     </form>
+
+    <table id="tablaCotizaciones">
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Teléfono</th>
+          <th>Destino</th>
+          <th>Fechas</th>
+          <th>Adultos</th>
+          <th>Niños</th>
+          <th>Observaciones</th>
+          <th>Embajador(a)</th>
+          <th>Estado</th>
+          <th>Registro</th>
+          <th>Tiempo en espera</th>
+          <th>Encargado</th>
+          <th>Fecha Asignación</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
+<script>
+  // 1. Configuración de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-  <script>
-    function imprimirTabla() {
-      window.print();
-    }
+  const form = document.getElementById("cotizacionForm");
+  const tabla = document.querySelector("#tablaCotizaciones tbody");
+  const destinoSelect = document.getElementById("destino");
 
-    // Aquí iría el código de conexión con Firebase y Firestore para guardar la información
-    // firebase.initializeApp({...});
-    // const db = firebase.firestore();
-    // document.getElementById("cotizacionForm").addEventListener("submit", ...);
-  </script>
-</body>
+  // 2. Cargar destinos desde Firebase
+  async function cargarDestinos() {
+    const snapshot = await db.collection("tours").get();
+    destinoSelect.innerHTML = '<option value="">Seleccione un destino</option>';
+    snapshot.forEach(doc => {
+      const tour = doc.data();
+      if (tour.nombre) {
+        const opt = document.createElement("option");
+        opt.value = tour.nombre;
+        opt.textContent = tour.nombre;
+        destinoSelect.appendChild(opt);
+      }
+    });
+  }
+
+  // 3. Registrar nueva cotización
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const telefono = document.getElementById("telefono").value;
+    const destino = destinoSelect.value;
+    const fechas = document.getElementById("fechas").value;
+    const adultos = document.getElementById("adultos").value;
+    const ninos = document.getElementById("ninos").value;
+    const observaciones = document.getElementById("observaciones").value;
+    const embajador = document.getElementById("embajador").value;
+    const fechaRegistro = new Date();
+
+    const year = fechaRegistro.getFullYear();
+    const snapshot = await db.collection("cotizaciones").get();
+    const numero = `COT-${String(snapshot.size + 1).padStart(3, '0')}-${year}`;
+
+    await db.collection("cotizaciones").add({
+      numero,
+      telefono,
+      destino,
+      fechas,
+      adultos,
+      ninos,
+      observaciones,
+      embajador,
+      estado: "Pendiente",
+      registro: fechaRegistro,
+      encargado: "",
+      fecha_asignacion: null
+    });
+
+    alert("Solicitud registrada correctamente.");
+    form.reset();
+    cargarCotizaciones();
+  });
+
+  // 4. Mostrar cotizaciones en tabla
+  async function cargarCotizaciones() {
+    tabla.innerHTML = "";
+    const snapshot = await db.collection("cotizaciones").orderBy("registro", "desc").get();
+    snapshot.forEach(doc => {
+      const d = doc.data();
+      const tiempoEspera = d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min" : '-';
+      const fila = document.createElement("tr");
+      const desactivar = d.estado === "En Proceso";
+
+      fila.innerHTML = `
+        <td>${d.numero}</td>
+        <td>${d.telefono}</td>
+        <td>${d.destino}</td>
+        <td>${d.fechas}</td>
+        <td>${d.adultos}</td>
+        <td>${d.ninos}</td>
+        <td>${d.observaciones}</td>
+        <td>${d.embajador}</td>
+        <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
+        <td>${d.registro?.toDate().toLocaleString()}</td>
+        <td>${tiempoEspera}</td>
+        <td>${d.encargado || '-'}</td>
+        <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
+        <td>
+          ${desactivar 
+            ? '<button class="btn-cotizar" disabled>En Proceso</button>' 
+            : `<button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>`}
+        </td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
+
+  // 5. Confirmación de cotizador
+  function mostrarVentanaCotizador(id, numero) {
+    const nombres = ["Cristopher", "Marcela", "Yare", "Yuliana", "Tatiana", "Geansury"];
+    const ventana = window.open("", "Cotizador", "width=400,height=280");
+    ventana.document.write(`
+      <html><head><title>Confirmar</title>
+      <style>
+        body { font-family: Arial; padding: 20px; background: #f0f7f7; color: #02535a; }
+        select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        button { background-color: #02535a; color: white; border: none; }
+      </style></head><body>
+      <h3>Selecciona tu nombre</h3>
+      <select id="cotizador">
+        ${nombres.map(n => `<option value="${n}">${n}</option>`).join('')}
+      </select>
+      <button onclick="window.opener.confirmarCotizadorDesdeVentana('${id}', '${numero}', document.getElementById('cotizador').value); window.close();">Confirmar</button>
+      </body></html>
+    `);
+  }
+
+  // 6. Asignar cotización
+  async function confirmarCotizadorDesdeVentana(id, numero, encargado) {
+    if (!encargado) return alert("Debes seleccionar un cotizador.");
+    await db.collection("cotizaciones").doc(id).update({
+      estado: "En Proceso",
+      encargado,
+      fecha_asignacion: new Date()
+    });
+    cargarCotizaciones();
+  }
+
+  // 7. Inicializar
+  cargarDestinos();
+  cargarCotizaciones();
+</script>
+
+  </body>
 </html>
-
