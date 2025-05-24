@@ -182,32 +182,6 @@
   cargarCotizaciones();
 });
 
-
-const year = fechaRegistro.getFullYear();
-const snapshot = await db.collection("cotizaciones").get();
-const numero = `COT-${String(snapshot.size + 1).padStart(3, '0')}-${year}`;
-
-
-    await db.collection("cotizaciones").add({
-      numero,
-      telefono,
-      destino,
-      fechas,
-      adultos,
-      ninos,
-      observaciones,
-      embajador,
-      estado: "Pendiente",
-      registro: fechaRegistro,
-      encargado: "",
-      fecha_asignacion: null
-    });
-
-    alert("Solicitud registrada correctamente.");
-    form.reset();
-    cargarCotizaciones();
-  });
-
 // 4. Mostrar cotizaciones en tabla
 async function cargarCotizaciones() {
   tabla.innerHTML = "";
