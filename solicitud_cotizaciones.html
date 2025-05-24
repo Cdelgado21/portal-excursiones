@@ -233,11 +233,18 @@ async function cargarCotizaciones() {
 
 let cotizacionEditandoId = null;
 
-async function editarCotizacion(id) {
-  const doc = await db.collection("cotizaciones").doc(id).get();
-  if (!doc.exists) return alert("Cotización no encontrada");
+const snapshot = await db.collection("cotizaciones").get();
+let maxNum = 0;
 
-  const data = doc.data();
+snapshot.forEach(doc => {
+  const match = doc.data().numero?.match(/^COT-(\d+)-\d{4}$/);
+  if (match) {
+    const num = parseInt(match[1]);
+    if (num > maxNum) maxNum = num;
+  }
+});
+
+const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
 
   // Rellenar formulario
   document.getElementById("telefono").value = data.telefono;
