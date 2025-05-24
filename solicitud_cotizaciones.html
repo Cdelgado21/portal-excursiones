@@ -4,7 +4,38 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Solicitudes de Cotización</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">  // Conexión con Firebase para cargar destinos
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function cargarDestinos() {
+    const selectDestino = document.getElementById("destino");
+    db.collection("tours").get().then((querySnapshot) => {
+      selectDestino.innerHTML = '<option value="">Seleccione un destino</option>';
+      querySnapshot.forEach((doc) => {
+        const nombre = doc.data().nombre;
+        if (nombre) {
+          const option = document.createElement("option");
+          option.value = nombre;
+          option.textContent = nombre;
+          selectDestino.appendChild(option);
+        }
+      });
+    }).catch(error => {
+      console.error("Error al cargar destinos:", error);
+      selectDestino.innerHTML = '<option value="">Error al cargar destinos</option>';
+    });
+  }
+
+  window.onload = () => {
+    cargarDestinos();
+  };
+</script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -38,12 +69,9 @@
     <div class="acciones-superiores">
       <img src="https://i.imgur.com/qK3pLWi.png" alt="Logo" class="logo" onclick="location.href='menu.html'" style="cursor:pointer;">
       <div class="modulos">
-        <button onclick="location.href='tours.html'">Tours</button>
-        <button onclick="location.href='cotizaciones.html'">Cotizaciones</button>
-        <button onclick="descargarTabla('pdf')">Descargar PDF</button>
-        <button onclick="descargarTabla('excel')">Descargar Excel</button>
-        <button onclick="window.print()">🖨️ Imprimir</button>
-      </div>
+  <button onclick="location.href='tours.html'">Tours</button>
+  <button onclick="location.href='cotizaciones.html'">Cotizaciones</button>
+</div>
     </div>
 
     <h2>Solicitudes de Cotización</h2>
@@ -53,7 +81,9 @@
       <input type="tel" id="telefono" required />
 
       <label for="destino">Destino:</label>
-      <input type="text" id="destino" required />
+<select id="destino" required>
+  <option value="">Cargando destinos...</option>
+</select>
 
       <label for="fechas">Fechas:</label>
       <input type="text" id="fechas" required />
@@ -81,7 +111,13 @@
       <button type="submit">Enviar Solicitud</button>
     </form>
 
-    <table id="tablaCotizaciones">
+    <div style="display: flex; justify-content: flex-end; margin-bottom: 10px; gap: 10px;">
+  <button onclick="descargarTabla('pdf')">📄</button>
+  <button onclick="descargarTabla('excel')">📊</button>
+  <button onclick="window.print()">🖨️</button>
+</div>
+
+<table id="tablaCotizaciones">
       <thead>
         <tr>
           <th>Código</th>
@@ -98,9 +134,32 @@
           <th>Encargado</th>
           <th>Fecha Asignación</th>
           <th>Acción</th>
+<th>Editar</th>
+<th>Eliminar</th>
         </tr>
       </thead>
-      <tbody id="tablaBody"></tbody>
+      <tbody id="tablaBody">
+  <!-- Ejemplo dinámico para cada fila (agrega en tu script JS):
+  <tr>
+    <td>COT-001</td>
+    <td>8888-8888</td>
+    <td>Cartagena</td>
+    <td>Julio 2025</td>
+    <td>2</td>
+    <td>0</td>
+    <td>Cliente frecuente</td>
+    <td>Marcela</td>
+    <td><span class='estado-pendiente'>Pendiente</span></td>
+    <td>22/05/2025 10:30</td>
+    <td>5 min</td>
+    <td>-</td>
+    <td>-</td>
+    <td><button onclick='abrirModal("COT-001")'>🛠️</button></td>
+    <td><button onclick='editarCotizacion("COT-001")'>✏️</button></td>
+    <td><button onclick='eliminarCotizacion("COT-001")'>🗑️</button></td>
+  </tr>
+  -->
+</tbody>
     </table>
 
     <div id="modal">
@@ -173,4 +232,3 @@
   </script>
 </body>
 </html>
-
