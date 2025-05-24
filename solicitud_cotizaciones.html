@@ -2,91 +2,126 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solicitudes de Cotización</title>
+  <title>Solicitud de Cotizaciones</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background-color: #f0f7f7; padding: 20px; }
-    h2 { text-align: center; color: #02535a; }
-    form { background: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    label { display: block; margin-top: 15px; color: #02535a; }
-    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
-    button { margin-top: 20px; padding: 10px 20px; background-color: #02535a; color: white; border: none; border-radius: 5px; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 40px; background: white; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-    th { background-color: #02535a; color: white; }
-    .estado-pendiente { background-color: #ff4d4d; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
-    .estado-proceso { background-color: #ffa500; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
-    .container { max-width: 1000px; margin: auto; }
-    .btn-cotizar { background-color: #f49859; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
-    .btn-cotizar[disabled] { background-color: #ccc; cursor: not-allowed; }
-    .acciones-superiores { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-    .logo { height: 50px; }
-    .modulos { display: flex; gap: 10px; }
-    .modulos button { background-color: #02535a; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
-    #modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
-    #modal-content { background: white; padding: 20px; border-radius: 10px; max-width: 400px; width: 100%; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
-    #modal-content h3 { color: #02535a; margin-bottom: 15px; }
-    #modal-content select, #modal-content button { margin-top: 10px; width: 100%; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+      color: #02535a;
+    }
+    .formulario, .tabla-container {
+      max-width: 1200px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background-color: #02535a;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button.btn-cotizar {
+      background-color: #f49859;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+      vertical-align: middle;
+    }
+    th {
+      background-color: #02535a;
+      color: white;
+    }
+    .estado-pendiente {
+      background: #dc3545;
+      color: white;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 5px;
+    }
+    .estado-proceso {
+      background: #ffc107;
+      color: black;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 5px;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      width: 300px;
+      text-align: center;
+    }
+    .modal-content select {
+      margin: 10px 0;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="acciones-superiores">
-      <img src="https://i.imgur.com/qK3pLWi.png" alt="Logo" class="logo" onclick="location.href='menu.html'" style="cursor:pointer;">
-      <div class="modulos">
-        <button onclick="location.href='tours.html'">Tours</button>
-        <button onclick="location.href='cotizaciones.html'">Cotizaciones</button>
-        <button onclick="location.href='reservas.html'">Reservas</button>
-        <button onclick="location.href='clientes.html'">Clientes</button>
-      </div>
-    </div>
 
-    <h2>Solicitudes de Cotización</h2>
+  <h2>Solicitud de Cotizaciones</h2>
 
+  <div class="formulario">
     <form id="formularioSolicitud">
-      <label for="telefono">Número de teléfono:</label>
-      <input type="text" id="telefono" required>
-
-      <label for="destino">Destino:</label>
-      <select id="destino" required></select>
-
-      <label for="fechas">Rango de fechas del viaje:</label>
-      <input type="text" id="fechas" required>
-
-      <label for="adultos">Cantidad de adultos:</label>
-      <input type="number" id="adultos" required min="1">
-
-      <label for="ninos">Cantidad de niños:</label>
-      <input type="number" id="ninos" required min="0">
-
-      <label for="observaciones">Observaciones:</label>
-      <textarea id="observaciones"></textarea>
-
-      <label for="embajador">Embajador(a) a cargo:</label>
+      <input type="text" id="telefono" placeholder="Teléfono del cliente" required />
+      <input type="text" id="destino" placeholder="Destino" required />
+      <input type="text" id="fechas" placeholder="Rango de fechas del viaje" required />
+      <input type="number" id="adultos" placeholder="Cantidad de adultos" required />
+      <input type="number" id="ninos" placeholder="Cantidad de niños" />
+      <input type="text" id="observaciones" placeholder="Observaciones" />
       <select id="embajador" required>
-        <option value="">Seleccione</option>
+        <option value="">Embajador(a) a cargo</option>
         <option value="Cristopher">Cristopher</option>
         <option value="Marcela">Marcela</option>
-        <option value="Tatiana">Tatiana</option>
         <option value="Yare">Yare</option>
         <option value="Yuliana">Yuliana</option>
+        <option value="Tatiana">Tatiana</option>
         <option value="Geansury">Geansury</option>
       </select>
-
       <button type="submit">Enviar solicitud</button>
     </form>
+  </div>
 
-    <div class="acciones-superiores" style="margin-top: 30px; justify-content: flex-end;">
-      <button onclick="imprimirTabla()">🖨️</button>
-      <button onclick="descargarPDF()">📄</button>
-      <button onclick="descargarExcel()">📥</button>
-    </div>
-
-    <table id="tablaSolicitudes">
+  <div class="tabla-container">
+    <table>
       <thead>
         <tr>
           <th>Número</th>
@@ -107,138 +142,151 @@
           <th>Eliminar</th>
         </tr>
       </thead>
-      <tbody id="cuerpoTabla">
-        <!-- Se insertan filas automáticamente -->
-      </tbody>
+      <tbody id="cuerpoTabla"></tbody>
     </table>
   </div>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-    authDomain: "tours-460717.firebaseapp.com",
-    projectId: "tours-460717"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h3>Confirmar acción</h3>
+      <p>Selecciona tu nombre:</p>
+      <select id="selectorEncargado">
+        <option value="">Seleccionar</option>
+        <option value="Cristopher">Cristopher</option>
+        <option value="Marcela">Marcela</option>
+        <option value="Yare">Yare</option>
+        <option value="Yuliana">Yuliana</option>
+        <option value="Tatiana">Tatiana</option>
+        <option value="Geansury">Geansury</option>
+      </select>
+      <button onclick="confirmarAsignacion()">Confirmar</button>
+    </div>
+  </div>
 
-  function abrirModalAsignacion(id) {
-    document.getElementById('modal').style.display = 'flex';
-    document.getElementById('modal').dataset.id = id;
-  }
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-  function confirmarAsignacion() {
-    const id = document.getElementById('modal').dataset.id;
-    const encargado = document.getElementById('selectorEncargado').value;
-    if (!encargado) return alert("Selecciona tu nombre");
+    function abrirModalAsignacion(id) {
+      document.getElementById('modal').style.display = 'flex';
+      document.getElementById('modal').dataset.id = id;
+    }
 
-    db.collection("solicitudes").doc(id).update({
-      estado: "En Proceso",
-      encargado: encargado,
-      fecha_asignacion: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      alert("Cotización asignada correctamente a " + encargado);
-      document.getElementById('modal').style.display = 'none';
-      cargarSolicitudes();
-    });
-  }
-
-  function editarSolicitud(id, data) {
-    document.getElementById("telefono").value = data.telefono;
-    document.getElementById("destino").value = data.destino;
-    document.getElementById("fechas").value = data.fechas;
-    document.getElementById("adultos").value = data.adultos;
-    document.getElementById("ninos").value = data.ninos;
-    document.getElementById("observaciones").value = data.observaciones;
-    document.getElementById("embajador").value = data.embajador;
-    document.getElementById("formularioSolicitud").onsubmit = function(e) {
-      e.preventDefault();
+    function confirmarAsignacion() {
+      const id = document.getElementById('modal').dataset.id;
+      const encargado = document.getElementById('selectorEncargado').value;
+      if (!encargado) return alert("Selecciona tu nombre");
       db.collection("solicitudes").doc(id).update({
+        estado: "En Proceso",
+        encargado: encargado,
+        fecha_asignacion: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        alert("Cotización asignada a " + encargado);
+        document.getElementById('modal').style.display = 'none';
+        cargarSolicitudes();
+      });
+    }
+
+    function editarSolicitud(id, data) {
+      document.getElementById("telefono").value = data.telefono;
+      document.getElementById("destino").value = data.destino;
+      document.getElementById("fechas").value = data.fechas;
+      document.getElementById("adultos").value = data.adultos;
+      document.getElementById("ninos").value = data.ninos;
+      document.getElementById("observaciones").value = data.observaciones;
+      document.getElementById("embajador").value = data.embajador;
+      document.getElementById("formularioSolicitud").onsubmit = function(e) {
+        e.preventDefault();
+        db.collection("solicitudes").doc(id).update({
+          telefono: document.getElementById("telefono").value,
+          destino: document.getElementById("destino").value,
+          fechas: document.getElementById("fechas").value,
+          adultos: parseInt(document.getElementById("adultos").value),
+          ninos: parseInt(document.getElementById("ninos").value),
+          observaciones: document.getElementById("observaciones").value,
+          embajador: document.getElementById("embajador").value
+        }).then(() => {
+          alert("Solicitud actualizada.");
+          document.getElementById("formularioSolicitud").reset();
+          document.getElementById("formularioSolicitud").onsubmit = enviarNuevaSolicitud;
+          cargarSolicitudes();
+        });
+      };
+    }
+
+    function eliminarSolicitud(id) {
+      if (!confirm("¿Eliminar esta solicitud?")) return;
+      db.collection("solicitudes").doc(id).delete().then(() => {
+        alert("Eliminado correctamente.");
+        cargarSolicitudes();
+      });
+    }
+
+    function cargarSolicitudes() {
+      db.collection("solicitudes").orderBy("registro", "desc").get().then(snapshot => {
+        const tbody = document.getElementById("cuerpoTabla");
+        tbody.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const tiempoEnMinutos = data.estado === "Pendiente" ? Math.floor((Date.now() - data.registro.toDate()) / 60000) + " min" : "-";
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${data.numero}</td>
+            <td>${data.telefono}</td>
+            <td>${data.destino}</td>
+            <td>${data.fechas}</td>
+            <td>${data.adultos}</td>
+            <td>${data.ninos}</td>
+            <td>${data.observaciones || "-"}</td>
+            <td>${data.embajador}</td>
+            <td><span class="${data.estado === 'Pendiente' ? 'estado-pendiente' : 'estado-proceso'}">${data.estado}</span></td>
+            <td>${data.registro.toDate().toLocaleString()}</td>
+            <td>${tiempoEnMinutos}</td>
+            <td>${data.encargado || "-"}</td>
+            <td>${data.fecha_asignacion ? data.fecha_asignacion.toDate().toLocaleString() : "-"}</td>
+            <td>${data.estado === 'Pendiente' ? `<button class='btn-cotizar' onclick='abrirModalAsignacion("${doc.id}")'>Tomar</button>` : '-'}</td>
+            <td>${data.estado === 'Pendiente' ? `<button onclick='editarSolicitud("${doc.id}", ${JSON.stringify(data).replace(/'/g, "\'")})'>✏️</button>` : '-'}</td>
+            <td>${data.estado === 'Pendiente' ? `<button onclick='eliminarSolicitud("${doc.id}")'>🗑️</button>` : '-'}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      });
+    }
+
+    function enviarNuevaSolicitud(e) {
+      e.preventDefault();
+      const numero = `COT-${Date.now()}`;
+      const data = {
+        numero,
         telefono: document.getElementById("telefono").value,
         destino: document.getElementById("destino").value,
         fechas: document.getElementById("fechas").value,
         adultos: parseInt(document.getElementById("adultos").value),
         ninos: parseInt(document.getElementById("ninos").value),
         observaciones: document.getElementById("observaciones").value,
-        embajador: document.getElementById("embajador").value
-      }).then(() => {
-        alert("Solicitud actualizada correctamente.");
+        embajador: document.getElementById("embajador").value,
+        estado: "Pendiente",
+        encargado: "-",
+        registro: firebase.firestore.Timestamp.now(),
+        fecha_asignacion: null
+      };
+      db.collection("solicitudes").add(data).then(() => {
+        alert("Guardado con éxito.");
         document.getElementById("formularioSolicitud").reset();
-        document.getElementById("formularioSolicitud").onsubmit = enviarNuevaSolicitud;
         cargarSolicitudes();
       });
-    };
-  }
+    }
 
-  function eliminarSolicitud(id) {
-    if (!confirm("¿Estás seguro de que deseas eliminar esta solicitud?")) return;
-    db.collection("solicitudes").doc(id).delete().then(() => {
-      alert("Solicitud eliminada correctamente.");
-      cargarSolicitudes();
-    });
-  }
-
-  function cargarSolicitudes() {
-    db.collection("solicitudes").orderBy("registro", "desc").get().then(snapshot => {
-      const tbody = document.getElementById("cuerpoTabla");
-      tbody.innerHTML = "";
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const row = document.createElement("tr");
-        const tiempoEnMinutos = Math.floor((Date.now() - data.registro.toDate()) / 60000);
-        row.innerHTML = `
-          <td>${data.numero}</td>
-          <td>${data.telefono}</td>
-          <td>${data.destino}</td>
-          <td>${data.fechas}</td>
-          <td>${data.adultos}</td>
-          <td>${data.ninos}</td>
-          <td>${data.observaciones || "-"}</td>
-          <td>${data.embajador}</td>
-          <td><span class="${data.estado === 'Pendiente' ? 'estado-pendiente' : 'estado-proceso'}">${data.estado}</span></td>
-          <td>${data.registro.toDate().toLocaleString()}</td>
-          <td>${data.estado === "Pendiente" ? tiempoEnMinutos + " min" : "-"}</td>
-          <td>${data.encargado || "-"}</td>
-          <td>${data.fecha_asignacion ? data.fecha_asignacion.toDate().toLocaleString() : "-"}</td>
-          <td>${data.estado === 'Pendiente' ? `<button class='btn-cotizar' onclick='abrirModalAsignacion("${doc.id}")'>Tomar</button>` : '-'}</td>
-          <td>${data.estado === 'Pendiente' ? `<button onclick='editarSolicitud("${doc.id}", ${JSON.stringify(data).replace(/'/g, "\'")})'>✏️</button>` : '-'}</td>
-          <td>${data.estado === 'Pendiente' ? `<button onclick='eliminarSolicitud("${doc.id}")'>🗑️</button>` : '-'}</td>
-        `;
-        tbody.appendChild(row);
-      });
-    });
-  }
-
-  function enviarNuevaSolicitud(e) {
-    e.preventDefault();
-    const numero = `COT-${Date.now()}`;
-    const data = {
-      numero,
-      telefono: document.getElementById("telefono").value,
-      destino: document.getElementById("destino").value,
-      fechas: document.getElementById("fechas").value,
-      adultos: parseInt(document.getElementById("adultos").value),
-      ninos: parseInt(document.getElementById("ninos").value),
-      observaciones: document.getElementById("observaciones").value,
-      embajador: document.getElementById("embajador").value,
-      estado: "Pendiente",
-      encargado: "-",
-      registro: firebase.firestore.Timestamp.now(),
-      fecha_asignacion: null
-    };
-    db.collection("solicitudes").add(data).then(() => {
-      alert("Solicitud guardada con éxito.");
-      document.getElementById("formularioSolicitud").reset();
-      cargarSolicitudes();
-    });
-  }
-
-  document.getElementById("formularioSolicitud").addEventListener("submit", enviarNuevaSolicitud);
-  window.onload = cargarSolicitudes;
-</script>
-
-
+    document.getElementById("formularioSolicitud").addEventListener("submit", enviarNuevaSolicitud);
+    window.onload = cargarSolicitudes;
+  </script>
 
 </body>
 </html>
+
 
