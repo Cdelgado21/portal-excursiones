@@ -272,64 +272,7 @@ async function eliminarCotizacion(id) {
     cargarCotizaciones();
   }
 }
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
 
-  const telefono = document.getElementById("telefono").value;
-  const destino = destinoSelect.value;
-  const fechas = document.getElementById("fechas").value;
-  const adultos = document.getElementById("adultos").value;
-  const ninos = document.getElementById("ninos").value;
-  const observaciones = document.getElementById("observaciones").value;
-  const embajador = document.getElementById("embajador").value;
-  const fechaRegistro = new Date();
-
-  if (cotizacionEditandoId) {
-    // Actualizar existente
-    await db.collection("cotizaciones").doc(cotizacionEditandoId).update({
-      telefono,
-      destino,
-      fechas,
-      adultos,
-      ninos,
-      observaciones,
-      embajador
-    });
-
-    alert("Cotización actualizada correctamente.");
-    cotizacionEditandoId = null;
-  } else {
-    // Nueva cotización
-    const year = fechaRegistro.getFullYear();
-    const snapshot = await db.collection("cotizaciones").get();
-    const numero = `COT-${String(snapshot.size + 1).padStart(3, '0')}-${year}`;
-
-    await db.collection("cotizaciones").add({
-      numero,
-      telefono,
-      destino,
-      fechas,
-      adultos,
-      ninos,
-      observaciones,
-      embajador,
-      estado: "Pendiente",
-      registro: fechaRegistro,
-      encargado: "",
-      fecha_asignacion: null
-    });
-
-    alert("Solicitud registrada correctamente.");
-  }
-
-  form.reset();
-  document.querySelector("#cotizacionForm button[type='submit']").textContent = "Enviar solicitud";
-  cargarCotizaciones();
-});
-  
-  // 7. Inicializar
-  cargarDestinos();
-  cargarCotizaciones();
 </script>
 
 
