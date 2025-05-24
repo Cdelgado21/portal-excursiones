@@ -114,10 +114,6 @@
   const form = document.getElementById("cotizacionForm");
   const tabla = document.querySelector("#tablaCotizaciones tbody");
   const destinoSelect = document.getElementById("destino");
-document.getElementById("cotizacionForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      alert("Formulario enviado. Aquí iría la lógica de Firebase.");
-    });
 
   // 2. Cargar destinos desde Firebase
   async function cargarDestinos() {
