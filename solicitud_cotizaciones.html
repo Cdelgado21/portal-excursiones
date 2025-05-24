@@ -195,16 +195,17 @@ async function cargarCotizaciones() {
           ? '<button class="btn-cotizar" disabled>En Proceso</button>'
           : `<button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>`}
       </td>
-      <td>
-        ${d.estado === "Pendiente"
-          ? `<button class="btn-cotizar" onclick="editarCotizacion('${doc.id}')">✏️</button>`
-          : ''}
-      </td>
-      <td>
-        ${d.estado === "Pendiente"
-          ? `<button class="btn-cotizar" onclick="eliminarCotizacion('${doc.id}')">🗑️</button>`
-          : ''}
-      </td>
+<td>
+  ${d.estado === "Pendiente"
+    ? `<button class="btn-cotizar" onclick="editarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">✏️</button>`
+    : ''}
+</td>
+<td>
+  ${d.estado === "Pendiente"
+    ? `<button class="btn-cotizar" onclick="eliminarCotizacion('${doc.id}')" style="background:none; color:#02535a; font-size:18px;">🗑️</button>`
+    : ''}
+</td>
+
     `;
     tabla.appendChild(fila);
   }); // ← ESTA LÍNEA ES CLAVE
