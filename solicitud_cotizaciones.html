@@ -107,8 +107,8 @@
           <th>Eliminar</th>
         </tr>
       </thead>
-      <tbody>
-        <!-- Aquí se generarán las filas dinámicamente con JS -->
+      <tbody id="cuerpoTabla">
+        <!-- Se insertan filas automáticamente -->
       </tbody>
     </table>
   </div>
@@ -135,9 +135,80 @@
             selectDestino.appendChild(option);
           }
         });
-      }).catch(error => {
-        console.error("Error al cargar destinos:", error);
-        selectDestino.innerHTML = '<option value="">Error al cargar destinos</option>';
+      });
+    }
+
+    document.getElementById("formularioSolicitud").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const telefono = document.getElementById("telefono").value;
+      const destino = document.getElementById("destino").value;
+      const fechas = document.getElementById("fechas").value;
+      const adultos = parseInt(document.getElementById("adultos").value);
+      const ninos = parseInt(document.getElementById("ninos").value);
+      const observaciones = document.getElementById("observaciones").value;
+      const embajador = document.getElementById("embajador").value;
+
+      if (!telefono || !destino || !fechas || isNaN(adultos) || isNaN(ninos) || !embajador) {
+        alert("Por favor complete todos los campos obligatorios.");
+        return;
+      }
+
+      const numero = `COT-${Date.now()}`;
+      const timestamp = new Date();
+      const nuevaSolicitud = {
+        numero,
+        telefono,
+        destino,
+        fechas,
+        adultos,
+        ninos,
+        observaciones,
+        embajador,
+        estado: "Pendiente",
+        registro: firebase.firestore.Timestamp.fromDate(timestamp),
+        encargado: "-",
+        fecha_asignacion: null
+      };
+
+      try {
+        await db.collection("solicitudes").add(nuevaSolicitud);
+        alert("✅ ¡Solicitud registrada exitosamente!");
+        document.getElementById("formularioSolicitud").reset();
+        cargarSolicitudes();
+      } catch (error) {
+        console.error("Error al guardar:", error);
+        alert("❌ Error al guardar la solicitud. Intente nuevamente.");
+      }
+    });
+
+    function cargarSolicitudes() {
+      db.collection("solicitudes").orderBy("registro", "desc").get().then(snapshot => {
+        const tbody = document.getElementById("cuerpoTabla");
+        tbody.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const row = document.createElement("tr");
+          const tiempoEnMinutos = Math.floor((Date.now() - data.registro.toDate()) / 60000);
+          row.innerHTML = `
+            <td>${data.numero}</td>
+            <td>${data.telefono}</td>
+            <td>${data.destino}</td>
+            <td>${data.fechas}</td>
+            <td>${data.adultos}</td>
+            <td>${data.ninos}</td>
+            <td>${data.observaciones || "-"}</td>
+            <td>${data.embajador}</td>
+            <td><span class="${data.estado === 'Pendiente' ? 'estado-pendiente' : 'estado-proceso'}">${data.estado}</span></td>
+            <td>${data.registro.toDate().toLocaleString()}</td>
+            <td>${data.estado === "Pendiente" ? tiempoEnMinutos + " min" : "-"}</td>
+            <td>${data.encargado || "-"}</td>
+            <td>${data.fecha_asignacion ? data.fecha_asignacion.toDate().toLocaleString() : "-"}</td>
+            <td><button class="btn-cotizar">Tomar</button></td>
+            <td><button>✏️</button></td>
+            <td><button>🗑️</button></td>
+          `;
+          tbody.appendChild(row);
+        });
       });
     }
 
@@ -179,7 +250,9 @@
 
     window.onload = () => {
       cargarDestinos();
+      cargarSolicitudes();
     };
   </script>
 </body>
 </html>
+
