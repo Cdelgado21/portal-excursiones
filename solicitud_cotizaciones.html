@@ -191,10 +191,6 @@ form.addEventListener("submit", async (e) => {
   document.querySelector("#cotizacionForm button[type='submit']").textContent = "Enviar solicitud";
   cargarCotizaciones();
 });
-
-  } else {
-    const snapshot = await db.collection("cotizaciones").get();
-
     // Buscar el número mayor existente
     let maxNum = 0;
     snapshot.forEach(doc => {
