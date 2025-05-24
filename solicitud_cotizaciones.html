@@ -160,8 +160,19 @@
   } else {
     // 🆕 CREAR nueva cotización
     const year = fechaRegistro.getFullYear();
-    const snapshot = await db.collection("cotizaciones").get();
-    const numero = `COT-${String(snapshot.size + 1).padStart(3, '0')}-${year}`;
+const snapshot = await db.collection("cotizaciones").get();
+let maxNum = 0;
+
+snapshot.forEach(doc => {
+  const match = doc.data().numero?.match(/^COT-(\d+)-\d{4}$/);
+  if (match) {
+    const num = parseInt(match[1]);
+    if (num > maxNum) maxNum = num;
+  }
+});
+
+const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
+
 
     await db.collection("cotizaciones").add({
       numero,
@@ -245,8 +256,6 @@ snapshot.forEach(doc => {
 });
 
 const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
-
-  // Rellenar formulario
   document.getElementById("telefono").value = data.telefono;
   document.getElementById("destino").value = data.destino;
   document.getElementById("fechas").value = data.fechas;
@@ -256,6 +265,7 @@ const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${year}`;
   document.getElementById("embajador").value = data.embajador;
 
   cotizacionEditandoId = id;
+
 
   // Cambiar botón
   const btn = document.querySelector("#cotizacionForm button[type='submit']");
