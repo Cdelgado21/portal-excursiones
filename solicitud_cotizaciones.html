@@ -2,239 +2,115 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Catálogo de Tours</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solicitudes de Cotización</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f0f7f7;
-      padding: 30px;
-    }
-    .menu-bar {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-      background-color: white;
-      padding: 10px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .menu-bar img {
-      height: 50px;
-      margin-right: 20px;
-      cursor: pointer;
-    }
-    .menu-bar button {
-      margin-right: 10px;
-      padding: 10px 15px;
-      border: none;
-      background-color: #02535a;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    h2 {
-      text-align: center;
-      color: #02535a;
-    }
-    .tabla-container {
-      max-width: 1100px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    .acciones {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .btn-agregar {
-      background: #02535a;
-      color: white;
-      border: none;
-      padding: 10px 15px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-right: auto;
-    }
-    .btn-descarga {
-      background: #02535a;
-      color: white;
-      border: none;
-      width: 42px;
-      height: 42px;
-      border-radius: 6px;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .dropdown-exportar {
-      display: none;
-      position: absolute;
-      margin-top: 45px;
-      background: white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      border-radius: 6px;
-      overflow: hidden;
-    }
-    .dropdown-exportar button {
-      background: white;
-      color: #02535a;
-      border: none;
-      padding: 10px 15px;
-      width: 120px;
-      text-align: left;
-      cursor: pointer;
-    }
-    .dropdown-exportar button:hover {
-      background: #f0f0f0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 18px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      text-align: left;
-    }
-    th {
-      background: #02535a;
-      color: white;
-    }
-    .btn-estado {
-      padding: 5px 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      color: white;
-    }
-    .activo { background: #28a745; }
-    .inactivo { background: #dc3545; }
-    .icon-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1.1em;
-    }
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0, 0, 0, 0.6);
-      justify-content: center;
-      align-items: center;
-    }
-    .modal-content {
-      background: #fff;
-      padding: 30px;
-      border-radius: 8px;
-      width: 500px;
-      display: flex;
-      flex-direction: column;
-    }
-    .modal-content h3 {
-      text-align: center;
-      color: #02535a;
-      margin-bottom: 15px;
-    }
-    .modal-content input {
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #ccc;
-    }
-    .modal-content .btn-row {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 15px;
-    }
-    .modal-content button {
-      padding: 10px;
-      background: #02535a;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .btn-cancelar {
-      background: #999;
-    }
-    @media print {
-      body {
-        padding: 10mm;
-      }
-      .acciones, .menu-bar {
-        display: none;
-      }
-    }
+    body { font-family: Arial, sans-serif; background-color: #f0f7f7; padding: 20px; }
+    h2 { text-align: center; color: #02535a; }
+    form { background: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    label { display: block; margin-top: 15px; color: #02535a; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
+    button { margin-top: 20px; padding: 10px 20px; background-color: #02535a; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 40px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background-color: #02535a; color: white; }
+    .estado-pendiente { background-color: #ff4d4d; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
+    .estado-proceso { background-color: #ffa500; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
+    .container { max-width: 1000px; margin: auto; }
+    .btn-cotizar { background-color: #f49859; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
+    .btn-cotizar[disabled] { background-color: #ccc; cursor: not-allowed; }
+    .acciones-superiores { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .logo { height: 50px; }
+    .modulos { display: flex; gap: 10px; }
+    .modulos button { background-color: #02535a; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+    #modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+    #modal-content { background: white; padding: 20px; border-radius: 10px; max-width: 400px; width: 100%; box-shadow: 0 0 10px rgba(0,0,0,0.3); }
+    #modal-content h3 { color: #02535a; margin-bottom: 15px; }
+    #modal-content select, #modal-content button { margin-top: 10px; width: 100%; }
   </style>
 </head>
 <body>
-  <div class="menu-bar">
-    <img src="https://i.imgur.com/hg8Mcdo.png" alt="Excursiones Delgado" onclick="window.location.href='menu.html'" />
-    <button onclick="window.location.href='menu.html'">Menú</button>
-    <button onclick="window.location.href='tours.html'">Tours</button>
-    <button onclick="window.location.href='cotizaciones.html'">Cotizaciones</button>
-    <button onclick="window.location.href='reservas.html'">Reservas</button>
-    <button onclick="window.location.href='clientes.html'">Clientes</button>
-  </div>
-
-  <h2>Catálogo de Tours</h2>
-  <div class="tabla-container" id="tablaContainer">
-    <div class="acciones">
-      <button class="btn-agregar" onclick="mostrarModal()">+ Nuevo Tour</button>
-      <div style="position: relative;">
-        <button class="btn-descarga" onclick="toggleDropdownExportar()">📥</button>
-        <div class="dropdown-exportar" id="dropdownExportar">
-          <button onclick="exportarTabla()">Descargar PDF</button>
-          <button onclick="descargarCSV()">Descargar CSV</button>
-        </div>
+  <div class="container">
+    <div class="acciones-superiores">
+      <img src="https://i.imgur.com/qK3pLWi.png" alt="Logo" class="logo" onclick="location.href='menu.html'" style="cursor:pointer;">
+      <div class="modulos">
+        <button onclick="location.href='tours.html'">Tours</button>
+        <button onclick="location.href='cotizaciones.html'">Cotizaciones</button>
+        <button onclick="location.href='reservas.html'">Reservas</button>
+        <button onclick="location.href='clientes.html'">Clientes</button>
       </div>
-      <button class="btn-descarga" onclick="window.print()">🖨️</button>
     </div>
-    <table id="tablaTours">
+
+    <h2>Solicitudes de Cotización</h2>
+
+    <form id="formularioSolicitud">
+      <label for="telefono">Número de teléfono:</label>
+      <input type="text" id="telefono" required>
+
+      <label for="destino">Destino:</label>
+      <select id="destino" required></select>
+
+      <label for="fechas">Rango de fechas del viaje:</label>
+      <input type="text" id="fechas" required>
+
+      <label for="adultos">Cantidad de adultos:</label>
+      <input type="number" id="adultos" required min="1">
+
+      <label for="ninos">Cantidad de niños:</label>
+      <input type="number" id="ninos" required min="0">
+
+      <label for="observaciones">Observaciones:</label>
+      <textarea id="observaciones"></textarea>
+
+      <label for="embajador">Embajador(a) a cargo:</label>
+      <select id="embajador" required>
+        <option value="">Seleccione</option>
+        <option value="Cristopher">Cristopher</option>
+        <option value="Marcela">Marcela</option>
+        <option value="Tatiana">Tatiana</option>
+        <option value="Yare">Yare</option>
+        <option value="Yuliana">Yuliana</option>
+        <option value="Geansury">Geansury</option>
+      </select>
+
+      <button type="submit">Enviar solicitud</button>
+    </form>
+
+    <div class="acciones-superiores" style="margin-top: 30px; justify-content: flex-end;">
+      <button onclick="imprimirTabla()">🖨️</button>
+      <button onclick="descargarPDF()">📄</button>
+      <button onclick="descargarExcel()">📥</button>
+    </div>
+
+    <table id="tablaSolicitudes">
       <thead>
         <tr>
-          <th>Nombre</th>
-          <th>Precio</th>
-          <th>Duración</th>
-          <th>Incluye</th>
+          <th>Número</th>
+          <th>Teléfono</th>
+          <th>Destino</th>
+          <th>Fechas</th>
+          <th>Adultos</th>
+          <th>Niños</th>
+          <th>Observaciones</th>
+          <th>Embajador(a)</th>
           <th>Estado</th>
+          <th>Registro</th>
+          <th>Tiempo en espera</th>
+          <th>Encargado</th>
+          <th>Fecha Asignación</th>
+          <th>Acción</th>
           <th>Editar</th>
           <th>Eliminar</th>
         </tr>
       </thead>
-      <tbody id="tabla-body">
-        <tr><td colspan="7">Cargando tours...</td></tr>
+      <tbody>
+        <!-- Aquí se generarán las filas dinámicamente con JS -->
       </tbody>
     </table>
-  </div>
-
-  <div class="modal" id="modalTour">
-    <div class="modal-content">
-      <h3 id="modalTitulo">Nuevo Tour</h3>
-      <input type="text" id="nombre" placeholder="Nombre" />
-      <input type="text" id="precio" placeholder="Precio" />
-      <input type="text" id="duracion" placeholder="Duración" />
-      <input type="text" id="incluye" placeholder="Incluye" />
-      <div class="btn-row">
-        <button onclick="guardarTour()">Guardar</button>
-        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-      </div>
-    </div>
   </div>
 
   <script>
@@ -246,110 +122,64 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let tourActualId = null;
-
-    function mostrarModal(data = null, id = null) {
-      document.getElementById("modalTour").style.display = "flex";
-      document.getElementById("nombre").value = data?.nombre || "";
-      document.getElementById("precio").value = data?.precio || "";
-      document.getElementById("duracion").value = data?.duracion || "";
-      document.getElementById("incluye").value = data?.incluye || "";
-      document.getElementById("modalTitulo").textContent = id ? "Editar Tour" : "Nuevo Tour";
-      tourActualId = id;
+    function cargarDestinos() {
+      const selectDestino = document.getElementById("destino");
+      db.collection("tours").get().then((querySnapshot) => {
+        selectDestino.innerHTML = '<option value="">Seleccione un destino</option>';
+        querySnapshot.forEach((doc) => {
+          const nombre = doc.data().nombre;
+          if (nombre) {
+            const option = document.createElement("option");
+            option.value = nombre;
+            option.textContent = nombre;
+            selectDestino.appendChild(option);
+          }
+        });
+      }).catch(error => {
+        console.error("Error al cargar destinos:", error);
+        selectDestino.innerHTML = '<option value="">Error al cargar destinos</option>';
+      });
     }
 
-    function cerrarModal() {
-      document.getElementById("modalTour").style.display = "none";
+    function imprimirTabla() {
+      const tabla = document.getElementById("tablaSolicitudes");
+      const win = window.open("", "_blank");
+      win.document.write('<html><head><title>Imprimir Tabla</title></head><body>');
+      win.document.write(tabla.outerHTML);
+      win.document.write('</body></html>');
+      win.document.close();
+      win.print();
     }
 
-    function guardarTour() {
-      const datos = {
-        nombre: document.getElementById("nombre").value,
-        precio: document.getElementById("precio").value,
-        duracion: document.getElementById("duracion").value,
-        incluye: document.getElementById("incluye").value,
-        estado: "ACTIVO"
-      };
-      if (tourActualId) db.collection("tours").doc(tourActualId).update(datos).then(() => cargarTours());
-      else db.collection("tours").add(datos).then(() => cargarTours());
-      alert("¡Tour guardado exitosamente!");
-      cerrarModal();
-    }
-
-    function abrirEditor(id, data) {
-      mostrarModal(data, id);
-    }
-
-    function exportarTabla() {
-      html2canvas(document.querySelector("#tablaTours"), { scale: 2 }).then(canvas => {
+    function descargarPDF() {
+      html2canvas(document.querySelector("#tablaSolicitudes")).then(canvas => {
         const imgData = canvas.toDataURL("image/png");
         const pdf = new jspdf.jsPDF();
         const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = pdf.internal.pageSize.getWidth() - 20;
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         pdf.addImage(imgData, "PNG", 10, 10, pdfWidth, pdfHeight);
-        pdf.save("tours.pdf");
+        pdf.save("solicitudes.pdf");
       });
     }
 
-    function descargarCSV() {
-      const filas = document.querySelectorAll("#tablaTours tr");
+    function descargarExcel() {
+      const tabla = document.getElementById("tablaSolicitudes");
+      const filas = tabla.querySelectorAll("tr");
       const csv = Array.from(filas).map(row =>
-        Array.from(row.cells).map(cell => cell.textContent.trim()).join(",")
+        Array.from(row.cells).map(cell => cell.innerText).join(",")
       ).join("\n");
       const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "tours.csv";
+      a.href = url;
+      a.download = "solicitudes.csv";
       a.click();
     }
 
-    function toggleDropdownExportar() {
-      const dropdown = document.getElementById("dropdownExportar");
-      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function cambiarEstado(id, estadoActual) {
-      const nuevoEstado = estadoActual === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-      db.collection("tours").doc(id).update({ estado: nuevoEstado }).then(() => cargarTours());
-    }
-
-    function cargarTours() {
-      db.collection("tours").get().then((querySnapshot) => {
-        const tbody = document.getElementById("tabla-body");
-        tbody.innerHTML = "";
-        if (querySnapshot.empty) {
-          tbody.innerHTML = '<tr><td colspan="7">No hay tours disponibles.</td></tr>';
-          return;
-        }
-        querySnapshot.forEach((doc) => {
-          const tour = doc.data();
-          const fila = document.createElement("tr");
-          fila.innerHTML = `
-            <td>${tour.nombre || '-'}</td>
-            <td>$${tour.precio || '-'}</td>
-            <td>${tour.duracion || '-'}</td>
-            <td>${tour.incluye || '-'}</td>
-            <td>
-              <button class="btn-estado ${tour.estado === 'ACTIVO' ? 'activo' : 'inactivo'}" onclick="cambiarEstado('${doc.id}', '${tour.estado}')">
-                ${tour.estado || 'Sin estado'}
-              </button>
-            </td>
-            <td><button class="icon-btn" onclick="abrirEditor('${doc.id}', ${JSON.stringify(tour).replace(/"/g, '&quot;')})">✏️</button></td>
-            <td><button class="icon-btn" onclick="confirmarEliminar('${doc.id}')">🗑️</button></td>
-          `;
-          tbody.appendChild(fila);
-        });
-      });
-    }
-
-    function confirmarEliminar(id) {
-      if (confirm("¿Estás seguro de que deseas eliminar este tour?")) {
-        db.collection("tours").doc(id).delete().then(() => cargarTours());
-      }
-    }
-
-    window.onload = cargarTours;
+    window.onload = () => {
+      cargarDestinos();
+    };
   </script>
 </body>
 </html>
