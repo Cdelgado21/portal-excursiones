@@ -237,6 +237,17 @@
     });
     cargarCotizaciones();
   }
+function editarCotizacion(id) {
+  alert("Funcionalidad de edición pendiente para: " + id);
+  // Podés abrir un modal con los datos para editar aquí.
+}
+
+async function eliminarCotizacion(id) {
+  if (confirm("¿Deseas eliminar esta cotización?")) {
+    await db.collection("cotizaciones").doc(id).delete();
+    cargarCotizaciones();
+  }
+}
 
   // 7. Inicializar
   cargarDestinos();
