@@ -177,22 +177,35 @@
       : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min"
       : '-';
 
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td>${d.numero}</td>
-      <td>${d.telefono}</td>
-      <td>${d.destino}</td>
-      <td>${d.fechas}</td>
-      <td>${d.adultos}</td>
-      <td>${d.ninos}</td>
-      <td>${d.observaciones}</td>
-      <td>${d.embajador}</td>
-      <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
-      <td>${d.registro?.toDate().toLocaleString()}</td>
-      <td>${tiempoEspera}</td>
-      <td>${d.encargado || '-'}</td>
-      <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
-      <td>
+const fila = document.createElement("tr");
+
+let accionesHTML = '';
+if (d.estado === "Pendiente") {
+  accionesHTML = `
+    <td><button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button></td>
+    <td><button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button></td>
+    <td><button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button></td>
+  `;
+} else {
+  accionesHTML = `<td colspan="3"></td>`; // o podrías dejar vacío
+}
+
+fila.innerHTML = `
+  <td>${d.numero}</td>
+  <td>${d.telefono}</td>
+  <td>${d.destino}</td>
+  <td>${d.fechas}</td>
+  <td>${d.adultos}</td>
+  <td>${d.ninos}</td>
+  <td>${d.observaciones}</td>
+  <td>${d.embajador}</td>
+  <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
+  <td>${d.registro?.toDate().toLocaleString()}</td>
+  <td>${tiempoEspera}</td>
+  <td>${d.encargado || '-'}</td>
+  <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
+  ${accionesHTML}
+`;
         if (d.estado === "Pendiente") {
   fila.innerHTML += `
     <td><button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button></td>
