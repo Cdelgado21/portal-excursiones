@@ -255,19 +255,40 @@ fila.innerHTML = `
     const nombres = ["Cristopher", "Marcela", "Yare", "Yuliana", "Tatiana", "Geansury"];
     const ventana = window.open("", "Cotizador", "width=400,height=280");
     ventana.document.write(`
-      <html><head><title>Confirmar</title>
-      <style>
-        body { font-family: Arial; padding: 20px; background: #f0f7f7; color: #02535a; }
-        select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; }
-        button { background-color: #02535a; color: white; border: none; }
-      </style></head><body>
-      <h3>Selecciona tu nombre</h3>
-      <select id="cotizador">
-        ${nombres.map(n => `<option value="${n}">${n}</option>`).join('')}
-      </select>
-      <button onclick="window.opener.confirmarCotizadorDesdeVentana('${id}', '${numero}', document.getElementById('cotizador').value); window.close();">Confirmar</button>
-      </body></html>
-    `);
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Confirmar</title>
+  <style>
+    body {
+      font-family: Arial;
+      padding: 20px;
+      background: #f0f7f7;
+      color: #02535a;
+    }
+    select, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #02535a;
+      color: white;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <h3>Selecciona tu nombre</h3>
+  <select id="cotizador">
+    ${nombres.map(n => `<option value="${n}">${n}</option>`).join('')}
+  </select>
+  <button onclick="window.opener.confirmarCotizadorDesdeVentana('${id}', '${numero}', document.getElementById('cotizador').value); window.close();">Confirmar</button>
+</body>
+</html>
+`);
   }
 
   async function confirmarCotizadorDesdeVentana(id, numero, encargado) {
