@@ -12,7 +12,7 @@
     form { background: white; padding: 20px; border-radius: 10px; max-width: 600px; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
     label { display: block; margin-top: 15px; color: #02535a; }
     input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; }
-    button { margin-top: 20px; padding: 10px 20px; background-color: #02535a; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    button { margin-top: 20px; padding: 10px 20px; background-color: #02535a; color: white; border: none; border-radius: 5px|; cursor: pointer; }
     table { width: 100%; border-collapse: collapse; margin-top: 40px; background: white; font-size: 14px; }
     th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
     th { background-color: #02535a; color: white; }
@@ -185,10 +185,26 @@
 
     snapshot.forEach(doc => {
       const d = doc.data();
-      const tiempoEspera = d.tiempo_respuesta_min !== undefined
-        ? `${d.tiempo_respuesta_min} min`
-        : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min"
-        : '-';
+      function formatearTiempo(minutos) {
+  const dias = Math.floor(minutos / 1440); // 1440 min = 1 día
+  const horas = Math.floor((minutos % 1440) / 60);
+  const mins = minutos % 60;
+
+  let resultado = "";
+  if (dias > 0) resultado += `${dias} día${dias > 1 ? 's' : ''} `;
+  if (horas > 0) resultado += `${horas} h `;
+  if (mins > 0 || (dias === 0 && horas === 0)) resultado += `${mins} min`;
+
+  return resultado.trim();
+}
+
+const minutosEspera = d.tiempo_respuesta_min !== undefined
+  ? d.tiempo_respuesta_min
+  : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000)
+  : null;
+
+const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '-';
+
 
       const fila = document.createElement("tr");
 
