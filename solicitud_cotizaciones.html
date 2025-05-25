@@ -366,44 +366,47 @@
   });
 
   function descargarCSV() {
-    const rows = [...document.querySelectorAll("#tablaHistoricas tr")];
-    const csvContent = rows.map(row =>
-      [...row.children].map(cell => `"${cell.textContent.trim()}"`).join(",")
-    ).join("\n");
+  const rows = [...document.querySelectorAll("#tablaHistoricas tr")];
+  const csvContent = rows.map(row =>
+    [...row.children].map(cell => `"${cell.textContent.trim()}"`).join(",")
+  ).join("\n");
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "cotizaciones.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "cotizaciones_historicas.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
 
   function descargarPDF() {
-    const printWindow = window.open('', '_blank');
-    const tabla = document.getElementById("tablaHistoricas").outerHTML;
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Cotizaciones</title>
-          <style>
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-            th { background-color: #02535a; color: white; }
-          </style>
-        </head>
-        <body>
-          <h2 style="color:#02535a;">Solicitudes de Cotización</h2>
-          ${tabla}
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-  }
+  const printWindow = window.open('', '_blank');
+  const tabla = document.getElementById("tablaHistoricas").outerHTML;
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Tabla Histórica</title>
+        <style>
+          body { font-family: Arial; padding: 20px; }
+          table { width: 100%; border-collapse: collapse; font-size: 14px; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background-color: #02535a; color: white; }
+        </style>
+      </head>
+      <body>
+        <h2 style="color:#02535a;">Solicitudes Históricas</h2>
+        ${tabla}
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
 
   // Iniciar carga
   cargarDestinos();
