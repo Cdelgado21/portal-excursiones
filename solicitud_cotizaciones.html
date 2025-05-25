@@ -173,50 +173,40 @@
   snapshot.forEach(doc => {
     const d = doc.data();
     const tiempoEspera = d.tiempo_respuesta_min !== undefined
-      ? `${d.tiempo_respuesta_min} min`
+      ? ${d.tiempo_respuesta_min} min
       : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min"
       : '-';
 
-const fila = document.createElement("tr");
-
-let accionesHTML = '';
-if (d.estado === "Pendiente") {
-  accionesHTML = `
-    <td><button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button></td>
-    <td><button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button></td>
-    <td><button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button></td>
-  `;
-} else {
-  accionesHTML = `<td colspan="3"></td>`; // o podrías dejar vacío
-}
-
-fila.innerHTML = `
-  <td>${d.numero}</td>
-  <td>${d.telefono}</td>
-  <td>${d.destino}</td>
-  <td>${d.fechas}</td>
-  <td>${d.adultos}</td>
-  <td>${d.ninos}</td>
-  <td>${d.observaciones}</td>
-  <td>${d.embajador}</td>
-  <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
-  <td>${d.registro?.toDate().toLocaleString()}</td>
-  <td>${tiempoEspera}</td>
-  <td>${d.encargado || '-'}</td>
-  <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
-  ${accionesHTML}
-`;
-        if (d.estado === "Pendiente") {
-  fila.innerHTML += `
-    <td><button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button></td>
-    <td><button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button></td>
-    <td><button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button></td>
-  `;
-  tablaPendientes.appendChild(fila);
-} else if (d.estado === "En Proceso" || d.estado === "Enviada") {
-  tablaHistoricas.appendChild(fila);
-}
-    `;
+    const fila = document.createElement("tr");
+    fila.innerHTML = 
+      <td>${d.numero}</td>
+      <td>${d.telefono}</td>
+      <td>${d.destino}</td>
+      <td>${d.fechas}</td>
+      <td>${d.adultos}</td>
+      <td>${d.ninos}</td>
+      <td>${d.observaciones}</td>
+      <td>${d.embajador}</td>
+      <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
+      <td>${d.registro?.toDate().toLocaleString()}</td>
+      <td>${tiempoEspera}</td>
+      <td>${d.encargado || '-'}</td>
+      <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
+      <td>
+        ${d.estado === "Pendiente"
+          ? <button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>
+      </td>
+      <td>
+        ${d.estado === "Pendiente"
+          ? <button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>
+          : ''}
+      </td>
+      <td>
+        ${d.estado === "Pendiente"
+          ? <button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>
+          : ''}
+      </td>
+    ;
 
     if (d.estado === "Pendiente") {
       tablaPendientes.appendChild(fila);
@@ -252,44 +242,23 @@ fila.innerHTML = `
   }
 
   function mostrarVentanaCotizador(id, numero) {
-  const nombres = ["Cristopher", "Marcela", "Yare", "Yuliana", "Tatiana", "Geansury"];
-  const ventana = window.open("", "Cotizador", "width=400,height=280");
-
-  ventana.document.write(`<!DOCTYPE html>
-    <html>
-    <head>
-      <title>Confirmar</title>
+    const nombres = ["Cristopher", "Marcela", "Yare", "Yuliana", "Tatiana", "Geansury"];
+    const ventana = window.open("", "Cotizador", "width=400,height=280");
+    ventana.document.write(
+      <html><head><title>Confirmar</title>
       <style>
-        body {
-          font-family: Arial;
-          padding: 20px;
-          background: #f0f7f7;
-          color: #02535a;
-        }
-        select, button {
-          width: 100%;
-          padding: 10px;
-          margin-top: 10px;
-          border-radius: 5px;
-          border: 1px solid #ccc;
-        }
-        button {
-          background-color: #02535a;
-          color: white;
-          border: none;
-        }
-      </style>
-    </head>
-    <body>
+        body { font-family: Arial; padding: 20px; background: #f0f7f7; color: #02535a; }
+        select, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 5px; border: 1px solid #ccc; }
+        button { background-color: #02535a; color: white; border: none; }
+      </style></head><body>
       <h3>Selecciona tu nombre</h3>
       <select id="cotizador">
-        ${nombres.map(n => `<option value="${n}">${n}</option>`).join('')}
+        ${nombres.map(n => <option value="${n}">${n}</option>).join('')}
       </select>
       <button onclick="window.opener.confirmarCotizadorDesdeVentana('${id}', '${numero}', document.getElementById('cotizador').value); window.close();">Confirmar</button>
-    </body>
-    </html>
-  `);
-}
+      </body></html>
+    );
+  }
 
   async function confirmarCotizadorDesdeVentana(id, numero, encargado) {
     if (!encargado) return alert("Debes seleccionar un cotizador.");
@@ -336,7 +305,7 @@ fila.innerHTML = `
         }
       });
 
-      const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${fechaRegistro.getFullYear()}`;
+      const numero = COT-${String(maxNum + 1).padStart(3, '0')}-${fechaRegistro.getFullYear()};
       await db.collection("cotizaciones").add({
         numero, telefono, destino, fechas, adultos, ninos, observaciones, embajador,
         estado: "Pendiente", registro: fechaRegistro, encargado: "", fecha_asignacion: null
@@ -344,8 +313,8 @@ fila.innerHTML = `
 
       // Enviar correo
       const destinatarios = ["cris.delgado21@gmail.com", "yullianagomez@gmail.com"];
-      const asunto = `Excursiones Delgado | Nueva cotización: ${numero}`;
-const cuerpo = `
+      const asunto = Excursiones Delgado | Nueva cotización: ${numero};
+const cuerpo = 
   <h2 style="color:#02535a;">¡Nueva solicitud de cotización!</h2>
   <p><strong>Número:</strong> ${numero}</p>
   <p><strong>Teléfono:</strong> ${telefono}</p>
@@ -356,7 +325,7 @@ const cuerpo = `
   <p><strong>Embajadora:</strong> ${embajador}</p>
   <a href="${window.location.origin}/solicitud_cotizaciones.html" target="_blank" style="display:inline-block; padding:12px 20px; margin-top:15px; background-color:#f49859; color:white; text-decoration:none; border-radius:8px; font-weight:bold;">Ver en el sistema</a>
   <p style="margin-top:20px; font-size:12px; color:#888;">Equipo Excursiones Delgado | Gracias por tu compromiso</p>
-`;
+;
 
 
    fetch('https://correo-cotizaciones.cris-delgado21.workers.dev', {
@@ -393,7 +362,7 @@ document.getElementById("btnDescargar").addEventListener("click", () => {
 function descargarCSV() {
   const rows = [...document.querySelectorAll("#tablaCotizaciones tr")];
   const csvContent = rows.map(row =>
-    [...row.children].map(cell => `"${cell.textContent.trim()}"`).join(",")
+    [...row.children].map(cell => "${cell.textContent.trim()}").join(",")
   ).join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -410,7 +379,7 @@ function descargarCSV() {
 function descargarPDF() {
   const printWindow = window.open('', '_blank');
   const tabla = document.getElementById("tablaHistoricas").outerHTML;
-  printWindow.document.write(`
+  printWindow.document.write(
     <html>
       <head>
         <title>Cotizaciones</title>
@@ -425,7 +394,7 @@ function descargarPDF() {
         ${tabla}
       </body>
     </html>
-  `);
+  );
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
@@ -440,7 +409,7 @@ document.getElementById("btnDescargar").addEventListener("click", () => {
 function descargarCSV() {
   const rows = [...document.querySelectorAll("#tablaHistoricas tr")];
   const csvContent = rows.map(row =>
-    [...row.children].map(cell => `"${cell.textContent.trim()}"`).join(",")
+    [...row.children].map(cell => "${cell.textContent.trim()}").join(",")
   ).join("\n");
 
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
