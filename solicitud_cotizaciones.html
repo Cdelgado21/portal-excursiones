@@ -86,26 +86,26 @@
   </button>
 </div>
   <table id="tablaCotizaciones">
-    <thead>
-      <tr>
-        <th>N° Cotización</th>
-        <th>Teléfono</th>
-        <th>Destino</th>
-        <th>Fechas</th>
-        <th>Ad.</th>
-        <th>Niñ.</th>
-        <th>Observaciones</th>
-        <th>Embajador(a)</th>
-        <th>Estado</th>
-        <th>Registro</th>
-        <th>Espera</th>
-        <th>Encargado</th>
-        <th>Asignación</th>
-        <th>Acción</th>
-        <th>Editar</th>
-        <th>Eliminar</th>
-      </tr>
-    </thead>
+    <<thead>
+  <tr>
+    <th>N° Cotización ▼ <br><input type="text" onkeyup="filtrarTabla(0, this.value)" style="width: 100%;"></th>
+    <th>Teléfono ▼ <br><input type="text" onkeyup="filtrarTabla(1, this.value)" style="width: 100%;"></th>
+    <th>Destino ▼ <br><input type="text" onkeyup="filtrarTabla(2, this.value)" style="width: 100%;"></th>
+    <th>Fechas ▼ <br><input type="text" onkeyup="filtrarTabla(3, this.value)" style="width: 100%;"></th>
+    <th>Ad. ▼ <br><input type="text" onkeyup="filtrarTabla(4, this.value)" style="width: 100%;"></th>
+    <th>Niñ. ▼ <br><input type="text" onkeyup="filtrarTabla(5, this.value)" style="width: 100%;"></th>
+    <th>Observaciones ▼ <br><input type="text" onkeyup="filtrarTabla(6, this.value)" style="width: 100%;"></th>
+    <th>Embajador(a) ▼ <br><input type="text" onkeyup="filtrarTabla(7, this.value)" style="width: 100%;"></th>
+    <th>Estado ▼ <br><input type="text" onkeyup="filtrarTabla(8, this.value)" style="width: 100%;"></th>
+    <th>Registro ▼ <br><input type="text" onkeyup="filtrarTabla(9, this.value)" style="width: 100%;"></th>
+    <th>Espera ▼ <br><input type="text" onkeyup="filtrarTabla(10, this.value)" style="width: 100%;"></th>
+    <th>Encargado ▼ <br><input type="text" onkeyup="filtrarTabla(11, this.value)" style="width: 100%;"></th>
+    <th>Asignación ▼ <br><input type="text" onkeyup="filtrarTabla(12, this.value)" style="width: 100%;"></th>
+    <th>Acción</th>
+    <th>Editar</th>
+    <th>Eliminar</th>
+  </tr>
+</thead>
     <tbody></tbody>
   </table>
 </div>
@@ -365,7 +365,40 @@ function descargarPDF() {
   printWindow.focus();
   printWindow.print();
 }
- 
+ // Mostrar u ocultar menú de descarga
+document.getElementById("btnDescargar").addEventListener("click", () => {
+  const menu = document.getElementById("menuDescarga");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+});
+
+// Descargar CSV
+function descargarCSV() {
+  const rows = [...document.querySelectorAll("#tablaCotizaciones tr")];
+  const csvContent = rows.map(row =>
+    [...row.children].map(cell => `"${cell.textContent.trim()}"`).join(",")
+  ).join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "cotizaciones.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function filtrarTabla(colIndex, filtro) {
+  const rows = document.querySelectorAll("#tablaCotizaciones tbody tr");
+  filtro = filtro.toLowerCase();
+
+  rows.forEach(row => {
+    const cell = row.cells[colIndex];
+    const text = cell?.textContent?.toLowerCase() || '';
+    row.style.display = text.includes(filtro) ? "" : "none";
+  });
+}
+
 </script>
 
 
