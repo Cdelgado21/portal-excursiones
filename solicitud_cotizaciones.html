@@ -379,7 +379,7 @@ function descargarCSV() {
 // Descargar PDF
 function descargarPDF() {
   const printWindow = window.open('', '_blank');
-  const tabla = document.getElementById("tablaCotizaciones").outerHTML;
+  const tabla = document.getElementById("tablaHistoricas").outerHTML;
   printWindow.document.write(`
     <html>
       <head>
@@ -408,7 +408,7 @@ document.getElementById("btnDescargar").addEventListener("click", () => {
 
 // Descargar CSV
 function descargarCSV() {
-  const rows = [...document.querySelectorAll("#tablaCotizaciones tr")];
+  const rows = [...document.querySelectorAll("#tablaHistoricas tr")];
   const csvContent = rows.map(row =>
     [...row.children].map(cell => `"${cell.textContent.trim()}"`).join(",")
   ).join("\n");
@@ -424,7 +424,7 @@ function descargarCSV() {
 }
 
 function filtrarTabla(colIndex, filtro) {
-  const rows = document.querySelectorAll("#tablaCotizaciones tbody tr");
+  const rows = document.querySelectorAll("#tablaHistoricas tbody tr");
   filtro = filtro.toLowerCase();
 
   rows.forEach(row => {
