@@ -193,17 +193,16 @@
       <td>${d.encargado || '-'}</td>
       <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
       <td>
-        ${d.estado === "Pendiente"
-          ? `<button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>`
-      </td>
-      <td>
-        ${d.estado === "Pendiente"
-          ? `<button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>`
-          </td>
-      <td>
-        ${d.estado === "Pendiente"
-          ? `<button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>`
-          </td>
+        if (d.estado === "Pendiente") {
+  fila.innerHTML += `
+    <td><button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button></td>
+    <td><button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button></td>
+    <td><button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button></td>
+  `;
+  tablaPendientes.appendChild(fila);
+} else if (d.estado === "En Proceso" || d.estado === "Enviada") {
+  tablaHistoricas.appendChild(fila);
+}
     `;
 
     if (d.estado === "Pendiente") {
