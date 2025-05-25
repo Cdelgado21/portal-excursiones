@@ -171,49 +171,49 @@
   const snapshot = await db.collection("cotizaciones").orderBy("registro", "desc").get();
 
   snapshot.forEach(doc => {
-    const d = doc.data();
-    const tiempoEspera = d.tiempo_respuesta_min !== undefined
-      ? ${d.tiempo_respuesta_min} min
-      : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min"
-      : '-';
+  const d = doc.data();
+  const tiempoEspera = d.tiempo_respuesta_min !== undefined
+    ? `${d.tiempo_respuesta_min} min`
+    : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min"
+    : '-';
 
-    const fila = document.createElement("tr");
-    fila.innerHTML = 
-      <td>${d.numero}</td>
-      <td>${d.telefono}</td>
-      <td>${d.destino}</td>
-      <td>${d.fechas}</td>
-      <td>${d.adultos}</td>
-      <td>${d.ninos}</td>
-      <td>${d.observaciones}</td>
-      <td>${d.embajador}</td>
-      <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
-      <td>${d.registro?.toDate().toLocaleString()}</td>
-      <td>${tiempoEspera}</td>
-      <td>${d.encargado || '-'}</td>
-      <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
-      <td>
-        ${d.estado === "Pendiente"
-          ? <button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>
-      </td>
-      <td>
-        ${d.estado === "Pendiente"
-          ? <button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>
-          : ''}
-      </td>
-      <td>
-        ${d.estado === "Pendiente"
-          ? <button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>
-          : ''}
-      </td>
-    ;
+  const fila = document.createElement("tr");
 
-    if (d.estado === "Pendiente") {
-      tablaPendientes.appendChild(fila);
-    } else if (d.estado === "En Proceso" || d.estado === "Enviada") {
-      tablaHistoricas.appendChild(fila);
-    }
-  });
+  let acciones = '';
+  if (d.estado === "Pendiente") {
+    acciones = `
+      <td><button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button></td>
+      <td><button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button></td>
+      <td><button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button></td>
+    `;
+  } else {
+    acciones = `<td colspan="3"></td>`;
+  }
+
+  fila.innerHTML = `
+    <td>${d.numero}</td>
+    <td>${d.telefono}</td>
+    <td>${d.destino}</td>
+    <td>${d.fechas}</td>
+    <td>${d.adultos}</td>
+    <td>${d.ninos}</td>
+    <td>${d.observaciones}</td>
+    <td>${d.embajador}</td>
+    <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
+    <td>${d.registro?.toDate().toLocaleString()}</td>
+    <td>${tiempoEspera}</td>
+    <td>${d.encargado || '-'}</td>
+    <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
+    ${acciones}
+  `;
+
+  if (d.estado === "Pendiente") {
+    tablaPendientes.appendChild(fila);
+  } else if (d.estado === "En Proceso" || d.estado === "Enviada") {
+    tablaHistoricas.appendChild(fila);
+  }
+});
+
 }
 
 
