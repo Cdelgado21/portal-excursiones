@@ -20,6 +20,17 @@
     .estado-proceso { background-color: #ffa500; color: white; padding: 5px 8px; border-radius: 5px; font-weight: bold; text-align: center; }
     .btn-cotizar { background-color: #f49859; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; }
     .btn-cotizar[disabled] { background-color: #ccc; cursor: not-allowed; }
+    @media (max-width: 768px) {
+  .tabla-responsive {
+    overflow-x: auto;
+    display: block;
+    width: 100%;
+  }
+
+  table {
+    min-width: 900px; /* fuerza el scroll horizontal si el espacio es menor */
+  }
+}
   </style>
 </head>
 <body>
@@ -86,7 +97,8 @@
   </button>
 </div>
   <h3 style="color:#02535a;">Solicitudes Pendientes</h3>
-<table id="tablaPendientes">
+<div class="tabla-responsive">
+  <table id="tablaPendientes">
   <thead>
     <tr>
     <th>N° Cotización 🔍<br><input type="text" onkeyup="filtrarTabla(0, this.value)" style="width: 100%;"></th>
@@ -109,9 +121,11 @@
 </thead>
   <tbody></tbody>
 </table>
-
+</div>
+  
 <h3 style="color:#02535a; margin-top:40px;">Solicitudes Históricas</h3>
-<table id="tablaHistoricas">
+<div class="tabla-responsive">
+  <table id="tablaHistoricas">
   <thead>
     <tr>
     <th>N° Cotización 🔍<br><input type="text" onkeyup="filtrarTabla(0, this.value)" style="width: 100%;"></th>
