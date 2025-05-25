@@ -199,13 +199,11 @@
       <td>
         ${d.estado === "Pendiente"
           ? `<button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>`
-          : ''}
-      </td>
+          </td>
       <td>
         ${d.estado === "Pendiente"
           ? `<button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>`
-          : ''}
-      </td>
+          </td>
     `;
 
     if (d.estado === "Pendiente") {
