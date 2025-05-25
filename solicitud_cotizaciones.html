@@ -85,9 +85,10 @@
     🖨️
   </button>
 </div>
-  <table id="tablaCotizaciones">
-    <<thead>
-  <tr>
+  <h3 style="color:#02535a;">Solicitudes Pendientes</h3>
+<table id="tablaPendientes">
+  <thead>
+    <tr>
     <th>N° Cotización 🔍<br><input type="text" onkeyup="filtrarTabla(0, this.value)" style="width: 100%;"></th>
     <th>Teléfono ▼ <br><input type="text" onkeyup="filtrarTabla(1, this.value)" style="width: 100%;"></th>
     <th>Destino ▼ <br><input type="text" onkeyup="filtrarTabla(2, this.value)" style="width: 100%;"></th>
@@ -106,8 +107,33 @@
     <th>Eliminar</th>
   </tr>
 </thead>
-    <tbody></tbody>
-  </table>
+  <tbody></tbody>
+</table>
+
+<h3 style="color:#02535a; margin-top:40px;">Solicitudes Históricas</h3>
+<table id="tablaHistoricas">
+  <thead>
+    <tr>
+    <th>N° Cotización 🔍<br><input type="text" onkeyup="filtrarTabla(0, this.value)" style="width: 100%;"></th>
+    <th>Teléfono ▼ <br><input type="text" onkeyup="filtrarTabla(1, this.value)" style="width: 100%;"></th>
+    <th>Destino ▼ <br><input type="text" onkeyup="filtrarTabla(2, this.value)" style="width: 100%;"></th>
+    <th>Fechas ▼ <br><input type="text" onkeyup="filtrarTabla(3, this.value)" style="width: 100%;"></th>
+    <th>Ad. ▼ <br><input type="text" onkeyup="filtrarTabla(4, this.value)" style="width: 100%;"></th>
+    <th>Niñ. ▼ <br><input type="text" onkeyup="filtrarTabla(5, this.value)" style="width: 100%;"></th>
+    <th>Observaciones ▼ <br><input type="text" onkeyup="filtrarTabla(6, this.value)" style="width: 100%;"></th>
+    <th>Embajador(a) ▼ <br><input type="text" onkeyup="filtrarTabla(7, this.value)" style="width: 100%;"></th>
+    <th>Estado ▼ <br><input type="text" onkeyup="filtrarTabla(8, this.value)" style="width: 100%;"></th>
+    <th>Registro ▼ <br><input type="text" onkeyup="filtrarTabla(9, this.value)" style="width: 100%;"></th>
+    <th>Espera ▼ <br><input type="text" onkeyup="filtrarTabla(10, this.value)" style="width: 100%;"></th>
+    <th>Encargado ▼ <br><input type="text" onkeyup="filtrarTabla(11, this.value)" style="width: 100%;"></th>
+    <th>Asignación ▼ <br><input type="text" onkeyup="filtrarTabla(12, this.value)" style="width: 100%;"></th>
+    <th>Acción</th>
+    <th>Editar</th>
+    <th>Eliminar</th>
+  </tr>
+</thead>
+  <tbody></tbody>
+</table>
 </div>
 
 <script>
@@ -139,49 +165,60 @@
   }
 
   async function cargarCotizaciones() {
-    tabla.innerHTML = "";
-    const snapshot = await db.collection("cotizaciones").orderBy("registro", "desc").get();
-    snapshot.forEach(doc => {
-      const d = doc.data();
-      const tiempoEspera = d.tiempo_respuesta_min !== undefined
-        ? `${d.tiempo_respuesta_min} min`
-        : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min"
-        : '-';
-      const fila = document.createElement("tr");
+  const tablaPendientes = document.querySelector("#tablaPendientes tbody");
+  const tablaHistoricas = document.querySelector("#tablaHistoricas tbody");
+  tablaPendientes.innerHTML = "";
+  tablaHistoricas.innerHTML = "";
 
-      fila.innerHTML = `
-        <td>${d.numero}</td>
-        <td>${d.telefono}</td>
-        <td>${d.destino}</td>
-        <td>${d.fechas}</td>
-        <td>${d.adultos}</td>
-        <td>${d.ninos}</td>
-        <td>${d.observaciones}</td>
-        <td>${d.embajador}</td>
-        <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
-        <td>${d.registro?.toDate().toLocaleString()}</td>
-        <td>${tiempoEspera}</td>
-        <td>${d.encargado || '-'}</td>
-        <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
-        <td>
-  ${d.estado === "Pendiente"
-    ? `<button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>`
-    : '<button class="btn-cotizar" disabled>En Proceso</button>'}
-</td>
-<td>
-  ${d.estado === "Pendiente"
-    ? `<button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>`
-    : ''}
-</td>
-<td>
-  ${d.estado === "Pendiente"
-    ? `<button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>`
-    : ''}
-</td>
-      `;
-      tabla.appendChild(fila);
-    });
-  }
+  const snapshot = await db.collection("cotizaciones").orderBy("registro", "desc").get();
+
+  snapshot.forEach(doc => {
+    const d = doc.data();
+    const tiempoEspera = d.tiempo_respuesta_min !== undefined
+      ? `${d.tiempo_respuesta_min} min`
+      : d.registro ? Math.floor((new Date() - d.registro.toDate()) / 60000) + " min"
+      : '-';
+
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+      <td>${d.numero}</td>
+      <td>${d.telefono}</td>
+      <td>${d.destino}</td>
+      <td>${d.fechas}</td>
+      <td>${d.adultos}</td>
+      <td>${d.ninos}</td>
+      <td>${d.observaciones}</td>
+      <td>${d.embajador}</td>
+      <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
+      <td>${d.registro?.toDate().toLocaleString()}</td>
+      <td>${tiempoEspera}</td>
+      <td>${d.encargado || '-'}</td>
+      <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
+      <td>
+        ${d.estado === "Pendiente"
+          ? `<button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button>`
+          : '<button class="btn-cotizar" disabled>En Proceso</button>'}
+      </td>
+      <td>
+        ${d.estado === "Pendiente"
+          ? `<button onclick="editarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">✏️</button>`
+          : ''}
+      </td>
+      <td>
+        ${d.estado === "Pendiente"
+          ? `<button onclick="eliminarCotizacion('${doc.id}')" style="background:none; border:none; cursor:pointer; font-size:18px;">🗑️</button>`
+          : ''}
+      </td>
+    `;
+
+    if (d.estado === "Pendiente") {
+      tablaPendientes.appendChild(fila);
+    } else if (d.estado === "En Proceso" || d.estado === "Enviada") {
+      tablaHistoricas.appendChild(fila);
+    }
+  });
+}
+
 
   async function editarCotizacion(id) {
     const doc = await db.collection("cotizaciones").doc(id).get();
