@@ -128,9 +128,17 @@
   </div>
 
   <div class="section" id="hospedaje">
-    <label>Hotel</label>
-    <input id="hotel">
-  </div>
+  <label>Hoteles disponibles en el paquete</label>
+  <div id="lista_hoteles"></div>
+
+  <label style="margin-top: 20px;">Seleccionar hotel asignado</label>
+  <select id="hotel" required onchange="mostrarInfoHotel()">
+    <option value="">-- Seleccione un hotel --</option>
+  </select>
+
+  <div id="infoHotelSeleccionado" style="margin-top: 15px; background: #f5f5f5; padding: 10px; border-radius: 6px; border: 1px solid #ccc;"></div>
+</div>
+
 
   <div class="section" id="incluye">
     <label>Lo que incluye</label>
@@ -190,13 +198,7 @@ Día 2: City Tour y Comuna 13"></textarea>
     const params = new URLSearchParams(window.location.search);
     const numeroCotizacion = params.get("codigo");
 
-    const campos = [
-      "destino", "fechas", "adultos", "ninos", "bebes", "observaciones",
-      "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel",
-      "incluye", "no_incluye", "itinerario_tours", "tours_opcionales",
-      "precio_adulto", "precio_nino", "precio_bebe",
-      "total", "monto_reserva", "politicas"
-    ];
+    const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
 
     async function cargarCotizacionPorNumero() {
       if (!numeroCotizacion) return alert("Número de cotización no especificado.");
@@ -219,21 +221,79 @@ Día 2: City Tour y Comuna 13"></textarea>
     }
 
     async function cargarDatosDelDestino(nombreDestino) {
-      const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
-      if (snapshot.empty) return;
+  const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
+  if (snapshot.empty) return;
 
-      const tour = snapshot.docs[0].data();
-      document.getElementById("incluye").value = tour.incluye || '';
-      document.getElementById("politicas").value = tour.politicas || '';
-      document.getElementById("precio_adulto").value = tour.precio_adulto || '';
-      document.getElementById("precio_nino").value = tour.precio_nino || '';
-      document.getElementById("precio_bebe").value = tour.precio_bebe || '';
-    }
+  const tour = snapshot.docs[0].data();
+
+  document.getElementById("incluye").value = tour.incluye || '';
+  document.getElementById("no_incluye").value = tour.no_incluye || '';
+  document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
+  document.getElementById("tours_opcionales").value = tour.tours_opcionales || '';
+  document.getElementById("politicas").value = tour.politicas || '';
+  document.getElementById("hotel").value = (tour.hoteles && tour.hoteles.length > 0) ? tour.hoteles.map(h => h.nombre).join(', ') : '';
+  document.getElementById("precio_adulto").value = tour.precio_adulto || '';
+  document.getElementById("precio_nino").value = tour.precio_nino || '';
+  document.getElementById("precio_bebe").value = tour.precio_bebe || '';
+}
+
 
     document.getElementById("destino").addEventListener("change", e => {
+      document.getElementById("hotel").value = data.hotel || "";
       cargarDatosDelDestino(e.target.value);
     });
+    let hotelesDelTour = []; // variable global temporal
 
+function mostrarInfoHotel() {
+  const hotelSeleccionado = document.getElementById("hotel").value;
+  const contenedor = document.getElementById("infoHotelSeleccionado");
+  const hotel = hotelesDelTour.find(h => h.nombre === hotelSeleccionado);
+
+  if (hotel) {
+    contenedor.innerHTML = `<strong>Descripción:</strong><br>${hotel.info}`;
+  } else {
+    contenedor.innerHTML = "";
+  }
+}
+hotelesDelTour = tour.hoteles || [];
+ 
+    
+    // Mostrar los hoteles en una tabla dentro de la pestaña de hospedaje
+const listaHoteles = document.getElementById("lista_hoteles");
+listaHoteles.innerHTML = "";
+
+const selectHotel = document.getElementById("hotel");
+selectHotel.innerHTML = '<option value="">-- Seleccione un hotel --</option>';
+
+if (tour.hoteles && tour.hoteles.length > 0) {
+  const tabla = document.createElement("table");
+  tabla.innerHTML = `
+    <thead>
+      <tr>
+        <th>Nombre del Hotel</th>
+        <th>Información</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${tour.hoteles.map(h => `
+        <tr>
+          <td><strong>${h.nombre}</strong></td>
+          <td>${h.info}</td>
+        </tr>
+      `).join("")}
+    </tbody>
+  `;
+  listaHoteles.appendChild(tabla);
+
+  tour.hoteles.forEach(h => {
+    const opt = document.createElement("option");
+    opt.value = h.nombre;
+    opt.textContent = h.nombre;
+    selectHotel.appendChild(opt);
+  });
+} else {
+  listaHoteles.textContent = "No hay hoteles disponibles para este destino.";
+}
     async function guardar() {
       const datos = {};
       campos.forEach(campo => {
@@ -243,10 +303,46 @@ Día 2: City Tour y Comuna 13"></textarea>
       if (!id) return alert("Error: ID no encontrado.");
       await db.collection("cotizaciones").doc(id).update(datos);
       alert("✅ Cotización actualizada correctamente.");
+      datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
     }
 
     function descargarPDF() {
-      window.print();
+  const hotel = document.getElementById("hotel").value;
+  const descripcion = document.getElementById("infoHotelSeleccionado").innerText;
+
+  const contenido = `
+  COTIZACIÓN DE VIAJE
+
+  Destino: ${document.getElementById("destino").value}
+  Fechas: ${document.getElementById("fechas").value}
+
+  Hotel Seleccionado: ${hotel}
+  Descripción del Hotel:
+  ${descripcion}
+
+  (Resto del contenido...)
+
+  `;
+
+  const doc = new jspdf.jsPDF();
+  doc.setFont("Arial");
+  doc.setFontSize(12);
+  doc.text(contenido, 10, 20);
+  doc.save("cotizacion.pdf");
+}
+const doc = new jspdf.jsPDF();
+
+// Cargar el fondo (asegúrate de tener la URL base64 o imagen alojada en línea)
+const fondoURL = "data:image/png;base64,..."; // o URL de hosting
+
+doc.addImage(fondoURL, 'PNG', 0, 0, 210, 297); // tamaño A4
+
+// Agrega el contenido encima
+doc.setFontSize(12);
+doc.text("Hotel Seleccionado: " + hotel, 20, 50);
+doc.text("Descripción del Hotel:", 20, 60);
+doc.text(descripcion, 20, 70);
+   
     }
 
     function enviarCorreo() {
