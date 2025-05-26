@@ -19,161 +19,214 @@
     }
     .tabs {
       display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
       background-color: #02535a;
     }
-    .tabs button {
-      flex: 1;
-      padding: 14px 16px;
+    .tab {
+      padding: 10px 20px;
       cursor: pointer;
-      background-color: #02535a;
-      border: none;
-      outline: none;
       color: white;
-      font-weight: bold;
+      border-bottom: 3px solid transparent;
     }
-    .tabs button.active {
+    .tab.active {
       background-color: #f49859;
+      font-weight: bold;
+      border-bottom: 3px solid #fff;
     }
-    .tab-content {
+    .section {
       display: none;
       padding: 20px;
       background: white;
     }
-    .tab-content.active {
+    .section.active {
       display: block;
     }
-    .section {
-      margin-bottom: 20px;
-    }
-    .section label {
+    label {
       display: block;
       margin-top: 10px;
       font-weight: bold;
     }
-    .section input, .section textarea {
+    input, textarea, select {
       width: 100%;
       padding: 8px;
-      margin-top: 5px;
-      border-radius: 4px;
+      margin-top: 4px;
       border: 1px solid #ccc;
+      border-radius: 5px;
     }
-    .footer-buttons {
-      text-align: center;
+    .buttons {
       margin-top: 30px;
+      text-align: center;
     }
-    .footer-buttons button {
-      padding: 10px 20px;
-      margin: 5px;
+    .buttons button {
       background-color: #02535a;
       color: white;
+      padding: 10px 20px;
+      margin: 5px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table td, table th {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: left;
+    }
+    table th {
+      background-color: #f49859;
+      color: white;
+    }
   </style>
 </head>
 <body>
+  <header>
+    <h1 id="tituloCotizacion">Detalle de Cotización</h1>
+  </header>
 
-<header>
-  <h1>Detalle de Cotización - <span id="cotizacionNum">COT-XXX-2025</span></h1>
-</header>
-
-<div class="tabs">
-  <button class="tab-button active" onclick="mostrarTab('viaje')">Información del viaje</button>
-  <button class="tab-button" onclick="mostrarTab('vuelos')">Vuelos</button>
-  <button class="tab-button" onclick="mostrarTab('hotel')">Hotel</button>
-  <button class="tab-button" onclick="mostrarTab('incluye')">Incluye / No Incluye</button>
-  <button class="tab-button" onclick="mostrarTab('itinerario')">Itinerario</button>
-  <button class="tab-button" onclick="mostrarTab('precios')">Precios</button>
-</div>
-
-<div id="viaje" class="tab-content active">
-  <div class="section">
-    <label>Destino:</label>
-    <input type="text" id="destino">
-    <label>Fechas:</label>
-    <input type="text" id="fechas">
-    <label>Cantidad Adultos:</label>
-    <input type="number" id="adultos">
-    <label>Cantidad Niños:</label>
-    <input type="number" id="ninos">
-    <label>Cantidad Bebés:</label>
-    <input type="number" id="bebes">
+  <div class="tabs">
+    <div class="tab active" data-tab="viaje">Información del viaje</div>
+    <div class="tab" data-tab="vuelos">Itinerario de vuelos</div>
+    <div class="tab" data-tab="hospedaje">Hospedaje</div>
+    <div class="tab" data-tab="incluye">Lo que incluye / no incluye</div>
+    <div class="tab" data-tab="itinerario">Itinerario de tours</div>
+    <div class="tab" data-tab="opcionales">Tours opcionales</div>
+    <div class="tab" data-tab="precios">Precios</div>
+    <div class="tab" data-tab="politicas">Políticas</div>
   </div>
-</div>
 
-<div id="vuelos" class="tab-content">
-  <div class="section">
-    <label>Vuelo de ida:</label>
+  <div class="section active" id="viaje">
+    <label>Destino</label>
+    <input id="destino">
+    <label>Fechas</label>
+    <input id="fechas">
+    <label>Adultos</label>
+    <input id="adultos" type="number">
+    <label>Niños</label>
+    <input id="ninos" type="number">
+    <label>Bebés</label>
+    <input id="bebes" type="number">
+    <label>Observaciones</label>
+    <textarea id="observaciones"></textarea>
+  </div>
+
+  <div class="section" id="vuelos">
+    <label>Vuelo de Ida</label>
     <textarea id="vuelo_ida"></textarea>
-    <label>Vuelo de regreso:</label>
+    <label>Vuelo de Vuelta</label>
     <textarea id="vuelo_vuelta"></textarea>
-    <label>Equipaje:</label>
+    <label>Equipaje</label>
     <textarea id="equipaje"></textarea>
   </div>
-</div>
 
-<div id="hotel" class="tab-content">
-  <div class="section">
-    <label>Nombre del hotel:</label>
-    <input type="text" id="hotel">
-    <label>Ubicación o detalles:</label>
-    <textarea id="hotel_detalles"></textarea>
+  <div class="section" id="hospedaje">
+    <label>Hotel</label>
+    <input id="hotel">
   </div>
-</div>
 
-<div id="incluye" class="tab-content">
-  <div class="section">
-    <label>Incluye:</label>
+  <div class="section" id="incluye">
+    <label>Lo que incluye</label>
     <textarea id="incluye"></textarea>
-    <label>No Incluye:</label>
+    <label>Lo que no incluye</label>
     <textarea id="no_incluye"></textarea>
   </div>
-</div>
 
-<div id="itinerario" class="tab-content">
-  <div class="section">
-    <label>Itinerario de Tours (Día 1, Día 2, ...):</label>
-    <textarea id="itinerario_tours"></textarea>
+  <div class="section" id="itinerario">
+    <label>Itinerario por días</label>
+    <textarea id="itinerario_tours" placeholder="Día 1: Llegada a Medellín
+Día 2: City Tour y Comuna 13"></textarea>
   </div>
-</div>
 
-<div id="precios" class="tab-content">
-  <div class="section">
-    <label>Precio por adulto:</label>
-    <input type="number" id="precio_adulto">
-    <label>Precio por niño:</label>
-    <input type="number" id="precio_nino">
-    <label>Precio por bebé:</label>
-    <input type="number" id="precio_bebe">
-    <label>Total general:</label>
-    <input type="number" id="total_general">
-    <label>Monto de reserva:</label>
-    <input type="number" id="monto_reserva">
+  <div class="section" id="opcionales">
+    <label>Tours opcionales</label>
+    <textarea id="tours_opcionales"></textarea>
   </div>
-</div>
 
-<div class="footer-buttons">
-  <button onclick="guardarCotizacion()">Guardar</button>
-  <button onclick="descargarPDF()">Descargar PDF</button>
-</div>
+  <div class="section" id="precios">
+    <label>Precio por adulto</label>
+    <input id="precio_adulto" type="number">
+    <label>Precio por niño</label>
+    <input id="precio_nino" type="number">
+    <label>Precio por bebé</label>
+    <input id="precio_bebe" type="number">
+    <label>Total</label>
+    <input id="total">
+    <label>Monto de reserva</label>
+    <input id="monto_reserva">
+  </div>
 
-<script>
-  function mostrarTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(div => div.classList.remove('active'));
-    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    event.target.classList.add('active');
-  }
+  <div class="section" id="politicas">
+    <label>Políticas y condiciones</label>
+    <textarea id="politicas"></textarea>
+  </div>
 
-  function guardarCotizacion() {
-    alert("Simulación de guardado. Esta función se conectará con Firebase.");
-  }
+  <div class="buttons">
+    <button onclick="guardar()">Guardar cambios</button>
+    <button onclick="descargarPDF()">Descargar PDF</button>
+    <button onclick="enviarCorreo()">Enviar al cliente</button>
+  </div>
 
-  function descargarPDF() {
-    alert("Simulación de descarga. Esto generará un PDF para el cliente.");
-  }
-</script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
+
+    async function cargar() {
+      const doc = await db.collection("cotizaciones").doc(id).get();
+      if (!doc.exists) return alert("No encontrada");
+      const data = doc.data();
+      document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
+      campos.forEach(campo => {
+        if (document.getElementById(campo)) {
+          document.getElementById(campo).value = data[campo] || '';
+        }
+      });
+    }
+
+    async function guardar() {
+      const datos = {};
+      campos.forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) datos[campo] = el.value;
+      });
+      await db.collection("cotizaciones").doc(id).update(datos);
+      alert("✅ Cotización actualizada correctamente.");
+    }
+
+    function descargarPDF() {
+      window.print();
+    }
+
+    function enviarCorreo() {
+      alert("🚧 Funcionalidad de correo pendiente de implementación.");
+    }
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.getAttribute("data-tab")).classList.add("active");
+      });
+    });
+
+    cargar();
+  </script>
 </body>
 </html>
+
