@@ -1,14 +1,15 @@
 
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Catálogo de Tours</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <style>
+<meta charset="utf-8"/>
+<title>Catálogo de Tours</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
     body {
       font-family: Arial, sans-serif;
       background: #f0f7f7;
@@ -151,55 +152,52 @@
   </style>
 </head>
 <body>
-  <div class="menu-bar">
-    <img src="LOGO SIED.JPG" alt="Excursiones Delgado" onclick="window.location.href='menu.html'" />
-    <button onclick="window.location.href='menu.html'">Menú</button>
-    <button onclick="window.location.href='cotizaciones.html'">Cotizaciones</button>
-    <button onclick="window.location.href='reservas.html'">Reservas</button>
-    <button onclick="window.location.href='clientes.html'">Clientes</button>
-  </div>
-
-  <h2>Catálogo de Tours</h2>
-  <div class="tabla-container">
-    <div class="acciones">
-      <button class="btn-agregar" onclick="mostrarModal()">+ Nuevo Tour</button>
-      <button class="btn-descarga" onclick="exportarTabla()">📄 Exportar PDF</button>
-      <button class="btn-descarga" onclick="descargarCSV()">📥 Exportar CSV</button>
-    </div>
-    <table id="tablaTours">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Precio</th>
-          <th>Duración</th>
-          <th>Incluye</th>
-          <th>Estado</th>
-          <th>Editar</th>
-          <th>Eliminar</th>
-        </tr>
-      </thead>
-      <tbody id="tabla-body">
-        <tr><td colspan="7">Cargando tours...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="modal" id="modalTour">
-    <div class="modal-content">
-      <h3 id="modalTitulo">Nuevo Tour</h3>
-      <input type="text" id="nombre" placeholder="Nombre" />
-      <input type="text" id="precio" placeholder="Precio" />
-      <input type="text" id="duracion" placeholder="Duración" />
-      <input type="text" id="incluye" placeholder="Incluye" />
-      <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
-      <div class="btn-row">
-        <button onclick="guardarTour()">Guardar</button>
-        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
+<div class="menu-bar">
+<img alt="Excursiones Delgado" onclick="window.location.href='menu.html'" src="LOGO SIED.JPG"/>
+<button onclick="window.location.href='menu.html'">Menú</button>
+<button onclick="window.location.href='cotizaciones.html'">Cotizaciones</button>
+<button onclick="window.location.href='reservas.html'">Reservas</button>
+<button onclick="window.location.href='clientes.html'">Clientes</button>
+</div>
+<h2>Catálogo de Tours</h2>
+<div class="tabla-container">
+<div class="acciones">
+<button class="btn-agregar" onclick="mostrarModal()">+ Nuevo Tour</button>
+<button class="btn-descarga" onclick="exportarTabla()">📄 Exportar PDF</button>
+<button class="btn-descarga" onclick="descargarCSV()">📥 Exportar CSV</button>
+</div>
+<table id="tablaTours">
+<thead>
+<tr>
+<th>Nombre</th>
+<th>Precio</th>
+<th>Duración</th>
+<th>Incluye</th>
+<th>Estado</th>
+<th>Editar</th>
+<th>Eliminar</th>
+<th>Hotel</th><th>Información del hotel</th><th>Lo que no incluye</th><th>Itinerario de tours</th><th>Tours opcionales</th><th>Políticas</th></tr>
+</thead>
+<tbody id="tabla-body">
+<tr><td colspan="7">Cargando tours...</td></tr>
+</tbody>
+</table>
+</div>
+<div class="modal" id="modalTour">
+<div class="modal-content">
+<h3 id="modalTitulo">Nuevo Tour</h3>
+<input id="nombre" placeholder="Nombre" type="text"/>
+<input id="precio" placeholder="Precio" type="text"/>
+<input id="duracion" placeholder="Duración" type="text"/>
+<input id="incluye" placeholder="Incluye" type="text"/>
+<textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
+<div class="btn-row">
+<button onclick="guardarTour()">Guardar</button>
+<button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+</div>
+</div>
+</div>
+<script>
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
