@@ -182,7 +182,7 @@ Día 2: City Tour y Comuna 13"></textarea>
   const db = firebase.firestore();
 
   const params = new URLSearchParams(window.location.search);
-  const numeroCotizacion = params.get("numero"); // URL debe tener ?numero=COT-027-2025
+  const numeroCotizacion = params.get("codigo"); // URL debe tener ?numero=COT-027-2025
 
   async function cargarCotizacionPorNumero() {
     if (!numeroCotizacion) return alert("Número de cotización no especificado.");
