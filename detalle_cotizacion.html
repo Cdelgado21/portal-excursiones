@@ -82,7 +82,7 @@
   const db = firebase.firestore();
 
   const urlParams = new URLSearchParams(window.location.search);
-  const id = urlParams.get("id");
+  const id = urlParams.get("codigo");
 
   if (!id) {
     document.body.innerHTML = "<h2 style='color:#02535a;'>Error: No se especificó la cotización.</h2>";
@@ -90,7 +90,7 @@
   }
 
   async function cargarDetalle() {
-    const docRef = await db.collection("cotizaciones").doc(id).get();
+    const snapshot = await db.collection("cotizaciones").where("numero", "==", codigo).get();
 
     if (!docRef.exists) {
       document.body.innerHTML = "<h2 style='color:#02535a;'>Error: Cotización no encontrada.</h2>";
