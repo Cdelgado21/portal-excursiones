@@ -81,72 +81,77 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  const params = new URLSearchParams(location.search);
-  const id = params.get("id");
+  const urlParams = new URLSearchParams(window.location.search);
+  const id = urlParams.get("id");
 
   if (!id) {
-    document.body.innerHTML = "<h2>Error: No se especificó la cotización.</h2>";
-  } else {
-    db.collection("cotizaciones").doc(id).get().then(doc => {
-      if (!doc.exists) {
-        document.body.innerHTML = "<h2>Error: Cotización no encontrada.</h2>";
-        return;
-      }
-      const data = doc.data();
-      document.getElementById("titulo-cotizacion").innerText = `Detalle de Cotización ${data.numero}`;
-      document.getElementById("destino").textContent = data.destino;
-      document.getElementById("fechas").textContent = data.fechas;
-      document.getElementById("adultos").textContent = data.adultos;
-      if (data.ninos > 0) {
-        document.getElementById("ninos").textContent = data.ninos;
-      } else {
-        document.getElementById("campo-ninos").style.display = "none";
-      }
-      if (data.bebes > 0) {
-        document.getElementById("bebes").textContent = data.bebes;
-      } else {
-        document.getElementById("campo-bebes").style.display = "none";
-      }
-
-      document.getElementById("vuelo_ida").textContent = data.vuelo_ida || "-";
-      document.getElementById("vuelo_regreso").textContent = data.vuelo_regreso || "-";
-      document.getElementById("equipaje").textContent = data.equipaje || "-";
-      document.getElementById("hotel").textContent = data.hotel || "-";
-
-      (data.incluye || []).forEach(i => {
-        const li = document.createElement("li");
-        li.textContent = i;
-        document.getElementById("incluye").appendChild(li);
-      });
-
-      (data.no_incluye || []).forEach(i => {
-        const li = document.createElement("li");
-        li.textContent = i;
-        document.getElementById("no_incluye").appendChild(li);
-      });
-
-      (data.itinerario || []).forEach(item => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${item.dia}</td><td>${item.actividad}</td>`;
-        document.getElementById("itinerario").appendChild(tr);
-      });
-
-      (data.tours_opcionales || []).forEach(tour => {
-        const li = document.createElement("li");
-        li.textContent = tour;
-        document.getElementById("tours_opcionales").appendChild(li);
-      });
-
-      document.getElementById("precio_adulto").textContent = data.precio_adulto || "0";
-      if (data.precio_nino > 0) {
-        document.getElementById("precio_nino").textContent = data.precio_nino;
-      } else {
-        document.getElementById("precio_nino_row").style.display = "none";
-      }
-      document.getElementById("total").textContent = data.total || "0";
-      document.getElementById("reserva").textContent = data.reserva || "0";
-    });
+    document.body.innerHTML = "<h2 style='color:#02535a;'>Error: No se especificó la cotización.</h2>";
+    throw new Error("ID de cotización no especificado");
   }
+
+  async function cargarDetalle() {
+    const docRef = await db.collection("cotizaciones").doc(id).get();
+
+    if (!docRef.exists) {
+      document.body.innerHTML = "<h2 style='color:#02535a;'>Error: Cotización no encontrada.</h2>";
+      return;
+    }
+
+    const d = docRef.data();
+
+    // Asignar datos al DOM (debes tener elementos con estos IDs)
+    document.getElementById("tituloCotizacion").textContent = `Detalle de la Cotización ${d.numero || ''}`;
+    document.getElementById("telefono").textContent = d.telefono || '';
+    document.getElementById("destino").textContent = d.destino || '';
+    document.getElementById("fechas").textContent = d.fechas || '';
+    document.getElementById("adultos").textContent = d.adultos || 0;
+
+    if (d.ninos) document.getElementById("ninos").textContent = d.ninos;
+    else document.getElementById("grupoNinos")?.remove();
+
+    if (d.bebes) document.getElementById("bebes").textContent = d.bebes;
+    else document.getElementById("grupoBebes")?.remove();
+
+    document.getElementById("observaciones").textContent = d.observaciones || '';
+    document.getElementById("embajador").textContent = d.embajador || '';
+    document.getElementById("encargado").textContent = d.encargado || '';
+    document.getElementById("asignacion").textContent = d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '';
+
+    // Vuelos
+    document.getElementById("vueloIda").textContent = d.vuelo_ida || '';
+    document.getElementById("vueloRegreso").textContent = d.vuelo_regreso || '';
+    document.getElementById("equipaje").textContent = d.equipaje || '';
+
+    // Hotel
+    document.getElementById("hotel").textContent = d.hotel || '';
+
+    // Incluye / No incluye
+    document.getElementById("incluye").textContent = d.incluye || '';
+    document.getElementById("noIncluye").textContent = d.no_incluye || '';
+
+    // Itinerario
+    const tablaItinerario = document.getElementById("tablaItinerario");
+    if (Array.isArray(d.itinerario)) {
+      d.itinerario.forEach((item, i) => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `<td>Día ${i + 1}</td><td>${item}</td>`;
+        tablaItinerario.appendChild(fila);
+      });
+    }
+
+    // Tours opcionales
+    document.getElementById("toursOpcionales").textContent = d.tours_opcionales || '';
+
+    // Precios
+    document.getElementById("precioAdulto").textContent = `$${d.precio_adulto || 0}`;
+    document.getElementById("precioNino").textContent = d.precio_nino ? `$${d.precio_nino}` : '';
+    document.getElementById("precioBebe").textContent = d.precio_bebe ? `$${d.precio_bebe}` : '';
+    document.getElementById("total").textContent = `$${d.total || 0}`;
+    document.getElementById("reserva").textContent = `$${d.monto_reserva || 0}`;
+  }
+
+  cargarDetalle();
 </script>
+
 </body>
 </html>
