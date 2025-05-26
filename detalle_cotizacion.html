@@ -87,6 +87,22 @@
     }
   </style>
 </head>
+  <div id="toast" style="
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: #28a745;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  font-weight: bold;
+  display: none;
+  z-index: 9999;
+">
+  ✅ Información del tour cargada con éxito
+</div>
+
 <body>
   <header>
     <h1 id="tituloCotizacion">Detalle de Cotización</h1>
@@ -274,6 +290,7 @@ Día 2: City Tour y Comuna 13"></textarea>
     listaHoteles.textContent = "No hay hoteles disponibles para este destino.";
   }
      console.log("Valor cargado desde Firestore (incluye):", tour.incluye);
+mostrarToast(); // ✅ Mostrar notificación visual
 }
     async function guardar() {
       const datos = {};
@@ -323,6 +340,17 @@ Día 2: City Tour y Comuna 13"></textarea>
     });
 
     window.onload = cargarCotizacionPorNumero;
+
+    function mostrarToast(mensaje = "✅ Información cargada con éxito") {
+  const toast = document.getElementById("toast");
+  toast.textContent = mensaje;
+  toast.style.display = "block";
+  setTimeout(() => {
+    toast.style.display = "none";
+  }, 3500);
+}
+
+    
   </script>
 </body>
 </html>
