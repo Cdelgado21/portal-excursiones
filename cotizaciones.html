@@ -109,14 +109,14 @@
         <td>${d.embajador || ''}</td>
         <td>${d.encargado || ''}</td>
         <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : ''}</td>
-        <td><button onclick="verDetalle('${doc.id}')" style="background:#f49859; color:white; padding:5px 10px; border:none; border-radius:5px;">Ver</button></td>
+        <td><button onclick="verDetalle('${d.numero}')" style="background:#f49859; color:white; padding:5px 10px; border:none; border-radius:5px;">Ver</button></td>
       `;
       tabla.appendChild(fila);
     });
   }
 
-  function verDetalle(id) {
-  window.open(`detalle_cotizacion.html?id=${encodeURIComponent(id)}`, '_blank');
+  function verDetalle(codigo) {
+  window.open(`detalle_cotizacion.html?codigo=${encodeURIComponent(codigo)}`, '_blank');
 }
 
   cargarCotizacionesProceso();
