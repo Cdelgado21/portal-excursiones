@@ -154,25 +154,34 @@
   </div>
 
   <div class="modal" id="modalTour">
-    <div class="modal-content">
-      <h3 id="modalTitulo">Nuevo Tour</h3>
-      <input id="nombre" placeholder="Nombre" />
-      <input id="precio" placeholder="Precio" />
-      <input id="duracion" placeholder="Duración" />
-      <input id="incluye" placeholder="Incluye" />
-      <input id="hotel" placeholder="Hotel" />
-      <textarea id="info_hotel" placeholder="Información del hotel"></textarea>
-      <textarea id="no_incluye" placeholder="Lo que no incluye"></textarea>
-      <textarea id="itinerario_tours" placeholder="Itinerario de tours"></textarea>
-      <textarea id="tours_opcionales" placeholder="Tours opcionales"></textarea>
-      <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
-      <div class="btn-row">
-        <button onclick="guardarTour()">Guardar</button>
-        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+  <div class="modal-content">
+    <h3 id="modalTitulo">Nuevo Tour</h3>
+    <input id="nombre" placeholder="Nombre del destino" type="text" />
+    <input id="precio" placeholder="Precio" type="text" />
+    <input id="duracion" placeholder="Duración" type="text" />
+    <input id="incluye" placeholder="Incluye" type="text" />
+    
+    <div id="hotelesContainer">
+      <label><b>Hoteles</b></label>
+      <div class="hotel-entry">
+        <input placeholder="Nombre del hotel" class="hotel-nombre" type="text" />
+        <textarea placeholder="Información del hotel" class="hotel-info"></textarea>
       </div>
     </div>
-  </div>
+    <button onclick="agregarHotel()">+ Agregar hotel</button>
 
+    <textarea id="no_incluye" placeholder="Lo que no incluye"></textarea>
+    <textarea id="itinerario_tours" placeholder="Itinerario de tours (Día 1:...)"></textarea>
+    <textarea id="tours_opcionales" placeholder="Tours opcionales"></textarea>
+    <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
+
+    <div class="btn-row">
+      <button onclick="guardarTour()">Guardar</button>
+      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+  
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -183,29 +192,65 @@
     const db = firebase.firestore();
     let tourActualId = null;
 
-    function mostrarModal(data = null, id = null) {
-      document.getElementById("modalTour").style.display = "flex";
-      const campos = ["nombre","precio","duracion","incluye","hotel","info_hotel","no_incluye","itinerario_tours","tours_opcionales","politicas"];
-      campos.forEach(c => document.getElementById(c).value = data?.[c] || "");
-      tourActualId = id;
-    }
+    function agregarHotel(nombre = "", info = "") {
+  const container = document.getElementById("hotelesContainer");
+  const div = document.createElement("div");
+  div.className = "hotel-entry";
+  div.innerHTML = `
+    <input placeholder="Nombre del hotel" class="hotel-nombre" type="text" value="${nombre}" />
+    <textarea placeholder="Información del hotel" class="hotel-info">${info}</textarea>
+  `;
+  container.appendChild(div);
+}
 
-    function cerrarModal() {
-      document.getElementById("modalTour").style.display = "none";
-    }
+function mostrarModal(data = null, id = null) {
+  document.getElementById("modalTour").style.display = "flex";
+  document.getElementById("nombre").value = data?.nombre || "";
+  document.getElementById("precio").value = data?.precio || "";
+  document.getElementById("duracion").value = data?.duracion || "";
+  document.getElementById("incluye").value = data?.incluye || "";
+  document.getElementById("no_incluye").value = data?.no_incluye || "";
+  document.getElementById("itinerario_tours").value = data?.itinerario_tours || "";
+  document.getElementById("tours_opcionales").value = data?.tours_opcionales || "";
+  document.getElementById("politicas").value = data?.politicas || "";
+  document.getElementById("hotelesContainer").innerHTML = "";
 
-    function guardarTour() {
-      const datos = {};
-      ["nombre","precio","duracion","incluye","hotel","info_hotel","no_incluye","itinerario_tours","tours_opcionales","politicas"].forEach(c => {
-        datos[c] = document.getElementById(c).value;
-      });
-      datos.estado = "ACTIVO";
+  (data?.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
+  if (!data?.hoteles?.length) agregarHotel();
 
-      const ref = tourActualId
-        ? db.collection("tours").doc(tourActualId).update(datos)
-        : db.collection("tours").add(datos);
-      ref.then(() => { cargarTours(); cerrarModal(); });
-    }
+  tourActualId = id;
+}
+
+function guardarTour() {
+  const hoteles = [];
+  document.querySelectorAll(".hotel-entry").forEach(div => {
+    const nombre = div.querySelector(".hotel-nombre").value.trim();
+    const info = div.querySelector(".hotel-info").value.trim();
+    if (nombre) hoteles.push({ nombre, info });
+  });
+
+  const datos = {
+    nombre: document.getElementById("nombre").value,
+    precio: document.getElementById("precio").value,
+    duracion: document.getElementById("duracion").value,
+    incluye: document.getElementById("incluye").value,
+    no_incluye: document.getElementById("no_incluye").value,
+    itinerario_tours: document.getElementById("itinerario_tours").value,
+    tours_opcionales: document.getElementById("tours_opcionales").value,
+    politicas: document.getElementById("politicas").value,
+    hoteles,
+    estado: "ACTIVO"
+  };
+
+  const ref = tourActualId
+    ? db.collection("tours").doc(tourActualId).update(datos)
+    : db.collection("tours").add(datos);
+
+  ref.then(() => {
+    cargarTours();
+    cerrarModal();
+  });
+}
 
     function cargarTours() {
       db.collection("tours").get().then(snapshot => {
@@ -215,9 +260,11 @@
           const t = doc.data();
           const fila = document.createElement("tr");
           fila.innerHTML = `
-            <td>${t.nombre || '-'}</td><td>${t.precio || '-'}</td><td>${t.duracion || '-'}</td><td>${t.incluye || '-'}</td>
-            <td>${t.hotel || '-'}</td><td>${t.info_hotel || '-'}</td><td>${t.no_incluye || '-'}</td>
-            <td>${t.itinerario_tours || '-'}</td><td>${t.tours_opcionales || '-'}</td><td>${t.politicas || '-'}</td>
+  <td>${t.nombre || '-'}</td>
+  <td>${t.precio || '-'}</td>
+  <td>${t.duracion || '-'}</td>
+  <td>${t.incluye || '-'}</td>
+  <td>${hotelesHtml || '-'}</td> 
             <td><button class="btn-estado ${t.estado === 'ACTIVO' ? 'activo' : 'inactivo'}" onclick="toggleEstado('${doc.id}', '${t.estado}')">${t.estado}</button></td>
             <td><button class="icon-btn" onclick='mostrarModal(${JSON.stringify(t).replace(/'/g, "\'")}, "${doc.id}")'>✏️</button></td>
             <td><button class="icon-btn" onclick="eliminarTour('${doc.id}')">🗑️</button></td>`;
