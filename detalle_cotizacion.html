@@ -303,6 +303,8 @@ mostrarToast(); // ✅ Mostrar notificación visual
       alert("✅ Cotización actualizada correctamente.");
       datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
     }
+    
+    const { jsPDF } = window.jspdf;
     async function descargarPDF() {
   const doc = new jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
