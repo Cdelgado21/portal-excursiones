@@ -222,24 +222,25 @@
     </table>
   </div>
 
+  <div class="modal" id="modalTour">
   <div class="modal-content">
-  <h3 id="modalTitulo">Nuevo Tour</h3>
-  <input type="text" id="nombre" placeholder="Nombre" />
-  <input type="text" id="precio" placeholder="Precio" />
-  <input type="text" id="duracion" placeholder="Duración" />
-  <input type="text" id="incluye" placeholder="Incluye" />
-  <input type="text" id="hotel" placeholder="Hotel" />
-  <textarea id="info_hotel" placeholder="Información del hotel"></textarea>
-  <textarea id="no_incluye" placeholder="Lo que no incluye"></textarea>
-  <textarea id="itinerario_tours" placeholder="Itinerario de tours (Día 1:...)"></textarea>
-  <textarea id="tours_opcionales" placeholder="Tours opcionales"></textarea>
-  <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
-  <div class="btn-row">
-    <button onclick="guardarTour()">Guardar</button>
-    <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+    <h3 id="modalTitulo">Nuevo Tour</h3>
+    <input type="text" id="nombre" placeholder="Nombre" />
+    <input type="text" id="precio" placeholder="Precio" />
+    <input type="text" id="duracion" placeholder="Duración" />
+    <input type="text" id="incluye" placeholder="Incluye" />
+    <input type="text" id="hotel" placeholder="Hotel" />
+    <textarea id="info_hotel" placeholder="Información del hotel"></textarea>
+    <textarea id="no_incluye" placeholder="Lo que no incluye"></textarea>
+    <textarea id="itinerario_tours" placeholder="Itinerario de tours (Día 1:...)"></textarea>
+    <textarea id="tours_opcionales" placeholder="Tours opcionales"></textarea>
+    <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
+    <div class="btn-row">
+      <button onclick="guardarTour()">Guardar</button>
+      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+    </div>
   </div>
 </div>
-
 
   <script>
     const firebaseConfig = {
@@ -266,25 +267,31 @@
       document.getElementById("modalTour").style.display = "none";
     }
 
-    const datos = {
-  nombre: document.getElementById("nombre").value,
-  precio: document.getElementById("precio").value,
-  duracion: document.getElementById("duracion").value,
-  incluye: document.getElementById("incluye").value,
-  hotel: document.getElementById("hotel").value,
-  info_hotel: document.getElementById("info_hotel").value,
-  no_incluye: document.getElementById("no_incluye").value,
-  itinerario_tours: document.getElementById("itinerario_tours").value,
-  tours_opcionales: document.getElementById("tours_opcionales").value,
-  politicas: document.getElementById("politicas").value,
-  estado: "ACTIVO"
-};
+    function guardarTour() {
+  const datos = {
+    nombre: document.getElementById("nombre").value,
+    precio: document.getElementById("precio").value,
+    duracion: document.getElementById("duracion").value,
+    incluye: document.getElementById("incluye").value,
+    hotel: document.getElementById("hotel").value,
+    info_hotel: document.getElementById("info_hotel").value,
+    no_incluye: document.getElementById("no_incluye").value,
+    itinerario_tours: document.getElementById("itinerario_tours").value,
+    tours_opcionales: document.getElementById("tours_opcionales").value,
+    politicas: document.getElementById("politicas").value,
+    estado: "ACTIVO"
+  };
 
-      if (tourActualId) db.collection("tours").doc(tourActualId).update(datos).then(() => cargarTours());
-      else db.collection("tours").add(datos).then(() => cargarTours());
-      alert("¡Tour guardado exitosamente!");
-      cerrarModal();
-    }
+  if (tourActualId) {
+    db.collection("tours").doc(tourActualId).update(datos).then(() => cargarTours());
+  } else {
+    db.collection("tours").add(datos).then(() => cargarTours());
+  }
+
+  alert("¡Tour guardado exitosamente!");
+  cerrarModal();
+}
+
 
     function abrirEditor(id, data) {
       mostrarModal(data, id);
@@ -360,6 +367,18 @@
     }
 
     window.onload = cargarTours;
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0, 0, 0, 0.6);
+  justify-content: center;
+  align-items: center;
+}
+
+    
   </script>
 </body>
 </html>
