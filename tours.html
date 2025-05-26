@@ -284,6 +284,7 @@ function guardarTour() {
   `;
   tbody.appendChild(fila);
 });
+}
     function eliminarTour(id) {
       if (confirm("¿Eliminar este tour?")) {
         db.collection("tours").doc(id).delete().then(() => cargarTours());
