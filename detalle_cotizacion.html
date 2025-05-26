@@ -1,157 +1,187 @@
+from IPython.display import display, HTML
+
+# Código base HTML con pestañas superiores para secciones de una cotización
+html_code = """
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Detalle de Cotización</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f7f7; margin: 0; padding: 20px; }
-    h2 { color: #02535a; }
-    section { background: white; margin-bottom: 20px; padding: 20px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-    th { background-color: #02535a; color: white; }
-    .subtitulo { color: #02535a; margin-bottom: 10px; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #02535a;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .tabs {
+      display: flex;
+      background-color: #02535a;
+    }
+    .tabs button {
+      flex: 1;
+      padding: 14px 16px;
+      cursor: pointer;
+      background-color: #02535a;
+      border: none;
+      outline: none;
+      color: white;
+      font-weight: bold;
+    }
+    .tabs button.active {
+      background-color: #f49859;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px;
+      background: white;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .section input, .section textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    .footer-buttons {
+      text-align: center;
+      margin-top: 30px;
+    }
+    .footer-buttons button {
+      padding: 10px 20px;
+      margin: 5px;
+      background-color: #02535a;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
-<h2 id="titulo-cotizacion">Detalle de Cotización</h2>
+<header>
+  <h1>Detalle de Cotización - <span id="cotizacionNum">COT-XXX-2025</span></h1>
+</header>
 
-<section>
-  <h3 class="subtitulo">Información del Viaje</h3>
-  <p><strong>Destino:</strong> <span id="destino"></span></p>
-  <p><strong>Fechas:</strong> <span id="fechas"></span></p>
-  <p><strong>Adultos:</strong> <span id="adultos"></span></p>
-  <p id="campo-ninos"><strong>Niños:</strong> <span id="ninos"></span></p>
-  <p id="campo-bebes"><strong>Bebés:</strong> <span id="bebes"></span></p>
-</section>
+<div class="tabs">
+  <button class="tab-button active" onclick="mostrarTab('viaje')">Información del viaje</button>
+  <button class="tab-button" onclick="mostrarTab('vuelos')">Vuelos</button>
+  <button class="tab-button" onclick="mostrarTab('hotel')">Hotel</button>
+  <button class="tab-button" onclick="mostrarTab('incluye')">Incluye / No Incluye</button>
+  <button class="tab-button" onclick="mostrarTab('itinerario')">Itinerario</button>
+  <button class="tab-button" onclick="mostrarTab('precios')">Precios</button>
+</div>
 
-<section>
-  <h3 class="subtitulo">Itinerario de Vuelos</h3>
-  <p><strong>Vuelo de Ida:</strong> <span id="vuelo_ida"></span></p>
-  <p><strong>Vuelo de Regreso:</strong> <span id="vuelo_regreso"></span></p>
-  <p><strong>Equipaje:</strong> <span id="equipaje"></span></p>
-</section>
+<div id="viaje" class="tab-content active">
+  <div class="section">
+    <label>Destino:</label>
+    <input type="text" id="destino">
+    <label>Fechas:</label>
+    <input type="text" id="fechas">
+    <label>Cantidad Adultos:</label>
+    <input type="number" id="adultos">
+    <label>Cantidad Niños:</label>
+    <input type="number" id="ninos">
+    <label>Cantidad Bebés:</label>
+    <input type="number" id="bebes">
+  </div>
+</div>
 
-<section>
-  <h3 class="subtitulo">Hospedaje</h3>
-  <p><strong>Hotel:</strong> <span id="hotel"></span></p>
-</section>
+<div id="vuelos" class="tab-content">
+  <div class="section">
+    <label>Vuelo de ida:</label>
+    <textarea id="vuelo_ida"></textarea>
+    <label>Vuelo de regreso:</label>
+    <textarea id="vuelo_vuelta"></textarea>
+    <label>Equipaje:</label>
+    <textarea id="equipaje"></textarea>
+  </div>
+</div>
 
-<section>
-  <h3 class="subtitulo">Incluye / No Incluye</h3>
-  <p><strong>Incluye:</strong></p>
-  <ul id="incluye"></ul>
-  <p><strong>No Incluye:</strong></p>
-  <ul id="no_incluye"></ul>
-</section>
+<div id="hotel" class="tab-content">
+  <div class="section">
+    <label>Nombre del hotel:</label>
+    <input type="text" id="hotel">
+    <label>Ubicación o detalles:</label>
+    <textarea id="hotel_detalles"></textarea>
+  </div>
+</div>
 
-<section>
-  <h3 class="subtitulo">Itinerario de Tours</h3>
-  <table>
-    <thead>
-      <tr><th>Día</th><th>Actividad</th></tr>
-    </thead>
-    <tbody id="itinerario"></tbody>
-  </table>
-</section>
+<div id="incluye" class="tab-content">
+  <div class="section">
+    <label>Incluye:</label>
+    <textarea id="incluye"></textarea>
+    <label>No Incluye:</label>
+    <textarea id="no_incluye"></textarea>
+  </div>
+</div>
 
-<section>
-  <h3 class="subtitulo">Tours Opcionales</h3>
-  <ul id="tours_opcionales"></ul>
-</section>
+<div id="itinerario" class="tab-content">
+  <div class="section">
+    <label>Itinerario de Tours (Día 1, Día 2, ...):</label>
+    <textarea id="itinerario_tours"></textarea>
+  </div>
+</div>
 
-<section>
-  <h3 class="subtitulo">Precio</h3>
-  <p><strong>Precio por Adulto:</strong> $<span id="precio_adulto"></span></p>
-  <p id="precio_nino_row"><strong>Precio por Niño:</strong> $<span id="precio_nino"></span></p>
-  <p><strong>Total:</strong> $<span id="total"></span></p>
-  <p><strong>Monto de Reserva:</strong> $<span id="reserva"></span></p>
-</section>
+<div id="precios" class="tab-content">
+  <div class="section">
+    <label>Precio por adulto:</label>
+    <input type="number" id="precio_adulto">
+    <label>Precio por niño:</label>
+    <input type="number" id="precio_nino">
+    <label>Precio por bebé:</label>
+    <input type="number" id="precio_bebe">
+    <label>Total general:</label>
+    <input type="number" id="total_general">
+    <label>Monto de reserva:</label>
+    <input type="number" id="monto_reserva">
+  </div>
+</div>
+
+<div class="footer-buttons">
+  <button onclick="guardarCotizacion()">Guardar</button>
+  <button onclick="descargarPDF()">Descargar PDF</button>
+</div>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-    authDomain: "tours-460717.firebaseapp.com",
-    projectId: "tours-460717"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  const urlParams = new URLSearchParams(window.location.search);
-  const id = urlParams.get("codigo");
-
-  if (!id) {
-    document.body.innerHTML = "<h2 style='color:#02535a;'>Error: No se especificó la cotización.</h2>";
-    throw new Error("ID de cotización no especificado");
+  function mostrarTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(div => div.classList.remove('active'));
+    document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
   }
 
-  async function cargarDetalle() {
-    const snapshot = await db.collection("cotizaciones").where("numero", "==", codigo).get();
-
-    if (!docRef.exists) {
-      document.body.innerHTML = "<h2 style='color:#02535a;'>Error: Cotización no encontrada.</h2>";
-      return;
-    }
-
-    const d = docRef.data();
-
-    // Asignar datos al DOM (debes tener elementos con estos IDs)
-    document.getElementById("tituloCotizacion").textContent = `Detalle de la Cotización ${d.numero || ''}`;
-    document.getElementById("telefono").textContent = d.telefono || '';
-    document.getElementById("destino").textContent = d.destino || '';
-    document.getElementById("fechas").textContent = d.fechas || '';
-    document.getElementById("adultos").textContent = d.adultos || 0;
-
-    if (d.ninos) document.getElementById("ninos").textContent = d.ninos;
-    else document.getElementById("grupoNinos")?.remove();
-
-    if (d.bebes) document.getElementById("bebes").textContent = d.bebes;
-    else document.getElementById("grupoBebes")?.remove();
-
-    document.getElementById("observaciones").textContent = d.observaciones || '';
-    document.getElementById("embajador").textContent = d.embajador || '';
-    document.getElementById("encargado").textContent = d.encargado || '';
-    document.getElementById("asignacion").textContent = d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '';
-
-    // Vuelos
-    document.getElementById("vueloIda").textContent = d.vuelo_ida || '';
-    document.getElementById("vueloRegreso").textContent = d.vuelo_regreso || '';
-    document.getElementById("equipaje").textContent = d.equipaje || '';
-
-    // Hotel
-    document.getElementById("hotel").textContent = d.hotel || '';
-
-    // Incluye / No incluye
-    document.getElementById("incluye").textContent = d.incluye || '';
-    document.getElementById("noIncluye").textContent = d.no_incluye || '';
-
-    // Itinerario
-    const tablaItinerario = document.getElementById("tablaItinerario");
-    if (Array.isArray(d.itinerario)) {
-      d.itinerario.forEach((item, i) => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `<td>Día ${i + 1}</td><td>${item}</td>`;
-        tablaItinerario.appendChild(fila);
-      });
-    }
-
-    // Tours opcionales
-    document.getElementById("toursOpcionales").textContent = d.tours_opcionales || '';
-
-    // Precios
-    document.getElementById("precioAdulto").textContent = `$${d.precio_adulto || 0}`;
-    document.getElementById("precioNino").textContent = d.precio_nino ? `$${d.precio_nino}` : '';
-    document.getElementById("precioBebe").textContent = d.precio_bebe ? `$${d.precio_bebe}` : '';
-    document.getElementById("total").textContent = `$${d.total || 0}`;
-    document.getElementById("reserva").textContent = `$${d.monto_reserva || 0}`;
+  function guardarCotizacion() {
+    alert("Simulación de guardado. Esta función se conectará con Firebase.");
   }
 
-  cargarDetalle();
+  function descargarPDF() {
+    alert("Simulación de descarga. Esto generará un PDF para el cliente.");
+  }
 </script>
 
 </body>
 </html>
+"""
+
+# Mostrar en notebook como vista previa HTML
+display(HTML(html_code))
