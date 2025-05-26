@@ -238,7 +238,10 @@ function mostrarModal(data = null, id = null) {
 
   tourActualId = id;
 }
-
+function cerrarModal() {
+  document.getElementById("modalTour").style.display = "none";
+  tourActualId = null;
+}
 function guardarTour() {
   const hoteles = [];
   document.querySelectorAll(".hotel-entry").forEach(div => {
