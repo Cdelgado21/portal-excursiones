@@ -310,40 +310,23 @@ if (tour.hoteles && tour.hoteles.length > 0) {
   const hotel = document.getElementById("hotel").value;
   const descripcion = document.getElementById("infoHotelSeleccionado").innerText;
 
-  const contenido = `
-  COTIZACIÓN DE VIAJE
-
-  Destino: ${document.getElementById("destino").value}
-  Fechas: ${document.getElementById("fechas").value}
-
-  Hotel Seleccionado: ${hotel}
-  Descripción del Hotel:
-  ${descripcion}
-
-  (Resto del contenido...)
-
-  `;
-
   const doc = new jspdf.jsPDF();
+
+  // Si tienes una imagen de fondo, agrégala aquí
+  // const fondoURL = "data:image/png;base64,...";
+  // doc.addImage(fondoURL, 'PNG', 0, 0, 210, 297); // tamaño A4
+
   doc.setFont("Arial");
   doc.setFontSize(12);
-  doc.text(contenido, 10, 20);
+  doc.text("COTIZACIÓN DE VIAJE", 10, 20);
+  doc.text("Destino: " + document.getElementById("destino").value, 10, 30);
+  doc.text("Fechas: " + document.getElementById("fechas").value, 10, 40);
+  doc.text("Hotel Seleccionado: " + hotel, 10, 50);
+  doc.text("Descripción del Hotel:", 10, 60);
+  doc.text(descripcion, 10, 70);
+
   doc.save("cotizacion.pdf");
 }
-const doc = new jspdf.jsPDF();
-
-// Cargar el fondo (asegúrate de tener la URL base64 o imagen alojada en línea)
-const fondoURL = "data:image/png;base64,..."; // o URL de hosting
-
-doc.addImage(fondoURL, 'PNG', 0, 0, 210, 297); // tamaño A4
-
-// Agrega el contenido encima
-doc.setFontSize(12);
-doc.text("Hotel Seleccionado: " + hotel, 20, 50);
-doc.text("Descripción del Hotel:", 20, 60);
-doc.text(descripcion, 20, 70);
-   
-    }
 
     function enviarCorreo() {
       alert("🚧 Funcionalidad de correo pendiente de implementación.");
