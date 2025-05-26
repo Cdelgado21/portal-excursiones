@@ -220,7 +220,7 @@ Día 2: City Tour y Comuna 13"></textarea>
       cargarDatosDelDestino(data.destino);
     }
 
-    async function cargarDatosDelDestino(nombreDestino) {
+   async function cargarDatosDelDestino(nombreDestino) {
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
   if (snapshot.empty) return;
 
@@ -231,68 +231,48 @@ Día 2: City Tour y Comuna 13"></textarea>
   document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
   document.getElementById("tours_opcionales").value = tour.tours_opcionales || '';
   document.getElementById("politicas").value = tour.politicas || '';
-  document.getElementById("hotel").value = (tour.hoteles && tour.hoteles.length > 0) ? tour.hoteles.map(h => h.nombre).join(', ') : '';
   document.getElementById("precio_adulto").value = tour.precio_adulto || '';
   document.getElementById("precio_nino").value = tour.precio_nino || '';
   document.getElementById("precio_bebe").value = tour.precio_bebe || '';
-}
 
+  // ✅ A PARTIR DE AQUÍ ESTABA FUERA: muévelo aquí
+  hotelesDelTour = tour.hoteles || [];
 
-    document.getElementById("destino").addEventListener("change", e => {
-      document.getElementById("hotel").value = data.hotel || "";
-      cargarDatosDelDestino(e.target.value);
-    });
-    let hotelesDelTour = []; // variable global temporal
+  const listaHoteles = document.getElementById("lista_hoteles");
+  listaHoteles.innerHTML = "";
 
-function mostrarInfoHotel() {
-  const hotelSeleccionado = document.getElementById("hotel").value;
-  const contenedor = document.getElementById("infoHotelSeleccionado");
-  const hotel = hotelesDelTour.find(h => h.nombre === hotelSeleccionado);
+  const selectHotel = document.getElementById("hotel");
+  selectHotel.innerHTML = '<option value="">-- Seleccione un hotel --</option>';
 
-  if (hotel) {
-    contenedor.innerHTML = `<strong>Descripción:</strong><br>${hotel.info}`;
-  } else {
-    contenedor.innerHTML = "";
-  }
-}
-hotelesDelTour = tour.hoteles || [];
- 
-    
-    // Mostrar los hoteles en una tabla dentro de la pestaña de hospedaje
-const listaHoteles = document.getElementById("lista_hoteles");
-listaHoteles.innerHTML = "";
-
-const selectHotel = document.getElementById("hotel");
-selectHotel.innerHTML = '<option value="">-- Seleccione un hotel --</option>';
-
-if (tour.hoteles && tour.hoteles.length > 0) {
-  const tabla = document.createElement("table");
-  tabla.innerHTML = `
-    <thead>
-      <tr>
-        <th>Nombre del Hotel</th>
-        <th>Información</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${tour.hoteles.map(h => `
+  if (tour.hoteles && tour.hoteles.length > 0) {
+    const tabla = document.createElement("table");
+    tabla.innerHTML = `
+      <thead>
         <tr>
-          <td><strong>${h.nombre}</strong></td>
-          <td>${h.info}</td>
+          <th>Nombre del Hotel</th>
+          <th>Información</th>
         </tr>
-      `).join("")}
-    </tbody>
-  `;
-  listaHoteles.appendChild(tabla);
+      </thead>
+      <tbody>
+        ${tour.hoteles.map(h => `
+          <tr>
+            <td><strong>${h.nombre}</strong></td>
+            <td>${h.info}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    `;
+    listaHoteles.appendChild(tabla);
 
-  tour.hoteles.forEach(h => {
-    const opt = document.createElement("option");
-    opt.value = h.nombre;
-    opt.textContent = h.nombre;
-    selectHotel.appendChild(opt);
-  });
-} else {
-  listaHoteles.textContent = "No hay hoteles disponibles para este destino.";
+    tour.hoteles.forEach(h => {
+      const opt = document.createElement("option");
+      opt.value = h.nombre;
+      opt.textContent = h.nombre;
+      selectHotel.appendChild(opt);
+    });
+  } else {
+    listaHoteles.textContent = "No hay hoteles disponibles para este destino.";
+  }
 }
     async function guardar() {
       const datos = {};
