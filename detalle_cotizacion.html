@@ -273,6 +273,7 @@ Día 2: City Tour y Comuna 13"></textarea>
   } else {
     listaHoteles.textContent = "No hay hoteles disponibles para este destino.";
   }
+     console.log("Valor cargado desde Firestore (incluye):", tour.incluye);
 }
     async function guardar() {
       const datos = {};
