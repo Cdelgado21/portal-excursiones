@@ -262,27 +262,28 @@ function guardarTour() {
         const tbody = document.getElementById("tabla-body");
         tbody.innerHTML = "";
         snapshot.forEach(doc => {
-          const t = doc.data();
-          const fila = document.createElement("tr");
-          const hotelesHtml = (t.hoteles || []).map(h => `<b>${h.nombre}</b><br>${h.info}`).join('<hr>');
-          fila.innerHTML = `
-  <td>${t.nombre || '-'}</td>
-  <td>${t.precio || '-'}</td>
-  <td>${t.duracion || '-'}</td>
-  <td>${t.incluye || '-'}</td>
-  <td>${hotelesHtml || '-'}</td>
-  <td>${t.no_incluye || '-'}</td>
-  <td>${t.itinerario_tours || '-'}</td>
-  <td>${t.tours_opcionales || '-'}</td>
-  <td>${t.politicas || '-'}</td>
-  <td>
-    <button class="btn-estado ${t.estado === 'ACTIVO' ? 'activo' : 'inactivo'}"
-      onclick="toggleEstado('${doc.id}', '${t.estado}')">${t.estado}</button>
-  </td>
-  <td><button class="icon-btn" onclick='mostrarModal(${JSON.stringify(t).replace(/'/g, "\\'")}, "${doc.id}")'>✏️</button></td>
-  <td><button class="icon-btn" onclick="eliminarTour('${doc.id}')">🗑️</button></td>
-`;
-
+  const t = doc.data();
+  const fila = document.createElement("tr");
+  const hotelesHtml = (t.hoteles || []).map(h => `<b>${h.nombre}</b><br>${h.info}`).join('<hr>');
+  fila.innerHTML = `
+    <td>${t.nombre || '-'}</td>
+    <td>${t.precio || '-'}</td>
+    <td>${t.duracion || '-'}</td>
+    <td>${t.incluye || '-'}</td>
+    <td>${hotelesHtml || '-'}</td>
+    <td>${t.no_incluye || '-'}</td>
+    <td>${t.itinerario_tours || '-'}</td>
+    <td>${t.tours_opcionales || '-'}</td>
+    <td>${t.politicas || '-'}</td>
+    <td>
+      <button class="btn-estado ${t.estado === 'ACTIVO' ? 'activo' : 'inactivo'}"
+        onclick="toggleEstado('${doc.id}', '${t.estado}')">${t.estado}</button>
+    </td>
+    <td><button class="icon-btn" onclick='mostrarModal(${JSON.stringify(t).replace(/'/g, "\\'")}, "${doc.id}")'>✏️</button></td>
+    <td><button class="icon-btn" onclick="eliminarTour('${doc.id}')">🗑️</button></td>
+  `;
+  tbody.appendChild(fila);
+});
     function eliminarTour(id) {
       if (confirm("¿Eliminar este tour?")) {
         db.collection("tours").doc(id).delete().then(() => cargarTours());
