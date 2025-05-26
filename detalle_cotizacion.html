@@ -200,6 +200,11 @@ Día 2: City Tour y Comuna 13"></textarea>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+   <script>
+     window.addEventListener("load", () => {
+    window.jsPDF = window.jspdf.jsPDF;
+  });
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -307,6 +312,8 @@ mostrarToast(); // ✅ Mostrar notificación visual
     const { jsPDF } = window.jspdf;
     async function descargarPDF() {
   const doc = new jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      doc.text("Cotización de Viaje", 10, 10);
+  doc.save("cotizacion.pdf");
 
   const margenX = 10;
   let y = 15;
