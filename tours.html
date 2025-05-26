@@ -104,27 +104,40 @@
       align-items: center;
     }
     .modal-content {
-      background: #fff;
-      padding: 30px;
-      border-radius: 8px;
-      width: 500px;
-      display: flex;
-      flex-direction: column;
-    }
-    .modal-content input, .modal-content textarea {
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #ccc;
-    }
-    .btn-row {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 15px;
-    }
-    .btn-cancelar {
-      background: #999;
-    }
+  background: #ffffff;
+  border: 3px solid #02535a;
+  padding: 30px;
+  border-radius: 12px;
+  width: 500px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
+
+.modal-content input, .modal-content textarea {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.btn-row button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-row button:first-child {
+  background-color: #02535a;
+  color: white;
+}
+
+.btn-row .btn-cancelar {
+  background-color: #999;
+  color: white;
+}
     .hotel-entry {
   margin-bottom: 10px;
   border-bottom: 1px solid #ddd;
@@ -252,9 +265,9 @@ function guardarTour() {
     : db.collection("tours").add(datos);
 
   ref.then(() => {
-    cargarTours();
-    cerrarModal();
-  });
+  cargarTours();
+  cerrarModal();  // Asegúrate de que esto esté aquí
+});
 }
 
     function cargarTours() {
