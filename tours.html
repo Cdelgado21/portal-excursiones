@@ -279,7 +279,9 @@ function guardarTour() {
     snapshot.forEach(doc => {
       const t = doc.data();
       const fila = document.createElement("tr");
-      const hotelesHtml = (t.hoteles || []).map(h => `<b>${h.nombre}</b><br>${h.info}`).join('<hr>');
+      const hotelNombres = (t.hoteles || []).map(h => `<b>${h.nombre}</b>`).join('<hr>');
+const hotelInfo = (t.hoteles || []).map(h => h.info).join('<hr>');
+
       fila.innerHTML = `
         <td>${t.nombre || '-'}</td>
         <td>${t.precio || '-'}</td>
