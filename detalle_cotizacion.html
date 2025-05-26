@@ -304,26 +304,58 @@ mostrarToast(); // ✅ Mostrar notificación visual
       datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
     }
 
-    function descargarPDF() {
-  const hotel = document.getElementById("hotel").value;
-  const descripcion = document.getElementById("infoHotelSeleccionado").innerText;
+    sync function descargarPDF() {
+  const doc = new jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  const doc = new jspdf.jsPDF();
-
-  // Si tienes una imagen de fondo, agrégala aquí
-  // const fondoURL = "data:image/png;base64,...";
-  // doc.addImage(fondoURL, 'PNG', 0, 0, 210, 297); // tamaño A4
+  const margenX = 10;
+  let y = 15;
 
   doc.setFont("Arial");
-  doc.setFontSize(12);
-  doc.text("COTIZACIÓN DE VIAJE", 10, 20);
-  doc.text("Destino: " + document.getElementById("destino").value, 10, 30);
-  doc.text("Fechas: " + document.getElementById("fechas").value, 10, 40);
-  doc.text("Hotel Seleccionado: " + hotel, 10, 50);
-  doc.text("Descripción del Hotel:", 10, 60);
-  doc.text(descripcion, 10, 70);
+  doc.setFontSize(16);
+  doc.setTextColor(2, 83, 90); // color #02535a
+  doc.text("Detalle de Cotización", margenX, y);
+  y += 10;
 
-  doc.save("cotizacion.pdf");
+  const agregarCampo = (label, valor) => {
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`${label}:`, margenX, y);
+    const texto = doc.splitTextToSize(valor || '-', 180);
+    doc.text(texto, margenX + 40, y);
+    y += texto.length * 7;
+  };
+
+  // Cargar todos los campos desde el DOM
+  agregarCampo("Código", new URLSearchParams(window.location.search).get("codigo"));
+  agregarCampo("Destino", document.getElementById("destino").value);
+  agregarCampo("Fechas", document.getElementById("fechas").value);
+  agregarCampo("Adultos", document.getElementById("adultos").value);
+  agregarCampo("Niños", document.getElementById("ninos").value);
+  agregarCampo("Bebés", document.getElementById("bebes").value);
+  agregarCampo("Observaciones", document.getElementById("observaciones").value);
+
+  agregarCampo("Vuelo de ida", document.getElementById("vuelo_ida").value);
+  agregarCampo("Vuelo de regreso", document.getElementById("vuelo_vuelta").value);
+  agregarCampo("Equipaje", document.getElementById("equipaje").value);
+
+  agregarCampo("Hotel asignado", document.getElementById("hotel").value);
+  agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
+
+  agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
+  agregarCampo("No incluye", document.getElementById("no_incluye").value);
+
+  agregarCampo("Itinerario", document.getElementById("itinerario_tours").value);
+  agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
+
+  agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
+  agregarCampo("Precio niño", document.getElementById("precio_nino").value + " USD");
+  agregarCampo("Precio bebé", document.getElementById("precio_bebe").value + " USD");
+  agregarCampo("Total", document.getElementById("total").value + " USD");
+  agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
+
+  agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
+
+  doc.save("detalle_cotizacion.pdf");
 }
 
     function enviarCorreo() {
