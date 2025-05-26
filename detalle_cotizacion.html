@@ -17,6 +17,10 @@
       padding: 1rem;
       text-align: center;
     }
+    header h1 {
+      font-size: 1.6rem;
+      color: #f5e2b8;
+    }
     .tabs {
       display: flex;
       flex-wrap: wrap;
@@ -179,68 +183,56 @@ Día 2: City Tour y Comuna 13"></textarea>
       projectId: "tours-460717"
     };
     firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+    const db = firebase.firestore();
 
-  const params = new URLSearchParams(window.location.search);
-  const numeroCotizacion = params.get("codigo"); // URL debe tener ?numero=COT-027-2025
+    let id = null;
 
-  async function cargarCotizacionPorNumero() {
-    if (!numeroCotizacion) return alert("Número de cotización no especificado.");
+    const params = new URLSearchParams(window.location.search);
+    const numeroCotizacion = params.get("codigo");
 
-    const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
-    if (snapshot.empty) return alert("Cotización no encontrada.");
+    const campos = [
+      "destino", "fechas", "adultos", "ninos", "bebes", "observaciones",
+      "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel",
+      "incluye", "no_incluye", "itinerario_tours", "tours_opcionales",
+      "precio_adulto", "precio_nino", "precio_bebe",
+      "total", "monto_reserva", "politicas"
+    ];
 
-    const doc = snapshot.docs[0];
-    const data = doc.data();
-    const id = doc.id;
-    window.idCotizacion = id;
+    async function cargarCotizacionPorNumero() {
+      if (!numeroCotizacion) return alert("Número de cotización no especificado.");
 
-    // Título
-    document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
+      const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
+      if (snapshot.empty) return alert("Cotización no encontrada.");
 
-    // Llenar campos
-    const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "telefono", "embajador", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
-    campos.forEach(campo => {
-      const el = document.getElementById(campo);
-      if (el) el.value = data[campo] || '';
-    });
-
-    // Cargar datos del destino desde colección tours
-    cargarDatosDelDestino(data.destino);
-  }
-
-  async function cargarDatosDelDestino(nombreDestino) {
-    const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
-    if (snapshot.empty) return;
-
-    const tour = snapshot.docs[0].data();
-    document.getElementById("incluye").value = tour.incluye || '';
-    document.getElementById("politicas").value = tour.politicas || '';
-    document.getElementById("precio_adulto").value = tour.precio_adulto || '';
-    document.getElementById("precio_nino").value = tour.precio_nino || '';
-    document.getElementById("precio_bebe").value = tour.precio_bebe || '';
-  }
-
-  // Cambiar destino manualmente
-  document.getElementById("destino").addEventListener("change", e => {
-    cargarDatosDelDestino(e.target.value);
-  });
-
-  window.onload = cargarCotizacionPorNumero;
-
-    const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
-
-    async function cargar() {
-      const doc = await db.collection("cotizaciones").doc(id).get();
-      if (!doc.exists) return alert("No encontrada");
+      const doc = snapshot.docs[0];
       const data = doc.data();
+      id = doc.id;
+
       document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
+
       campos.forEach(campo => {
-        if (document.getElementById(campo)) {
-          document.getElementById(campo).value = data[campo] || '';
-        }
+        const el = document.getElementById(campo);
+        if (el) el.value = data[campo] || '';
       });
+
+      cargarDatosDelDestino(data.destino);
     }
+
+    async function cargarDatosDelDestino(nombreDestino) {
+      const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
+      if (snapshot.empty) return;
+
+      const tour = snapshot.docs[0].data();
+      document.getElementById("incluye").value = tour.incluye || '';
+      document.getElementById("politicas").value = tour.politicas || '';
+      document.getElementById("precio_adulto").value = tour.precio_adulto || '';
+      document.getElementById("precio_nino").value = tour.precio_nino || '';
+      document.getElementById("precio_bebe").value = tour.precio_bebe || '';
+    }
+
+    document.getElementById("destino").addEventListener("change", e => {
+      cargarDatosDelDestino(e.target.value);
+    });
 
     async function guardar() {
       const datos = {};
@@ -248,6 +240,7 @@ Día 2: City Tour y Comuna 13"></textarea>
         const el = document.getElementById(campo);
         if (el) datos[campo] = el.value;
       });
+      if (!id) return alert("Error: ID no encontrado.");
       await db.collection("cotizaciones").doc(id).update(datos);
       alert("✅ Cotización actualizada correctamente.");
     }
@@ -269,7 +262,7 @@ Día 2: City Tour y Comuna 13"></textarea>
       });
     });
 
-    cargar();
+    window.onload = cargarCotizacionPorNumero;
   </script>
 </body>
 </html>
