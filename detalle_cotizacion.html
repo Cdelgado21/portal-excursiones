@@ -142,7 +142,7 @@
 
   <div class="section" id="incluye">
     <label>Lo que incluye</label>
-    <textarea id="incluye"></textarea>
+   <textarea id="incluye_textarea"></textarea>
     <label>Lo que no incluye</label>
     <textarea id="no_incluye"></textarea>
   </div>
@@ -226,7 +226,7 @@ Día 2: City Tour y Comuna 13"></textarea>
 
   const tour = snapshot.docs[0].data();
 
-  document.getElementById("incluye").value = tour.incluye || '';
+  document.getElementById("incluye_textarea").value = tour.incluye || '';
   document.getElementById("no_incluye").value = tour.no_incluye || '';
   document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
   document.getElementById("tours_opcionales").value = tour.tours_opcionales || '';
