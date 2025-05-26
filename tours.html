@@ -267,7 +267,8 @@ function guardarTour() {
   ref.then(() => {
   cargarTours();
   cerrarModal();  // Asegúrate de que esto esté aquí
-
+  });
+}
     function cargarTours() {
   db.collection("tours").get().then(snapshot => {
     const tbody = document.getElementById("tabla-body");
