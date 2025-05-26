@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -41,7 +42,7 @@
       color: #02535a;
     }
     .tabla-container {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: auto;
       background: white;
       padding: 20px;
@@ -77,27 +78,6 @@
       align-items: center;
       justify-content: center;
     }
-    .dropdown-exportar {
-      display: none;
-      position: absolute;
-      margin-top: 45px;
-      background: white;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      border-radius: 6px;
-      overflow: hidden;
-    }
-    .dropdown-exportar button {
-      background: white;
-      color: #02535a;
-      border: none;
-      padding: 10px 15px;
-      width: 120px;
-      text-align: left;
-      cursor: pointer;
-    }
-    .dropdown-exportar button:hover {
-      background: #f0f0f0;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -111,21 +91,6 @@
     th {
       background: #02535a;
       color: white;
-    }
-    .btn-estado {
-      padding: 5px 10px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      color: white;
-    }
-    .activo { background: #28a745; }
-    .inactivo { background: #dc3545; }
-    .icon-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1.1em;
     }
     .modal {
       display: none;
@@ -145,12 +110,8 @@
       display: flex;
       flex-direction: column;
     }
-    .modal-content h3 {
-      text-align: center;
-      color: #02535a;
-      margin-bottom: 15px;
-    }
-    .modal-content input {
+    .modal-content input,
+    .modal-content textarea {
       margin-bottom: 10px;
       padding: 10px;
       border: 1px solid #ccc;
@@ -159,49 +120,22 @@
       display: flex;
       justify-content: flex-end;
       gap: 10px;
-      margin-top: 15px;
-    }
-    .modal-content button {
-      padding: 10px;
-      background: #02535a;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .btn-cancelar {
-      background: #999;
-    }
-    @media print {
-      body {
-        padding: 10mm;
-      }
-      .acciones, .menu-bar {
-        display: none;
-      }
     }
   </style>
 </head>
 <body>
   <div class="menu-bar">
-    <img src="LOGO SIED.JPG" alt="Excursiones Delgado" onclick="window.location.href='menu.html'" />
-    <button onclick="window.location.href='menu.html'">Menú</button>
-    <button onclick="window.location.href='cotizaciones.html'">Cotizaciones</button>
-    <button onclick="window.location.href='reservas.html'">Reservas</button>
-    <button onclick="window.location.href='clientes.html'">Clientes</button>
+    <img src="LOGO SIED.JPG" alt="Excursiones Delgado" />
+    <button>Menú</button>
+    <button>Cotizaciones</button>
+    <button>Reservas</button>
+    <button>Clientes</button>
   </div>
 
   <h2>Catálogo de Tours</h2>
-  <div class="tabla-container" id="tablaContainer">
+  <div class="tabla-container">
     <div class="acciones">
       <button class="btn-agregar" onclick="mostrarModal()">+ Nuevo Tour</button>
-      <div style="position: relative;">
-        <button class="btn-descarga" onclick="toggleDropdownExportar()">📥</button>
-        <div class="dropdown-exportar" id="dropdownExportar">
-          <button onclick="exportarTabla()">Descargar PDF</button>
-          <button onclick="descargarCSV()">Descargar CSV</button>
-        </div>
-      </div>
       <button class="btn-descarga" onclick="window.print()">🖨️</button>
     </div>
     <table id="tablaTours">
@@ -211,36 +145,39 @@
           <th>Precio</th>
           <th>Duración</th>
           <th>Incluye</th>
-          <th>Estado</th>
-          <th>Editar</th>
-          <th>Eliminar</th>
+          <th>Hotel</th>
+          <th>Info Hotel</th>
+          <th>No Incluye</th>
+          <th>Itinerario</th>
+          <th>Opcionales</th>
+          <th>Políticas</th>
         </tr>
       </thead>
       <tbody id="tabla-body">
-        <tr><td colspan="7">Cargando tours...</td></tr>
+        <tr><td colspan="10">Cargando tours...</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="modal" id="modalTour">
-  <div class="modal-content">
-    <h3 id="modalTitulo">Nuevo Tour</h3>
-    <input type="text" id="nombre" placeholder="Nombre" />
-    <input type="text" id="precio" placeholder="Precio" />
-    <input type="text" id="duracion" placeholder="Duración" />
-    <input type="text" id="incluye" placeholder="Incluye" />
-    <input type="text" id="hotel" placeholder="Hotel" />
-    <textarea id="info_hotel" placeholder="Información del hotel"></textarea>
-    <textarea id="no_incluye" placeholder="Lo que no incluye"></textarea>
-    <textarea id="itinerario_tours" placeholder="Itinerario de tours (Día 1:...)"></textarea>
-    <textarea id="tours_opcionales" placeholder="Tours opcionales"></textarea>
-    <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
-    <div class="btn-row">
-      <button onclick="guardarTour()">Guardar</button>
-      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+    <div class="modal-content">
+      <h3 id="modalTitulo">Nuevo Tour</h3>
+      <input id="nombre" placeholder="Nombre" />
+      <input id="precio" placeholder="Precio" />
+      <input id="duracion" placeholder="Duración" />
+      <input id="incluye" placeholder="Incluye" />
+      <input id="hotel" placeholder="Hotel" />
+      <textarea id="info_hotel" placeholder="Información del hotel"></textarea>
+      <textarea id="no_incluye" placeholder="Lo que no incluye"></textarea>
+      <textarea id="itinerario_tours" placeholder="Itinerario de tours (Día 1:...)"></textarea>
+      <textarea id="tours_opcionales" placeholder="Tours opcionales"></textarea>
+      <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
+      <div class="btn-row">
+        <button onclick="guardarTour()">Guardar</button>
+        <button onclick="cerrarModal()">Cancelar</button>
+      </div>
     </div>
   </div>
-</div>
 
   <script>
     const firebaseConfig = {
@@ -253,13 +190,11 @@
 
     let tourActualId = null;
 
-    function mostrarModal(data = null, id = null) {
+    function mostrarModal(data = {}, id = null) {
       document.getElementById("modalTour").style.display = "flex";
-      document.getElementById("nombre").value = data?.nombre || "";
-      document.getElementById("precio").value = data?.precio || "";
-      document.getElementById("duracion").value = data?.duracion || "";
-      document.getElementById("incluye").value = data?.incluye || "";
-      document.getElementById("modalTitulo").textContent = id ? "Editar Tour" : "Nuevo Tour";
+      ["nombre", "precio", "duracion", "incluye", "hotel", "info_hotel", "no_incluye", "itinerario_tours", "tours_opcionales", "politicas"].forEach(campo => {
+        document.getElementById(campo).value = data[campo] || "";
+      });
       tourActualId = id;
     }
 
@@ -268,117 +203,44 @@
     }
 
     function guardarTour() {
-  const datos = {
-    nombre: document.getElementById("nombre").value,
-    precio: document.getElementById("precio").value,
-    duracion: document.getElementById("duracion").value,
-    incluye: document.getElementById("incluye").value,
-    hotel: document.getElementById("hotel").value,
-    info_hotel: document.getElementById("info_hotel").value,
-    no_incluye: document.getElementById("no_incluye").value,
-    itinerario_tours: document.getElementById("itinerario_tours").value,
-    tours_opcionales: document.getElementById("tours_opcionales").value,
-    politicas: document.getElementById("politicas").value,
-    estado: "ACTIVO"
-  };
+      const campos = ["nombre", "precio", "duracion", "incluye", "hotel", "info_hotel", "no_incluye", "itinerario_tours", "tours_opcionales", "politicas"];
+      const datos = {};
+      campos.forEach(c => datos[c] = document.getElementById(c).value);
+      datos.estado = "ACTIVO";
 
-  if (tourActualId) {
-    db.collection("tours").doc(tourActualId).update(datos).then(() => cargarTours());
-  } else {
-    db.collection("tours").add(datos).then(() => cargarTours());
-  }
-
-  alert("¡Tour guardado exitosamente!");
-  cerrarModal();
-}
-
-
-    function abrirEditor(id, data) {
-      mostrarModal(data, id);
-    }
-
-    function exportarTabla() {
-      html2canvas(document.querySelector("#tablaTours"), { scale: 2 }).then(canvas => {
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jspdf.jsPDF();
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth() - 20;
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, "PNG", 10, 10, pdfWidth, pdfHeight);
-        pdf.save("tours.pdf");
+      const ref = tourActualId ? db.collection("tours").doc(tourActualId).update(datos) : db.collection("tours").add(datos);
+      ref.then(() => {
+        cerrarModal();
+        cargarTours();
       });
     }
 
-    function descargarCSV() {
-      const filas = document.querySelectorAll("#tablaTours tr");
-      const csv = Array.from(filas).map(row =>
-        Array.from(row.cells).map(cell => cell.textContent.trim()).join(",")
-      ).join("\n");
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "tours.csv";
-      a.click();
-    }
-
-    function toggleDropdownExportar() {
-      const dropdown = document.getElementById("dropdownExportar");
-      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    }
-
-    function cambiarEstado(id, estadoActual) {
-      const nuevoEstado = estadoActual === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
-      db.collection("tours").doc(id).update({ estado: nuevoEstado }).then(() => cargarTours());
-    }
-
     function cargarTours() {
-      db.collection("tours").get().then((querySnapshot) => {
+      db.collection("tours").get().then(snapshot => {
         const tbody = document.getElementById("tabla-body");
         tbody.innerHTML = "";
-        if (querySnapshot.empty) {
-          tbody.innerHTML = '<tr><td colspan="7">No hay tours disponibles.</td></tr>';
-          return;
-        }
-        querySnapshot.forEach((doc) => {
-          const tour = doc.data();
-          const fila = document.createElement("tr");
-          fila.innerHTML = `
-            <td>${tour.nombre || '-'}</td>
-            <td>$${tour.precio || '-'}</td>
-            <td>${tour.duracion || '-'}</td>
-            <td>${tour.incluye || '-'}</td>
-            <td>
-              <button class="btn-estado ${tour.estado === 'ACTIVO' ? 'activo' : 'inactivo'}" onclick="cambiarEstado('${doc.id}', '${tour.estado}')">
-                ${tour.estado || 'Sin estado'}
-              </button>
-            </td>
-            <td><button class="icon-btn" onclick="abrirEditor('${doc.id}', ${JSON.stringify(tour).replace(/"/g, '&quot;')})">✏️</button></td>
-            <td><button class="icon-btn" onclick="confirmarEliminar('${doc.id}')">🗑️</button></td>
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${d.nombre || ""}</td>
+            <td>${d.precio || ""}</td>
+            <td>${d.duracion || ""}</td>
+            <td>${d.incluye || ""}</td>
+            <td>${d.hotel || ""}</td>
+            <td>${d.info_hotel || ""}</td>
+            <td>${d.no_incluye || ""}</td>
+            <td>${d.itinerario_tours || ""}</td>
+            <td>${d.tours_opcionales || ""}</td>
+            <td>${d.politicas || ""}</td>
           `;
-          tbody.appendChild(fila);
+          tbody.appendChild(tr);
         });
       });
     }
 
-    function confirmarEliminar(id) {
-      if (confirm("¿Estás seguro de que deseas eliminar este tour?")) {
-        db.collection("tours").doc(id).delete().then(() => cargarTours());
-      }
-    }
-
     window.onload = cargarTours;
-.modal {
-  display: none;
-  position: fixed;
-  z-index: 9999;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
-  justify-content: center;
-  align-items: center;
-}
-
-    
   </script>
 </body>
 </html>
+
