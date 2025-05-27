@@ -382,26 +382,29 @@ doc.text(lineaResumen, 105, 125, { align: "center" });  // y=270 es justo debajo
   agregarCampo("Itinerario", document.getElementById("itinerario_tours").value);
   agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
 
+  agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
+
+const precioNino = document.getElementById("precio_nino").value.trim();
+if (precioNino !== "") {
+  agregarCampo("Precio niño", precioNino + " USD");
+}
+
+const precioBebe = document.getElementById("precio_bebe").value.trim();
+if (precioBebe !== "") {
+  agregarCampo("Precio bebé", precioBebe + " USD");
+}
+
+agregarCampo("Total", document.getElementById("total").value + " USD");
+agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
+agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
+
+
   // Página final
   doc.addPage();
   const fondoFinal = agregarFondo("fondoPaginaFinal");
   doc.addImage(fondoFinal, 'PNG', 0, 0, 210, 297);
   y = 20;
 
-  agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
-const precioNino = document.getElementById("precio_nino").value.trim();
-if (precioNino !== "") {
-  agregarCampo("Precio niño", precioNino + " USD");
-}
-  agregarCampo("Precio niño", document.getElementById("precio_nino").value + " USD");
-    
-  const precioBebe = document.getElementById("precio_bebe").value.trim();
-if (precioBebe !== "") {
-  agregarCampo("Precio bebé", precioBebe + " USD");
-}
-  agregarCampo("Total", document.getElementById("total").value + " USD");
-  agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
-  agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
 
   // Guardar el PDF
 const codigo = new URLSearchParams(window.location.search).get("codigo") || "COT-XXX-XXXX";
