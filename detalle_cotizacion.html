@@ -314,7 +314,7 @@ mostrarToast(); // ✅ Mostrar notificación visual
     }
     
     const { jsPDF } = window.jspdf;
-    sync function descargarPDF() {
+    async function descargarPDF() {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
   let margenX = 20; // margen horizontal izquierdo
