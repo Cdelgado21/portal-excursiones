@@ -425,31 +425,36 @@ function agregarTituloSeccion(texto, doc, y) {
       doc.text("Itinerario de Tours", 105, y, { align: "center" });
       y += 6;
 
-      doc.autoTable({
-        startY: y,
-        head: headers,
-        body: actividades,
-        theme: 'grid',
-        styles: {
-          fontSize: 11,
-          halign: 'center',
-          valign: 'middle',
-          cellPadding: 4,
-          textColor: [0, 0, 0],
-        },
-        headStyles: {
-          fillColor: [2, 83, 90],
-          textColor: 255,
-          fontStyle: 'bold',
-        },
-        bodyStyles: {
-          fillColor: [255, 255, 255],
-        },
-        margin: { left: 10, right: 10 }
-      });
-
-      y = doc.lastAutoTable.finalY + 10;
+     doc.autoTable({
+  startY: y,
+  head: headers,
+  body: actividades,
+  theme: 'grid',
+  styles: {
+    fontSize: 11,
+    halign: 'center',
+    valign: 'middle',
+    cellPadding: 4,
+    textColor: [0, 0, 0],
+  },
+  headStyles: {
+    fillColor: [2, 83, 90],
+    textColor: 255,
+    fontStyle: 'bold',
+  },
+  bodyStyles: {
+    fillColor: [255, 255, 255],
+  },
+  margin: { left: 10, right: 10 },
+  // ⬇️ Aquí viene lo importante
+  didDrawPage: function (data) {
+    const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+    if (currentPage > 2) {
+      const fondoExtra = agregarFondo("fondoPagina2");
+      doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
     }
+  }
+});
 
     agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
     agregarCampo("Hotel asignado", document.getElementById("hotel").value);
