@@ -345,13 +345,15 @@ Día 2: City Tour y Comuna 13"></textarea>
   let margenX = 20;
   let y = 30;
 
-  function verificarEspacioDisponible(doc, espacioNecesario = 30) {
+  ffunction verificarEspacioDisponible(doc, espacioNecesario = 30) {
   const paginaAlturaMax = 280;
   if (y + espacioNecesario > paginaAlturaMax) {
     doc.addPage();
     const fondoExtra = agregarFondo("fondoPagina2");
     doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
     y = 30; // reinicia la posición vertical
+  }
+}
   
   const agregarFondo = (imgElementId) => {
     const img = document.getElementById(imgElementId);
