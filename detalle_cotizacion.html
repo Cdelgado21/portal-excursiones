@@ -158,7 +158,7 @@
 
   <div class="section" id="incluye">
     <label>Lo que incluye</label>
-   <textarea id="incluye_textarea"></textarea>
+   <textarea id="incluye"></textarea>
     <label>Lo que no incluye</label>
     <textarea id="no_incluye"></textarea>
   </div>
@@ -189,7 +189,7 @@ Día 2: City Tour y Comuna 13"></textarea>
 
   <div class="section" id="politicas">
     <label>Políticas y condiciones</label>
-    <textarea id="politicas_textarea"></textarea>
+    <textarea id="politicas"></textarea>
   </div>
 
   <div class="buttons">
@@ -326,12 +326,13 @@ mostrarToast(); // ✅ Mostrar notificación visual
 
   try {
     await db.collection("cotizaciones").doc(id).update(datos);
-    mostrarToast("✅ Cotización actualizada correctamente.");
+mostrarToast("✅ Cotización actualizada correctamente.");
   } catch (error) {
     console.error("Error al guardar la cotización:", error);
     alert("❌ Hubo un error al guardar. Revisa la consola.");
   }
 }
+
 
     }
     
