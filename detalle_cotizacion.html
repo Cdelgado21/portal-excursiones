@@ -227,7 +227,7 @@ Día 2: City Tour y Comuna 13"></textarea>
 
     const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
 
-    async function cargarCotizacionPorNumero() {
+    aasync function cargarCotizacionPorNumero() {
   if (!numeroCotizacion) return alert("Número de cotización no especificado.");
 
   const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
@@ -244,9 +244,16 @@ Día 2: City Tour y Comuna 13"></textarea>
     if (el) el.value = data[campo] || '';
   });
 
-  // 👇 Solo se cargan datos del tour si están vacíos en la cotización
+  // Solo carga datos del tour si la cotización aún no los tiene
   if (!data.incluye || !data.politicas) {
-    async function cargarDatosDelDestino(nombreDestino) {
+    await cargarDatosDelDestino(data.destino);
+  } else {
+    mostrarToast();
+  }
+} // ← ESTA LLAVE FALTABA CERRAR
+
+// ✅ AHORA SÍ DEFINIMOS ESTA FUNCIÓN FUERA
+async function cargarDatosDelDestino(nombreDestino) {
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
   if (snapshot.empty) return;
 
@@ -299,9 +306,9 @@ Día 2: City Tour y Comuna 13"></textarea>
     listaHoteles.textContent = "No hay hoteles disponibles para este destino.";
   }
 
-  console.log("Valor cargado desde Firestore (incluye):", tour.incluye);
-  mostrarToast(); // ✅ Mostrar notificación visual
+  mostrarToast();
 }
+
     async function guardar() {
   const datos = {};
 
