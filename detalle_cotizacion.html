@@ -237,32 +237,8 @@ Día 2: City Tour y Comuna 13"></textarea>
       "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye",
       "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino",
       "precio_bebe", "total", "monto_reserva", "politicas"
-    ];
-
-    async function cargarCotizacionPorNumero() {
-      if (!numeroCotizacion) return alert("Número de cotización no especificado.");
-
-      const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
-      if (snapshot.empty) return alert("Cotización no encontrada.");
-
-      const doc = snapshot.docs[0];
-      const data = doc.data();
-      id = doc.id;
-
-      document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
-      campos.forEach(campo => {
-        const el = document.getElementById(campo);
-        if (el) el.value = data[campo] || '';
-      });
-
-      if (data.manual_override) {
-        document.getElementById("edicionManual").style.display = "block";
-      } else {
-        await cargarDatosDelDestino(data.destino);
-      }
-    }
-
-    async function cargarDatosDelDestino(nombreDestino) {
+   ];
+async function cargarDatosDelDestino(nombreDestino) {
       const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
       if (snapshot.empty) return;
 
@@ -310,6 +286,31 @@ Día 2: City Tour y Comuna 13"></textarea>
       mostrarToast();
     }
 
+         window.onload = cargarCotizacionPorNumero;
+     
+    async function cargarCotizacionPorNumero() {
+      if (!numeroCotizacion) return alert("Número de cotización no especificado.");
+
+      const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
+      if (snapshot.empty) return alert("Cotización no encontrada.");
+
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      id = doc.id;
+
+      document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
+      campos.forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) el.value = data[campo] || '';
+      });
+
+      if (data.manual_override) {
+        document.getElementById("edicionManual").style.display = "block";
+      } else {
+        await cargarDatosDelDestino(data.destino);
+      }
+    }
+    
     function mostrarInfoHotel() {
       const nombreHotel = document.getElementById("hotel").value;
       const infoDiv = document.getElementById("infoHotelSeleccionado");
@@ -325,8 +326,6 @@ Día 2: City Tour y Comuna 13"></textarea>
         toast.style.display = "none";
       }, 3500);
     }
-
-    window.onload = cargarCotizacionPorNumero;
 
     document.querySelectorAll(".tab").forEach(tab => {
       tab.addEventListener("click", () => {
