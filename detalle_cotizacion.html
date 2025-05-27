@@ -335,8 +335,8 @@ mostrarToast(); // ✅ Mostrar notificación visual
 const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
 
 if (lineas.length > 0) {
-  const headers = [lineas.map((l, i) => `Día ${i + 1}`)];
-  const actividades = [lineas.map(l => (l.split(":")[1] || l).trim())];
+  const headers = [lineas.map(l => l.split(":")[0].trim())];
+const actividades = [lineas.map(l => (l.split(":")[1] || "").trim())];
 
   y += 5;
   doc.setFont("helvetica", "bold");
