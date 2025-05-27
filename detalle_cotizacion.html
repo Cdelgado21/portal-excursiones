@@ -242,11 +242,11 @@ async function cargarDatosDelDestino(nombreDestino) {
   console.log("Buscando destino:", nombreDestino);
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
   if (snapshot.empty) {
-    console.log("No se encontró el destino en Firebase.");
-    return;
-  }
+  console.log("No se encontró el destino en Firebase.");
+  return;
+}
 
-  const tour = snapshot.docs[0].data();
+const tour = snapshot.docs[0].data(); 
   console.log("Datos del tour encontrados:", tour);
 
   document.getElementById("incluye").value = tour.incluye || '';
