@@ -356,8 +356,25 @@ doc.text(lineaResumen, 105, 125, { align: "center" });  // y=270 es justo debajo
   doc.addPage();
   const fondo2 = agregarFondo("fondoPagina2");
   doc.addImage(fondo2, 'PNG', 0, 0, 210, 297);
-  doc.text("Detalle de Cotización", margenX, y);
-  y += 10;
+ doc.setFont("helvetica", "bold");
+doc.setFontSize(18);
+doc.setTextColor(255, 255, 255);
+doc.text("Detalle de Cotización", 105, y, { align: "center" });
+
+// Línea punteada decorativa
+doc.setLineWidth(0.3);
+doc.setDrawColor(255, 255, 255);
+let startX = 30;
+let endX = 180;
+let dashLength = 4;
+let gap = 2;
+
+for (let x = startX; x < endX; x += dashLength + gap) {
+  doc.line(x, y + 3, x + dashLength, y + 3);
+}
+
+y += 12; // espacio extra después del título y la línea
+
 
   agregarCampo("Fechas", document.getElementById("fechas").value);
   agregarCampo("Adultos", document.getElementById("adultos").value);
