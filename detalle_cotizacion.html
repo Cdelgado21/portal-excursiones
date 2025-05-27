@@ -322,6 +322,16 @@ mostrarToast(); // ✅ Mostrar notificación visual
   let margenX = 20;
   let y = 30;
 
+  function verificarEspacioDisponible(doc, espacioNecesario = 30) {
+  const paginaAlturaMax = 280;
+  if (y + espacioNecesario > paginaAlturaMax) {
+    doc.addPage();
+    const fondoExtra = agregarFondo("fondoPagina2");
+    doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
+    y = 30; // reinicia la posición vertical
+  }
+}
+
   const agregarFondo = (imgElementId) => {
     const img = document.getElementById(imgElementId);
     const canvas = document.createElement("canvas");
@@ -399,6 +409,8 @@ mostrarToast(); // ✅ Mostrar notificación visual
   agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
   agregarCampo("No incluye", document.getElementById("no_incluye").value);
 
+     
+
   const itinerarioTexto = document.getElementById("itinerario_tours").value || '';
   const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
 
@@ -448,7 +460,10 @@ mostrarToast(); // ✅ Mostrar notificación visual
   agregarCampo("Hotel asignado", document.getElementById("hotel").value);
   agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
 
-  y = agregarTituloSeccion("Desglose por Persona", doc, y);
+  verificarEspacioDisponible(doc, 60);
+y = agregarTituloSeccion("Desglose por Persona", doc, y);
+agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
+      y = agregarTituloSeccion("Desglose por Persona", doc, y);
   agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
   const precioNino = document.getElementById("precio_nino").value.trim();
   if (precioNino) agregarCampo("Precio niño", precioNino + " USD");
@@ -456,6 +471,8 @@ mostrarToast(); // ✅ Mostrar notificación visual
   if (precioBebe) agregarCampo("Precio bebé", precioBebe + " USD");
   agregarCampo("Total", document.getElementById("total").value + " USD");
   agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
+      verificarEspacioDisponible(doc, 50);
+agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
   agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
 
   doc.addPage();
