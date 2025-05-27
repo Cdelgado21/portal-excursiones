@@ -255,20 +255,22 @@ async function cargarDatosDelDestino(nombreDestino) {
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
 
   if (snapshot.empty) {
-    alert("Destino no encontrado.");
+    console.warn("No se encontró el destino en Firebase.");
+    alert("⚠️ El destino no se encuentra en el catálogo.");
     return;
   }
 
   const tour = snapshot.docs[0].data();
-  console.log("Tour encontrado:", tour);
+  console.log("Datos del tour encontrados:", tour);
 
+  // Asignar información
   document.getElementById("incluye").value = tour.incluye || '';
   document.getElementById("no_incluye").value = tour.no_incluye || '';
   document.getElementById("itinerario_tours").value = tour.itinerario || '';
   document.getElementById("tours_opcionales").value = tour.opcionales || '';
   document.getElementById("politicas").value = tour.politicas || '';
   document.getElementById("precio_adulto").value = tour.precio || '';
-  
+
   // Hoteles
   window.hotelesDelTour = tour.hoteles || [];
   const listaHoteles = document.getElementById("lista_hoteles");
@@ -277,7 +279,7 @@ async function cargarDatosDelDestino(nombreDestino) {
   const selectHotel = document.getElementById("hotel");
   selectHotel.innerHTML = '<option value="">-- Seleccione un hotel --</option>';
 
-  if (tour.hoteles.length > 0) {
+  if (tour.hoteles && tour.hoteles.length > 0) {
     const tabla = document.createElement("table");
     tabla.innerHTML = `
       <thead>
@@ -301,7 +303,7 @@ async function cargarDatosDelDestino(nombreDestino) {
     listaHoteles.textContent = "No hay hoteles disponibles.";
   }
 
-  mostrarToast("✅ Información del destino cargada.");
+  mostrarToast("✅ Información del destino cargada correctamente.");
 }
          
     async function cargarCotizacionPorNumero() {
