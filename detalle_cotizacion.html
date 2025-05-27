@@ -196,7 +196,9 @@ Día 2: City Tour y Comuna 13"></textarea>
     <button onclick="guardar()">Guardar cambios</button>
     <button onclick="descargarPDF()">Descargar PDF</button>
     <button onclick="enviarCorreo()">Enviar al cliente</button>
-    <img id="fondoCotizacion" src="Portadacotizaciones.png" style="display: none;" crossorigin="anonymous">
+    <img id="fondoPagina1" src="Portadacotizaciones.png" style="display: none;" crossorigin="anonymous">
+    <img id="fondoPagina1" src="fondooficio.png" style="display: none;" crossorigin="anonymous">
+    <img id="fondoPaginaFinal" src="CUENTASFINALESRRSS.PNG" style="display: none;" crossorigin="anonymous">
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -315,28 +317,30 @@ mostrarToast(); // ✅ Mostrar notificación visual
     async function descargarPDF() {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  // Cargar imagen de fondo de la primera página
-  const img = document.getElementById("fondoCotizacion");
-  const canvas = document.createElement("canvas");
-  canvas.width = img.naturalWidth;
-  canvas.height = img.naturalHeight;
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(img, 0, 0);
-  const base64Image = canvas.toDataURL("image/png");
-  doc.addImage(base64Image, 'PNG', 0, 0, 210, 297); // fondo completo en A4
+  const agregarFondo = (imgElementId) => {
+    const img = document.getElementById(imgElementId);
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/png");
+  };
 
-  // Ahora escribí encima del fondo
+  // Página 1
+  const fondo1 = agregarFondo("fondoPagina1");
+  doc.addImage(fondo1, 'PNG', 0, 0, 210, 297);
+
+  let y = 40;
   const margenX = 10;
-  let y = 30;
-
   doc.setFontSize(16);
-  doc.setTextColor(2, 83, 90);
+  doc.setTextColor(255, 255, 255);
   doc.text("Detalle de Cotización", margenX, y);
   y += 10;
 
   const agregarCampo = (label, valor) => {
     doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
+    doc.setTextColor(255, 255, 255);
     const texto = doc.splitTextToSize(valor || '-', 180);
     doc.text(`${label}:`, margenX, y);
     doc.text(texto, margenX + 40, y);
@@ -355,10 +359,24 @@ mostrarToast(); // ✅ Mostrar notificación visual
   agregarCampo("Equipaje", document.getElementById("equipaje").value);
   agregarCampo("Hotel asignado", document.getElementById("hotel").value);
   agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
+
+  // Página 2
+  doc.addPage();
+  const fondo2 = agregarFondo("fondoPagina2");
+  doc.addImage(fondo2, 'PNG', 0, 0, 210, 297);
+  y = 20;
+
   agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
   agregarCampo("No incluye", document.getElementById("no_incluye").value);
   agregarCampo("Itinerario", document.getElementById("itinerario_tours").value);
   agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
+
+  // Página final
+  doc.addPage();
+  const fondoFinal = agregarFondo("fondoPaginaFinal");
+  doc.addImage(fondoFinal, 'PNG', 0, 0, 210, 297);
+  y = 20;
+
   agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
   agregarCampo("Precio niño", document.getElementById("precio_nino").value + " USD");
   agregarCampo("Precio bebé", document.getElementById("precio_bebe").value + " USD");
@@ -366,8 +384,10 @@ mostrarToast(); // ✅ Mostrar notificación visual
   agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
   agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
 
+  // Guardar el PDF
   doc.save("detalle_cotizacion.pdf");
 }
+
 
     function enviarCorreo() {
       alert("🚧 Funcionalidad de correo pendiente de implementación.");
