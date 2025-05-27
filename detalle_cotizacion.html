@@ -436,6 +436,9 @@ mostrarToast(); // ✅ Mostrar notificación visual
         if (currentPage > 2) {
           const fondoExtra = agregarFondo("fondoPagina2");
           doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
+          if (currentPage > 3) {
+          const fondoExtra = agregarFondo("fondoPagina2");
+          doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
         }
       }
     });
