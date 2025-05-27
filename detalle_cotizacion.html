@@ -410,38 +410,36 @@ mostrarToast(); // ✅ Mostrar notificación visual
     doc.text("Itinerario de Tours", 105, y, { align: "center" });
     y += 6;
 
-    doc.autoTable({
-      startY: y,
-      head: headers,
-      body: actividades,
-      theme: 'grid',
-      styles: {
-        fontSize: 11,
-        halign: 'center',
-        valign: 'middle',
-        cellPadding: 4,
-        textColor: [0, 0, 0],
-      },
-      headStyles: {
-        fillColor: [2, 83, 90],
-        textColor: 255,
-        fontStyle: 'bold',
-      },
-      bodyStyles: {
-        fillColor: [255, 255, 255],
-      },
-      margin: { left: 10, right: 10 },
-      didDrawPage: function (data) {
-        const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-        if (currentPage > 2) {
-          const fondoExtra = agregarFondo("fondoPagina2");
-          doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
-          if (currentPage > 3) {
-          const fondoExtra = agregarFondo("fondoPagina2");
-          doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
-        }
-      }
-    });
+   doc.autoTable({
+  startY: y,
+  head: headers,
+  body: actividades,
+  theme: 'grid',
+  styles: {
+    fontSize: 11,
+    halign: 'center',
+    valign: 'middle',
+    cellPadding: 4,
+    textColor: [0, 0, 0],
+  },
+  headStyles: {
+    fillColor: [2, 83, 90],
+    textColor: 255,
+    fontStyle: 'bold',
+  },
+  bodyStyles: {
+    fillColor: [255, 255, 255],
+  },
+  margin: { left: 10, right: 10 },
+  didDrawPage: function (data) {
+    const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+
+    if (currentPage > 2) {
+      const fondoExtra = agregarFondo("fondoPagina2");
+      doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
+    }
+  }
+});
 
     y = doc.lastAutoTable.finalY + 10;
   }
