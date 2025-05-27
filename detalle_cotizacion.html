@@ -309,7 +309,7 @@ async function cargarDatosDelDestino(nombreDestino) {
   mostrarToast();
 }
 
-    async function guardar() {
+   async function guardar() {
   const datos = {};
 
   const campos = [
@@ -328,18 +328,20 @@ async function cargarDatosDelDestino(nombreDestino) {
   // Guardar también la descripción del hotel
   datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
 
+  // Muy importante: marcar como edición manual antes de guardar
+  datos.manual_override = true;
+
   if (!id) return alert("Error: ID no encontrado.");
 
   try {
+    console.log("Guardando en Firestore:", datos);  // debug opcional
     await db.collection("cotizaciones").doc(id).update(datos);
-mostrarToast("✅ Cotización actualizada correctamente.");
+    mostrarToast("✅ Cotización actualizada correctamente.");
   } catch (error) {
     console.error("Error al guardar la cotización:", error);
     alert("❌ Hubo un error al guardar. Revisa la consola.");
   }
-      datos.manual_override = true;  // ✅ Marca que fue editado a mano
 }
-   
     const { jsPDF } = window.jspdf;
     async function descargarPDF() {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
