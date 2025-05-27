@@ -304,15 +304,35 @@ Día 2: City Tour y Comuna 13"></textarea>
 mostrarToast(); // ✅ Mostrar notificación visual
 }
     async function guardar() {
-      const datos = {};
-      campos.forEach(campo => {
-        const el = document.getElementById(campo);
-        if (el) datos[campo] = el.value;
-      });
-      if (!id) return alert("Error: ID no encontrado.");
-      await db.collection("cotizaciones").doc(id).update(datos);
-      alert("✅ Cotización actualizada correctamente.");
-      datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
+  const datos = {};
+
+  const campos = [
+    "destino", "fechas", "adultos", "ninos", "bebes", "observaciones",
+    "vuelo_ida", "vuelo_vuelta", "equipaje",
+    "hotel", "incluye", "no_incluye", "itinerario_tours",
+    "tours_opcionales", "precio_adulto", "precio_nino",
+    "precio_bebe", "total", "monto_reserva", "politicas"
+  ];
+
+  campos.forEach(campo => {
+    const el = document.getElementById(campo);
+    if (el) datos[campo] = el.value;
+  });
+
+  // Guardar también la descripción del hotel
+  datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
+
+  if (!id) return alert("Error: ID no encontrado.");
+
+  try {
+    await db.collection("cotizaciones").doc(id).update(datos);
+    mostrarToast("✅ Cotización actualizada correctamente.");
+  } catch (error) {
+    console.error("Error al guardar la cotización:", error);
+    alert("❌ Hubo un error al guardar. Revisa la consola.");
+  }
+}
+
     }
     
     const { jsPDF } = window.jspdf;
