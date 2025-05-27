@@ -249,36 +249,7 @@ const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones
     const el = document.getElementById(campo);
     if (el) el.value = data[campo] || '';
   });
-
-  if (data.manual_override) {
-        document.getElementById("edicionManual").style.display = "block";
-      } else {
-        await cargarDatosDelDestino(data.destino);
-      }
-    }
-async function guardar() {
-      const datos = {};
-      const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
-      campos.forEach(campo => {
-        const el = document.getElementById(campo);
-        if (el) datos[campo] = el.value;
-      });
-        // Descripción del hotel
-  datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
-
-  // IMPORTANTE: marcar como edición manual antes de guardar
-  datos.manual_override = true;
-
-  if (!id) return alert("Error: ID no encontrado.");
-
-  try {
-    await db.collection("cotizaciones").doc(id).update(datos);
-    mostrarToast("✅ Cotización actualizada correctamente.");
-  } catch (error) {
-    console.error("Error al guardar la cotización:", error);
-    alert("❌ Hubo un error al guardar. Revisa la consola.");
-  }
-}
+// Fuera de cualquier otra función
 async function cargarDatosDelDestino(nombreDestino) {
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
   if (snapshot.empty) return;
@@ -335,6 +306,38 @@ async function cargarDatosDelDestino(nombreDestino) {
   mostrarToast();
 }
 
+  if (data.manual_override) {
+        document.getElementById("edicionManual").style.display = "block";
+      } else {
+        await cargarDatosDelDestino(data.destino);
+      }
+    }
+async function guardar() {
+      const datos = {};
+      const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
+      campos.forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) datos[campo] = el.value;
+      });
+
+          // Descripción del hotel
+  datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
+
+  // IMPORTANTE: marcar como edición manual antes de guardar
+  datos.manual_override = true;
+
+  if (!id) return alert("Error: ID no encontrado.");
+
+  try {
+    await db.collection("cotizaciones").doc(id).update(datos);
+    mostrarToast("✅ Cotización actualizada correctamente.");
+  } catch (error) {
+    console.error("Error al guardar la cotización:", error);
+    alert("❌ Hubo un error al guardar. Revisa la consola.");
+  }
+}
+
+
     const { jsPDF } = window.jspdf;
     async function descargarPDF() {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -349,9 +352,7 @@ async function cargarDatosDelDestino(nombreDestino) {
     const fondoExtra = agregarFondo("fondoPagina2");
     doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
     y = 30; // reinicia la posición vertical
-  }
-}
-
+  
   const agregarFondo = (imgElementId) => {
     const img = document.getElementById(imgElementId);
     const canvas = document.createElement("canvas");
