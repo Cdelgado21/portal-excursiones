@@ -330,7 +330,28 @@ mostrarToast(); // ✅ Mostrar notificación visual
       const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0);
       return canvas.toDataURL("image/png");
-    };
+      };
+function agregarTituloSeccion(texto, doc, y) {
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.setTextColor(255, 255, 255);
+  doc.text(texto, 105, y, { align: "center" });
+
+  // Línea punteada decorativa debajo del título
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(255, 255, 255);
+  let startX = 30;
+  let endX = 180;
+  let dashLength = 4;
+  let gap = 2;
+  for (let x = startX; x < endX; x += dashLength + gap) {
+    doc.line(x, y + 2.5, x + dashLength, y + 2.5);
+  }
+
+  return y + 10; // Retorna la nueva posición Y con espacio
+}
+
+     
 
     // Página 1
     const fondo1 = agregarFondo("fondoPagina1");
@@ -381,19 +402,13 @@ mostrarToast(); // ✅ Mostrar notificación visual
     if (ninos !== "") agregarCampo("Niños", ninos);
     const bebes = document.getElementById("bebes").value.trim();
     if (bebes !== "") agregarCampo("Bebés", bebes);
-      doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(255, 255, 255); 
-      doc.text("Itinerario de Vuelos", 105, y, { align: "center" });
-      // Línea punteada decorativa
+     y = agregarTituloSeccion("Itinerario de Vuelos", doc, y);
+      
     agregarCampo("Vuelo de ida", document.getElementById("vuelo_ida").value);
     agregarCampo("Vuelo de regreso", document.getElementById("vuelo_vuelta").value);
     agregarCampo("Equipaje", document.getElementById("equipaje").value);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(255, 255, 255);
-      doc.text("Detalle del tour", 105, y, { align: "center" });
-      // Línea punteada decorativa
+    y = agregarTituloSeccion("Detalle del tour", doc, y);
+ 
     agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
     agregarCampo("No incluye", document.getElementById("no_incluye").value);
 
@@ -439,11 +454,8 @@ mostrarToast(); // ✅ Mostrar notificación visual
     agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
     agregarCampo("Hotel asignado", document.getElementById("hotel").value);
     agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.setTextColor(255, 255, 255);
-      doc.text("Desglose por Persona", 105, y, { align: "center" });
-      // Línea punteada decorativa
+
+      y = agregarTituloSeccion("Desglose por Persona", doc, y);
     agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
     const precioNino = document.getElementById("precio_nino").value.trim();
     if (precioNino !== "") agregarCampo("Precio niño", precioNino + " USD");
