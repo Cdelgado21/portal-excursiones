@@ -334,42 +334,6 @@ mostrarToast(); // ✅ Mostrar notificación visual
       const itinerarioTexto = document.getElementById("itinerario_tours").value || '';
 const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
 
-if (lineas.length > 0) {
-  const headers = [lineas.map(l => l.split(":")[0].trim())];
-const actividades = [lineas.map(l => (l.split(":")[1] || "").trim())];
-
-  y += 5;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text("Itinerario de Tours", 105, y, { align: "center" });
-  y += 6;
-
-  doc.autoTable({
-    startY: y,
-    head: headers,
-    body: actividades,
-    theme: 'grid',
-    styles: {
-      fontSize: 11,
-      halign: 'center',
-      valign: 'middle',
-      cellPadding: 4,
-      textColor: [0, 0, 0],
-    },
-    headStyles: {
-      fillColor: [2, 83, 90],
-      textColor: 255,
-      fontStyle: 'bold',
-    },
-    bodyStyles: {
-      fillColor: [255, 255, 255],
-    },
-    margin: { left: 10, right: 10 }
-  });
-
-  y = doc.lastAutoTable.finalY + 10;
-}
-
   // Página 1
   const fondo1 = agregarFondo("fondoPagina1");
   doc.addImage(fondo1, 'PNG', 0, 0, 210, 297);
@@ -436,6 +400,43 @@ y += 12; // espacio extra después del título y la línea
   agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
   agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
   agregarCampo("No incluye", document.getElementById("no_incluye").value);
+
+  const itinerarioTexto = document.getElementById("itinerario_tours").value || '';
+const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
+
+if (lineas.length > 0) {
+  const headers = [lineas.map((l, i) => `Día ${i + 1}`)];
+  const actividades = [lineas.map(l => (l.split(":")[1] || l).trim())];
+
+  doc.setFontSize(14);
+  doc.text("Itinerario de Tours", 105, y, { align: "center" });
+  y += 6;
+
+  doc.autoTable({
+    startY: y,
+    head: headers,
+    body: actividades,
+    theme: 'grid',
+    styles: {
+      fontSize: 11,
+      halign: 'center',
+      valign: 'middle',
+      cellPadding: 4,
+      textColor: [0, 0, 0],
+    },
+    headStyles: {
+      fillColor: [2, 83, 90],
+      textColor: 255,
+      fontStyle: 'bold',
+    },
+    bodyStyles: {
+      fillColor: [255, 255, 255],
+    },
+    margin: { left: 10, right: 10 }
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+}    
   agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
 
   agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
