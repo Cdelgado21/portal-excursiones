@@ -200,14 +200,16 @@ Día 2: City Tour y Comuna 13"></textarea>
     <img id="fondoPagina2" src="fondooficio.png" style="display: none;" crossorigin="anonymous">
     <img id="fondoPaginaFinal" src="FINALCUENTASRRSS.PNG" style="display: none;" crossorigin="anonymous">
   </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  window.jsPDF = window.jspdf.jsPDF;
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
    <script>
   window.addEventListener("load", () => {
-    window.jsPDF = window.jspdf.jsPDF;
-  });
+   });
      
 
     const firebaseConfig = {
