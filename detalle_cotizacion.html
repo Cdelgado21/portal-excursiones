@@ -317,159 +317,137 @@ mostrarToast(); // ✅ Mostrar notificación visual
     
     const { jsPDF } = window.jspdf;
     async function descargarPDF() {
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  let margenX = 20; // margen horizontal izquierdo
-  let y = 30;       // posición vertical inicial   
+    let margenX = 20;
+    let y = 30;
 
-  const agregarFondo = (imgElementId) => {
-    const img = document.getElementById(imgElementId);
-    const canvas = document.createElement("canvas");
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img, 0, 0);
-    return canvas.toDataURL("image/png");
-  };
-      const itinerarioTexto = document.getElementById("itinerario_tours").value || '';
-const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
+    const agregarFondo = (imgElementId) => {
+      const img = document.getElementById(imgElementId);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      return canvas.toDataURL("image/png");
+    };
 
-  // Página 1
-  const fondo1 = agregarFondo("fondoPagina1");
-  doc.addImage(fondo1, 'PNG', 0, 0, 210, 297);
-const numeroCot = new URLSearchParams(window.location.search).get("codigo");
-const destinoCot = document.getElementById("destino").value;
-const lineaResumen = `${numeroCot} | ${destinoCot}`;
-
-// Coordenadas centradas en A4 (ancho 210 mm)
-doc.setFont("helvetica", "bold");
-doc.setFontSize(20);
-doc.setTextColor(255, 255, 255);
-doc.text(lineaResumen, 105, 125, { align: "center" });  // y=270 es justo debajo del “COTIZACIÓN”
-
-  const agregarCampo = (label, valor) => {
-    doc.setFontSize(12);
+    // Página 1
+    const fondo1 = agregarFondo("fondoPagina1");
+    doc.addImage(fondo1, 'PNG', 0, 0, 210, 297);
+    const numeroCot = new URLSearchParams(window.location.search).get("codigo");
+    const destinoCot = document.getElementById("destino").value;
+    const lineaResumen = `${numeroCot} | ${destinoCot}`;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
     doc.setTextColor(255, 255, 255);
-    const texto = doc.splitTextToSize(valor || '-', 180);
-    doc.text(`${label}:`, margenX, y);
-    doc.text(texto, margenX + 40, y);
-    y += texto.length * 7;
-  };
+    doc.text(lineaResumen, 105, 125, { align: "center" });
 
-  // Página 2
-  doc.addPage();
-  const fondo2 = agregarFondo("fondoPagina2");
-  doc.addImage(fondo2, 'PNG', 0, 0, 210, 297);
- doc.setFont("helvetica", "bold");
-doc.setFontSize(18);
-doc.setTextColor(255, 255, 255);
-doc.text("Detalle de Cotización", 105, y, { align: "center" });
+    const agregarCampo = (label, valor) => {
+      doc.setFontSize(12);
+      doc.setTextColor(255, 255, 255);
+      const texto = doc.splitTextToSize(valor || '-', 180);
+      doc.text(`${label}:`, margenX, y);
+      doc.text(texto, margenX + 40, y);
+      y += texto.length * 7;
+    };
 
-// Línea punteada decorativa
-doc.setLineWidth(0.3);
-doc.setDrawColor(255, 255, 255);
-let startX = 30;
-let endX = 180;
-let dashLength = 4;
-let gap = 2;
+    // Página 2
+    doc.addPage();
+    const fondo2 = agregarFondo("fondoPagina2");
+    doc.addImage(fondo2, 'PNG', 0, 0, 210, 297);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Detalle de Cotización", 105, y, { align: "center" });
 
-for (let x = startX; x < endX; x += dashLength + gap) {
-  doc.line(x, y + 3, x + dashLength, y + 3);
-}
+    // Línea punteada decorativa
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(255, 255, 255);
+    let startX = 30;
+    let endX = 180;
+    let dashLength = 4;
+    let gap = 2;
+    for (let x = startX; x < endX; x += dashLength + gap) {
+      doc.line(x, y + 3, x + dashLength, y + 3);
+    }
 
-y += 12; // espacio extra después del título y la línea
+    y += 12;
 
+    // Campos básicos
+    agregarCampo("Fechas", document.getElementById("fechas").value);
+    agregarCampo("Adultos", document.getElementById("adultos").value);
+    const ninos = document.getElementById("ninos").value.trim();
+    if (ninos !== "") agregarCampo("Niños", ninos);
+    const bebes = document.getElementById("bebes").value.trim();
+    if (bebes !== "") agregarCampo("Bebés", bebes);
+    agregarCampo("Vuelo de ida", document.getElementById("vuelo_ida").value);
+    agregarCampo("Vuelo de regreso", document.getElementById("vuelo_vuelta").value);
+    agregarCampo("Equipaje", document.getElementById("equipaje").value);
+    agregarCampo("Hotel asignado", document.getElementById("hotel").value);
+    agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
+    agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
+    agregarCampo("No incluye", document.getElementById("no_incluye").value);
 
-  agregarCampo("Fechas", document.getElementById("fechas").value);
-  agregarCampo("Adultos", document.getElementById("adultos").value);
+    // ✅ Tabla de itinerario de tours
+    const itinerarioTexto = document.getElementById("itinerario_tours").value || '';
+    const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
 
-  const ninos = document.getElementById("ninos").value.trim();
-  if (ninos !== "") {
-    agregarCampo("Niños", ninos);
+    if (lineas.length > 0) {
+      const headers = [lineas.map((l, i) => `Día ${i + 1}`)];
+      const actividades = [lineas.map(l => (l.split(":")[1] || l).trim())];
+
+      doc.setFontSize(14);
+      doc.text("Itinerario de Tours", 105, y, { align: "center" });
+      y += 6;
+
+      doc.autoTable({
+        startY: y,
+        head: headers,
+        body: actividades,
+        theme: 'grid',
+        styles: {
+          fontSize: 11,
+          halign: 'center',
+          valign: 'middle',
+          cellPadding: 4,
+          textColor: [0, 0, 0],
+        },
+        headStyles: {
+          fillColor: [2, 83, 90],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        bodyStyles: {
+          fillColor: [255, 255, 255],
+        },
+        margin: { left: 10, right: 10 }
+      });
+
+      y = doc.lastAutoTable.finalY + 10;
+    }
+
+    agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
+    agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
+    const precioNino = document.getElementById("precio_nino").value.trim();
+    if (precioNino !== "") agregarCampo("Precio niño", precioNino + " USD");
+    const precioBebe = document.getElementById("precio_bebe").value.trim();
+    if (precioBebe !== "") agregarCampo("Precio bebé", precioBebe + " USD");
+    agregarCampo("Total", document.getElementById("total").value + " USD");
+    agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
+    agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
+
+    doc.addPage();
+    const fondoFinal = agregarFondo("fondoPaginaFinal");
+    doc.addImage(fondoFinal, 'PNG', 0, 0, 210, 297);
+    y = 20;
+
+    const codigo = new URLSearchParams(window.location.search).get("codigo") || "COT-XXX-XXXX";
+    const destino = document.getElementById("destino").value || "Destino";
+    const nombreArchivo = `${codigo} | ${destino}.pdf`;
+
+    doc.save(nombreArchivo);
   }
-
-  const bebes = document.getElementById("bebes").value.trim();
-  if (bebes !== "") {
-    agregarCampo("Bebés", bebes);
-  }
-
-  agregarCampo("Vuelo de ida", document.getElementById("vuelo_ida").value);
-  agregarCampo("Vuelo de regreso", document.getElementById("vuelo_vuelta").value);
-  agregarCampo("Equipaje", document.getElementById("equipaje").value);
-  agregarCampo("Hotel asignado", document.getElementById("hotel").value);
-  agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
-  agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
-  agregarCampo("No incluye", document.getElementById("no_incluye").value);
-
-  const itinerarioTexto = document.getElementById("itinerario_tours").value || '';
-const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
-
-if (lineas.length > 0) {
-  const headers = [lineas.map((l, i) => `Día ${i + 1}`)];
-  const actividades = [lineas.map(l => (l.split(":")[1] || l).trim())];
-
-  doc.setFontSize(14);
-  doc.text("Itinerario de Tours", 105, y, { align: "center" });
-  y += 6;
-
-  doc.autoTable({
-    startY: y,
-    head: headers,
-    body: actividades,
-    theme: 'grid',
-    styles: {
-      fontSize: 11,
-      halign: 'center',
-      valign: 'middle',
-      cellPadding: 4,
-      textColor: [0, 0, 0],
-    },
-    headStyles: {
-      fillColor: [2, 83, 90],
-      textColor: 255,
-      fontStyle: 'bold',
-    },
-    bodyStyles: {
-      fillColor: [255, 255, 255],
-    },
-    margin: { left: 10, right: 10 }
-  });
-
-  y = doc.lastAutoTable.finalY + 10;
-}    
-  agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
-
-  agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
-
-const precioNino = document.getElementById("precio_nino").value.trim();
-if (precioNino !== "") {
-  agregarCampo("Precio niño", precioNino + " USD");
-}
-
-const precioBebe = document.getElementById("precio_bebe").value.trim();
-if (precioBebe !== "") {
-  agregarCampo("Precio bebé", precioBebe + " USD");
-}
-
-agregarCampo("Total", document.getElementById("total").value + " USD");
-agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
-agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
-
-
-  // Página final
-  doc.addPage();
-  const fondoFinal = agregarFondo("fondoPaginaFinal");
-  doc.addImage(fondoFinal, 'PNG', 0, 0, 210, 297);
-  y = 20;
-
-
-  // Guardar el PDF
-const codigo = new URLSearchParams(window.location.search).get("codigo") || "COT-XXX-XXXX";
-const destino = document.getElementById("destino").value || "Destino";
-const nombreArchivo = `${codigo} | ${destino}.pdf`;
-
-doc.save(nombreArchivo);
-}
 
 
     function enviarCorreo() {
