@@ -263,22 +263,7 @@ async function guardar() {
         const el = document.getElementById(campo);
         if (el) datos[campo] = el.value;
       });
-      datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado")?.innerText || '';
-      datos.manual_override = true;
-
-      if (!id) return alert("Error: ID no encontrado.");
-
-      try {
-        await db.collection("cotizaciones").doc(id).update(datos);
-        document.getElementById("edicionManual").style.display = "block";
-        alert("✅ Cotización actualizada correctamente.");
-      } catch (error) {
-        console.error("Error al guardar la cotización:", error);
-        alert("❌ Error al guardar. Revisa la consola.");
-      }
-    }
-
-async function cargarDatosDelDestino(nombreDestino) {
+      async function cargarDatosDelDestino(nombreDestino) {
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
   if (snapshot.empty) return;
 
