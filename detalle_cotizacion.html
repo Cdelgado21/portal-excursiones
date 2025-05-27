@@ -85,6 +85,12 @@
       background-color: #f49859;
       color: white;
     }
+     #edicionManual {
+      text-align: center;
+      color: #f49859;
+      font-weight: bold;
+      margin-top: 10px;
+    }
   </style>
 </head>
   <div id="toast" style="
@@ -108,6 +114,8 @@
     <h1 id="tituloCotizacion">Detalle de Cotización</h1>
   </header>
 
+  <div id="edicionManual" style="display: none;">⚠️ Esta cotización ha sido editada manualmente.</div>
+  
   <div class="tabs">
     <div class="tab active" data-tab="viaje">Información del viaje</div>
     <div class="tab" data-tab="vuelos">Itinerario de vuelos</div>
@@ -221,11 +229,8 @@ Día 2: City Tour y Comuna 13"></textarea>
     const db = firebase.firestore();
 
     let id = null;
-
     const params = new URLSearchParams(window.location.search);
     const numeroCotizacion = params.get("codigo");
-
-    const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
 
     async function cargarCotizacionPorNumero() {
   if (!numeroCotizacion) return alert("Número de cotización no especificado.");
@@ -238,21 +243,41 @@ Día 2: City Tour y Comuna 13"></textarea>
   id = doc.id;
 
   document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
+const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
 
   campos.forEach(campo => {
     const el = document.getElementById(campo);
     if (el) el.value = data[campo] || '';
   });
 
-  // Solo carga datos del tour si la cotización aún no los tiene
-  if ((!data.incluye || !data.politicas) && !data.manual_override) {
-  await cargarDatosDelDestino(data.destino);
-} else {
-  mostrarToast();
-}
-} // ← ESTA LLAVE FALTABA CERRAR
+  if (data.manual_override) {
+        document.getElementById("edicionManual").style.display = "block";
+      } else {
+        await cargarDatosDelDestino(data.destino);
+      }
+    }
+async function guardar() {
+      const datos = {};
+      const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
+      campos.forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) datos[campo] = el.value;
+      });
+      datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado")?.innerText || '';
+      datos.manual_override = true;
 
-// ✅ AHORA SÍ DEFINIMOS ESTA FUNCIÓN FUERA
+      if (!id) return alert("Error: ID no encontrado.");
+
+      try {
+        await db.collection("cotizaciones").doc(id).update(datos);
+        document.getElementById("edicionManual").style.display = "block";
+        alert("✅ Cotización actualizada correctamente.");
+      } catch (error) {
+        console.error("Error al guardar la cotización:", error);
+        alert("❌ Error al guardar. Revisa la consola.");
+      }
+    }
+
 async function cargarDatosDelDestino(nombreDestino) {
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
   if (snapshot.empty) return;
@@ -308,23 +333,6 @@ async function cargarDatosDelDestino(nombreDestino) {
 
   mostrarToast();
 }
-
-   async function guardar() {
-  const datos = {};
-
-  const campos = [
-    "destino", "fechas", "adultos", "ninos", "bebes", "observaciones",
-    "vuelo_ida", "vuelo_vuelta", "equipaje",
-    "hotel", "incluye", "no_incluye", "itinerario_tours",
-    "tours_opcionales", "precio_adulto", "precio_nino",
-    "precio_bebe", "total", "monto_reserva", "politicas"
-  ];
-
-  campos.forEach(campo => {
-    const el = document.getElementById(campo);
-    if (el) datos[campo] = el.value;
-  });
-
   // Descripción del hotel
   datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
 
