@@ -242,7 +242,7 @@ async function cargarDatosDelDestino(nombreDestino) {
     console.log("Buscando destino:", nombreDestino); // ✅ Verifica esto
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
       if (snapshot.empty) return;
-  }
+  
   const tour = snapshot.docs[0].data();
   console.log("Datos del tour encontrados:", tour); // ✅ Confirma si encontró datos
 
