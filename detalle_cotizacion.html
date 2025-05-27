@@ -252,18 +252,22 @@ Día 2: City Tour y Comuna 13"></textarea>
    ];
 async function cargarDatosDelDestino(nombreDestino) {
   console.log("Buscando destino:", nombreDestino);
-  const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
+
+  const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino.trim()).get();
 
   if (snapshot.empty) {
     console.warn("No se encontró el destino en Firebase.");
-    alert("⚠️ El destino no se encuentra en el catálogo.");
+
+    // BONUS: Mostrar nombres disponibles
+    const allToursSnapshot = await db.collection("tours").get();
+    const disponibles = allToursSnapshot.docs.map(doc => doc.data().nombre).join(", ");
+    alert("⚠️ El destino no se encuentra en el catálogo.\n\nDisponibles:\n" + disponibles);
     return;
   }
 
   const tour = snapshot.docs[0].data();
   console.log("Datos del tour encontrados:", tour);
 
-  // Asignar información
   document.getElementById("incluye").value = tour.incluye || '';
   document.getElementById("no_incluye").value = tour.no_incluye || '';
   document.getElementById("itinerario_tours").value = tour.itinerario || '';
@@ -305,7 +309,7 @@ async function cargarDatosDelDestino(nombreDestino) {
 
   mostrarToast("✅ Información del destino cargada correctamente.");
 }
-         
+        
     async function cargarCotizacionPorNumero() {
       if (!numeroCotizacion) return alert("Número de cotización no especificado.");
 
