@@ -310,26 +310,24 @@ mostrarToast(); // ✅ Mostrar notificación visual
       alert("✅ Cotización actualizada correctamente.");
       datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
     }
-    const img = document.getElementById("fondoCotizacion");
-
-const canvas = document.createElement("canvas");
-canvas.width = img.naturalWidth;
-canvas.height = img.naturalHeight;
-
-const ctx = canvas.getContext("2d");
-ctx.drawImage(img, 0, 0);
-
-const base64Image = canvas.toDataURL("image/png");
-
-// Insertar imagen al PDF como fondo (ajustá tamaño a tu gusto: 210mm x 297mm es A4 completo)
-doc.addImage(base64Image, 'PNG', 0, 0, 210, 297);
-}
+    
     const { jsPDF } = window.jspdf;
     async function descargarPDF() {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
+  // Cargar imagen de fondo de la primera página
+  const img = document.getElementById("fondoCotizacion");
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
+  const base64Image = canvas.toDataURL("image/png");
+  doc.addImage(base64Image, 'PNG', 0, 0, 210, 297); // fondo completo en A4
+
+  // Ahora escribí encima del fondo
   const margenX = 10;
-  let y = 15;
+  let y = 30;
 
   doc.setFontSize(16);
   doc.setTextColor(2, 83, 90);
@@ -368,9 +366,9 @@ doc.addImage(base64Image, 'PNG', 0, 0, 210, 297);
   agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
   agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
 
-  // ✅ Ahora sí, guardamos el PDF al final
   doc.save("detalle_cotizacion.pdf");
 }
+
     function enviarCorreo() {
       alert("🚧 Funcionalidad de correo pendiente de implementación.");
     }
