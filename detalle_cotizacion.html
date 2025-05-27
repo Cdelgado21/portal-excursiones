@@ -329,15 +329,13 @@ mostrarToast(); // ✅ Mostrar notificación visual
 
   // Página 1
   const fondo1 = agregarFondo("fondoPagina1");
-  doc.addImage(fondo1, 'PNG', 0, 0, 210, 297);
+  doc.addImage(fondo1, 'PNG', 0, 0, 210, 279);
 
-  let y = 40;
-  const margenX = 10;
+  let y = 50;
+  const margenX = 15;
   doc.setFontSize(16);
   doc.setTextColor(255, 255, 255);
-  doc.text("Detalle de Cotización", margenX, y);
-  y += 10;
-
+  
   const agregarCampo = (label, valor) => {
     doc.setFontSize(12);
     doc.setTextColor(255, 255, 255);
@@ -349,6 +347,14 @@ mostrarToast(); // ✅ Mostrar notificación visual
 
   agregarCampo("Código", new URLSearchParams(window.location.search).get("codigo"));
   agregarCampo("Destino", document.getElementById("destino").value);
+
+  // Página 2
+  doc.addPage();
+  const fondo2 = agregarFondo("fondoPagina2");
+  doc.addImage(fondo2, 'PNG', 0, 0, 210, 279);
+  doc.text("Detalle de Cotización", margenX, y);
+  y += 10;
+
   agregarCampo("Fechas", document.getElementById("fechas").value);
   agregarCampo("Adultos", document.getElementById("adultos").value);
   agregarCampo("Niños", document.getElementById("ninos").value);
@@ -360,12 +366,6 @@ mostrarToast(); // ✅ Mostrar notificación visual
   agregarCampo("Hotel asignado", document.getElementById("hotel").value);
   agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
 
-  // Página 2
-  doc.addPage();
-  const fondo2 = agregarFondo("fondoPagina2");
-  doc.addImage(fondo2, 'PNG', 0, 0, 210, 297);
-  y = 20;
-
   agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
   agregarCampo("No incluye", document.getElementById("no_incluye").value);
   agregarCampo("Itinerario", document.getElementById("itinerario_tours").value);
@@ -374,7 +374,7 @@ mostrarToast(); // ✅ Mostrar notificación visual
   // Página final
   doc.addPage();
   const fondoFinal = agregarFondo("fondoPaginaFinal");
-  doc.addImage(fondoFinal, 'PNG', 0, 0, 210, 297);
+  doc.addImage(fondoFinal, 'PNG', 0, 0, 210, 279);
   y = 20;
 
   agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
