@@ -239,8 +239,12 @@ Día 2: City Tour y Comuna 13"></textarea>
       "precio_bebe", "total", "monto_reserva", "politicas"
    ];
 async function cargarDatosDelDestino(nombreDestino) {
-      const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
+    console.log("Buscando destino:", nombreDestino); // ✅ Verifica esto
+  const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
       if (snapshot.empty) return;
+  }
+  const tour = snapshot.docs[0].data();
+  console.log("Datos del tour encontrados:", tour); // ✅ Confirma si encontró datos
 
       const tour = snapshot.docs[0].data();
 
@@ -307,7 +311,7 @@ async function cargarDatosDelDestino(nombreDestino) {
       if (data.manual_override) {
         document.getElementById("edicionManual").style.display = "block";
       } else {
-        await cargarDatosDelDestino(data.destino);
+        await cargarDatosDelDestino((data.destino || "").trim());
       }
     }
     
