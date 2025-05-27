@@ -200,7 +200,7 @@ Día 2: City Tour y Comuna 13"></textarea>
     <img id="fondoPagina2" src="fondooficio.png" style="display: none;" crossorigin="anonymous">
     <img id="fondoPaginaFinal" src="FINALCUENTASRRSS.PNG" style="display: none;" crossorigin="anonymous">
   </div>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -329,6 +329,46 @@ mostrarToast(); // ✅ Mostrar notificación visual
     ctx.drawImage(img, 0, 0);
     return canvas.toDataURL("image/png");
   };
+      const itinerarioTexto = document.getElementById("itinerario_tours").value || '';
+const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
+
+if (lineas.length > 0) {
+  // Preparar cabeceras y contenido
+  const headers = [lineas.map((l, i) => `Día ${i + 1}`)];
+  const actividades = [lineas.map(l => (l.split(":")[1] || "").trim())];
+
+  y += 5;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text("Itinerario de Tours", 105, y, { align: "center" });
+  y += 6;
+
+  doc.autoTable({
+    startY: y,
+    head: headers,
+    body: actividades,
+    theme: 'grid',
+    styles: {
+      fontSize: 11,
+      halign: 'center',
+      valign: 'middle',
+      cellPadding: 4,
+      textColor: [0, 0, 0],
+    },
+    headStyles: {
+      fillColor: [2, 83, 90], // Color #02535a
+      textColor: 255,
+      fontStyle: 'bold',
+    },
+    bodyStyles: {
+      fillColor: [255, 255, 255],
+    },
+    margin: { left: 10, right: 10 }
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+}
+
 
   // Página 1
   const fondo1 = agregarFondo("fondoPagina1");
