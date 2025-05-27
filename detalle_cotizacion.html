@@ -232,110 +232,110 @@ Día 2: City Tour y Comuna 13"></textarea>
     const params = new URLSearchParams(window.location.search);
     const numeroCotizacion = params.get("codigo");
 
+    const campos = [
+      "destino", "fechas", "adultos", "ninos", "bebes", "observaciones",
+      "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye",
+      "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino",
+      "precio_bebe", "total", "monto_reserva", "politicas"
+    ];
+
     async function cargarCotizacionPorNumero() {
-  if (!numeroCotizacion) return alert("Número de cotización no especificado.");
+      if (!numeroCotizacion) return alert("Número de cotización no especificado.");
 
-  const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
-  if (snapshot.empty) return alert("Cotización no encontrada.");
+      const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
+      if (snapshot.empty) return alert("Cotización no encontrada.");
 
-  const doc = snapshot.docs[0];
-  const data = doc.data();
-  id = doc.id;
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      id = doc.id;
 
-  document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
-const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
+      document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
+      campos.forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) el.value = data[campo] || '';
+      });
 
-  campos.forEach(campo => {
-    const el = document.getElementById(campo);
-    if (el) el.value = data[campo] || '';
-  });
-// Fuera de cualquier otra función
-async function cargarDatosDelDestino(nombreDestino) {
-  const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
-  if (snapshot.empty) return;
-
-  const tour = snapshot.docs[0].data();
-
-  document.getElementById("incluye").value = tour.incluye || '';
-  document.getElementById("no_incluye").value = tour.no_incluye || '';
-  document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
-  document.getElementById("tours_opcionales").value = tour.tours_opcionales || '';
-  document.getElementById("politicas").value = tour.politicas || '';
-  document.getElementById("precio_adulto").value = tour.precio_adulto || '';
-  document.getElementById("precio_nino").value = tour.precio_nino || '';
-  document.getElementById("precio_bebe").value = tour.precio_bebe || '';
-
-  window.hotelesDelTour = tour.hoteles || [];
-
-  const listaHoteles = document.getElementById("lista_hoteles");
-  listaHoteles.innerHTML = "";
-
-  const selectHotel = document.getElementById("hotel");
-  selectHotel.innerHTML = '<option value="">-- Seleccione un hotel --</option>';
-
-  if (tour.hoteles && tour.hoteles.length > 0) {
-    const tabla = document.createElement("table");
-    tabla.innerHTML = `
-      <thead>
-        <tr>
-          <th>Nombre del Hotel</th>
-          <th>Información</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${tour.hoteles.map(h => `
-          <tr>
-            <td><strong>${h.nombre}</strong></td>
-            <td>${h.info}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    `;
-    listaHoteles.appendChild(tabla);
-
-    tour.hoteles.forEach(h => {
-      const opt = document.createElement("option");
-      opt.value = h.nombre;
-      opt.textContent = h.nombre;
-      selectHotel.appendChild(opt);
-    });
-  } else {
-    listaHoteles.textContent = "No hay hoteles disponibles para este destino.";
-  }
-
-  mostrarToast();
-}
-
-  if (data.manual_override) {
+      if (data.manual_override) {
         document.getElementById("edicionManual").style.display = "block";
       } else {
         await cargarDatosDelDestino(data.destino);
       }
     }
-async function guardar() {
-      const datos = {};
-      const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
-      campos.forEach(campo => {
-        const el = document.getElementById(campo);
-        if (el) datos[campo] = el.value;
+
+    async function cargarDatosDelDestino(nombreDestino) {
+      const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
+      if (snapshot.empty) return;
+
+      const tour = snapshot.docs[0].data();
+
+      document.getElementById("incluye").value = tour.incluye || '';
+      document.getElementById("no_incluye").value = tour.no_incluye || '';
+      document.getElementById("itinerario_tours").value = tour.itinerario || '';
+      document.getElementById("tours_opcionales").value = tour.opcionales || '';
+      document.getElementById("politicas").value = tour.politicas || '';
+      document.getElementById("precio_adulto").value = tour.precio || '';
+
+      window.hotelesDelTour = tour.hoteles || [];
+
+      const listaHoteles = document.getElementById("lista_hoteles");
+      listaHoteles.innerHTML = "";
+
+      const selectHotel = document.getElementById("hotel");
+      selectHotel.innerHTML = '<option value="">-- Seleccione un hotel --</option>';
+
+      if (tour.hoteles && tour.hoteles.length > 0) {
+        const tabla = document.createElement("table");
+        tabla.innerHTML = `
+          <thead>
+            <tr><th>Nombre del Hotel</th><th>Información</th></tr>
+          </thead>
+          <tbody>
+            ${tour.hoteles.map(h => `
+              <tr><td><strong>${h.nombre}</strong></td><td>${h.info}</td></tr>
+            `).join("")}
+          </tbody>
+        `;
+        listaHoteles.appendChild(tabla);
+
+        tour.hoteles.forEach(h => {
+          const opt = document.createElement("option");
+          opt.value = h.nombre;
+          opt.textContent = h.nombre;
+          selectHotel.appendChild(opt);
+        });
+      } else {
+        listaHoteles.textContent = "No hay hoteles disponibles para este destino.";
+      }
+
+      mostrarToast();
+    }
+
+    function mostrarInfoHotel() {
+      const nombreHotel = document.getElementById("hotel").value;
+      const infoDiv = document.getElementById("infoHotelSeleccionado");
+      const hotel = (window.hotelesDelTour || []).find(h => h.nombre === nombreHotel);
+      infoDiv.textContent = hotel ? hotel.info : '';
+    }
+
+    function mostrarToast(mensaje = "✅ Información del tour cargada con éxito") {
+      const toast = document.getElementById("toast");
+      toast.textContent = mensaje;
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 3500);
+    }
+
+    window.onload = cargarCotizacionPorNumero;
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.getAttribute("data-tab")).classList.add("active");
       });
-
-          // Descripción del hotel
-  datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
-
-  // IMPORTANTE: marcar como edición manual antes de guardar
-  datos.manual_override = true;
-
-  if (!id) return alert("Error: ID no encontrado.");
-
-  try {
-    await db.collection("cotizaciones").doc(id).update(datos);
-    mostrarToast("✅ Cotización actualizada correctamente.");
-  } catch (error) {
-    console.error("Error al guardar la cotización:", error);
-    alert("❌ Hubo un error al guardar. Revisa la consola.");
-  }
-}
+    });
 
 
     const { jsPDF } = window.jspdf;
