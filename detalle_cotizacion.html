@@ -247,7 +247,7 @@ Día 2: City Tour y Comuna 13"></textarea>
       cargarDatosDelDestino(data.destino);
     }
 
-   async function cargarDatosDelDestino(nombreDestino) {
+     async function cargarDatosDelDestino(nombreDestino) {
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
   if (snapshot.empty) return;
 
@@ -449,13 +449,13 @@ function agregarTituloSeccion(texto, doc, y) {
   // ⬇️ Aquí viene lo importante
   didDrawPage: function (data) {
     const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-    if (currentPage > 2) {
+    if (y > 250) {
+  doc.addPage();
       const fondoExtra = agregarFondo("fondoPagina2");
       doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
-    }
-  }
-});
-
+   y = 30;
+}
+y = doc.lastAutoTable.finalY + 10;
     agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
     agregarCampo("Hotel asignado", document.getElementById("hotel").value);
     agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
