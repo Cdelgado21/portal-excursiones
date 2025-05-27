@@ -341,7 +341,7 @@ const lineaResumen = `${numeroCot} | ${destinoCot}`;
 doc.setFont("helvetica", "bold");
 doc.setFontSize(20);
 doc.setTextColor(255, 255, 255);
-doc.text(lineaResumen, 105, 120, { align: "center" });  // y=270 es justo debajo del “COTIZACIÓN”
+doc.text(lineaResumen, 105, 125, { align: "center" });  // y=270 es justo debajo del “COTIZACIÓN”
 
   const agregarCampo = (label, valor) => {
     doc.setFontSize(12);
@@ -389,7 +389,11 @@ doc.text(lineaResumen, 105, 120, { align: "center" });  // y=270 es justo debajo
   agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
 
   // Guardar el PDF
-  doc.save("detalle_cotizacion.pdf");
+const codigo = new URLSearchParams(window.location.search).get("codigo") || "COT-XXX-XXXX";
+const destino = document.getElementById("destino").value || "Destino";
+const nombreArchivo = `${codigo} | ${destino}.pdf`;
+
+doc.save(nombreArchivo);
 }
 
 
