@@ -426,7 +426,7 @@ mostrarToast(); // ✅ Mostrar notificación visual
   agregarCampo("Equipaje", document.getElementById("equipaje").value);
 
   y = agregarTituloSeccion("Detalle del tour", doc, y);
-  agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
+  agregarCampo("Incluye", document.getElementById("incluye").value);
   agregarCampo("No incluye", document.getElementById("no_incluye").value);
 
      
@@ -492,8 +492,7 @@ agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + "
   agregarCampo("Total", document.getElementById("total").value + " USD");
   agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
       verificarEspacioDisponible(doc, 50);
-agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
-  agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
+agregarCampo("Políticas y condiciones", document.getElementById("politicas").value);
 
   doc.addPage();
   const fondoFinal = agregarFondo("fondoPaginaFinal");
