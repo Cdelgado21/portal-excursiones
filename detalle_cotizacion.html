@@ -330,11 +330,17 @@ mostrarToast(); // ✅ Mostrar notificación visual
   // Página 1
   const fondo1 = agregarFondo("fondoPagina1");
   doc.addImage(fondo1, 'PNG', 0, 0, 210, 279);
+const numeroCot = new URLSearchParams(window.location.search).get("codigo");
+const destinoCot = document.getElementById("destino").value;
+const lineaResumen = `${numeroCot} | ${destinoCot}`;
+
+// Coordenadas centradas en A4 (ancho 210 mm)
+doc.setFontSize(14);
+doc.setTextColor(255, 255, 255);
+doc.text(lineaResumen, 105, 270, { align: "center" });  // y=270 es justo debajo del “COTIZACIÓN”
 
   let y = 50;
   const margenX = 15;
-  doc.setFontSize(16);
-  doc.setTextColor(255, 255, 255);
   
   const agregarCampo = (label, valor) => {
     doc.setFontSize(12);
