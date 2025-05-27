@@ -361,12 +361,17 @@ doc.text(lineaResumen, 105, 125, { align: "center" });  // y=270 es justo debajo
 
   agregarCampo("Fechas", document.getElementById("fechas").value);
   agregarCampo("Adultos", document.getElementById("adultos").value);
-  if (document.getElementById("ninos").value.trim()) {
-  agregarCampo("Niños", document.getElementById("ninos").value);
-}
-  if (document.getElementById("bebes").value.trim()) {
-  agregarCampo("Bebés", document.getElementById("bebes").value);
-}
+
+  const ninos = document.getElementById("ninos").value.trim();
+  if (ninos !== "") {
+    agregarCampo("Niños", ninos);
+  }
+
+  const bebes = document.getElementById("bebes").value.trim();
+  if (bebes !== "") {
+    agregarCampo("Bebés", bebes);
+  }
+
   agregarCampo("Vuelo de ida", document.getElementById("vuelo_ida").value);
   agregarCampo("Vuelo de regreso", document.getElementById("vuelo_vuelta").value);
   agregarCampo("Equipaje", document.getElementById("equipaje").value);
