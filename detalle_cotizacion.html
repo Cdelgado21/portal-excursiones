@@ -338,9 +338,9 @@ const destinoCot = document.getElementById("destino").value;
 const lineaResumen = `${numeroCot} | ${destinoCot}`;
 
 // Coordenadas centradas en A4 (ancho 210 mm)
-doc.setFontSize(18);
+doc.setFontSize(20);
 doc.setTextColor(255, 255, 255);
-doc.text(lineaResumen, 105, 150, { align: "center" });  // y=270 es justo debajo del “COTIZACIÓN”
+doc.text(lineaResumen, 105, 110, { align: "center" });  // y=270 es justo debajo del “COTIZACIÓN”
 
   const agregarCampo = (label, valor) => {
     doc.setFontSize(12);
