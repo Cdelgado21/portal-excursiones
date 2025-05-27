@@ -314,10 +314,11 @@ mostrarToast(); // ✅ Mostrar notificación visual
     }
     
     const { jsPDF } = window.jspdf;
-    async function descargarPDF() {
+    sync function descargarPDF() {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      let margenX = 20; // margen izquierdo
-  let y = 30;   
+
+  let margenX = 20; // margen horizontal izquierdo
+  let y = 30;       // posición vertical inicial   
 
   const agregarFondo = (imgElementId) => {
     const img = document.getElementById(imgElementId);
