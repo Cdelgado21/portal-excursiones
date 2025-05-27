@@ -257,7 +257,7 @@ Día 2: City Tour y Comuna 13"></textarea>
   document.getElementById("precio_bebe").value = tour.precio_bebe || '';
 
   // ✅ A PARTIR DE AQUÍ ESTABA FUERA: muévelo aquí
-  hotelesDelTour = tour.hoteles || [];
+  window.hotelesDelTour = tour.hoteles || [];
 
   const listaHoteles = document.getElementById("lista_hoteles");
   listaHoteles.innerHTML = "";
@@ -389,6 +389,20 @@ mostrarToast(); // ✅ Mostrar notificación visual
     toast.style.display = "none";
   }, 3500);
 }
+<script>
+  function mostrarInfoHotel() {
+    const nombreHotel = document.getElementById("hotel").value;
+    const infoDiv = document.getElementById("infoHotelSeleccionado");
+
+    const hotel = (window.hotelesDelTour || []).find(h => h.nombre === nombreHotel);
+
+    if (hotel) {
+      infoDiv.textContent = hotel.info;
+    } else {
+      infoDiv.textContent = '';
+    }
+  }
+</script>
 
     
   </script>
