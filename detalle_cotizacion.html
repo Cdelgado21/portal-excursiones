@@ -245,11 +245,11 @@ Día 2: City Tour y Comuna 13"></textarea>
   });
 
   // Solo carga datos del tour si la cotización aún no los tiene
-  if (!data.incluye || !data.politicas) {
-    await cargarDatosDelDestino(data.destino);
-  } else {
-    mostrarToast();
-  }
+  if ((!data.incluye || !data.politicas) && !data.manual_override) {
+  await cargarDatosDelDestino(data.destino);
+} else {
+  mostrarToast();
+}
 } // ← ESTA LLAVE FALTABA CERRAR
 
 // ✅ AHORA SÍ DEFINIMOS ESTA FUNCIÓN FUERA
@@ -337,6 +337,7 @@ mostrarToast("✅ Cotización actualizada correctamente.");
     console.error("Error al guardar la cotización:", error);
     alert("❌ Hubo un error al guardar. Revisa la consola.");
   }
+      datos.manual_override = true;  // ✅ Marca que fue editado a mano
 }
    
     const { jsPDF } = window.jspdf;
