@@ -363,8 +363,10 @@ doc.text(lineaResumen, 105, 125, { align: "center" });  // y=270 es justo debajo
   agregarCampo("Adultos", document.getElementById("adultos").value);
   if (document.getElementById("Niños").value.trim()) {
   agregarCampo("Niños", document.getElementById("ninos").value);
+    }
   if (document.getElementById("Bebés").value.trim()) {
   agregarCampo("Bebés", document.getElementById("bebes").value);
+    }
   agregarCampo("Vuelo de ida", document.getElementById("vuelo_ida").value);
   agregarCampo("Vuelo de regreso", document.getElementById("vuelo_vuelta").value);
   agregarCampo("Equipaje", document.getElementById("equipaje").value);
@@ -384,8 +386,10 @@ doc.text(lineaResumen, 105, 125, { align: "center" });  // y=270 es justo debajo
   agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
   if (document.getElementById("Precio niño").value.trim()) {
   agregarCampo("Precio niño", document.getElementById("precio_nino").value + " USD");
+    }
   if (document.getElementById("Precio bebé").value.trim()) {
   agregarCampo("Precio bebé", document.getElementById("precio_bebe").value + " USD");
+    }
   agregarCampo("Total", document.getElementById("total").value + " USD");
   agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
   agregarCampo("Políticas y condiciones", document.getElementById("politicas_textarea").value);
