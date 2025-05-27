@@ -228,26 +228,6 @@ Día 2: City Tour y Comuna 13"></textarea>
     const campos = ["destino", "fechas", "adultos", "ninos", "bebes", "observaciones", "vuelo_ida", "vuelo_vuelta", "equipaje", "hotel", "incluye", "no_incluye", "itinerario_tours", "tours_opcionales", "precio_adulto", "precio_nino", "precio_bebe", "total", "monto_reserva", "politicas"];
 
     async function cargarCotizacionPorNumero() {
-      if (!numeroCotizacion) return alert("Número de cotización no especificado.");
-
-      const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
-      if (snapshot.empty) return alert("Cotización no encontrada.");
-
-      const doc = snapshot.docs[0];
-      const data = doc.data();
-      id = doc.id;
-
-      document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
-
-      campos.forEach(campo => {
-        const el = document.getElementById(campo);
-        if (el) el.value = data[campo] || '';
-      });
-
-      cargarDatosDelDestino(data.destino);
-    }
-
-     async function cargarCotizacionPorNumero() {
   if (!numeroCotizacion) return alert("Número de cotización no especificado.");
 
   const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
