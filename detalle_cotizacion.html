@@ -246,8 +246,6 @@ async function cargarDatosDelDestino(nombreDestino) {
   const tour = snapshot.docs[0].data();
   console.log("Datos del tour encontrados:", tour); // ✅ Confirma si encontró datos
 
-      const tour = snapshot.docs[0].data();
-
       document.getElementById("incluye").value = tour.incluye || '';
       document.getElementById("no_incluye").value = tour.no_incluye || '';
       document.getElementById("itinerario_tours").value = tour.itinerario || '';
