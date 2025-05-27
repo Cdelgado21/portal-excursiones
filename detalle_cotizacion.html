@@ -270,7 +270,7 @@ async function cargarDatosDelDestino(nombreDestino) {
 
   document.getElementById("incluye").value = tour.incluye || '';
   document.getElementById("no_incluye").value = tour.no_incluye || '';
-  document.getElementById("itinerario_tours").value = tour.itinerario || '';
+  document.getElementById("itinerario_tours").value = tour.itinerario_tours || tour.itinerario || '';
   document.getElementById("tours_opcionales").value = tour.opcionales || '';
   document.getElementById("politicas").value = tour.politicas || '';
   document.getElementById("precio_adulto").value = tour.precio || '';
