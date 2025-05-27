@@ -253,14 +253,16 @@ Día 2: City Tour y Comuna 13"></textarea>
 
   const tour = snapshot.docs[0].data();
 
-  document.getElementById("incluye_textarea").value = tour.incluye || '';
+  document.getElementById("incluye").value = tour.incluye || '';
   document.getElementById("no_incluye").value = tour.no_incluye || '';
   document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
   document.getElementById("tours_opcionales").value = tour.tours_opcionales || '';
-  document.getElementById("politicas_textarea").value = tour.politicas || '';
+  document.getElementById("politicas").value = tour.politicas || '';
   document.getElementById("precio_adulto").value = tour.precio_adulto || '';
   document.getElementById("precio_nino").value = tour.precio_nino || '';
   document.getElementById("precio_bebe").value = tour.precio_bebe || '';
+
+       
 
   // ✅ A PARTIR DE AQUÍ ESTABA FUERA: muévelo aquí
   window.hotelesDelTour = tour.hoteles || [];
