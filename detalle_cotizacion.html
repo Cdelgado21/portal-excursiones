@@ -345,7 +345,7 @@ Día 2: City Tour y Comuna 13"></textarea>
   let margenX = 20;
   let y = 30;
 
-  ffunction verificarEspacioDisponible(doc, espacioNecesario = 30) {
+  function verificarEspacioDisponible(doc, espacioNecesario = 30) {
   const paginaAlturaMax = 280;
   if (y + espacioNecesario > paginaAlturaMax) {
     doc.addPage();
