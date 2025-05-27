@@ -381,16 +381,19 @@ mostrarToast(); // ✅ Mostrar notificación visual
     if (ninos !== "") agregarCampo("Niños", ninos);
     const bebes = document.getElementById("bebes").value.trim();
     if (bebes !== "") agregarCampo("Bebés", bebes);
+       doc.text("Itinerario de Vuelos", 105, y, { align: "center" });
+      // Línea punteada decorativa
     agregarCampo("Vuelo de ida", document.getElementById("vuelo_ida").value);
     agregarCampo("Vuelo de regreso", document.getElementById("vuelo_vuelta").value);
     agregarCampo("Equipaje", document.getElementById("equipaje").value);
-    agregarCampo("Hotel asignado", document.getElementById("hotel").value);
-    agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
+doc.text("Detalle del tour", 105, y, { align: "center" });
+      // Línea punteada decorativa
     agregarCampo("Incluye", document.getElementById("incluye_textarea").value);
     agregarCampo("No incluye", document.getElementById("no_incluye").value);
 
     // ✅ Tabla de itinerario de tours
     const itinerarioTexto = document.getElementById("itinerario_tours").value || '';
+       // Línea punteada decorativa
     const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
 
     if (lineas.length > 0) {
@@ -428,6 +431,10 @@ mostrarToast(); // ✅ Mostrar notificación visual
     }
 
     agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
+    agregarCampo("Hotel asignado", document.getElementById("hotel").value);
+    agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
+    doc.text("Desglose por Persona", 105, y, { align: "center" });
+      // Línea punteada decorativa
     agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
     const precioNino = document.getElementById("precio_nino").value.trim();
     if (precioNino !== "") agregarCampo("Precio niño", precioNino + " USD");
