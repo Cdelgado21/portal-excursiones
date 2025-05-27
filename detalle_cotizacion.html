@@ -253,13 +253,14 @@ Día 2: City Tour y Comuna 13"></textarea>
 async function cargarDatosDelDestino(nombreDestino) {
   console.log("Buscando destino:", nombreDestino);
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
-  if (snapshot.empty) {
-  console.log("No se encontró el destino en Firebase.");
-  return;
-}
 
-const tour = snapshot.docs[0].data(); 
-  console.log("Datos del tour encontrados:", tour);
+  if (snapshot.empty) {
+    alert("Destino no encontrado.");
+    return;
+  }
+
+  const tour = snapshot.docs[0].data();
+  console.log("Tour encontrado:", tour);
 
   document.getElementById("incluye").value = tour.incluye || '';
   document.getElementById("no_incluye").value = tour.no_incluye || '';
@@ -267,7 +268,7 @@ const tour = snapshot.docs[0].data();
   document.getElementById("tours_opcionales").value = tour.opcionales || '';
   document.getElementById("politicas").value = tour.politicas || '';
   document.getElementById("precio_adulto").value = tour.precio || '';
-
+  
   // Hoteles
   window.hotelesDelTour = tour.hoteles || [];
   const listaHoteles = document.getElementById("lista_hoteles");
@@ -276,7 +277,7 @@ const tour = snapshot.docs[0].data();
   const selectHotel = document.getElementById("hotel");
   selectHotel.innerHTML = '<option value="">-- Seleccione un hotel --</option>';
 
-  if (tour.hoteles && tour.hoteles.length > 0) {
+  if (tour.hoteles.length > 0) {
     const tabla = document.createElement("table");
     tabla.innerHTML = `
       <thead>
@@ -297,13 +298,12 @@ const tour = snapshot.docs[0].data();
       selectHotel.appendChild(opt);
     });
   } else {
-    listaHoteles.textContent = "No hay hoteles disponibles para este destino.";
+    listaHoteles.textContent = "No hay hoteles disponibles.";
   }
 
-  mostrarToast("✅ Datos del tour cargados automáticamente.");
+  mostrarToast("✅ Información del destino cargada.");
 }
-         window.onload = cargarCotizacionPorNumero;
-     
+         
     async function cargarCotizacionPorNumero() {
       if (!numeroCotizacion) return alert("Número de cotización no especificado.");
 
