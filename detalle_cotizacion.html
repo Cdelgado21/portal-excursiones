@@ -263,7 +263,23 @@ async function guardar() {
         const el = document.getElementById(campo);
         if (el) datos[campo] = el.value;
       });
-      async function cargarDatosDelDestino(nombreDestino) {
+        // Descripción del hotel
+  datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
+
+  // IMPORTANTE: marcar como edición manual antes de guardar
+  datos.manual_override = true;
+
+  if (!id) return alert("Error: ID no encontrado.");
+
+  try {
+    await db.collection("cotizaciones").doc(id).update(datos);
+    mostrarToast("✅ Cotización actualizada correctamente.");
+  } catch (error) {
+    console.error("Error al guardar la cotización:", error);
+    alert("❌ Hubo un error al guardar. Revisa la consola.");
+  }
+}
+async function cargarDatosDelDestino(nombreDestino) {
   const snapshot = await db.collection("tours").where("nombre", "==", nombreDestino).get();
   if (snapshot.empty) return;
 
@@ -317,22 +333,6 @@ async function guardar() {
   }
 
   mostrarToast();
-}
-  // Descripción del hotel
-  datos.hotel_descripcion = document.getElementById("infoHotelSeleccionado").innerText || '';
-
-  // IMPORTANTE: marcar como edición manual antes de guardar
-  datos.manual_override = true;
-
-  if (!id) return alert("Error: ID no encontrado.");
-
-  try {
-    await db.collection("cotizaciones").doc(id).update(datos);
-    mostrarToast("✅ Cotización actualizada correctamente.");
-  } catch (error) {
-    console.error("Error al guardar la cotización:", error);
-    alert("❌ Hubo un error al guardar. Revisa la consola.");
-  }
 }
 
     const { jsPDF } = window.jspdf;
