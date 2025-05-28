@@ -131,8 +131,7 @@ async function cargarDatosIniciales() {
   document.getElementById("ninos").value = data.ninos || 0;
   document.getElementById("bebes").value = data.bebes || 0;
   document.getElementById("observaciones").value = data.observaciones || "";
-  document.getElementById("destino").value = data.destino || "";
-
+ 
   // Asignar campos de tour (se cargan con el destino)
   await cargarDatosDelTour();
 
@@ -155,7 +154,7 @@ async function cargarDatosIniciales() {
     select.appendChild(opt);
   });
 }
-
+ document.getElementById("destino").value = data.destino || "";
 
     async function cargarDatosDelTour() {
   const destino = document.getElementById("destino").value;
