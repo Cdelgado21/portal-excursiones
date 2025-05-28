@@ -140,11 +140,26 @@
   document.getElementById("politicas").value = data.politicas || "";
   document.getElementById("hotel").value = data.hotel || "";
   document.getElementById("info_hotel").value = data.info_hotel || "";
-await cargarDatosDelTour(); 
-document.getElementById("hotel").value = data.hotel || "";
-document.getElementById("info_hotel").value = data.info_hotel || "";
 
+await cargarDatosDelTour(); 
+
+// Seleccionar hotel y actualizar la info
+const hotelSelect = document.getElementById("hotel");
+hotelSelect.value = data.hotel || "";
+
+// Buscar la info del hotel seleccionado
+const tourSnap = await db.collection("tours").where("nombre", "==", data.destino).get();
+if (!tourSnap.empty) {
+  const tour = tourSnap.docs[0].data();
+  const h = (tour.hoteles || []).find(x => x.nombre === hotelSelect.value);
+  document.getElementById("info_hotel").value = h ? h.info : "";
 }
+
+// Activar cambio de hotel después de llenar los datos
+hotelSelect.onchange = () => {
+  const h = (tourSnap.docs[0].data().hoteles || []).find(x => x.nombre === hotelSelect.value);
+  document.getElementById("info_hotel").value = h ? h.info : "";
+};
 
 
     async function cargarOpcionesDeDestino() {
