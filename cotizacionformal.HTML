@@ -116,20 +116,32 @@
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("codigo");
 
-  async function cargarDatosIniciales() {
-    const solicitudSnap = await db.collection("cotizaciones").where("numero", "==", codigo).get();
-    const tourSnap = await db.collection("tours").get();
+ async function cargarDatosIniciales() {
+  if (!numeroCotizacion) return alert("Código de cotización no especificado en la URL.");
 
-    if (!solicitudSnap.empty) {
-      const data = solicitudSnap.docs[0].data();
-      document.getElementById("telefono").value = data.telefono || "";
-      document.getElementById("fechas").value = data.fechas || "";
-      document.getElementById("adultos").value = data.adultos || 0;
-      document.getElementById("ninos").value = data.ninos || 0;
-      document.getElementById("bebes").value = data.bebes || 0;
-      document.getElementById("observaciones").value = data.observaciones || "";
-      document.getElementById("destino").value = data.destino || "";
-    }
+  const snapshot = await db.collection("cotizaciones").doc(numeroCotizacion).get();
+  if (!snapshot.exists) return alert("Cotización no encontrada en Firestore.");
+
+  const data = snapshot.data();
+
+  document.getElementById("telefono").value = data.telefono || "";
+  document.getElementById("destino").value = data.destino || "";
+  document.getElementById("fechas").value = data.fechas || "";
+  document.getElementById("adultos").value = data.adultos || 0;
+  document.getElementById("ninos").value = data.ninos || 0;
+  document.getElementById("bebes").value = data.bebes || 0;
+  document.getElementById("observaciones").value = data.observaciones || "";
+
+  document.getElementById("duracion").value = data.duracion || "";
+  document.getElementById("incluye").value = data.incluye || "";
+  document.getElementById("no_incluye").value = data.no_incluye || "";
+  document.getElementById("itinerario").value = data.itinerario_tours || "";
+  document.getElementById("opcionales").value = data.tours_opcionales || "";
+  document.getElementById("politicas").value = data.politicas || "";
+  document.getElementById("hotel").value = data.hotel || "";
+  document.getElementById("info_hotel").value = data.info_hotel || "";
+}
+
 
     const select = document.getElementById("destino");
     tourSnap.forEach(doc => {
