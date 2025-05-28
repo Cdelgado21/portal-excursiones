@@ -279,7 +279,7 @@ async function cargarDatosDelDestino(nombreDestino) {
   console.log("INCLUYE:", tour.incluye);
 console.log("POLÍTICAS:", tour.politicas);
 
-
+if (document.getElementById("incluye")) {
 document.getElementById("incluye").value = tour.incluye || '';
 document.getElementById("no_incluye").value = tour.no_incluye || '';
 document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
