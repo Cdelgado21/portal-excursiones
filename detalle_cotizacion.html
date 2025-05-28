@@ -347,8 +347,12 @@ console.log("politicas:", tour.politicas);
     }
   });
 
-  if (data.manual_override) {
-    document.getElementById("edicionManual").style.display = "block";
+ if (data.manual_override) {
+  document.getElementById("edicionManual").style.display = "block";
+} else {
+  // Evitar sobreescritura si ya vino desde cotización
+  if (!data.incluye && !data.politicas) {
+    await cargarDatosDelDestino((data.destino || "").trim());
   }
 }
 
