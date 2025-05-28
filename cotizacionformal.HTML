@@ -151,12 +151,7 @@
       select.appendChild(opt);
     });
 
-    // Si ya había destino, cargar datos del tour automáticamente
-    if (document.getElementById("destino").value) {
-      await cargarDatosDelTour();
-    }
-  }
-
+    
   async function cargarDatosDelTour() {
     const destino = document.getElementById("destino").value;
     const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
@@ -203,6 +198,7 @@
       politicas: document.getElementById("politicas").value,
       hotel: document.getElementById("hotel").value,
       info_hotel: document.getElementById("info_hotel").value
+  };
    try {
     await db.collection("cotizaciones").doc(codigo).set(cotizacion, { merge: true });
     alert("✅ Cotización guardada correctamente.");
