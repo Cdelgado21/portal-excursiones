@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generar Detalle de Cotización</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      padding: 20px;
+    }
+    h2 {
+      background-color: #02535a;
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #02535a;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h1>Formulario para Generar Cotización</h1>
+
+  <section>
+    <h2>Información de la Solicitud</h2>
+    <label>Teléfono</label>
+    <input id="telefono" readonly />
+
+    <label>Destino</label>
+    <select id="destino" onchange="cargarDatosDelTour()"></select>
+
+    <label>Fechas del viaje</label>
+    <input id="fechas" />
+
+    <label>Adultos</label>
+    <input id="adultos" type="number" />
+
+    <label>Niños</label>
+    <input id="ninos" type="number" />
+
+    <label>Bebés</label>
+    <input id="bebes" type="number" />
+
+    <label>Observaciones</label>
+    <textarea id="observaciones"></textarea>
+  </section>
+
+  <section>
+    <h2>Información del Tour</h2>
+    <label>Duración</label>
+    <input id="duracion" />
+
+    <label>Incluye</label>
+    <textarea id="incluye"></textarea>
+
+    <label>No incluye</label>
+    <textarea id="no_incluye"></textarea>
+
+    <label>Hotel</label>
+    <select id="hotel"></select>
+
+    <label>Info del hotel</label>
+    <textarea id="info_hotel"></textarea>
+
+    <label>Itinerario</label>
+    <textarea id="itinerario"></textarea>
+
+    <label>Tours opcionales</label>
+    <textarea id="opcionales"></textarea>
+
+    <label>Políticas</label>
+    <textarea id="politicas"></textarea>
+  </section>
+
+  <button onclick="guardarCotizacion()">Guardar Cotización</button>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const params = new URLSearchParams(window.location.search);
+    const codigo = params.get("codigo");
+
+    async function precargarDatos() {
+      const solicitudSnap = await db.collection("solicitudes").where("codigo", "==", codigo).get();
+      const tourSnap = await db.collection("tours").get();
+
+      if (!solicitudSnap.empty) {
+        const data = solicitudSnap.docs[0].data();
+        document.getElementById("telefono").value = data.telefono || "";
+        document.getElementById("fechas").value = data.fechas || "";
+        document.getElementById("adultos").value = data.adultos || 0;
+        document.getElementById("ninos").value = data.ninos || 0;
+        document.getElementById("bebes").value = data.bebes || 0;
+        document.getElementById("observaciones").value = data.observaciones || "";
+      }
+
+      const select = document.getElementById("destino");
+      tourSnap.forEach(doc => {
+        const opt = document.createElement("option");
+        opt.value = doc.data().nombre;
+        opt.textContent = doc.data().nombre;
+        select.appendChild(opt);
+      });
+    }
+
+    async function cargarDatosDelTour() {
+      const destino = document.getElementById("destino").value;
+      const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
+      if (!tourSnap.empty) {
+        const data = tourSnap.docs[0].data();
+        document.getElementById("duracion").value = data.duracion || "";
+        document.getElementById("incluye").value = data.incluye || "";
+        document.getElementById("no_incluye").value = data.no_incluye || "";
+        document.getElementById("itinerario").value = data.itinerario_tours || "";
+        document.getElementById("opcionales").value = data.tours_opcionales || "";
+        document.getElementById("politicas").value = data.politicas || "";
+
+        const hotelSelect = document.getElementById("hotel");
+        hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
+        (data.hoteles || []).forEach(h => {
+          const opt = document.createElement("option");
+          opt.value = h.nombre;
+          opt.textContent = h.nombre;
+          hotelSelect.appendChild(opt);
+        });
+
+        hotelSelect.onchange = () => {
+          const h = (data.hoteles || []).find(x => x.nombre === hotelSelect.value);
+          document.getElementById("info_hotel").value = h ? h.info : "";
+        };
+      }
+    }
+
+    async function guardarCotizacion() {
+      const cotizacion = {
+        numero: codigo,
+        telefono: document.getElementById("telefono").value,
+        destino: document.getElementById("destino").value,
+        fechas: document.getElementById("fechas").value,
+        adultos: parseInt(document.getElementById("adultos").value),
+        ninos: parseInt(document.getElementById("ninos").value),
+        bebes: parseInt(document.getElementById("bebes").value),
+        observaciones: document.getElementById("observaciones").value,
+        duracion: document.getElementById("duracion").value,
+        incluye: document.getElementById("incluye").value,
+        no_incluye: document.getElementById("no_incluye").value,
+        itinerario: document.getElementById("itinerario").value,
+        tours_opcionales: document.getElementById("opcionales").value,
+        politicas: document.getElementById("politicas").value,
+        hotel: document.getElementById("hotel").value,
+        info_hotel: document.getElementById("info_hotel").value
+      };
+      await db.collection("cotizaciones").doc(codigo).set(cotizacion, { merge: true });
+      alert("Cotización guardada correctamente.");
+    }
+
+    window.onload = precargarDatos;
+  </script>
+</body>
+</html>
