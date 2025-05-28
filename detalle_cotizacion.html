@@ -579,6 +579,46 @@ agregarCampo("Políticas y condiciones", document.getElementById("politicas").va
       infoDiv.textContent = '';
     }
   }
+<script>
+  async function guardar() {
+    if (!id) {
+      alert("❌ No se ha cargado ninguna cotización para guardar.");
+      return;
+    }
+
+    const dataActualizada = {
+      destino: document.getElementById("destino").value.trim(),
+      fechas: document.getElementById("fechas").value.trim(),
+      adultos: document.getElementById("adultos").value.trim(),
+      ninos: document.getElementById("ninos").value.trim(),
+      bebes: document.getElementById("bebes").value.trim(),
+      observaciones: document.getElementById("observaciones").value.trim(),
+      vuelo_ida: document.getElementById("vuelo_ida").value.trim(),
+      vuelo_vuelta: document.getElementById("vuelo_vuelta").value.trim(),
+      equipaje: document.getElementById("equipaje").value.trim(),
+      hotel: document.getElementById("hotel").value,
+      incluye: document.getElementById("incluye").value.trim(),
+      no_incluye: document.getElementById("no_incluye").value.trim(),
+      itinerario_tours: document.getElementById("itinerario_tours").value.trim(),
+      tours_opcionales: document.getElementById("tours_opcionales").value.trim(),
+      precio_adulto: document.getElementById("precio_adulto").value.trim(),
+      precio_nino: document.getElementById("precio_nino").value.trim(),
+      precio_bebe: document.getElementById("precio_bebe").value.trim(),
+      total: document.getElementById("total").value.trim(),
+      monto_reserva: document.getElementById("monto_reserva").value.trim(),
+      politicas: document.getElementById("politicas").value.trim(),
+      manual_override: true
+    };
+
+    try {
+      await db.collection("cotizaciones").doc(id).update(dataActualizada);
+      mostrarToast("✅ Cambios guardados correctamente.");
+    } catch (error) {
+      console.error("Error al guardar cambios:", error);
+      alert("❌ Ocurrió un error al guardar los cambios.");
+    }
+  }
+  
     
   </script>
 </body>
