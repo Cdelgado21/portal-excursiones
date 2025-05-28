@@ -274,6 +274,7 @@ async function cargarDatosDelDestino(nombreDestino) {
 document.getElementById("tours_opcionales").value = tour.tours_opcionales || '';
   document.getElementById("politicas").value = tour.politicas || '';
   document.getElementById("precio_adulto").value = tour.precio || '';
+console.log("POLÍTICAS:", tour.politicas);
 
   // Hoteles
   window.hotelesDelTour = tour.hoteles || [];
