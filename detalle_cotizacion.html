@@ -353,13 +353,7 @@ console.log("politicas:", tour.politicas);
     }
   }
 } // ← ESTA ES LA LLAVE QUE TE FALTABA
-    function mostrarInfoHotel() {
-      const nombreHotel = document.getElementById("hotel").value;
-      const infoDiv = document.getElementById("infoHotelSeleccionado");
-      const hotel = (window.hotelesDelTour || []).find(h => h.nombre === nombreHotel);
-      infoDiv.textContent = hotel ? hotel.info : '';
-    }
-
+ 
     function mostrarToast(mensaje = "✅ Información del tour cargada con éxito") {
       const toast = document.getElementById("toast");
       toast.textContent = mensaje;
