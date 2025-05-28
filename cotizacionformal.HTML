@@ -123,6 +123,7 @@
   if (!snapshot.exists) return;
 
   const data = snapshot.data();
+console.log(data); // 🔍 Esto te mostrará qué datos están llegando
 
   document.getElementById("telefono").value = data.telefono || "";
   document.getElementById("fechas").value = data.fechas || "";
