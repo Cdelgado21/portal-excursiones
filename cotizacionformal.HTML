@@ -131,8 +131,10 @@
     document.getElementById("bebes").value = data.bebes || 0;
     document.getElementById("observaciones").value = data.observaciones || "";
 
-    document.getElementById("destino").value = data.destino || "";
-    await cargarDatosDelTour(); // <- muy importante: esto carga la info del tour según destino
+    setTimeout(() => {
+  document.getElementById("destino").value = data.destino || "";
+  cargarDatosDelTour();
+}, 500); // espera 0.5 segundos para que el select se llene
 
     if (data.hotel) {
       document.getElementById("hotel").value = data.hotel;
