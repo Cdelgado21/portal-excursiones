@@ -324,7 +324,7 @@ console.log("politicas:", tour.politicas);
   mostrarToast("✅ Información del destino cargada correctamente.");
 }
         
-   async function cargarCotizacionPorNumero() {
+  sync function cargarCotizacionPorNumero() {
   if (!numeroCotizacion) return alert("Número de cotización no especificado.");
 
   const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
@@ -336,10 +336,8 @@ console.log("politicas:", tour.politicas);
 
   document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
 
-  // Primero cargamos datos del destino (base del tour)
   await cargarDatosDelDestino((data.destino || "").trim());
 
-  // Luego sobrescribimos solo si hay valores personalizados en la cotización
   campos.forEach(campo => {
     const el = document.getElementById(campo);
     if (el && data[campo] !== undefined && data[campo] !== null && data[campo] !== "") {
@@ -347,16 +345,14 @@ console.log("politicas:", tour.politicas);
     }
   });
 
- if (data.manual_override) {
-  document.getElementById("edicionManual").style.display = "block";
-} else {
-  // Evitar sobreescritura si ya vino desde cotización
-  if (!data.incluye && !data.politicas) {
-    await cargarDatosDelDestino((data.destino || "").trim());
+  if (data.manual_override) {
+    document.getElementById("edicionManual").style.display = "block";
+  } else {
+    if (!data.incluye && !data.politicas) {
+      await cargarDatosDelDestino((data.destino || "").trim());
+    }
   }
-}
-
-    
+} // ← ESTA ES LA LLAVE QUE TE FALTABA
     function mostrarInfoHotel() {
       const nombreHotel = document.getElementById("hotel").value;
       const infoDiv = document.getElementById("infoHotelSeleccionado");
