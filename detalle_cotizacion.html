@@ -272,6 +272,9 @@ async function cargarDatosDelDestino(nombreDestino) {
 
   const tour = snapshot.docs[0].data();
   console.log("Datos del tour encontrados:", tour);
+  console.log("INCLUYE:", tour.incluye);
+console.log("POLÍTICAS:", tour.politicas);
+
 
 document.getElementById("incluye").value = tour.incluye || '';
 document.getElementById("no_incluye").value = tour.no_incluye || '';
