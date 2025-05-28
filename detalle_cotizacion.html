@@ -324,28 +324,34 @@ console.log("politicas:", tour.politicas);
   mostrarToast("✅ Información del destino cargada correctamente.");
 }
         
-    async function cargarCotizacionPorNumero() {
-      if (!numeroCotizacion) return alert("Número de cotización no especificado.");
+   async function cargarCotizacionPorNumero() {
+  if (!numeroCotizacion) return alert("Número de cotización no especificado.");
 
-      const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
-      if (snapshot.empty) return alert("Cotización no encontrada.");
+  const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
+  if (snapshot.empty) return alert("Cotización no encontrada.");
 
-      const doc = snapshot.docs[0];
-      const data = doc.data();
-      id = doc.id;
+  const doc = snapshot.docs[0];
+  const data = doc.data();
+  id = doc.id;
 
-      document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
-      campos.forEach(campo => {
-        const el = document.getElementById(campo);
-        if (el) el.value = data[campo] || '';
-      });
+  document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
 
-      if (data.manual_override) {
-        document.getElementById("edicionManual").style.display = "block";
-      } else {
-        await cargarDatosDelDestino((data.destino || "").trim());
-      }
+  // Primero cargamos datos del destino (base del tour)
+  await cargarDatosDelDestino((data.destino || "").trim());
+
+  // Luego sobrescribimos solo si hay valores personalizados en la cotización
+  campos.forEach(campo => {
+    const el = document.getElementById(campo);
+    if (el && data[campo] !== undefined && data[campo] !== null && data[campo] !== "") {
+      el.value = data[campo];
     }
+  });
+
+  if (data.manual_override) {
+    document.getElementById("edicionManual").style.display = "block";
+  }
+}
+
     
     function mostrarInfoHotel() {
       const nombreHotel = document.getElementById("hotel").value;
