@@ -274,6 +274,7 @@ async function cargarDatosDelDestino(nombreDestino) {
   console.log("Datos del tour encontrados:", tour);
 
   document.getElementById("incluye").value = tour.incluye || '';
+  document.getElementById("incluye").innerText = tour.incluye || '';
   document.getElementById("no_incluye").value = tour.no_incluye || '';
   document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
 document.getElementById("tours_opcionales").value = tour.tours_opcionales || '';
