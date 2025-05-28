@@ -181,7 +181,7 @@
     tablaPendientes.innerHTML = "";
     tablaHistoricas.innerHTML = "";
 
-    const snapshot = await db.collection("cotizaciones").orderBy("registro", "desc").get();
+    const snapshot = await db.collection("solicitud_cotizaciones").orderBy("registro", "desc").get();
 
     snapshot.forEach(doc => {
       const d = doc.data();
@@ -245,7 +245,7 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
   }
 
   async function editarCotizacion(id) {
-    const doc = await db.collection("cotizaciones").doc(id).get();
+    const doc = await db.collection("solicitud_cotizaciones").doc(id).get();
     if (!doc.exists) return alert("Cotización no encontrada");
 
     const data = doc.data();
@@ -263,7 +263,7 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
 
   async function eliminarCotizacion(id) {
     if (confirm("¿Deseas eliminar esta cotización?")) {
-      await db.collection("cotizaciones").doc(id).delete();
+      await db.collection("solicitud_cotizaciones").doc(id).delete();
       cargarCotizaciones();
     }
   }
@@ -295,12 +295,12 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
 
   async function confirmarCotizadorDesdeVentana(id, numero, encargado) {
     if (!encargado) return alert("Debes seleccionar un cotizador.");
-    const doc = await db.collection("cotizaciones").doc(id).get();
+    const doc = await db.collection("solicitud_cotizaciones").doc(id).get();
     const data = doc.data();
     const fechaAsignacion = new Date();
     const tiempoRespuestaMin = data.registro ? Math.floor((fechaAsignacion - data.registro.toDate()) / 60000) : 0;
 
-    await db.collection("cotizaciones").doc(id).update({
+    await db.collection("solicitud_cotizaciones").doc(id).update({
       estado: "En Proceso",
       encargado,
       fecha_asignacion: fechaAsignacion,
@@ -322,13 +322,13 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
     const fechaRegistro = new Date();
 
     if (cotizacionEditandoId) {
-      await db.collection("cotizaciones").doc(cotizacionEditandoId).update({
+      await db.collection("solicitud_cotizaciones").doc(cotizacionEditandoId).update({
         telefono, destino, fechas, adultos, ninos, observaciones, embajador
       });
       alert("Cotización actualizada correctamente.");
       cotizacionEditandoId = null;
     } else {
-      const snapshot = await db.collection("cotizaciones").get();
+      const snapshot = await db.collection("solicitud_cotizaciones").get();
       let maxNum = 0;
       snapshot.forEach(doc => {
         const match = doc.data().numero?.match(/^COT-(\d+)-\d{4}$/);
@@ -339,7 +339,7 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
       });
 
       const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${fechaRegistro.getFullYear()}`;
-      await db.collection("cotizaciones").add({
+      await db.collection("solicitud_cotizaciones").add({
         numero, telefono, destino, fechas, adultos, ninos, observaciones, embajador,
         estado: "Pendiente", registro: fechaRegistro, encargado: "", fecha_asignacion: null
       });
