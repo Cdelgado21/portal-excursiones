@@ -92,7 +92,7 @@
   async function cargarCotizacionesProceso() {
     const tabla = document.querySelector("#tablaCotizacionesProceso tbody");
     tabla.innerHTML = "";
-    const snapshot = await db.collection("cotizaciones").where("estado", "==", "En Proceso").get();
+    const snapshot = await db.collection("solicitud_cotizaciones").where("estado", "==", "En Proceso").get();
 
     snapshot.forEach(doc => {
       const d = doc.data();
