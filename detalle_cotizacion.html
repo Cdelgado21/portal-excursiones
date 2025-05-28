@@ -273,14 +273,12 @@ async function cargarDatosDelDestino(nombreDestino) {
   const tour = snapshot.docs[0].data();
   console.log("Datos del tour encontrados:", tour);
 
-  document.getElementById("incluye").value = tour.incluye || '';
-  document.getElementById("incluye").innerText = tour.incluye || '';
-  document.getElementById("no_incluye").value = tour.no_incluye || '';
-  document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
+document.getElementById("incluye").value = tour.incluye || '';
+document.getElementById("no_incluye").value = tour.no_incluye || '';
+document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
 document.getElementById("tours_opcionales").value = tour.tours_opcionales || '';
-  document.getElementById("politicas").value = tour.politicas || '';
-  document.getElementById("politicas").innerText = tour.politicas || '';
-  document.getElementById("precio_adulto").value = tour.precio || '';
+document.getElementById("politicas").value = tour.politicas || '';
+document.getElementById("precio_adulto").value = tour.precio || '';
 console.log("POLÍTICAS:", tour.politicas);
 
   // Hoteles
