@@ -91,6 +91,10 @@
       font-weight: bold;
       margin-top: 10px;
     }
+    textarea#politicas {
+  min-height: 200px;
+  resize: vertical;
+}
   </style>
 </head>
   <div id="toast" style="
@@ -210,6 +214,7 @@ Día 2: City Tour y Comuna 13"></textarea>
   <div class="section" id="politicas">
     <label>Políticas y condiciones</label>
     <textarea id="Políticas"></textarea>
+    
   </div>
 
   <div class="buttons">
@@ -273,6 +278,7 @@ async function cargarDatosDelDestino(nombreDestino) {
   document.getElementById("itinerario_tours").value = tour.itinerario_tours || '';
 document.getElementById("tours_opcionales").value = tour.tours_opcionales || '';
   document.getElementById("politicas").value = tour.politicas || '';
+  document.getElementById("politicas").innerText = tour.politicas || '';
   document.getElementById("precio_adulto").value = tour.precio || '';
 console.log("POLÍTICAS:", tour.politicas);
 
