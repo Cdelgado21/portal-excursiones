@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -53,22 +54,16 @@
     <h2>Información de la Solicitud</h2>
     <label>Teléfono</label>
     <input id="telefono" readonly />
-
     <label>Destino</label>
     <select id="destino" onchange="cargarDatosDelTour()"></select>
-
     <label>Fechas del viaje</label>
     <input id="fechas" />
-
     <label>Adultos</label>
     <input id="adultos" type="number" />
-
     <label>Niños</label>
     <input id="ninos" type="number" />
-
     <label>Bebés</label>
     <input id="bebes" type="number" />
-
     <label>Observaciones</label>
     <textarea id="observaciones"></textarea>
   </section>
@@ -77,25 +72,18 @@
     <h2>Información del Tour</h2>
     <label>Duración</label>
     <input id="duracion" />
-
     <label>Incluye</label>
     <textarea id="incluye"></textarea>
-
     <label>No incluye</label>
     <textarea id="no_incluye"></textarea>
-
     <label>Hotel</label>
     <select id="hotel"></select>
-
     <label>Info del hotel</label>
     <textarea id="info_hotel"></textarea>
-
     <label>Itinerario</label>
     <textarea id="itinerario"></textarea>
-
     <label>Tours opcionales</label>
     <textarea id="opcionales"></textarea>
-
     <label>Políticas</label>
     <textarea id="politicas"></textarea>
   </section>
@@ -115,53 +103,49 @@
 
     const params = new URLSearchParams(window.location.search);
     const codigo = params.get("codigo");
-}
+
     async function cargarDatosIniciales() {
-  await cargarOpcionesDeDestino(); // solo carga el dropdown sin autocompletar nada
+      await cargarOpcionesDeDestino();
 
-  const snapshot = await db.collection("cotizaciones").doc(codigo).get();
-  if (!snapshot.exists) return;
+      const snapshot = await db.collection("cotizaciones").doc(codigo).get();
+      if (!snapshot.exists) return;
 
-  const data = snapshot.data();
-console.log(data); // 🔍 Esto te mostrará qué datos están llegando
+      const data = snapshot.data();
+      console.log(data);
 
-  document.getElementById("telefono").value = data.telefono || "";
-  document.getElementById("fechas").value = data.fechas || "";
-  document.getElementById("adultos").value = data.adultos || 0;
-  document.getElementById("ninos").value = data.ninos || 0;
-  document.getElementById("bebes").value = data.bebes || 0;
-  document.getElementById("observaciones").value = data.observaciones || "";
-  document.getElementById("destino").value = data.destino || "";
+      document.getElementById("telefono").value = data.telefono || "";
+      document.getElementById("fechas").value = data.fechas || "";
+      document.getElementById("adultos").value = data.adultos || 0;
+      document.getElementById("ninos").value = data.ninos || 0;
+      document.getElementById("bebes").value = data.bebes || 0;
+      document.getElementById("observaciones").value = data.observaciones || "";
+      document.getElementById("destino").value = data.destino || "";
+      document.getElementById("duracion").value = data.duracion || "";
+      document.getElementById("incluye").value = data.incluye || "";
+      document.getElementById("no_incluye").value = data.no_incluye || "";
+      document.getElementById("itinerario").value = data.itinerario_tours || "";
+      document.getElementById("opcionales").value = data.tours_opcionales || "";
+      document.getElementById("politicas").value = data.politicas || "";
+      document.getElementById("hotel").value = data.hotel || "";
+      document.getElementById("info_hotel").value = data.info_hotel || "";
 
-  document.getElementById("duracion").value = data.duracion || "";
-  document.getElementById("incluye").value = data.incluye || "";
-  document.getElementById("no_incluye").value = data.no_incluye || "";
-  document.getElementById("itinerario").value = data.itinerario_tours || "";
-  document.getElementById("opcionales").value = data.tours_opcionales || "";
-  document.getElementById("politicas").value = data.politicas || "";
-  document.getElementById("hotel").value = data.hotel || "";
-  document.getElementById("info_hotel").value = data.info_hotel || "";
+      await cargarDatosDelTour();
+      const hotelSelect = document.getElementById("hotel");
+      hotelSelect.value = data.hotel || "";
 
-await cargarDatosDelTour(); 
+      const tourSnap = await db.collection("tours").where("nombre", "==", data.destino).get();
+      if (!tourSnap.empty) {
+        const tour = tourSnap.docs[0].data();
+        const h = (tour.hoteles || []).find(x => x.nombre === hotelSelect.value);
+        document.getElementById("info_hotel").value = h ? h.info : "";
+      }
 
-// Seleccionar hotel y actualizar la info
-const hotelSelect = document.getElementById("hotel");
-hotelSelect.value = data.hotel || "";
+      hotelSelect.onchange = () => {
+        const h = (tourSnap.docs[0].data().hoteles || []).find(x => x.nombre === hotelSelect.value);
+        document.getElementById("info_hotel").value = h ? h.info : "";
+      };
+    }
 
-// Buscar la info del hotel seleccionado
-const tourSnap = await db.collection("tours").where("nombre", "==", data.destino).get();
-if (!tourSnap.empty) {
-  const tour = tourSnap.docs[0].data();
-  const h = (tour.hoteles || []).find(x => x.nombre === hotelSelect.value);
-  document.getElementById("info_hotel").value = h ? h.info : "";
-}
-
-// Activar cambio de hotel después de llenar los datos
-hotelSelect.onchange = () => {
-  const h = (tourSnap.docs[0].data().hoteles || []).find(x => x.nombre === hotelSelect.value);
-  document.getElementById("info_hotel").value = h ? h.info : "";
-};
-}
     async function cargarOpcionesDeDestino() {
       const destinosSnap = await db.collection("tours").get();
       const select = document.getElementById("destino");
