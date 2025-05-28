@@ -171,32 +171,50 @@ async function cargarDatosIniciales() {
     }
 
     async function cargarDatosDelTour() {
-      const destino = document.getElementById("destino").value;
-      const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
-      if (!tourSnap.empty) {
-        const data = tourSnap.docs[0].data();
-        document.getElementById("duracion").value = data.duracion || "";
-        document.getElementById("incluye").value = data.incluye || "";
-        document.getElementById("no_incluye").value = data.no_incluye || "";
-        document.getElementById("itinerario").value = data.itinerario_tours || "";
-        document.getElementById("opcionales").value = data.tours_opcionales || "";
-        document.getElementById("politicas").value = data.politicas || "";
+  const destino = document.getElementById("destino").value;
+  const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
 
-        const hotelSelect = document.getElementById("hotel");
-        hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
-        (data.hoteles || []).forEach(h => {
-          const opt = document.createElement("option");
-          opt.value = h.nombre;
-          opt.textContent = h.nombre;
-          hotelSelect.appendChild(opt);
-        });
+  if (!tourSnap.empty) {
+    const data = tourSnap.docs[0].data();
 
-        hotelSelect.onchange = () => {
-          const h = (data.hoteles || []).find(x => x.nombre === hotelSelect.value);
-          document.getElementById("info_hotel").value = h ? h.info : "";
-        };
+    document.getElementById("duracion").value = data.duracion || "";
+    document.getElementById("incluye").value = data.incluye || "";
+    document.getElementById("no_incluye").value = data.no_incluye || "";
+    document.getElementById("itinerario").value = data.itinerario_tours || "";
+    document.getElementById("opcionales").value = data.tours_opcionales || "";
+    document.getElementById("politicas").value = data.politicas || "";
+
+    const hotelSelect = document.getElementById("hotel");
+    hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
+
+    const hoteles = data.hoteles || [];
+
+    hoteles.forEach(h => {
+      const opt = document.createElement("option");
+      opt.value = h.nombre;
+      opt.textContent = h.nombre;
+      hotelSelect.appendChild(opt);
+    });
+
+    // Detectar cambio de hotel
+    hotelSelect.onchange = () => {
+      const hotelSeleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
+      document.getElementById("info_hotel").value = hotelSeleccionado?.info || "";
+    };
+
+    // Si ya venía un hotel guardado, seleccionarlo y disparar info
+    const hotelActual = document.getElementById("info_hotel").value;
+    if (hotelActual) {
+      const h = hoteles.find(h => h.info === hotelActual);
+      if (h) {
+        hotelSelect.value = h.nombre;
       }
     }
+  } else {
+    console.warn("No se encontró información del tour para el destino:", destino);
+  }
+}
+
 
     async function guardarCotizacion() {
       const cotizacion = {
