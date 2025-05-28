@@ -116,31 +116,37 @@
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("codigo");
 
-  async function cargarDatosIniciales() {
-    await cargarOpcionesDeDestino();
+async function cargarDatosIniciales() {
+  await cargarOpcionesDeDestino();
 
-    const snapshot = await db.collection("cotizaciones").doc(codigo).get();
-    if (!snapshot.exists) return;
+  let snapshot = await db.collection("cotizaciones").doc(codigo).get();
 
-    const data = snapshot.data();
-
-    document.getElementById("telefono").value = data.telefono || "";
-    document.getElementById("fechas").value = data.fechas || "";
-    document.getElementById("adultos").value = data.adultos || 0;
-    document.getElementById("ninos").value = data.ninos || 0;
-    document.getElementById("bebes").value = data.bebes || 0;
-    document.getElementById("observaciones").value = data.observaciones || "";
-
-    setTimeout(() => {
-  document.getElementById("destino").value = data.destino || "";
-  cargarDatosDelTour();
-}, 500); // espera 0.5 segundos para que el select se llene
-
-    if (data.hotel) {
-      document.getElementById("hotel").value = data.hotel;
-      document.getElementById("info_hotel").value = data.info_hotel || "";
-    }
+  // Si no existe en "cotizaciones", buscar en "solicitud_cotizaciones"
+  if (!snapshot.exists) {
+    snapshot = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+    if (!snapshot.exists) return alert("⚠️ No se encontró información de esta cotización.");
   }
+
+  const data = snapshot.data();
+
+  document.getElementById("telefono").value = data.telefono || "";
+  document.getElementById("fechas").value = data.fechas || "";
+  document.getElementById("adultos").value = data.adultos || 0;
+  document.getElementById("ninos").value = data.ninos || 0;
+  document.getElementById("bebes").value = data.bebes || 0;
+  document.getElementById("observaciones").value = data.observaciones || "";
+
+  // Esperar a que se llenen las opciones
+  setTimeout(() => {
+    document.getElementById("destino").value = data.destino || "";
+    cargarDatosDelTour(); // esto también cargará la info del tour
+  }, 500);
+
+  if (data.hotel) {
+    document.getElementById("hotel").value = data.hotel;
+    document.getElementById("info_hotel").value = data.info_hotel || "";
+  }
+}
 
   async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
