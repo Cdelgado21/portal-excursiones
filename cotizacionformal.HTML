@@ -105,132 +105,99 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script>
-<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717"
+  };
+  firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+
   const params = new URLSearchParams(window.location.search);
-  const numeroCotizacion = params.get("codigo");
+  const codigo = params.get("codigo");
 
   async function cargarDatosIniciales() {
-    if (!numeroCotizacion) return alert("Código de cotización no especificado en la URL.");
+    const solicitudSnap = await db.collection("cotizaciones").where("numero", "==", codigo).get();
+    const tourSnap = await db.collection("tours").get();
 
-    const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
-    if (snapshot.empty) return alert("Cotización no encontrada en Firestore.");
+    if (!solicitudSnap.empty) {
+      const data = solicitudSnap.docs[0].data();
+      document.getElementById("telefono").value = data.telefono || "";
+      document.getElementById("fechas").value = data.fechas || "";
+      document.getElementById("adultos").value = data.adultos || 0;
+      document.getElementById("ninos").value = data.ninos || 0;
+      document.getElementById("bebes").value = data.bebes || 0;
+      document.getElementById("observaciones").value = data.observaciones || "";
+      document.getElementById("destino").value = data.destino || "";
+    }
 
-    const data = snapshot.docs[0].data();
+    const select = document.getElementById("destino");
+    tourSnap.forEach(doc => {
+      const opt = document.createElement("option");
+      opt.value = doc.data().nombre;
+      opt.textContent = doc.data().nombre;
+      select.appendChild(opt);
+    });
 
-    // Información de la solicitud
-    document.getElementById("telefono").value = data.telefono || "";
-    document.getElementById("destino").value = data.destino || "";
-    document.getElementById("fechas").value = data.fechas || "";
-    document.getElementById("adultos").value = data.adultos || "";
-    document.getElementById("ninos").value = data.ninos || "";
-    document.getElementById("bebes").value = data.bebes || "";
-    document.getElementById("observaciones").value = data.observaciones || "";
-
-    // Buscar info del tour según el destino
-    const tourSnap = await db.collection("tours").where("nombre", "==", data.destino).get();
-    if (!tourSnap.empty) {
-      const tour = tourSnap.docs[0].data();
-      document.getElementById("duracion").value = tour.duracion || "";
-      document.getElementById("incluye").value = tour.incluye || "";
-      document.getElementById("hotel").value = tour.hotel || "";
-      document.getElementById("infoHotel").value = tour.infoHotel || "";
-      document.getElementById("no_incluye").value = tour.no_incluye || "";
-      document.getElementById("itinerario").value = tour.itinerario_tours || "";
-      document.getElementById("opcionales").value = tour.tours_opcionales || "";
-      document.getElementById("politicas").value = tour.politicas || "";
+    // Si ya había destino, cargar datos del tour automáticamente
+    if (document.getElementById("destino").value) {
+      await cargarDatosDelTour();
     }
   }
 
-  window.onload = cargarDatosIniciales;
+  async function cargarDatosDelTour() {
+    const destino = document.getElementById("destino").value;
+    const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
+    if (!tourSnap.empty) {
+      const data = tourSnap.docs[0].data();
+      document.getElementById("duracion").value = data.duracion || "";
+      document.getElementById("incluye").value = data.incluye || "";
+      document.getElementById("no_incluye").value = data.no_incluye || "";
+      document.getElementById("itinerario").value = data.itinerario_tours || "";
+      document.getElementById("opcionales").value = data.tours_opcionales || "";
+      document.getElementById("politicas").value = data.politicas || "";
 
-
-const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    const params = new URLSearchParams(window.location.search);
-    const codigo = params.get("codigo");
-
-    async function precargarDatos() {
-      const solicitudSnap = await db.collection("solicitudes").where("codigo", "==", codigo).get();
-      const tourSnap = await db.collection("tours").get();
-
-      if (!solicitudSnap.empty) {
-        const data = solicitudSnap.docs[0].data();
-        document.getElementById("telefono").value = data.telefono || "";
-        document.getElementById("fechas").value = data.fechas || "";
-        document.getElementById("adultos").value = data.adultos || 0;
-        document.getElementById("ninos").value = data.ninos || 0;
-        document.getElementById("bebes").value = data.bebes || 0;
-        document.getElementById("observaciones").value = data.observaciones || "";
-      }
-
-      const select = document.getElementById("destino");
-      tourSnap.forEach(doc => {
+      const hotelSelect = document.getElementById("hotel");
+      hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
+      (data.hoteles || []).forEach(h => {
         const opt = document.createElement("option");
-        opt.value = doc.data().nombre;
-        opt.textContent = doc.data().nombre;
-        select.appendChild(opt);
+        opt.value = h.nombre;
+        opt.textContent = h.nombre;
+        hotelSelect.appendChild(opt);
       });
-    }
 
-    async function cargarDatosDelTour() {
-      const destino = document.getElementById("destino").value;
-      const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
-      if (!tourSnap.empty) {
-        const data = tourSnap.docs[0].data();
-        document.getElementById("duracion").value = data.duracion || "";
-        document.getElementById("incluye").value = data.incluye || "";
-        document.getElementById("no_incluye").value = data.no_incluye || "";
-        document.getElementById("itinerario").value = data.itinerario_tours || "";
-        document.getElementById("opcionales").value = data.tours_opcionales || "";
-        document.getElementById("politicas").value = data.politicas || "";
-
-        const hotelSelect = document.getElementById("hotel");
-        hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
-        (data.hoteles || []).forEach(h => {
-          const opt = document.createElement("option");
-          opt.value = h.nombre;
-          opt.textContent = h.nombre;
-          hotelSelect.appendChild(opt);
-        });
-
-        hotelSelect.onchange = () => {
-          const h = (data.hoteles || []).find(x => x.nombre === hotelSelect.value);
-          document.getElementById("info_hotel").value = h ? h.info : "";
-        };
-      }
-    }
-
-    async function guardarCotizacion() {
-      const cotizacion = {
-        numero: codigo,
-        telefono: document.getElementById("telefono").value,
-        destino: document.getElementById("destino").value,
-        fechas: document.getElementById("fechas").value,
-        adultos: parseInt(document.getElementById("adultos").value),
-        ninos: parseInt(document.getElementById("ninos").value),
-        bebes: parseInt(document.getElementById("bebes").value),
-        observaciones: document.getElementById("observaciones").value,
-        duracion: document.getElementById("duracion").value,
-        incluye: document.getElementById("incluye").value,
-        no_incluye: document.getElementById("no_incluye").value,
-        itinerario: document.getElementById("itinerario").value,
-        tours_opcionales: document.getElementById("opcionales").value,
-        politicas: document.getElementById("politicas").value,
-        hotel: document.getElementById("hotel").value,
-        info_hotel: document.getElementById("info_hotel").value
+      hotelSelect.onchange = () => {
+        const h = (data.hoteles || []).find(x => x.nombre === hotelSelect.value);
+        document.getElementById("info_hotel").value = h ? h.info : "";
       };
-      await db.collection("cotizaciones").doc(codigo).set(cotizacion, { merge: true });
-      alert("Cotización guardada correctamente.");
     }
+  }
 
-    window.onload = precargarDatos;
-  </script>
+  async function guardarCotizacion() {
+    const cotizacion = {
+      numero: codigo,
+      telefono: document.getElementById("telefono").value,
+      destino: document.getElementById("destino").value,
+      fechas: document.getElementById("fechas").value,
+      adultos: parseInt(document.getElementById("adultos").value),
+      ninos: parseInt(document.getElementById("ninos").value),
+      bebes: parseInt(document.getElementById("bebes").value),
+      observaciones: document.getElementById("observaciones").value,
+      duracion: document.getElementById("duracion").value,
+      incluye: document.getElementById("incluye").value,
+      no_incluye: document.getElementById("no_incluye").value,
+      itinerario: document.getElementById("itinerario").value,
+      tours_opcionales: document.getElementById("opcionales").value,
+      politicas: document.getElementById("politicas").value,
+      hotel: document.getElementById("hotel").value,
+      info_hotel: document.getElementById("info_hotel").value
+    };
+    await db.collection("cotizaciones").doc(codigo).set(cotizacion, { merge: true });
+    alert("Cotización guardada correctamente.");
+  }
+
+  window.onload = cargarDatosIniciales;
+</script>
+
 </body>
 </html>
