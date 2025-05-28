@@ -203,11 +203,14 @@
       politicas: document.getElementById("politicas").value,
       hotel: document.getElementById("hotel").value,
       info_hotel: document.getElementById("info_hotel").value
-    };
+   try {
     await db.collection("cotizaciones").doc(codigo).set(cotizacion, { merge: true });
-    alert("Cotización guardada correctamente.");
+    alert("✅ Cotización guardada correctamente.");
+  } catch (error) {
+    console.error("Error al guardar la cotización:", error);
+    alert("❌ Error al guardar la cotización.");
   }
-
+}
   window.onload = cargarDatosIniciales;
 </script>
 
