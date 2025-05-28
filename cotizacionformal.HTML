@@ -132,28 +132,52 @@ async function cargarDatosIniciales() {
   document.getElementById("bebes").value = data.bebes || 0;
   document.getElementById("observaciones").value = data.observaciones || "";
  
-  // Asignar campos de tour (se cargan con el destino)
-  await cargarDatosDelTour();
+async function cargarDatosDelTour() {
+  const destino = document.getElementById("destino").value;
+  console.log("🔍 Buscando tour para destino:", destino); // 👈 Depuración
 
-  // Si hay hotel guardado, seleccionarlo
-  if (data.hotel) {
-    document.getElementById("hotel").value = data.hotel;
-    document.getElementById("info_hotel").value = data.info_hotel || "";
+  const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
+
+  if (!tourSnap.empty) {
+    console.log("✅ Tour encontrado:", tourSnap.docs[0].id); // 👈 Depuración
+    const data = tourSnap.docs[0].data();
+
+    document.getElementById("duracion").value = data.duracion || "";
+    document.getElementById("incluye").value = data.incluye || "";
+    document.getElementById("no_incluye").value = data.no_incluye || "";
+    document.getElementById("itinerario").value = data.itinerario_tours || "";
+    document.getElementById("opcionales").value = data.tours_opcionales || "";
+    document.getElementById("politicas").value = data.politicas || "";
+
+    const hotelSelect = document.getElementById("hotel");
+    hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
+
+    const hoteles = data.hoteles || [];
+    hoteles.forEach(h => {
+      const opt = document.createElement("option");
+      opt.value = h.nombre;
+      opt.textContent = h.nombre;
+      hotelSelect.appendChild(opt);
+    });
+
+    hotelSelect.onchange = () => {
+      const hotelSeleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
+      document.getElementById("info_hotel").value = hotelSeleccionado?.info || "";
+    };
+
+    const hotelActual = document.getElementById("info_hotel").value;
+    if (hotelActual) {
+      const h = hoteles.find(h => h.info === hotelActual);
+      if (h) {
+        hotelSelect.value = h.nombre;
+      }
+    }
+
+  } else {
+    console.warn("⚠️ No se encontró información del tour para el destino:", destino); // 👈 Depuración
   }
 }
 
-   async function cargarOpcionesDeDestino() {
-  const destinosSnap = await db.collection("tours").get();
-  const select = document.getElementById("destino");
-  select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
-
-  destinosSnap.forEach(doc => {
-    const opt = document.createElement("option");
-    opt.value = doc.data().nombre;
-    opt.textContent = doc.data().nombre;
-    select.appendChild(opt);
-  });
-}
  document.getElementById("destino").value = data.destino || "";
 
     async function cargarDatosDelTour() {
