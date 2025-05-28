@@ -273,29 +273,7 @@ async function cargarDatosDelDestino(nombreDestino) {
     alert("⚠️ El destino no se encuentra en el catálogo.\n\nDisponibles:\n" + disponibles);
     return;
   }
-async function cargarCotizacionPorNumero() {
-      if (!numeroCotizacion) return alert("Número de cotización no especificado.");
 
-      const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
-      if (snapshot.empty) return alert("Cotización no encontrada.");
-
-      const doc = snapshot.docs[0];
-      const data = doc.data();
-      id = doc.id;
-
-      document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
-      campos.forEach(campo => {
-        const el = document.getElementById(campo);
-        if (el) el.value = data[campo] || '';
-      });
-
-      if (data.manual_override) {
-        document.getElementById("edicionManual").style.display = "block";
-      } else {
-        await cargarDatosDelDestino((data.destino || "").trim());
-      }
-    }
-    
   const tour = snapshot.docs[0].data();
   console.log("Datos del tour encontrados:", tour);
   console.log("INCLUYE:", tour.incluye);
@@ -345,6 +323,28 @@ console.log("politicas:", tour.politicas);
   mostrarToast("✅ Información del destino cargada correctamente.");
 }
         
+    async function cargarCotizacionPorNumero() {
+      if (!numeroCotizacion) return alert("Número de cotización no especificado.");
+
+      const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
+      if (snapshot.empty) return alert("Cotización no encontrada.");
+
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      id = doc.id;
+
+      document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
+      campos.forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) el.value = data[campo] || '';
+      });
+
+      if (data.manual_override) {
+        document.getElementById("edicionManual").style.display = "block";
+      } else {
+        await cargarDatosDelDestino((data.destino || "").trim());
+      }
+    }
     
     function mostrarInfoHotel() {
       const nombreHotel = document.getElementById("hotel").value;
@@ -583,4 +583,5 @@ agregarCampo("Políticas y condiciones", document.getElementById("politicas").va
   </script>
 </body>
 </html>
+
 
