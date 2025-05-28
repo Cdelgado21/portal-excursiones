@@ -339,10 +339,10 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
       });
 
       const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${fechaRegistro.getFullYear()}`;
-      await db.collection("solicitud_cotizaciones").add({
-        numero, telefono, destino, fechas, adultos, ninos, observaciones, embajador,
-        estado: "Pendiente", registro: fechaRegistro, encargado: "", fecha_asignacion: null
-      });
+      await db.collection("solicitud_cotizaciones").doc(numero).set({
+  numero, telefono, destino, fechas, adultos, ninos, observaciones, embajador,
+  estado: "Pendiente", registro: fechaRegistro, encargado: "", fecha_asignacion: null
+});
 
       const asunto = `Excursiones Delgado | Nueva cotización: ${numero}`;
       const cuerpo = `
