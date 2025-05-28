@@ -115,7 +115,7 @@
 
     const params = new URLSearchParams(window.location.search);
     const codigo = params.get("codigo");
-
+};
     async function cargarDatosIniciales() {
   await cargarOpcionesDeDestino(); // solo carga el dropdown sin autocompletar nada
 
@@ -160,6 +160,9 @@ hotelSelect.onchange = () => {
   const h = (tourSnap.docs[0].data().hoteles || []).find(x => x.nombre === hotelSelect.value);
   document.getElementById("info_hotel").value = h ? h.info : "";
 };
+}; // <-- ESTA ERA LA LLAVE FALTANTE
+
+async function cargarOpcionesDeDestino() {
 
 
     async function cargarOpcionesDeDestino() {
