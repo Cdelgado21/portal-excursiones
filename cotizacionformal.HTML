@@ -117,58 +117,45 @@
     const codigo = params.get("codigo");
 
 async function cargarDatosIniciales() {
-  await cargarOpcionesDeDestino(); // Cargamos los destinos para llenar el select
+  await cargarOpcionesDeDestino(); // <--- primero cargamos los destinos
 
-  let snapshot = await db.collection("cotizaciones").doc(codigo).get();
-  let data;
+  const snapshot = await db.collection("cotizaciones").doc(codigo).get();
+  if (!snapshot.exists) return;
 
-  if (snapshot.exists) {
-    data = snapshot.data();
-  } else {
-    snapshot = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-    if (!snapshot.exists) {
-      alert("❌ No se encontró la cotización ni la solicitud.");
-      return;
-    }
-    data = snapshot.data();
-  }
+  const data = snapshot.data();
 
+  // Asignar campos de solicitud
   document.getElementById("telefono").value = data.telefono || "";
   document.getElementById("fechas").value = data.fechas || "";
   document.getElementById("adultos").value = data.adultos || 0;
   document.getElementById("ninos").value = data.ninos || 0;
   document.getElementById("bebes").value = data.bebes || 0;
   document.getElementById("observaciones").value = data.observaciones || "";
+  document.getElementById("destino").value = data.destino || "";
 
-  if (data.destino) {
-    document.getElementById("destino").value = data.destino;
-    await cargarDatosDelTour(); // Esto carga info del tour + hoteles
-  }
+  // Asignar campos de tour (se cargan con el destino)
+  await cargarDatosDelTour();
 
-  // Si el doc ya estaba en cotizaciones, carga lo adicional
-  document.getElementById("duracion").value = data.duracion || "";
-  document.getElementById("incluye").value = data.incluye || "";
-  document.getElementById("no_incluye").value = data.no_incluye || "";
-  document.getElementById("itinerario").value = data.itinerario_tours || "";
-  document.getElementById("opcionales").value = data.tours_opcionales || "";
-  document.getElementById("politicas").value = data.politicas || "";
-
+  // Si hay hotel guardado, seleccionarlo
   if (data.hotel) {
     document.getElementById("hotel").value = data.hotel;
     document.getElementById("info_hotel").value = data.info_hotel || "";
   }
 }
 
-    async function cargarOpcionesDeDestino() {
-      const destinosSnap = await db.collection("tours").get();
-      const select = document.getElementById("destino");
-      destinosSnap.forEach(doc => {
-        const opt = document.createElement("option");
-        opt.value = doc.data().nombre;
-        opt.textContent = doc.data().nombre;
-        select.appendChild(opt);
-      });
-    }
+   async function cargarOpcionesDeDestino() {
+  const destinosSnap = await db.collection("tours").get();
+  const select = document.getElementById("destino");
+  select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
+
+  destinosSnap.forEach(doc => {
+    const opt = document.createElement("option");
+    opt.value = doc.data().nombre;
+    opt.textContent = doc.data().nombre;
+    select.appendChild(opt);
+  });
+}
+
 
     async function cargarDatosDelTour() {
   const destino = document.getElementById("destino").value;
