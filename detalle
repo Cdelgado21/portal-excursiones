@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -67,10 +68,6 @@
     <textarea id="politicas"></textarea>
   </div>
 
-  <div class="buttons">
-    <button onclick="descargarPDF()">Descargar PDF</button>
-  </div>
-
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script>
@@ -104,6 +101,265 @@
         document.getElementById(tab.getAttribute("data-tab")).classList.add("active");
       });
     });
+
+    async function cargarCotizacionPorNumero() {
+      if (!numeroCotizacion) return alert("Número de cotización no especificado.");
+
+      const snapshot = await db.collection("cotizaciones").where("numero", "==", numeroCotizacion).get();
+      if (snapshot.empty) return alert("Cotización no encontrada.");
+
+      const doc = snapshot.docs[0];
+      const data = doc.data();
+      id = doc.id;
+
+      document.getElementById("tituloCotizacion").textContent = `Detalle de Cotización ${data.numero || ''}`;
+      campos.forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) el.value = data[campo] || '';
+      });
+
+      if (data.manual_override) {
+        document.getElementById("edicionManual").style.display = "block";
+      } else {
+        await cargarDatosDelDestino((data.destino || "").trim());
+      }
+    }
+    
+    function mostrarInfoHotel() {
+      const nombreHotel = document.getElementById("hotel").value;
+      const infoDiv = document.getElementById("infoHotelSeleccionado");
+      const hotel = (window.hotelesDelTour || []).find(h => h.nombre === nombreHotel);
+      infoDiv.textContent = hotel ? hotel.info : '';
+    }
+
+    function mostrarToast(mensaje = "✅ Información del tour cargada con éxito") {
+      const toast = document.getElementById("toast");
+      toast.textContent = mensaje;
+      toast.style.display = "block";
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 3500);
+    }
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.getAttribute("data-tab")).classList.add("active");
+      });
+    });
+
+
+    const { jsPDF } = window.jspdf;
+    async function descargarPDF() {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  let margenX = 20;
+  let y = 30;
+
+function verificarEspacioDisponible(doc, espacioNecesario = 30) {
+  const paginaAlturaMax = 280;
+  if (y + espacioNecesario > paginaAlturaMax) {
+    doc.addPage();
+    const fondoExtra = agregarFondo("fondoPagina2");
+    doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
+    y = 30; // reinicia la posición vertical
+  }
+}
+  
+  const agregarFondo = (imgElementId) => {
+    const img = document.getElementById(imgElementId);
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL("image/png");
+  };
+
+  function agregarTituloSeccion(texto, doc, y) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(255, 255, 255);
+    doc.text(texto, 105, y, { align: "center" });
+
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(255, 255, 255);
+    let startX = 30;
+    let endX = 180;
+    let dashLength = 4;
+    let gap = 2;
+    for (let x = startX; x < endX; x += dashLength + gap) {
+      doc.line(x, y + 2.5, x + dashLength, y + 2.5);
+    }
+
+    return y + 10;
+  }
+
+  const fondo1 = agregarFondo("fondoPagina1");
+  doc.addImage(fondo1, 'PNG', 0, 0, 210, 297);
+  const numeroCot = new URLSearchParams(window.location.search).get("codigo");
+  const destinoCot = document.getElementById("destino").value;
+  const lineaResumen = `${numeroCot} | ${destinoCot}`;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(255, 255, 255);
+  doc.text(lineaResumen, 105, 125, { align: "center" });
+
+  const agregarCampo = (label, valor) => {
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+    const texto = doc.splitTextToSize(valor || '-', 180);
+    doc.text(`${label}:`, margenX, y);
+    doc.text(texto, margenX + 40, y);
+    y += texto.length * 7;
+  };
+
+  doc.addPage();
+  const fondo2 = agregarFondo("fondoPagina2");
+  doc.addImage(fondo2, 'PNG', 0, 0, 210, 297);
+  doc.text("Detalle de Cotización", 105, y, { align: "center" });
+
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(255, 255, 255);
+  for (let x = 30; x < 180; x += 6) {
+    doc.line(x, y + 3, x + 4, y + 3);
+  }
+
+  y += 12;
+
+  agregarCampo("Fechas", document.getElementById("fechas").value);
+  agregarCampo("Adultos", document.getElementById("adultos").value);
+  const ninos = document.getElementById("ninos").value.trim();
+  if (ninos) agregarCampo("Niños", ninos);
+  const bebes = document.getElementById("bebes").value.trim();
+  if (bebes) agregarCampo("Bebés", bebes);
+
+  y = agregarTituloSeccion("Itinerario de Vuelos", doc, y);
+  agregarCampo("Vuelo de ida", document.getElementById("vuelo_ida").value);
+  agregarCampo("Vuelo de regreso", document.getElementById("vuelo_vuelta").value);
+  agregarCampo("Equipaje", document.getElementById("equipaje").value);
+
+  y = agregarTituloSeccion("Detalle del tour", doc, y);
+  agregarCampo("Incluye", document.getElementById("incluye").value);
+  agregarCampo("No incluye", document.getElementById("no_incluye").value);
+
+     
+
+  const itinerarioTexto = document.getElementById("itinerario_tours").value || '';
+  const lineas = itinerarioTexto.split("\n").filter(l => l.trim() !== '');
+
+  if (lineas.length > 0) {
+    const headers = [lineas.map((l, i) => `Día ${i + 1}`)];
+    const actividades = [lineas.map(l => (l.split(":")[1] || l).trim())];
+
+    doc.setFontSize(14);
+    doc.text("Itinerario de Tours", 105, y, { align: "center" });
+    y += 6;
+
+   doc.autoTable({
+  startY: y,
+  head: headers,
+  body: actividades,
+  theme: 'grid',
+  styles: {
+    fontSize: 11,
+    halign: 'center',
+    valign: 'middle',
+    cellPadding: 4,
+    textColor: [0, 0, 0],
+  },
+  headStyles: {
+    fillColor: [2, 83, 90],
+    textColor: 255,
+    fontStyle: 'bold',
+  },
+  bodyStyles: {
+    fillColor: [255, 255, 255],
+  },
+  margin: { left: 10, right: 10 },
+  didDrawPage: function (data) {
+    const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+
+    if (currentPage > 2) {
+      const fondoExtra = agregarFondo("fondoPagina2");
+      doc.addImage(fondoExtra, 'PNG', 0, 0, 210, 297);
+    }
+  }
+});
+
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
+  agregarCampo("Tours opcionales", document.getElementById("tours_opcionales").value);
+  agregarCampo("Hotel asignado", document.getElementById("hotel").value);
+  agregarCampo("Descripción del hotel", document.getElementById("infoHotelSeleccionado").innerText);
+
+  verificarEspacioDisponible(doc, 60);
+y = agregarTituloSeccion("Desglose por Persona", doc, y);
+agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
+      y = agregarTituloSeccion("Desglose por Persona", doc, y);
+  agregarCampo("Precio adulto", document.getElementById("precio_adulto").value + " USD");
+  const precioNino = document.getElementById("precio_nino").value.trim();
+  if (precioNino) agregarCampo("Precio niño", precioNino + " USD");
+  const precioBebe = document.getElementById("precio_bebe").value.trim();
+  if (precioBebe) agregarCampo("Precio bebé", precioBebe + " USD");
+  agregarCampo("Total", document.getElementById("total").value + " USD");
+  agregarCampo("Monto de reserva", document.getElementById("monto_reserva").value + " USD");
+      verificarEspacioDisponible(doc, 50);
+agregarCampo("Políticas y condiciones", document.getElementById("politicas").value);
+
+  doc.addPage();
+  const fondoFinal = agregarFondo("fondoPaginaFinal");
+  doc.addImage(fondoFinal, 'PNG', 0, 0, 210, 297);
+
+  const codigo = numeroCot || "COT-XXX-XXXX";
+  const destino = document.getElementById("destino").value || "Destino";
+  const nombreArchivo = `${codigo} | ${destino}.pdf`;
+
+  doc.save(nombreArchivo);
+} // ⬅️ Esta es la llave que te hacía falta para cerrar correctamente la función
+
+
+    function enviarCorreo() {
+      alert("🚧 Funcionalidad de correo pendiente de implementación.");
+    }
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+        document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+        tab.classList.add("active");
+        document.getElementById(tab.getAttribute("data-tab")).classList.add("active");
+      });
+    });
+
+    window.onload = cargarCotizacionPorNumero;
+
+    function mostrarToast(mensaje = "✅ Información cargada con éxito") {
+  const toast = document.getElementById("toast");
+  toast.textContent = mensaje;
+  toast.style.display = "block";
+  setTimeout(() => {
+    toast.style.display = "none";
+  }, 3500);
+}
+
+  function mostrarInfoHotel() {
+    const nombreHotel = document.getElementById("hotel").value;
+    const infoDiv = document.getElementById("infoHotelSeleccionado");
+
+    const hotel = (window.hotelesDelTour || []).find(h => h.nombre === nombreHotel);
+
+    if (hotel) {
+      infoDiv.textContent = hotel.info;
+    } else {
+      infoDiv.textContent = '';
+    }
+  }
+    
   </script>
 </body>
 </html>
+
