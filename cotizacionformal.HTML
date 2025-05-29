@@ -126,7 +126,13 @@ async function cargarDatosIniciales() {
   // Si no existe en "cotizaciones", buscar en "solicitud_cotizaciones"
   if (!snapshot.exists) {
     snapshot = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-    if (!snapshot.exists) return alert("⚠️ No se encontró información de esta cotización.");
+    data = snapshot.data(); // 🔄 Cargar versión formal si existe
+    console.log("✅ Datos cargados desde cotizacionformal");
+  } else {
+    snapshot = await db.collection("cotizaciones").doc(codigo).get();
+    if (!snapshot.exists) return;
+    data = snapshot.data(); // ⏳ Si no hay formal, usar original
+    console.log("ℹ️ Datos cargados desde cotizaciones");
   }
 
   const data = snapshot.data();
@@ -222,7 +228,7 @@ async function cargarDatosIniciales() {
     };
 
     try {
-      await db.collection("cotizaciones").doc(codigo).set(cotizacion, { merge: true });
+      await db.collection("cotizacionformal").doc(codigo).set(cotizacion, { merge: true });
       alert("✅ Cotización guardada correctamente.");
     } catch (error) {
       console.error("Error al guardar la cotización:", error);
