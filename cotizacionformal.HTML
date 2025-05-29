@@ -146,12 +146,14 @@ async function cargarDatosIniciales() {
     document.getElementById("info_hotel").value = data.info_hotel || "";
 
     // Establecer destino y hotel después de cargar las opciones
-    setTimeout(() => {
-      document.getElementById("destino").value = data.destino || "";
-      cargarDatosDelTour().then(() => {
-        document.getElementById("hotel").value = data.hotel || "";
-      });
-    }, 300);
+    document.getElementById("destino").value = data.destino || "";
+await cargarDatosDelTour(); // aseguramos que ya se cargaron los hoteles
+document.getElementById("hotel").value = data.hotel || "";
+
+const hotelSelect = document.getElementById("hotel");
+const eventoCambioHotel = hotelSelect.onchange;
+if (eventoCambioHotel) eventoCambioHotel(); // fuerza a actualizar info del hotel
+
 
     return; // ✅ Ya cargamos, no sigue a solicitud
   }
