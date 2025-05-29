@@ -117,6 +117,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+let cargadoDesdeFormal = false; // ✅ AÑADIR AQUÍ
+
     const params = new URLSearchParams(window.location.search);
     const codigo = params.get("codigo");
     document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
@@ -129,7 +131,7 @@
   const formalSnap = await db.collection("cotizacionformal").doc(codigo).get();
   if (formalSnap.exists) {
     const data = formalSnap.data();
-    console.log("✅ Cargando desde cotizacionformal");
+     cargadoDesdeFormal = true; // ✅ NUEVA LÍNEA
 
     document.getElementById("telefono").value = data.telefono || "";
     document.getElementById("fechas").value = data.fechas || "";
@@ -186,40 +188,50 @@
     }
 
     async function cargarDatosDelTour() {
-      const destino = document.getElementById("destino").value;
-      if (!destino) return;
+  const destino = document.getElementById("destino").value;
+  if (!destino) return;
 
-      const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
-      if (tourSnap.empty) {
-        alert("⚠️ No se encontró información del tour para el destino seleccionado.");
-        return;
-      }
+  const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
+  if (tourSnap.empty) {
+    alert("⚠️ No se encontró información del tour para el destino seleccionado.");
+    return;
+  }
 
-      const data = tourSnap.docs[0].data();
-      document.getElementById("duracion").value = data.duracion || "";
-      document.getElementById("incluye").value = data.incluye || "";
-      document.getElementById("no_incluye").value = data.no_incluye || "";
-      document.getElementById("itinerario").value = data.itinerario_tours || "";
-      document.getElementById("opcionales").value = data.tours_opcionales || "";
-      document.getElementById("politicas").value = data.politicas || "";
+  const data = tourSnap.docs[0].data();
 
-      const hotelSelect = document.getElementById("hotel");
-      hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
+  // ⚠️ Solo llenar los campos si NO se cargó desde cotizacionformal
+  if (!cargadoDesdeFormal) {
+    document.getElementById("duracion").value = data.duracion || "";
+    document.getElementById("incluye").value = data.incluye || "";
+    document.getElementById("no_incluye").value = data.no_incluye || "";
+    document.getElementById("itinerario").value = data.itinerario_tours || "";
+    document.getElementById("opcionales").value = data.tours_opcionales || "";
+    document.getElementById("politicas").value = data.politicas || "";
+  }
 
-      const hoteles = data.hoteles || [];
-      hoteles.forEach(h => {
-        const opt = document.createElement("option");
-        opt.value = h.nombre;
-        opt.textContent = h.nombre;
-        hotelSelect.appendChild(opt);
-      });
+  const hotelSelect = document.getElementById("hotel");
+  hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
 
-      hotelSelect.onchange = () => {
-        const seleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
-        document.getElementById("info_hotel").value = seleccionado?.info || "";
-      };
-    }
+  const hoteles = data.hoteles || [];
+  hoteles.forEach(h => {
+    const opt = document.createElement("option");
+    opt.value = h.nombre;
+    opt.textContent = h.nombre;
+    hotelSelect.appendChild(opt);
+  });
 
+  hotelSelect.onchange = () => {
+    const seleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
+    document.getElementById("info_hotel").value = seleccionado?.info || "";
+  };
+
+  // Si viene desde cotizacionformal, seleccionar hotel específico sin sobrescribir
+  if (cargadoDesdeFormal) {
+    const data = (await db.collection("cotizacionformal").doc(codigo).get()).data();
+    document.getElementById("hotel").value = data.hotel || "";
+    document.getElementById("info_hotel").value = data.info_hotel || "";
+  }
+}
     async function guardarCotizacion() {
       const cotizacion = {
         numero: codigo,
