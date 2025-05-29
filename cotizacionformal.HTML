@@ -105,9 +105,11 @@
   </section>
 
   <button onclick="guardarCotizacion()">Guardar Cotización</button>
+<button onclick="generarPDF()">Generar PDF</button>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -262,6 +264,67 @@ let cargadoDesdeFormal = false; // ✅ AÑADIR AQUÍ
     }
 
     window.onload = cargarDatosIniciales;
+async function generarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const cotizacion = {
+    numero: codigo,
+    telefono: document.getElementById("telefono").value,
+    destino: document.getElementById("destino").value,
+    fechas: document.getElementById("fechas").value,
+    adultos: document.getElementById("adultos").value,
+    ninos: document.getElementById("ninos").value,
+    bebes: document.getElementById("bebes").value,
+    observaciones: document.getElementById("observaciones").value,
+    duracion: document.getElementById("duracion").value,
+    incluye: document.getElementById("incluye").value,
+    no_incluye: document.getElementById("no_incluye").value,
+    itinerario: document.getElementById("itinerario").value,
+    opcionales: document.getElementById("opcionales").value,
+    politicas: document.getElementById("politicas").value,
+    hotel: document.getElementById("hotel").value,
+    info_hotel: document.getElementById("info_hotel").value
+  };
+
+  let y = 10;
+
+  doc.setFontSize(16);
+  doc.text(`Cotización #${cotizacion.numero}`, 10, y);
+  y += 10;
+
+  doc.setFontSize(12);
+  const agregarCampo = (label, valor) => {
+    doc.text(`${label}:`, 10, y);
+    doc.text(String(valor), 50, y);
+    y += 8;
+  };
+
+  agregarCampo("Teléfono", cotizacion.telefono);
+  agregarCampo("Destino", cotizacion.destino);
+  agregarCampo("Fechas", cotizacion.fechas);
+  agregarCampo("Adultos", cotizacion.adultos);
+  agregarCampo("Niños", cotizacion.ninos);
+  agregarCampo("Bebés", cotizacion.bebes);
+  agregarCampo("Duración", cotizacion.duracion);
+  agregarCampo("Hotel", cotizacion.hotel);
+  agregarCampo("Info Hotel", cotizacion.info_hotel);
+
+  y += 6;
+  doc.text("Incluye:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.incluye, 180), 10, y); y += 10;
+  doc.text("No incluye:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.no_incluye, 180), 10, y); y += 10;
+  doc.text("Itinerario:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.itinerario, 180), 10, y); y += 10;
+  doc.text("Tours Opcionales:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.opcionales, 180), 10, y); y += 10;
+  doc.text("Políticas:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.politicas, 180), 10, y); y += 10;
+
+  doc.save(`Cotizacion_${cotizacion.numero}.pdf`);
+}
+
   </script>
 </body>
 </html>
