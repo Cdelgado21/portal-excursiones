@@ -47,7 +47,7 @@
   </style>
 </head>
 <body>
-  <h1>Formulario para Generar Cotización</h1>
+  <h1 id="titulo-cotizacion">Detalle de Cotización</h1>
 
   <section>
     <h2>Información de la Solicitud</h2>
@@ -115,6 +115,7 @@
 
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("codigo");
+document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
 
 async function cargarDatosIniciales() {
   await cargarOpcionesDeDestino();
