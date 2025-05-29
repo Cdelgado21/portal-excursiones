@@ -125,38 +125,7 @@
     async function cargarDatosIniciales() {
       await cargarOpcionesDeDestino();
   
-// 1. Primero revisamos si existe en cotizacionformal
-  const formalSnap = await db.collection("cotizacionformal").doc(codigo).get();
-  if (formalSnap.exists) {
-    const data = formalSnap.data();
-    console.log("✅ Cargando desde cotizacionformal");
-
-    document.getElementById("telefono").value = data.telefono || "";
-    document.getElementById("fechas").value = data.fechas || "";
-    document.getElementById("adultos").value = data.adultos || 0;
-    document.getElementById("ninos").value = data.ninos || 0;
-    document.getElementById("bebes").value = data.bebes || 0;
-    document.getElementById("observaciones").value = data.observaciones || "";
-    document.getElementById("duracion").value = data.duracion || "";
-    document.getElementById("incluye").value = data.incluye || "";
-    document.getElementById("no_incluye").value = data.no_incluye || "";
-    document.getElementById("itinerario").value = data.itinerario_tours || "";
-    document.getElementById("opcionales").value = data.tours_opcionales || "";
-    document.getElementById("politicas").value = data.politicas || "";
-    document.getElementById("info_hotel").value = data.info_hotel || "";
-
-    // Establecer destino y hotel después de cargar las opciones
-    setTimeout(() => {
-      document.getElementById("destino").value = data.destino || "";
-      cargarDatosDelTour().then(() => {
-        document.getElementById("hotel").value = data.hotel || "";
-      });
-    }, 300);
-
- return; // ✅ Ya cargamos, no sigue a solicitud
-  }
-
-      const solicitudSnap = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+     const solicitudSnap = await db.collection("solicitud_cotizaciones").doc(codigo).get();
       if (!solicitudSnap.exists) return alert("❌ No se encontró la solicitud de cotización.");
 
       const solicitud = solicitudSnap.data();
