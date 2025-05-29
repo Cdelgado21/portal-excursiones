@@ -122,37 +122,59 @@
     document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
     document.title = `Cotización ${codigo} | Excursiones Delgado`;
 
-    async function cargarDatosIniciales() {
-      await cargarOpcionesDeDestino();
+async function cargarDatosIniciales() {
+  await cargarOpcionesDeDestino();
 
-      const solicitudSnap = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-      if (!solicitudSnap.exists) return alert("❌ No se encontró la solicitud de cotización.");
+  // 1. Primero revisamos si existe en cotizacionformal
+  const formalSnap = await db.collection("cotizacionformal").doc(codigo).get();
+  if (formalSnap.exists) {
+    const data = formalSnap.data();
+    console.log("✅ Cargando desde cotizacionformal");
 
-      const solicitud = solicitudSnap.data();
+    document.getElementById("telefono").value = data.telefono || "";
+    document.getElementById("fechas").value = data.fechas || "";
+    document.getElementById("adultos").value = data.adultos || 0;
+    document.getElementById("ninos").value = data.ninos || 0;
+    document.getElementById("bebes").value = data.bebes || 0;
+    document.getElementById("observaciones").value = data.observaciones || "";
+    document.getElementById("duracion").value = data.duracion || "";
+    document.getElementById("incluye").value = data.incluye || "";
+    document.getElementById("no_incluye").value = data.no_incluye || "";
+    document.getElementById("itinerario").value = data.itinerario_tours || "";
+    document.getElementById("opcionales").value = data.tours_opcionales || "";
+    document.getElementById("politicas").value = data.politicas || "";
+    document.getElementById("info_hotel").value = data.info_hotel || "";
 
-      document.getElementById("telefono").value = solicitud.telefono || "";
-      document.getElementById("fechas").value = solicitud.fechas || "";
-      document.getElementById("adultos").value = solicitud.adultos || 0;
-      document.getElementById("ninos").value = solicitud.ninos || 0;
-      document.getElementById("bebes").value = solicitud.bebes || 0;
-      document.getElementById("observaciones").value = solicitud.observaciones || "";
-
-      document.getElementById("destino").value = solicitud.destino || "";
-      await cargarDatosDelTour();
-    }
-
-    async function cargarOpcionesDeDestino() {
-      const destinosSnap = await db.collection("tours").get();
-      const select = document.getElementById("destino");
-      select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
-
-      destinosSnap.forEach(doc => {
-        const opt = document.createElement("option");
-        opt.value = doc.data().nombre;
-        opt.textContent = doc.data().nombre;
-        select.appendChild(opt);
+    // Establecer destino y hotel después de cargar las opciones
+    setTimeout(() => {
+      document.getElementById("destino").value = data.destino || "";
+      cargarDatosDelTour().then(() => {
+        document.getElementById("hotel").value = data.hotel || "";
       });
-    }
+    }, 300);
+
+    return; // ✅ Ya cargamos, no sigue a solicitud
+  }
+
+  // 2. Si no hay cotizacion formal, carga desde solicitud_cotizaciones
+  const solicitudSnap = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+  if (!solicitudSnap.exists) return alert("❌ No se encontró la solicitud de cotización.");
+
+  const solicitud = solicitudSnap.data();
+  console.log("ℹ️ Cargando desde solicitud_cotizaciones");
+
+  document.getElementById("telefono").value = solicitud.telefono || "";
+  document.getElementById("fechas").value = solicitud.fechas || "";
+  document.getElementById("adultos").value = solicitud.adultos || 0;
+  document.getElementById("ninos").value = solicitud.ninos || 0;
+  document.getElementById("bebes").value = solicitud.bebes || 0;
+  document.getElementById("observaciones").value = solicitud.observaciones || "";
+
+  setTimeout(() => {
+    document.getElementById("destino").value = solicitud.destino || "";
+    cargarDatosDelTour();
+  }, 300);
+}
 
     async function cargarDatosDelTour() {
       const destino = document.getElementById("destino").value;
