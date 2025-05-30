@@ -52,6 +52,7 @@
 </head>
 <body>
   <h1 id="titulo-cotizacion">Detalle de Cotización</h1>
+
   <section>
     <h2>Información de la Solicitud</h2>
     <label>Teléfono</label>
@@ -78,6 +79,8 @@
 
     <section>
   <h2>Información del Tour</h2>
+  <label>Destino_tour</label>
+  <input id="destino" />
 
   <label>Duración</label>
   <input id="duracion" />
@@ -94,14 +97,15 @@
 <section>
   <h2>Información de Vuelo</h2>
   <label>Aerolínea</label>
-  <select id="aerolinea">
-  <option value="">-- Seleccione una aerolínea --</option>
-  <option value="Avianca">Avianca</option>
-  <option value="Copa Airlines">Copa Airlines</option>
-  <option value="Volaris">Volaris</option>
-  <option value="Wingo">Wingo</option>
-</select>
-  
+  <select id="aerolinea" onchange="mostrarLogoAereolinea()">
+    <option value="">-- Seleccione una aerolínea --</option>
+    <option value="Avianca">Avianca</option>
+    <option value="Copa Airlines">Copa Airlines</option>
+    <option value="Volaris">Volaris</option>
+    <option value="Wingo">Wingo</option>
+  </select>
+  <div id="logo-aerolinea" style="margin-top: 10px;"></div>
+
   <label>Vuelo de Ida</label>
   <textarea id="vuelo_ida"></textarea>
 
@@ -120,25 +124,6 @@
   <textarea id="info_hotel"></textarea>
 </section>
 <section>
-  <h2>Inversión por Viajero</h2>
-<p style="font-style: italic; color: #555;">Todos los precios están expresados en dólares estadounidenses $ (USD)</p>
-
-  <label>Precio por Adulto</label>
-  <input type="number" id="precio_adulto" oninput="calcularTotal()" />
-
-  <label>Precio por Niño</label>
-  <input type="number" id="precio_nino" oninput="calcularTotal()" />
-
-  <label>Precio por Bebé</label>
-  <input type="number" id="precio_bebe" oninput="calcularTotal()" />
-
-    <label><strong>Total General</strong></label>
-  <input type="number" id="total_general" readonly />
-
-<label>Monto de Reserva por Persona</label>
-  <input type="number" id="monto_reserva" />
-</section>
-<section>
   <h2>Tours Opcionales</h2>
   <textarea id="opcionales"></textarea>
 </section>
@@ -153,9 +138,10 @@
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const firebaseConfig = {
+    
+const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
       projectId: "tours-460717"
@@ -163,7 +149,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let cargadoDesdeFormal = false;
+let cargadoDesdeFormal = false; // ✅ AÑADIR AQUÍ
+
     const params = new URLSearchParams(window.location.search);
     const codigo = params.get("codigo");
     document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
@@ -171,23 +158,59 @@
 
     async function cargarDatosIniciales() {
       await cargarOpcionesDeDestino();
-      const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
-      if (docFormal.exists) {
-        cargadoDesdeFormal = true;
-     rellenarDesdeFormal(docFormal.data());
-        setTimeout(() => cargarDatosDelTour(docFormal.data().destino), 300);
-        return;
-      }
-      const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-      if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
-     rellenarDesdeSolicitud(docSolicitud.data());
-      setTimeout(() => cargarDatosDelTour(docSolicitud.data().destino), 300);
+  
+// 1. Primero revisamos si existe en cotizacionformal
+  const formalSnap = await db.collection("cotizacionformal").doc(codigo).get();
+  if (formalSnap.exists) {
+    const data = formalSnap.data();
+     cargadoDesdeFormal = true; // ✅ NUEVA LÍNEA
+
+    document.getElementById("telefono").value = data.telefono || "";
+    document.getElementById("fechas").value = data.fechas || "";
+    document.getElementById("adultos").value = data.adultos || 0;
+    document.getElementById("ninos").value = data.ninos || 0;
+    document.getElementById("bebes").value = data.bebes || 0;
+    document.getElementById("observaciones").value = data.observaciones || "";
+    document.getElementById("duracion").value = data.duracion || "";
+    document.getElementById("incluye").value = data.incluye || "";
+    document.getElementById("no_incluye").value = data.no_incluye || "";
+    document.getElementById("itinerario").value = data.itinerario_tours || "";
+    document.getElementById("opcionales").value = data.tours_opcionales || "";
+    document.getElementById("politicas").value = data.politicas || "";
+    document.getElementById("info_hotel").value = data.info_hotel || "";
+
+    // Establecer destino y hotel después de cargar las opciones
+    setTimeout(() => {
+      document.getElementById("destino").value = data.destino || "";
+      cargarDatosDelTour().then(() => {
+        document.getElementById("hotel").value = data.hotel || "";
+      });
+    }, 300);
+
+ return; // ✅ Ya cargamos, no sigue a solicitud
+  }
+
+      const solicitudSnap = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+      if (!solicitudSnap.exists) return alert("❌ No se encontró la solicitud de cotización.");
+
+      const solicitud = solicitudSnap.data();
+
+      document.getElementById("telefono").value = solicitud.telefono || "";
+      document.getElementById("fechas").value = solicitud.fechas || "";
+      document.getElementById("adultos").value = solicitud.adultos || 0;
+      document.getElementById("ninos").value = solicitud.ninos || 0;
+      document.getElementById("bebes").value = solicitud.bebes || 0;
+      document.getElementById("observaciones").value = solicitud.observaciones || "";
+
+      document.getElementById("destino").value = solicitud.destino || "";
+      await cargarDatosDelTour();
     }
 
     async function cargarOpcionesDeDestino() {
       const destinosSnap = await db.collection("tours").get();
       const select = document.getElementById("destino");
       select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
+
       destinosSnap.forEach(doc => {
         const opt = document.createElement("option");
         opt.value = doc.data().nombre;
@@ -196,47 +219,141 @@
       });
     }
 
-    async function cargarDatosDelTour(destino) {
-      if (!destino) return;
-      const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
-      if (tourSnap.empty) return alert("⚠️ No se encontró información del tour para el destino seleccionado.");
-      const data = tourSnap.docs[0].data();
-      if (!cargadoDesdeFormal) rellenarCampos(data);
-      const hotelSelect = document.getElementById("hotel");
-      hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
-      (data.hoteles || []).forEach(h => {
-        const opt = document.createElement("option");
-        opt.value = h.nombre;
-        opt.textContent = h.nombre;
-        hotelSelect.appendChild(opt);
-      });
-      hotelSelect.onchange = () => {
-        const seleccionado = (data.hoteles || []).find(h => h.nombre === hotelSelect.value);
-        document.getElementById("info_hotel").value = seleccionado?.info || "";
+    async function cargarDatosDelTour() {
+  const destino = document.getElementById("destino").value;
+  if (!destino) return;
+
+  const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
+  if (tourSnap.empty) {
+    alert("⚠️ No se encontró información del tour para el destino seleccionado.");
+    return;
+  }
+
+  const data = tourSnap.docs[0].data();
+
+  // ⚠️ Solo llenar los campos si NO se cargó desde cotizacionformal
+  if (!cargadoDesdeFormal) {
+    document.getElementById("duracion").value = data.duracion || "";
+    document.getElementById("incluye").value = data.incluye || "";
+    document.getElementById("no_incluye").value = data.no_incluye || "";
+    document.getElementById("itinerario").value = data.itinerario_tours || "";
+    document.getElementById("opcionales").value = data.tours_opcionales || "";
+    document.getElementById("politicas").value = data.politicas || "";
+  }
+
+  const hotelSelect = document.getElementById("hotel");
+  hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
+
+  const hoteles = data.hoteles || [];
+  hoteles.forEach(h => {
+    const opt = document.createElement("option");
+    opt.value = h.nombre;
+    opt.textContent = h.nombre;
+    hotelSelect.appendChild(opt);
+  });
+
+  hotelSelect.onchange = () => {
+    const seleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
+    document.getElementById("info_hotel").value = seleccionado?.info || "";
+  };
+
+  // Si viene desde cotizacionformal, seleccionar hotel específico sin sobrescribir
+  if (cargadoDesdeFormal) {
+    const data = (await db.collection("cotizacionformal").doc(codigo).get()).data();
+    document.getElementById("hotel").value = data.hotel || "";
+    document.getElementById("info_hotel").value = data.info_hotel || "";
+  }
+}
+     async function guardarCotizacion() {
+      const codigo = new URLSearchParams(window.location.search).get("codigo");
+      const cotizacion = {
+        destino: document.getElementById("destino").value,
+        duracion: document.getElementById("duracion").value,
+        incluye: document.getElementById("incluye").value,
+        no_incluye: document.getElementById("no_incluye").value,
+        itinerario: document.getElementById("itinerario").value,
+        aerolinea: document.getElementById("aerolinea").value,
+        vuelo_ida: document.getElementById("vuelo_ida").value,
+        vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
+        equipaje: document.getElementById("equipaje").value,
+        hotel: document.getElementById("hotel").value,
+        info_hotel: document.getElementById("info_hotel").value,
+        opcionales: document.getElementById("opcionales").value,
+        politicas: document.getElementById("politicas").value,
+        timestamp: new Date()
       };
+
+      try {
+        await db.collection("cotizacionformal").doc(codigo).set(cotizacion, { merge: true });
+        alert("✅ Cotización formal guardada correctamente.");
+      } catch (error) {
+        console.error("❌ Error al guardar:", error);
+        alert("❌ Error al guardar la cotización formal.");
+      }
     }
 
-    function rellenarDesdeFormal(data) {
-  document.getElementById("telefono").value = data.telefono || "";
-  document.getElementById("fechas").value = data.fechas || "";
-  document.getElementById("adultos").value = data.adultos || 0;
-  document.getElementById("ninos").value = data.ninos || 0;
-  document.getElementById("bebes").value = data.bebes || 0;
-  document.getElementById("observaciones").value = data.observaciones || "";
-  document.getElementById("destino").value = data.destino || "";
-}
-
-function rellenarDesdeSolicitud(data) {
-  document.getElementById("telefono").value = data.telefono || "";
-  document.getElementById("fechas").value = data.fechas || "";
-  document.getElementById("adultos").value = data.adultos || 0;
-  document.getElementById("ninos").value = data.ninos || 0;
-  document.getElementById("bebes").value = data.bebes || 0;
-  document.getElementById("observaciones").value = data.observaciones || "";
-  document.getElementById("destino").value = data.destino || "";
-}
-
     window.onload = cargarDatosIniciales;
+async function generarPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  const cotizacion = {
+    numero: codigo,
+    telefono: document.getElementById("telefono").value,
+    destino: document.getElementById("destino").value,
+    fechas: document.getElementById("fechas").value,
+    adultos: document.getElementById("adultos").value,
+    ninos: document.getElementById("ninos").value,
+    bebes: document.getElementById("bebes").value,
+    observaciones: document.getElementById("observaciones").value,
+    duracion: document.getElementById("duracion").value,
+    incluye: document.getElementById("incluye").value,
+    no_incluye: document.getElementById("no_incluye").value,
+    itinerario: document.getElementById("itinerario").value,
+    opcionales: document.getElementById("opcionales").value,
+    politicas: document.getElementById("politicas").value,
+    hotel: document.getElementById("hotel").value,
+    info_hotel: document.getElementById("info_hotel").value
+  };
+
+  let y = 10;
+
+  doc.setFontSize(16);
+  doc.text(`Cotización #${cotizacion.numero}`, 10, y);
+  y += 10;
+
+  doc.setFontSize(12);
+  const agregarCampo = (label, valor) => {
+    doc.text(`${label}:`, 10, y);
+    doc.text(String(valor), 50, y);
+    y += 8;
+  };
+
+  agregarCampo("Teléfono", cotizacion.telefono);
+  agregarCampo("Destino", cotizacion.destino);
+  agregarCampo("Fechas", cotizacion.fechas);
+  agregarCampo("Adultos", cotizacion.adultos);
+  agregarCampo("Niños", cotizacion.ninos);
+  agregarCampo("Bebés", cotizacion.bebes);
+  agregarCampo("Duración", cotizacion.duracion);
+  agregarCampo("Hotel", cotizacion.hotel);
+  agregarCampo("Info Hotel", cotizacion.info_hotel);
+
+  y += 6;
+  doc.text("Incluye:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.incluye, 180), 10, y); y += 10;
+  doc.text("No incluye:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.no_incluye, 180), 10, y); y += 10;
+  doc.text("Itinerario:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.itinerario, 180), 10, y); y += 10;
+  doc.text("Tours Opcionales:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.opcionales, 180), 10, y); y += 10;
+  doc.text("Políticas:", 10, y); y += 6;
+  doc.text(doc.splitTextToSize(cotizacion.politicas, 180), 10, y); y += 10;
+
+  doc.save(`Cotizacion_${cotizacion.numero}.pdf`);
+}
+
   </script>
 </body>
 </html>
