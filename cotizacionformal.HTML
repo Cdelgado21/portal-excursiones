@@ -204,9 +204,12 @@ rellenarCampos(docSolicitud.data());
       select.appendChild(opt);
   });
   }
+let cargadoDesdeFormal = false;
+let hotelGuardado = null;
+
   async function cargarDatosDelTour() {
     const destino = document.getElementById("destino").value;
-    if (!destino || cargadoDesdeFormal) return;
+    if (!destino || (cargadoDesdeFormal && hotelGuardado)) return;
 
     const snap = await db.collection("tours").where("nombre", "==", destino).get();
     if (snap.empty) return;
@@ -244,9 +247,21 @@ function rellenarCampos(data) {
       const campo = document.getElementById(key);
       if (campo) campo.value = data[key];
   }
-cargarDatosDelTour();
-    }
+ if (data.hotel) {
+    hotelGuardado = {
+      nombre: data.hotel,
+      info: data.info_hotel || ""
+    };
 
+    const hotelSelect = document.getElementById("hotel");
+    hotelSelect.innerHTML = `<option value="${hotelGuardado.nombre}">${hotelGuardado.nombre}</option>`;
+    hotelSelect.value = hotelGuardado.nombre;
+
+    document.getElementById("info_hotel").value = hotelGuardado.info;
+  }
+
+  cargarDatosDelTour(); // se ejecuta después para evitar sobreescribir
+}
   function calcularTotal() {
     const a = parseFloat(document.getElementById("precio_adulto").value) || 0;
     const n = parseFloat(document.getElementById("precio_nino").value) || 0;
