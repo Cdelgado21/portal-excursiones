@@ -222,7 +222,7 @@ rellenarCampos(docSolicitud.data());
 
     const hotelSelect = document.getElementById("hotel");
     hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
-    const hoteles = data.hoteles || [];
+   const hoteles = Object.values(data.hoteles || {});
     hoteles.forEach(h => {
       const opt = document.createElement("option");
       opt.value = h.nombre;
