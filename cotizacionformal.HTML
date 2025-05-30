@@ -180,7 +180,7 @@
       }
       const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
       if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
-      rellenarCampos(docSolicitud.data());
+     rellenarDesdeSolicitud(docSolicitud.data());
       setTimeout(() => cargarDatosDelTour(docSolicitud.data().destino), 300);
     }
 
@@ -216,12 +216,16 @@
       };
     }
 
-    function rellenarCampos(data) {
-      for (const key in data) {
-        const field = document.getElementById(key);
-        if (field) field.value = data[key];
-      }
-    }
+    function rellenarDesdeSolicitud(data) {
+  document.getElementById("telefono").value = data.telefono || "";
+  document.getElementById("fechas").value = data.fechas || "";
+  document.getElementById("adultos").value = data.adultos || 0;
+  document.getElementById("ninos").value = data.ninos || 0;
+  document.getElementById("bebes").value = data.bebes || 0;
+  document.getElementById("observaciones").value = data.observaciones || "";
+  document.getElementById("destino").value = data.destino || "";
+}
+
 
     window.onload = cargarDatosIniciales;
   </script>
