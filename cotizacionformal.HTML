@@ -82,71 +82,195 @@
     <label>Itinerario</label>
     <textarea id="itinerario" readonly></textarea>
   </section>
+<section>
+  <h2>Vuelo y Hotel</h2>
+  <label>Aerolínea</label>
+  <select id="aerolinea">
+    <option value="">-- Seleccione una aerolínea --</option>
+    <option value="Avianca">Avianca</option>
+    <option value="Copa Airlines">Copa Airlines</option>
+    <option value="Volaris">Volaris</option>
+    <option value="Wingo">Wingo</option>
+  </select>
+
+  <label>Vuelo de Ida</label>
+  <textarea id="vuelo_ida"></textarea>
+
+  <label>Vuelo de Regreso</label>
+  <textarea id="vuelo_vuelta"></textarea>
+
+  <label>Equipaje</label>
+  <textarea id="equipaje"></textarea>
+
+  <label>Hotel</label>
+  <select id="hotel"></select>
+
+  <label>Información del Hotel</label>
+  <textarea id="info_hotel"></textarea>
+</section>
+
+<section>
+  <h2>Inversión por Viajero</h2>
+  <label>Precio por Adulto</label>
+  <input type="number" id="precio_adulto" oninput="calcularTotal()" />
+
+  <label>Precio por Niño</label>
+  <input type="number" id="precio_nino" oninput="calcularTotal()" />
+
+  <label>Precio por Bebé</label>
+  <input type="number" id="precio_bebe" oninput="calcularTotal()" />
+
+  <label>Total General</label>
+  <input type="number" id="total_general" readonly />
+
+  <label>Monto de Reserva por Persona</label>
+  <input type="number" id="monto_reserva" />
+</section>
+
+<section>
+  <h2>Tours Opcionales</h2>
+  <textarea id="opcionales"></textarea>
+</section>
+
+<section>
+  <h2>Políticas y Condiciones Generales</h2>
+  <textarea id="politicas"></textarea>
+</section>
+
+<!-- Agrega botón de guardar si aún no lo tienes -->
+<button onclick="guardarCotizacion()">Guardar Cotización</button>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
+ <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let cargadoDesdeFormal = false;
+  const params = new URLSearchParams(window.location.search);
+  const codigo = params.get("codigo");
+
+  document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
+
+  async function cargarDatosIniciales() {
+    await cargarOpcionesDeDestino();
+    const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
+    if (docFormal.exists) {
+      cargadoDesdeFormal = true;
+      rellenarCampos(docFormal.data());
+      cargarDatosDelTour();
+      return;
+    }
+    const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+    if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
+    rellenarCampos(docSolicitud.data());
+    cargarDatosDelTour();
+  }
+
+  async function cargarOpcionesDeDestino() {
+    const destinosSnap = await db.collection("tours").get();
+    const select = document.getElementById("destino");
+    select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
+    destinosSnap.forEach(doc => {
+      const opt = document.createElement("option");
+      opt.value = doc.data().nombre;
+      opt.textContent = doc.data().nombre;
+      select.appendChild(opt);
+    });
+  }
+
+  async function cargarDatosDelTour() {
+    const destino = document.getElementById("destino").value;
+    if (!destino || cargadoDesdeFormal) return;
+
+    const snap = await db.collection("tours").where("nombre", "==", destino).get();
+    if (snap.empty) return;
+
+    const data = snap.docs[0].data();
+    document.getElementById("duracion").value = data.duracion || "";
+    document.getElementById("incluye").value = data.incluye || "";
+    document.getElementById("no_incluye").value = data.no_incluye || "";
+    document.getElementById("itinerario").value = data.itinerario_tours || "";
+    document.getElementById("opcionales").value = data.tours_opcionales || "";
+    document.getElementById("politicas").value = data.politicas || "";
+
+    const hotelSelect = document.getElementById("hotel");
+    hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
+    const hoteles = data.hoteles || [];
+    hoteles.forEach(h => {
+      const opt = document.createElement("option");
+      opt.value = h.nombre;
+      opt.textContent = h.nombre;
+      hotelSelect.appendChild(opt);
+    });
+    hotelSelect.onchange = () => {
+      const seleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
+      document.getElementById("info_hotel").value = seleccionado?.info || "";
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  }
 
-    const params = new URLSearchParams(window.location.search);
-    const codigo = params.get("codigo");
-    document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
-    document.title = `Cotización ${codigo} | Excursiones Delgado`;
-
-    async function cargarDatosIniciales() {
-      await cargarOpcionesDeDestino();
-
-      const docSnap = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-      if (!docSnap.exists) {
-        alert("❌ No se encontró la solicitud de cotización.");
-        return;
-      }
-
-      const data = docSnap.data();
-      document.getElementById("telefono").value = data.telefono || "";
-      document.getElementById("fechas").value = data.fechas || "";
-      document.getElementById("adultos").value = data.adultos || 0;
-      document.getElementById("ninos").value = data.ninos || 0;
-      document.getElementById("bebes").value = data.bebes || 0;
-      document.getElementById("observaciones").value = data.observaciones || "";
-
-      document.getElementById("destino").value = data.destino || "";
-      await cargarDatosDelTour();
+  function rellenarCampos(data) {
+    for (const key in data) {
+      const campo = document.getElementById(key);
+      if (campo) campo.value = data[key];
     }
+  }
 
-    async function cargarOpcionesDeDestino() {
-      const destinosSnap = await db.collection("tours").get();
-      const select = document.getElementById("destino");
-      select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
-      destinosSnap.forEach(doc => {
-        const opt = document.createElement("option");
-        opt.value = doc.data().nombre;
-        opt.textContent = doc.data().nombre;
-        select.appendChild(opt);
-      });
+  function calcularTotal() {
+    const a = parseFloat(document.getElementById("precio_adulto").value) || 0;
+    const n = parseFloat(document.getElementById("precio_nino").value) || 0;
+    const b = parseFloat(document.getElementById("precio_bebe").value) || 0;
+    const ca = parseInt(document.getElementById("adultos").value) || 0;
+    const cn = parseInt(document.getElementById("ninos").value) || 0;
+    const cb = parseInt(document.getElementById("bebes").value) || 0;
+    document.getElementById("total_general").value = (a * ca + n * cn + b * cb).toFixed(2);
+  }
+
+  async function guardarCotizacion() {
+    const data = {
+      telefono: document.getElementById("telefono").value,
+      destino: document.getElementById("destino").value,
+      fechas: document.getElementById("fechas").value,
+      adultos: parseInt(document.getElementById("adultos").value) || 0,
+      ninos: parseInt(document.getElementById("ninos").value) || 0,
+      bebes: parseInt(document.getElementById("bebes").value) || 0,
+      observaciones: document.getElementById("observaciones").value,
+      duracion: document.getElementById("duracion").value,
+      incluye: document.getElementById("incluye").value,
+      no_incluye: document.getElementById("no_incluye").value,
+      itinerario_tours: document.getElementById("itinerario").value,
+      aerolinea: document.getElementById("aerolinea").value,
+      vuelo_ida: document.getElementById("vuelo_ida").value,
+      vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
+      equipaje: document.getElementById("equipaje").value,
+      hotel: document.getElementById("hotel").value,
+      info_hotel: document.getElementById("info_hotel").value,
+      precio_adulto: parseFloat(document.getElementById("precio_adulto").value) || 0,
+      precio_nino: parseFloat(document.getElementById("precio_nino").value) || 0,
+      precio_bebe: parseFloat(document.getElementById("precio_bebe").value) || 0,
+      total_general: parseFloat(document.getElementById("total_general").value) || 0,
+      monto_reserva: parseFloat(document.getElementById("monto_reserva").value) || 0,
+      tours_opcionales: document.getElementById("opcionales").value,
+      politicas: document.getElementById("politicas").value,
+      timestamp: new Date()
+    };
+
+    try {
+      await db.collection("cotizacionformal").doc(codigo).set(data, { merge: true });
+      alert("✅ Cotización guardada correctamente.");
+    } catch (err) {
+      console.error("❌ Error al guardar:", err);
+      alert("❌ No se pudo guardar.");
     }
+  }
 
-    async function cargarDatosDelTour() {
-      const destino = document.getElementById("destino").value;
-      if (!destino) return;
-
-      const snap = await db.collection("tours").where("nombre", "==", destino).get();
-      if (snap.empty) return;
-
-      const data = snap.docs[0].data();
-      document.getElementById("duracion").value = data.duracion || "";
-      document.getElementById("incluye").value = data.incluye || "";
-      document.getElementById("no_incluye").value = data.no_incluye || "";
-      document.getElementById("itinerario").value = data.itinerario_tours || "";
-    }
-
-    window.onload = cargarDatosIniciales;
+  window.onload = cargarDatosIniciales;
   </script>
+
 </body>
 </html>
