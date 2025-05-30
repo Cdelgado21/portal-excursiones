@@ -174,7 +174,7 @@
       const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
       if (docFormal.exists) {
         cargadoDesdeFormal = true;
-        rellenarCampos(docFormal.data());
+     rellenarDesdeSolicitud(docSolicitud.data());
         setTimeout(() => cargarDatosDelTour(docFormal.data().destino), 300);
         return;
       }
