@@ -92,128 +92,72 @@
     <textarea id="itinerario"></textarea>
   </section>
 
-  <section>
-    <h2>Vuelo y Hotel</h2>
-    <label>Aerolínea</label>
-    <select id="aerolinea">
-      <option value="">-- Seleccione una aerolínea --</option>
-      <option value="Avianca">Avianca</option>
-      <option value="Copa Airlines">Copa Airlines</option>
-      <option value="Volaris">Volaris</option>
-      <option value="Wingo">Wingo</option>
-    </select>
-
-    <label>Vuelo de Ida</label>
-    <textarea id="vuelo_ida"></textarea>
-
-    <label>Vuelo de Regreso</label>
-    <textarea id="vuelo_vuelta"></textarea>
-
-    <label>Equipaje</label>
-    <textarea id="equipaje"></textarea>
-
-    <label>Hotel</label>
-    <select id="hotel"></select>
-
-    <label>Información del Hotel</label>
-    <textarea id="info_hotel"></textarea>
-  </section>
-
-  <section>
-    <h2>Inversión por Viajero</h2>
-    <label>Precio por Adulto</label>
-    <input type="number" id="precio_adulto" oninput="calcularTotal()" />
-
-    <label>Precio por Niño</label>
-    <input type="number" id="precio_nino" oninput="calcularTotal()" />
-
-    <label>Precio por Bebé</label>
-    <input type="number" id="precio_bebe" oninput="calcularTotal()" />
-
-    <label>Total General</label>
-    <input type="number" id="total_general" readonly />
-
-    <label>Monto de Reserva por Persona</label>
-    <input type="number" id="monto_reserva" />
-  </section>
-
-  <section>
-    <h2>Tours Opcionales</h2>
-    <textarea id="opcionales"></textarea>
-  </section>
-
-  <section>
-    <h2>Políticas y Condiciones Generales</h2>
-    <textarea id="politicas"></textarea>
-  </section>
-
-  <button onclick="guardarCotizacion()">Guardar Cotización</button>
-
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script>
-    
-  const firebaseConfig = {
-    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-    authDomain: "tours-460717.firebaseapp.com",
-    projectId: "tours-460717"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-  let cargadoDesdeFormal = false;
-  const params = new URLSearchParams(window.location.search);
-  const codigo = params.get("codigo");
-  document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
-  document.title = `Cotización ${codigo} | Excursiones Delgado`;
+    const params = new URLSearchParams(window.location.search);
+    const codigo = params.get("codigo");
+    const titulo = document.getElementById("titulo-cotizacion");
+    titulo.textContent = `Detalle de Cotización ${codigo}`;
+    document.title = `Cotización ${codigo} | Excursiones Delgado`;
 
-  async function cargarDatosIniciales() {
-    await cargarOpcionesDeDestino();
-    const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
-    if (docFormal.exists) {
-      cargadoDesdeFormal = true;
-      rellenarCampos(docFormal.data());
+    let cargadoDesdeFormal = false;
+
+    async function cargarDatosIniciales() {
+      await cargarOpcionesDeDestino();
+      const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
+      if (docFormal.exists) {
+        cargadoDesdeFormal = true;
+        rellenarCampos(docFormal.data());
+        cargarDatosDelTour();
+        return;
+      }
+      const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+      if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
+      rellenarCampos(docSolicitud.data());
       cargarDatosDelTour();
-      return;
     }
-    const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-    if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
-    rellenarCampos(docSolicitud.data());
-    cargarDatosDelTour();
-  }
 
-  async function cargarOpcionesDeDestino() {
-    const destinosSnap = await db.collection("tours").get();
-    const select = document.getElementById("destino");
-    select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
-    destinosSnap.forEach(doc => {
-      const opt = document.createElement("option");
-      opt.value = doc.data().nombre;
-      opt.textContent = doc.data().nombre;
-      select.appendChild(opt);
-    });
-  }
-
-  async function cargarDatosDelTour() {
-    const destino = document.getElementById("destino").value;
-    if (!destino || cargadoDesdeFormal) return;
-    const snap = await db.collection("tours").where("nombre", "==", destino).get();
-    if (snap.empty) return;
-    const data = snap.docs[0].data();
-    document.getElementById("duracion").value = data.duracion || "";
-    document.getElementById("incluye").value = data.incluye || "";
-    document.getElementById("no_incluye").value = data.no_incluye || "";
-    document.getElementById("itinerario").value = data.itinerario_tours || "";
-  }
-
-  function rellenarCampos(data) {
-    for (const key in data) {
-      const campo = document.getElementById(key);
-      if (campo) campo.value = data[key];
+    async function cargarOpcionesDeDestino() {
+      const destinosSnap = await db.collection("tours").get();
+      const select = document.getElementById("destino");
+      select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
+      destinosSnap.forEach(doc => {
+        const opt = document.createElement("option");
+        opt.value = doc.data().nombre;
+        opt.textContent = doc.data().nombre;
+        select.appendChild(opt);
+      });
     }
-  }
 
-  window.onload = cargarDatosIniciales;
+    async function cargarDatosDelTour() {
+      const destino = document.getElementById("destino").value;
+      if (!destino || cargadoDesdeFormal) return;
+      const snap = await db.collection("tours").where("nombre", "==", destino).get();
+      if (snap.empty) return;
+      const data = snap.docs[0].data();
+      document.getElementById("duracion").value = data.duracion || "";
+      document.getElementById("incluye").value = data.incluye || "";
+      document.getElementById("no_incluye").value = data.no_incluye || "";
+      document.getElementById("itinerario").value = data.itinerario_tours || "";
+    }
+
+    function rellenarCampos(data) {
+      for (const key in data) {
+        const campo = document.getElementById(key);
+        if (campo) campo.value = data[key];
+      }
+    }
+
+    window.onload = cargarDatosIniciales;
   </script>
 </body>
 </html>
