@@ -32,15 +32,6 @@
       border: 1px solid #ccc;
       border-radius: 5px;
     }
-    button {
-      margin-top: 20px;
-      background-color: #02535a;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
     section {
       margin-bottom: 30px;
       padding: 20px;
@@ -80,16 +71,16 @@
   <section>
     <h2>Información del Tour</h2>
     <label>Duración</label>
-    <input id="duracion" />
+    <input id="duracion" readonly />
 
     <label>Incluye</label>
-    <textarea id="incluye"></textarea>
+    <textarea id="incluye" readonly></textarea>
 
     <label>No incluye</label>
-    <textarea id="no_incluye"></textarea>
+    <textarea id="no_incluye" readonly></textarea>
 
     <label>Itinerario</label>
-    <textarea id="itinerario"></textarea>
+    <textarea id="itinerario" readonly></textarea>
   </section>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -105,25 +96,28 @@
 
     const params = new URLSearchParams(window.location.search);
     const codigo = params.get("codigo");
-    const titulo = document.getElementById("titulo-cotizacion");
-    titulo.textContent = `Detalle de Cotización ${codigo}`;
+    document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
     document.title = `Cotización ${codigo} | Excursiones Delgado`;
-
-    let cargadoDesdeFormal = false;
 
     async function cargarDatosIniciales() {
       await cargarOpcionesDeDestino();
-      const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
-      if (docFormal.exists) {
-        cargadoDesdeFormal = true;
-        rellenarCampos(docFormal.data());
-        cargarDatosDelTour();
+
+      const docSnap = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+      if (!docSnap.exists) {
+        alert("❌ No se encontró la solicitud de cotización.");
         return;
       }
-      const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-      if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
-      rellenarCampos(docSolicitud.data());
-      cargarDatosDelTour();
+
+      const data = docSnap.data();
+      document.getElementById("telefono").value = data.telefono || "";
+      document.getElementById("fechas").value = data.fechas || "";
+      document.getElementById("adultos").value = data.adultos || 0;
+      document.getElementById("ninos").value = data.ninos || 0;
+      document.getElementById("bebes").value = data.bebes || 0;
+      document.getElementById("observaciones").value = data.observaciones || "";
+
+      document.getElementById("destino").value = data.destino || "";
+      await cargarDatosDelTour();
     }
 
     async function cargarOpcionesDeDestino() {
@@ -140,21 +134,16 @@
 
     async function cargarDatosDelTour() {
       const destino = document.getElementById("destino").value;
-      if (!destino || cargadoDesdeFormal) return;
+      if (!destino) return;
+
       const snap = await db.collection("tours").where("nombre", "==", destino).get();
       if (snap.empty) return;
+
       const data = snap.docs[0].data();
       document.getElementById("duracion").value = data.duracion || "";
       document.getElementById("incluye").value = data.incluye || "";
       document.getElementById("no_incluye").value = data.no_incluye || "";
       document.getElementById("itinerario").value = data.itinerario_tours || "";
-    }
-
-    function rellenarCampos(data) {
-      for (const key in data) {
-        const campo = document.getElementById(key);
-        if (campo) campo.value = data[key];
-      }
     }
 
     window.onload = cargarDatosIniciales;
