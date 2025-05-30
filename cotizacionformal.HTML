@@ -275,24 +275,23 @@ let cargadoDesdeFormal = false; // ✅ AÑADIR AQUÍ
     document.getElementById("info_hotel").value = data.info_hotel || "";
   }
 }
-    async function guardarCotizacion() {
+     async function guardarCotizacion() {
+      const codigo = new URLSearchParams(window.location.search).get("codigo");
       const cotizacion = {
-        numero: codigo,
-        telefono: document.getElementById("telefono").value,
         destino: document.getElementById("destino").value,
-        fechas: document.getElementById("fechas").value,
-        adultos: parseInt(document.getElementById("adultos").value),
-        ninos: parseInt(document.getElementById("ninos").value),
-        bebes: parseInt(document.getElementById("bebes").value),
-        observaciones: document.getElementById("observaciones").value,
         duracion: document.getElementById("duracion").value,
         incluye: document.getElementById("incluye").value,
         no_incluye: document.getElementById("no_incluye").value,
-        itinerario_tours: document.getElementById("itinerario").value,
-        tours_opcionales: document.getElementById("opcionales").value,
-        politicas: document.getElementById("politicas").value,
+        itinerario: document.getElementById("itinerario").value,
+        aerolinea: document.getElementById("aerolinea").value,
+        vuelo_ida: document.getElementById("vuelo_ida").value,
+        vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
+        equipaje: document.getElementById("equipaje").value,
         hotel: document.getElementById("hotel").value,
-        info_hotel: document.getElementById("info_hotel").value
+        info_hotel: document.getElementById("info_hotel").value,
+        opcionales: document.getElementById("opcionales").value,
+        politicas: document.getElementById("politicas").value,
+        timestamp: new Date()
       };
 
       try {
