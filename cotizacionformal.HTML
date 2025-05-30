@@ -104,8 +104,8 @@
     <option value="Volaris">Volaris</option>
     <option value="Wingo">Wingo</option>
   </select>
-  <div id="logo-aerolinea" style="margin-top: 10px;"></div>
-
+  <img id="logo-aerolinea" src="" alt="" style="height: 25px; display: none;" />
+</div>
   <label>Vuelo de Ida</label>
   <textarea id="vuelo_ida"></textarea>
 
@@ -149,8 +149,16 @@ function mostrarLogoAereolinea() {
         "Volaris": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Volaris_logo.svg/2560px-Volaris_logo.svg.png",
         "Wingo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Wingo_logo.svg/2560px-Wingo_logo.svg.png"
       };
-      logo.innerHTML = aerolinea ? `<img src="${logos[aerolinea]}" alt="${aerolinea}" />` : "";
-    }
+
+  if (logos[aerolinea]) {
+    logo.src = logos[aerolinea];
+    logo.style.display = "inline";
+    logo.alt = aerolinea;
+  } else {
+    logo.src = "";
+    logo.style.display = "none";
+  }
+}
 
 const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
