@@ -104,8 +104,7 @@
     <option value="Volaris">Volaris</option>
     <option value="Wingo">Wingo</option>
   </select>
-  <img id="logo-aerolinea" src="" alt="" style="height: 25px; display: none;" />
-</div>
+  
   <label>Vuelo de Ida</label>
   <textarea id="vuelo_ida"></textarea>
 
@@ -140,25 +139,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-function mostrarLogoAereolinea() {
-      const aerolinea = document.getElementById("aerolinea").value;
-      const logo = document.getElementById("logo-aerolinea");
-      const logos = {
-        "Avianca": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Avianca_logo.svg/2560px-Avianca_logo.svg.png",
-        "Copa Airlines": "pngcopa.png",
-        "Volaris": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Volaris_logo.svg/2560px-Volaris_logo.svg.png",
-        "Wingo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Wingo_logo.svg/2560px-Wingo_logo.svg.png"
-      };
-
-  if (logos[aerolinea]) {
-    logo.src = logos[aerolinea];
-    logo.style.display = "inline";
-    logo.alt = aerolinea;
-  } else {
-    logo.src = "";
-    logo.style.display = "none";
-  }
-}
 
 const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
