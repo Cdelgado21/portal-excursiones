@@ -391,6 +391,7 @@ async function generarPDF() {
 
   doc.save(`Cotizacion_${cotizacion.numero}.pdf`);
 }
+
 function calcularTotal() {
   const adultos = parseInt(document.getElementById("adultos").value) || 0;
   const ninos = parseInt(document.getElementById("ninos").value) || 0;
@@ -403,7 +404,6 @@ function calcularTotal() {
   const total = (adultos * precioAdulto) + (ninos * precioNino) + (bebes * precioBebe);
   document.getElementById("total_general").value = total.toFixed(2);
 }
-
 </script>
 </body>
 </html>
