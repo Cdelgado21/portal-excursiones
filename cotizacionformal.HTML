@@ -79,6 +79,8 @@
 
     <section>
   <h2>Información del Tour</h2>
+  <label>Destino</label>
+  <input id="destino_tour" />
 
   <label>Duración</label>
   <input id="duracion" />
@@ -122,22 +124,29 @@
 </section>
 <section>
   <h2>Inversión por Viajero</h2>
-<p style="font-style: italic; color: #555;">Todos los precios están expresados en dólares estadounidenses $ (USD)</p>
 
   <label>Precio por Adulto</label>
-  <input type="number" id="precio_adulto" oninput="calcularTotal()" />
+<div style="display: flex; align-items: center;">
+  <span style="margin-right: 5px;">$</span>
+  <input type="number" id="precio_adulto" oninput="calcularTotal()" style="flex: 1;" />
 
   <label>Precio por Niño</label>
-  <input type="number" id="precio_nino" oninput="calcularTotal()" />
+<div style="display: flex; align-items: center;">
+  <span style="margin-right: 5px;">$</span>
+  <input type="number" id="precio_nino" oninput="calcularTotal()"  1;" />
 
   <label>Precio por Bebé</label>
-  <input type="number" id="precio_bebe" oninput="calcularTotal()" />
+  <input type="number" id="precio_bebe" oninput="calcularTotal()" style="flex: 1;" />
 
     <label><strong>Total General</strong></label>
-  <input type="number" id="total_general" readonly />
+<div style="display: flex; align-items: center;">
+  <span style="margin-right: 5px;">$</span>
+  <input type="number" id="total_general" readonly style="flex: 1;" />
 
 <label>Monto de Reserva por Persona</label>
-  <input type="number" id="monto_reserva" />
+<div style="display: flex; align-items: center;">
+  <span style="margin-right: 5px;">$</span>
+  <input type="number" id="monto_reserva" style="flex: 1;" />
 </section>
 <section>
   <h2>Tours Opcionales</h2>
@@ -228,12 +237,9 @@ document.getElementById("monto_reserva").value = data.monto_reserva || "";
       document.getElementById("bebes").value = solicitud.bebes || 0;
       document.getElementById("observaciones").value = solicitud.observaciones || "";
 
- document.getElementById("destino").value = solicitud.destino || "";
-
-// Esperar a que el DOM actualice el <select>
-setTimeout(() => {
-  cargarDatosDelTour();
-}, 100);
+      document.getElementById("destino").value = solicitud.destino || "";
+      await cargarDatosDelTour();
+    }
 
     async function cargarOpcionesDeDestino() {
       const destinosSnap = await db.collection("tours").get();
@@ -391,7 +397,6 @@ async function generarPDF() {
 
   doc.save(`Cotizacion_${cotizacion.numero}.pdf`);
 }
-
 function calcularTotal() {
   const adultos = parseInt(document.getElementById("adultos").value) || 0;
   const ninos = parseInt(document.getElementById("ninos").value) || 0;
@@ -404,6 +409,7 @@ function calcularTotal() {
   const total = (adultos * precioAdulto) + (ninos * precioNino) + (bebes * precioBebe);
   document.getElementById("total_general").value = total.toFixed(2);
 }
+
 </script>
 </body>
 </html>
