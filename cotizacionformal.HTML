@@ -281,7 +281,11 @@ let cargadoDesdeFormal = false; // ✅ AÑADIR AQUÍ
         politicas: document.getElementById("politicas").value,
         timestamp: new Date()
       };
-
+const aerolinea = document.getElementById("aerolinea").value;
+if (!aerolinea) {
+  alert("⚠️ Por favor, selecciona una aerolínea antes de guardar.");
+  return;
+}
       try {
         await db.collection("cotizacionformal").doc(codigo).set(cotizacion, { merge: true });
         alert("✅ Cotización formal guardada correctamente.");
