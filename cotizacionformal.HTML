@@ -202,10 +202,6 @@ rellenarCampos(docSolicitud.data());
       opt.value = doc.data().nombre;
       opt.textContent = doc.data().nombre;
       select.appendChild(opt);
-
-if (data.nombre && !data.hotel) {
-  const campoHotel = document.getElementById("hotel");
-  if (campoHotel) campoHotel.value = data.nombre;
 });
   }
     
@@ -250,7 +246,10 @@ function rellenarCampos(data) {
       const campo = document.getElementById(key);
       if (campo) campo.value = data[key];
   }
-
+if (data.nombre && !data.hotel) {
+  const campoHotel = document.getElementById("hotel");
+  if (campoHotel) campoHotel.value = data.nombre;
+}
 cargarDatosDelTour();
     }
 
