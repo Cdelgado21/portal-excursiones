@@ -244,7 +244,7 @@ cargarDatosDelTour();
     duracion: document.getElementById("duracion").value,
     incluye: document.getElementById("incluye").value,
     no_incluye: document.getElementById("no_incluye").value,
-    itinerario: document.getElementById("itinerario").value, // ✅ nombre corregido
+    itinerario: document.getElementById("itinerario_tours").value, // ✅ nombre corregido
 
     aerolinea: document.getElementById("aerolinea").value,
     vuelo_ida: document.getElementById("vuelo_ida").value,
@@ -259,7 +259,7 @@ cargarDatosDelTour();
     total_general: parseFloat(document.getElementById("total_general").value) || 0,
     monto_reserva: parseFloat(document.getElementById("monto_reserva").value) || 0,
 
-    tours_opcionales: document.getElementById("opcionales").value,
+    tours_opcionales: document.getElementById("tour_opcionales").value,
     politicas: document.getElementById("politicas").value,
     timestamp: new Date()
   };
