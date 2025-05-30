@@ -199,6 +199,11 @@ document.getElementById("aerolinea").value = data.aerolinea || "";
 document.getElementById("vuelo_ida").value = data.vuelo_ida || "";
 document.getElementById("vuelo_vuelta").value = data.vuelo_vuelta || "";
 document.getElementById("equipaje").value = data.equipaje || "";
+document.getElementById("precio_adulto").value = data.precio_adulto || "";
+document.getElementById("precio_nino").value = data.precio_nino || "";
+document.getElementById("precio_bebe").value = data.precio_bebe || "";
+document.getElementById("total_general").value = data.total_general || "";
+document.getElementById("monto_reserva").value = data.monto_reserva || "";
 
 
     // Establecer destino y hotel después de cargar las opciones
@@ -395,6 +400,7 @@ function calcularTotal() {
 
   const total = (adultos * precioAdulto) + (ninos * precioNino) + (bebes * precioBebe);
   document.getElementById("total_general").value = total.toFixed(2);
+}
   </script>
 </body>
 </html>
