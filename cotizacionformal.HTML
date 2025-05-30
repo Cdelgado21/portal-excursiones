@@ -228,9 +228,12 @@ document.getElementById("monto_reserva").value = data.monto_reserva || "";
       document.getElementById("bebes").value = solicitud.bebes || 0;
       document.getElementById("observaciones").value = solicitud.observaciones || "";
 
-      document.getElementById("destino").value = solicitud.destino || "";
-      await cargarDatosDelTour();
-    }
+ document.getElementById("destino").value = solicitud.destino || "";
+
+// Esperar a que el DOM actualice el <select>
+setTimeout(() => {
+  cargarDatosDelTour();
+}, 100);
 
     async function cargarOpcionesDeDestino() {
       const destinosSnap = await db.collection("tours").get();
