@@ -202,12 +202,12 @@ rellenarCampos(docSolicitud.data());
       opt.value = doc.data().nombre;
       opt.textContent = doc.data().nombre;
       select.appendChild(opt);
-});
-  }
+
 if (data.nombre && !data.hotel) {
   const campoHotel = document.getElementById("hotel");
   if (campoHotel) campoHotel.value = data.nombre;
-}
+});
+  }
     
 
   async function cargarDatosDelTour() {
