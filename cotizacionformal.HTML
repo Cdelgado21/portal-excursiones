@@ -244,6 +244,8 @@ function rellenarCampos(data) {
     for (const key in data) {
       const campo = document.getElementById(key);
       if (campo) campo.value = data[key];
+  }
+
 cargarDatosDelTour();
     }
   }
