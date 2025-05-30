@@ -140,7 +140,19 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script>
-    const firebaseConfig = {
+function mostrarLogoAereolinea() {
+      const aerolinea = document.getElementById("aerolinea").value;
+      const logo = document.getElementById("logo-aerolinea");
+      const logos = {
+        "Avianca": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Avianca_logo.svg/2560px-Avianca_logo.svg.png",
+        "Copa Airlines": "https://1000marcas.net/wp-content/uploads/2020/01/Copa-Airlines-Logo.png",
+        "Volaris": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Volaris_logo.svg/2560px-Volaris_logo.svg.png",
+        "Wingo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f4/Wingo_logo.svg/2560px-Wingo_logo.svg.png"
+      };
+      logo.innerHTML = aerolinea ? `<img src="${logos[aerolinea]}" alt="${aerolinea}" />` : "";
+    }
+
+const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
       projectId: "tours-460717"
