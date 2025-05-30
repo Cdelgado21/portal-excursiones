@@ -66,6 +66,9 @@
     <label for="ninos">Cantidad de Niños:</label>
     <input type="number" id="ninos">
 
+    <label for="ninos">Cantidad de Bebés:</label>
+    <input type="number" id="bebes">
+
     <label for="observaciones">Observaciones:</label>
     <textarea id="observaciones"></textarea>
 
@@ -107,6 +110,7 @@
     <th>Fechas ▼ <br><input type="text" onkeyup="filtrarTabla(3, this.value)" style="width: 100%;"></th>
     <th>Ad. ▼ <br><input type="text" onkeyup="filtrarTabla(4, this.value)" style="width: 100%;"></th>
     <th>Niñ. ▼ <br><input type="text" onkeyup="filtrarTabla(5, this.value)" style="width: 100%;"></th>
+    <th>Bebés ▼ <br><input type="text" onkeyup="filtrarTabla(5, this.value)" style="width: 100%;"></th>
     <th>Observaciones ▼ <br><input type="text" onkeyup="filtrarTabla(6, this.value)" style="width: 100%;"></th>
     <th>Embajador(a) ▼ <br><input type="text" onkeyup="filtrarTabla(7, this.value)" style="width: 100%;"></th>
     <th>Estado ▼ <br><input type="text" onkeyup="filtrarTabla(8, this.value)" style="width: 100%;"></th>
@@ -134,6 +138,7 @@
     <th>Fechas ▼ <br><input type="text" onkeyup="filtrarTabla(3, this.value)" style="width: 100%;"></th>
     <th>Ad. ▼ <br><input type="text" onkeyup="filtrarTabla(4, this.value)" style="width: 100%;"></th>
     <th>Niñ. ▼ <br><input type="text" onkeyup="filtrarTabla(5, this.value)" style="width: 100%;"></th>
+    <th>Bebés ▼ <br><input type="text" onkeyup="filtrarTabla(5, this.value)" style="width: 100%;"></th>
     <th>Observaciones ▼ <br><input type="text" onkeyup="filtrarTabla(6, this.value)" style="width: 100%;"></th>
     <th>Embajador(a) ▼ <br><input type="text" onkeyup="filtrarTabla(7, this.value)" style="width: 100%;"></th>
     <th>Estado ▼ <br><input type="text" onkeyup="filtrarTabla(8, this.value)" style="width: 100%;"></th>
@@ -226,6 +231,7 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
         <td>${d.fechas}</td>
         <td>${d.adultos}</td>
         <td>${d.ninos}</td>
+        <td>${d.bebes}</td>
         <td>${d.observaciones}</td>
         <td>${d.embajador}</td>
         <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
@@ -254,6 +260,7 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
     document.getElementById("fechas").value = data.fechas;
     document.getElementById("adultos").value = data.adultos;
     document.getElementById("ninos").value = data.ninos;
+    document.getElementById("bebes").value = data.bebes;
     document.getElementById("observaciones").value = data.observaciones;
     document.getElementById("embajador").value = data.embajador;
 
@@ -317,13 +324,14 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
     const fechas = document.getElementById("fechas").value;
     const adultos = document.getElementById("adultos").value;
     const ninos = document.getElementById("ninos").value;
+    const bebes = document.getElementById("bebes").value;
     const observaciones = document.getElementById("observaciones").value;
     const embajador = document.getElementById("embajador").value;
     const fechaRegistro = new Date();
 
     if (cotizacionEditandoId) {
       await db.collection("solicitud_cotizaciones").doc(cotizacionEditandoId).update({
-        telefono, destino, fechas, adultos, ninos, observaciones, embajador
+        telefono, destino, fechas, adultos, ninos, bebes, observaciones, embajador
       });
       alert("Cotización actualizada correctamente.");
       cotizacionEditandoId = null;
@@ -340,7 +348,7 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
 
       const numero = `COT-${String(maxNum + 1).padStart(3, '0')}-${fechaRegistro.getFullYear()}`;
       await db.collection("solicitud_cotizaciones").doc(numero).set({
-  numero, telefono, destino, fechas, adultos, ninos, observaciones, embajador,
+  numero, telefono, destino, fechas, adultos, ninos, bebes, observaciones, embajador,
   estado: "Pendiente", registro: fechaRegistro, encargado: "", fecha_asignacion: null
 });
 
@@ -352,6 +360,7 @@ const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '
         <p><strong>Destino:</strong> ${destino}</p>
         <p><strong>Adultos:</strong> ${adultos}</p>
         <p><strong>Niños:</strong> ${ninos}</p>
+        <p><strong>Bebés:</strong> ${bebes}</p>
         <p><strong>Observaciones:</strong> ${observaciones}</p>
         <p><strong>Embajadora:</strong> ${embajador}</p>
         <a href="${window.location.origin}/solicitud_cotizaciones.html" target="_blank" style="display:inline-block; padding:12px 20px; margin-top:15px; background-color:#f49859; color:white; text-decoration:none; border-radius:8px; font-weight:bold;">Ver en el sistema</a>
