@@ -232,6 +232,7 @@ rellenarCampos(docSolicitud.data());
     hotelSelect.onchange = () => {
       const seleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
       document.getElementById("info_hotel").value = seleccionado?.info || "";
+}
     if (data.hotel) {
   hotelSelect.value = data.hotel;
   const seleccionado = hoteles.find(h => h.nombre === data.hotel);
