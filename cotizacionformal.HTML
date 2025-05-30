@@ -240,13 +240,14 @@ rellenarCampos(docSolicitud.data());
 };
   }
 
-const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
-if (docFormal.exists) {
-  cargadoDesdeFormal = true;
-  rellenarCampos(docFormal.data()); // <- AQUI LE ESTÁS PASANDO SÓLO ESA COLECCIÓN
-  cargarDatosDelTour();
-  return;
-}
+function rellenarCampos(data) {
+    for (const key in data) {
+      const campo = document.getElementById(key);
+      if (campo) campo.value = data[key];
+  }
+
+cargarDatosDelTour();
+    }
 
   function calcularTotal() {
     const a = parseFloat(document.getElementById("precio_adulto").value) || 0;
