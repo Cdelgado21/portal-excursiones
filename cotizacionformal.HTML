@@ -152,131 +152,68 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    let cargadoDesdeFormal = false;
-    const params = new URLSearchParams(window.location.search);
-    const codigo = params.get("codigo");
+  let cargadoDesdeFormal = false;
+  const params = new URLSearchParams(window.location.search);
+  const codigo = params.get("codigo");
+  document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
+  document.title = `Cotización ${codigo} | Excursiones Delgado`;
 
-    document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
-    document.title = `Cotización ${codigo} | Excursiones Delgado`;
-
-    async function cargarDatosIniciales() {
-      await cargarOpcionesDeDestino();
-      const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
-      if (docFormal.exists) {
-        cargadoDesdeFormal = true;
-        rellenarCampos(docFormal.data());
-        setTimeout(() => cargarDatosDelTour(docFormal.data().destino), 300);
-        return;
-      }
-
-      const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-      if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
-      rellenarCampos(docSolicitud.data());
-      setTimeout(() => cargarDatosDelTour(docSolicitud.data().destino), 300);
+  async function cargarDatosIniciales() {
+    await cargarOpcionesDeDestino();
+    const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
+    if (docFormal.exists) {
+      cargadoDesdeFormal = true;
+      rellenarCampos(docFormal.data());
+      cargarDatosDelTour();
+      return;
     }
+    const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+    if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
+    rellenarCampos(docSolicitud.data());
+    cargarDatosDelTour();
+  }
 
-    async function cargarOpcionesDeDestino() {
-      const destinosSnap = await db.collection("tours").get();
-      const select = document.getElementById("destino");
-      select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
-      destinosSnap.forEach(doc => {
-        const opt = document.createElement("option");
-        opt.value = doc.data().nombre;
-        opt.textContent = doc.data().nombre;
-        select.appendChild(opt);
-      });
+  async function cargarOpcionesDeDestino() {
+    const destinosSnap = await db.collection("tours").get();
+    const select = document.getElementById("destino");
+    select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
+    destinosSnap.forEach(doc => {
+      const opt = document.createElement("option");
+      opt.value = doc.data().nombre;
+      opt.textContent = doc.data().nombre;
+      select.appendChild(opt);
+    });
+  }
+
+  async function cargarDatosDelTour() {
+    const destino = document.getElementById("destino").value;
+    if (!destino || cargadoDesdeFormal) return;
+    const snap = await db.collection("tours").where("nombre", "==", destino).get();
+    if (snap.empty) return;
+    const data = snap.docs[0].data();
+    document.getElementById("duracion").value = data.duracion || "";
+    document.getElementById("incluye").value = data.incluye || "";
+    document.getElementById("no_incluye").value = data.no_incluye || "";
+    document.getElementById("itinerario").value = data.itinerario_tours || "";
+  }
+
+  function rellenarCampos(data) {
+    for (const key in data) {
+      const campo = document.getElementById(key);
+      if (campo) campo.value = data[key];
     }
+  }
 
-    async function cargarDatosDelTour(destino) {
-      if (!destino) return;
-      const tourSnap = await db.collection("tours").where("nombre", "==", destino).get();
-      if (tourSnap.empty) return alert("⚠️ No se encontró información del tour.");
-
-      const data = tourSnap.docs[0].data();
-      if (!cargadoDesdeFormal) rellenarCampos(data);
-
-      const hotelSelect = document.getElementById("hotel");
-      hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
-      (data.hoteles || []).forEach(h => {
-        const opt = document.createElement("option");
-        opt.value = h.nombre;
-        opt.textContent = h.nombre;
-        hotelSelect.appendChild(opt);
-      });
-
-      hotelSelect.onchange = () => {
-        const seleccionado = (data.hoteles || []).find(h => h.nombre === hotelSelect.value);
-        document.getElementById("info_hotel").value = seleccionado?.info || "";
-      };
-    }
-
-    function rellenarCampos(data) {
-      for (const key in data) {
-        const el = document.getElementById(key);
-        if (el) el.value = data[key];
-      }
-    }
-
-    function calcularTotal() {
-      const adultos = parseInt(document.getElementById("adultos").value) || 0;
-      const ninos = parseInt(document.getElementById("ninos").value) || 0;
-      const bebes = parseInt(document.getElementById("bebes").value) || 0;
-      const precioAdulto = parseFloat(document.getElementById("precio_adulto").value) || 0;
-      const precioNino = parseFloat(document.getElementById("precio_nino").value) || 0;
-      const precioBebe = parseFloat(document.getElementById("precio_bebe").value) || 0;
-      const total = (adultos * precioAdulto) + (ninos * precioNino) + (bebes * precioBebe);
-      document.getElementById("total_general").value = total.toFixed(2);
-    }
-
-    async function guardarCotizacion() {
-      const cotizacion = {
-        telefono: document.getElementById("telefono").value,
-        destino: document.getElementById("destino").value,
-        fechas: document.getElementById("fechas").value,
-        adultos: parseInt(document.getElementById("adultos").value) || 0,
-        ninos: parseInt(document.getElementById("ninos").value) || 0,
-        bebes: parseInt(document.getElementById("bebes").value) || 0,
-        observaciones: document.getElementById("observaciones").value,
-        duracion: document.getElementById("duracion").value,
-        incluye: document.getElementById("incluye").value,
-        no_incluye: document.getElementById("no_incluye").value,
-        itinerario_tours: document.getElementById("itinerario").value,
-        aerolinea: document.getElementById("aerolinea").value,
-        vuelo_ida: document.getElementById("vuelo_ida").value,
-        vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
-        equipaje: document.getElementById("equipaje").value,
-        hotel: document.getElementById("hotel").value,
-        info_hotel: document.getElementById("info_hotel").value,
-        tours_opcionales: document.getElementById("opcionales").value,
-        politicas: document.getElementById("politicas").value,
-        precio_adulto: parseFloat(document.getElementById("precio_adulto").value) || 0,
-        precio_nino: parseFloat(document.getElementById("precio_nino").value) || 0,
-        precio_bebe: parseFloat(document.getElementById("precio_bebe").value) || 0,
-        total_general: parseFloat(document.getElementById("total_general").value) || 0,
-        monto_reserva: parseFloat(document.getElementById("monto_reserva").value) || 0,
-        timestamp: new Date()
-      };
-
-      if (!cotizacion.aerolinea) return alert("⚠️ Por favor selecciona una aerolínea.");
-
-      try {
-        await db.collection("cotizacionformal").doc(codigo).set(cotizacion);
-        alert("✅ Cotización formal guardada correctamente.");
-      } catch (e) {
-        console.error("❌ Error al guardar:", e);
-        alert("❌ Error al guardar la cotización.");
-      }
-    }
-
-    window.onload = cargarDatosIniciales;
+  window.onload = cargarDatosIniciales;
   </script>
 </body>
 </html>
