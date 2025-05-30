@@ -244,13 +244,13 @@ rellenarCampos(docSolicitud.data());
 
 function rellenarCampos(data) {
     for (const key in data) {
-      const campo = document.getElementById(key);
-      if (campo) campo.value = data[key];
-  }
 if (data.nombre && !data.hotel) {
   const campoHotel = document.getElementById("hotel");
   if (campoHotel) campoHotel.value = data.nombre;
-
+}
+      const campo = document.getElementById(key);
+      if (campo) campo.value = data[key];
+  }
 cargarDatosDelTour();
     }
 
