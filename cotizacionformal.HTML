@@ -166,13 +166,11 @@
       cargarDatosDelTour();
       return;
     }
-    const snapSolicitud = await db.collection("solicitud_cotizaciones").where("codigo", "==", codigo).get();
-if (snapSolicitud.empty) return alert("❌ No se encontró la solicitud de cotización.");
+   const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
 
-const docSolicitud = snapSolicitud.docs[0].data();
-rellenarCampos(docSolicitud);
+rellenarCampos(docSolicitud.data());
 }
-
   async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
     const select = document.getElementById("destino");
