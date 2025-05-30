@@ -123,6 +123,24 @@
   <textarea id="info_hotel"></textarea>
 </section>
 <section>
+  <h2>Precios</h2>
+
+  <label>Precio por Adulto</label>
+  <input type="number" id="precio_adulto" oninput="calcularTotal()" />
+
+  <label>Precio por Niño</label>
+  <input type="number" id="precio_nino" oninput="calcularTotal()" />
+
+  <label>Precio por Bebé</label>
+  <input type="number" id="precio_bebe" oninput="calcularTotal()" />
+
+  <label>Monto de Reserva por Persona</label>
+  <input type="number" id="monto_reserva" />
+
+  <label><strong>Total General</strong></label>
+  <input type="number" id="total_general" readonly />
+</section>
+<section>
   <h2>Tours Opcionales</h2>
   <textarea id="opcionales"></textarea>
 </section>
@@ -284,6 +302,11 @@ document.getElementById("equipaje").value = data.equipaje || "";
         info_hotel: document.getElementById("info_hotel").value,
         opcionales: document.getElementById("opcionales").value,
         politicas: document.getElementById("politicas").value,
+precio_adulto: parseFloat(document.getElementById("precio_adulto").value) || 0,
+precio_nino: parseFloat(document.getElementById("precio_nino").value) || 0,
+precio_bebe: parseFloat(document.getElementById("precio_bebe").value) || 0,
+total_general: parseFloat(document.getElementById("total_general").value) || 0,
+monto_reserva: parseFloat(document.getElementById("monto_reserva").value) || 0,
         timestamp: new Date()
       };
 const aerolinea = document.getElementById("aerolinea").value;
@@ -361,7 +384,17 @@ async function generarPDF() {
 
   doc.save(`Cotizacion_${cotizacion.numero}.pdf`);
 }
+function calcularTotal() {
+  const adultos = parseInt(document.getElementById("adultos").value) || 0;
+  const ninos = parseInt(document.getElementById("ninos").value) || 0;
+  const bebes = parseInt(document.getElementById("bebes").value) || 0;
 
+  const precioAdulto = parseFloat(document.getElementById("precio_adulto").value) || 0;
+  const precioNino = parseFloat(document.getElementById("precio_nino").value) || 0;
+  const precioBebe = parseFloat(document.getElementById("precio_bebe").value) || 0;
+
+  const total = (adultos * precioAdulto) + (ninos * precioNino) + (bebes * precioBebe);
+  document.getElementById("total_general").value = total.toFixed(2);
   </script>
 </body>
 </html>
