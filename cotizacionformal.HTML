@@ -231,43 +231,48 @@ cargarDatosDelTour();
     document.getElementById("total_general").value = (a * ca + n * cn + b * cb).toFixed(2);
   }
 
-  async function guardarCotizacion() {
-    const data = {
-      telefono: document.getElementById("telefono").value,
-      destino: document.getElementById("destino").value,
-      fechas: document.getElementById("fechas").value,
-      adultos: parseInt(document.getElementById("adultos").value) || 0,
-      ninos: parseInt(document.getElementById("ninos").value) || 0,
-      bebes: parseInt(document.getElementById("bebes").value) || 0,
-      observaciones: document.getElementById("observaciones").value,
-      duracion: document.getElementById("duracion").value,
-      incluye: document.getElementById("incluye").value,
-      no_incluye: document.getElementById("no_incluye").value,
-      itinerario_tours: document.getElementById("itinerario").value,
-      aerolinea: document.getElementById("aerolinea").value,
-      vuelo_ida: document.getElementById("vuelo_ida").value,
-      vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
-      equipaje: document.getElementById("equipaje").value,
-      hotel: document.getElementById("hotel").value,
-      info_hotel: document.getElementById("info_hotel").value,
-      precio_adulto: parseFloat(document.getElementById("precio_adulto").value) || 0,
-      precio_nino: parseFloat(document.getElementById("precio_nino").value) || 0,
-      precio_bebe: parseFloat(document.getElementById("precio_bebe").value) || 0,
-      total_general: parseFloat(document.getElementById("total_general").value) || 0,
-      monto_reserva: parseFloat(document.getElementById("monto_reserva").value) || 0,
-      tours_opcionales: document.getElementById("opcionales").value,
-      politicas: document.getElementById("politicas").value,
-      timestamp: new Date()
-    };
+ async function guardarCotizacion() {
+  const data = {
+    telefono: document.getElementById("telefono").value,
+    destino: document.getElementById("destino").value,
+    fechas: document.getElementById("fechas").value,
+    adultos: parseInt(document.getElementById("adultos").value) || 0,
+    ninos: parseInt(document.getElementById("ninos").value) || 0,
+    bebes: parseInt(document.getElementById("bebes").value) || 0,
+    observaciones: document.getElementById("observaciones").value,
 
-    try {
-      await db.collection("cotizacionformal").doc(codigo).set(data, { merge: true });
-      alert("✅ Cotización guardada correctamente.");
-    } catch (err) {
-      console.error("❌ Error al guardar:", err);
-      alert("❌ No se pudo guardar.");
-    }
+    duracion: document.getElementById("duracion").value,
+    incluye: document.getElementById("incluye").value,
+    no_incluye: document.getElementById("no_incluye").value,
+    itinerario: document.getElementById("itinerario").value, // ✅ nombre corregido
+
+    aerolinea: document.getElementById("aerolinea").value,
+    vuelo_ida: document.getElementById("vuelo_ida").value,
+    vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
+    equipaje: document.getElementById("equipaje").value,
+    hotel: document.getElementById("hotel").value,
+    info_hotel: document.getElementById("info_hotel").value,
+
+    precio_adulto: parseFloat(document.getElementById("precio_adulto").value) || 0,
+    precio_nino: parseFloat(document.getElementById("precio_nino").value) || 0,
+    precio_bebe: parseFloat(document.getElementById("precio_bebe").value) || 0,
+    total_general: parseFloat(document.getElementById("total_general").value) || 0,
+    monto_reserva: parseFloat(document.getElementById("monto_reserva").value) || 0,
+
+    tours_opcionales: document.getElementById("opcionales").value,
+    politicas: document.getElementById("politicas").value,
+    timestamp: new Date()
+  };
+
+  try {
+    await db.collection("cotizacionformal").doc(codigo).set(data, { merge: true });
+    alert("✅ Cotización guardada correctamente.");
+  } catch (err) {
+    console.error("❌ Error al guardar:", err);
+    alert("❌ No se pudo guardar.");
   }
+}
+
 
   window.onload = cargarDatosIniciales;
   </script>
