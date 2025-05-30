@@ -77,32 +77,61 @@
     <textarea id="observaciones"></textarea>
   </section>
 
-  <section>
-    <h2>Información del Tour</h2>
-    <label>Duración</label>
-    <input id="duracion" />
+    <section>
+  <h2>Información del Tour</h2>
+  <label>Destino</label>
+  <input id="destino" />
 
-    <label>Incluye</label>
-    <textarea id="incluye"></textarea>
+  <label>Duración</label>
+  <input id="duracion" />
 
-    <label>No incluye</label>
-    <textarea id="no_incluye"></textarea>
+  <label>Incluye</label>
+  <textarea id="incluye"></textarea>
 
-    <label>Hotel</label>
-    <select id="hotel"></select>
+  <label>No incluye</label>
+  <textarea id="no_incluye"></textarea>
 
-    <label>Info del hotel</label>
-    <textarea id="info_hotel"></textarea>
+  <label>Itinerario</label>
+  <textarea id="itinerario"></textarea>
+</section>
+<section>
+  <h2>Información de Vuelo</h2>
+  <label>Aerolínea</label>
+  <select id="aerolinea" onchange="mostrarLogoAereolinea()">
+    <option value="">-- Seleccione una aerolínea --</option>
+    <option value="Avianca">Avianca</option>
+    <option value="Copa Airlines">Copa Airlines</option>
+    <option value="Volaris">Volaris</option>
+    <option value="Wingo">Wingo</option>
+  </select>
+  <div id="logo-aerolinea" style="margin-top: 10px;"></div>
 
-    <label>Itinerario</label>
-    <textarea id="itinerario"></textarea>
+  <label>Vuelo de Ida</label>
+  <textarea id="vuelo_ida"></textarea>
 
-    <label>Tours opcionales</label>
-    <textarea id="opcionales"></textarea>
+  <label>Vuelo de Regreso</label>
+  <textarea id="vuelo_regreso"></textarea>
 
-    <label>Políticas</label>
-    <textarea id="politicas"></textarea>
-  </section>
+  <label>Equipaje</label>
+  <textarea id="equipaje"></textarea>
+</section>
+<section>
+  <h2>Información del Hotel</h2>
+  <label>Hotel</label>
+  <select id="hotel"></select>
+
+  <label>Información del Hotel</label>
+  <textarea id="info_hotel"></textarea>
+</section>
+<section>
+  <h2>Tours Opcionales</h2>
+  <textarea id="opcionales"></textarea>
+</section>
+<section>
+  <h2>Políticas y Condiciones Generales</h2>
+  <textarea id="politicas"></textarea>
+</section>
+
 
   <button onclick="guardarCotizacion()">Guardar Cotización</button>
 <button onclick="generarPDF()">Generar PDF</button>
