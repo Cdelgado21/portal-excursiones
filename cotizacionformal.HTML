@@ -232,6 +232,7 @@ let hotelGuardado = null;
   rellenarCampos(docSolicitud.data()); // si no hay cotización formal, se rellena base
   cargarDatosDelTour(); // ahora sí, se jala desde el catálogo (por defecto)
 }
+}
 
 async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
