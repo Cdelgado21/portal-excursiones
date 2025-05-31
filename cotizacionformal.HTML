@@ -196,12 +196,6 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
-function ajustarAlturaTextareas() {
-  document.querySelectorAll("textarea").forEach(textarea => {
-    textarea.style.height = "auto";
-    textarea.style.height = textarea.scrollHeight + "px";
-  });
-}
 
   let cargadoDesdeFormal = false;
 let hotelGuardado = null;
@@ -258,7 +252,6 @@ rellenarCampos(docSolicitud.data());
       opt.value = h.nombre;
       opt.textContent = h.nombre;
       hotelSelect.appendChild(opt);
-ajustarAlturaTextareas();
     });
     hotelSelect.onchange = () => {
       const seleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
@@ -270,7 +263,6 @@ ajustarAlturaTextareas();
   document.getElementById("info_hotel").value = seleccionado?.info || "";
 };
   }
-ajustarAlturaTextareas();
 
 function rellenarCampos(data) {
     for (const key in data) {
@@ -292,7 +284,6 @@ function rellenarCampos(data) {
 
   cargarDatosDelTour(); // se ejecuta después para evitar sobreescribir
 }
-ajustarAlturaTextareas();
 
   function calcularTotal() {
     const a = parseFloat(document.getElementById("precio_adulto").value) || 0;
