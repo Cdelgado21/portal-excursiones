@@ -54,19 +54,6 @@
   background-color: #218838; /* Verde más oscuro al pasar el mouse */
 }
   </style>
-
-<script>
-  // Función para ajustar el alto de cada textarea automáticamente
-  document.querySelectorAll("textarea").forEach(textarea => {
-    // Ajusta inicialmente
-    textarea.style.height = textarea.scrollHeight + "px";
-
-    // Ajusta en cada cambio
-    textarea.addEventListener("input", () => {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    });
-  });
 </head>
 <body>
   <h1 id="titulo-cotizacion">Detalle de Cotización</h1>
@@ -191,7 +178,15 @@
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
- <script>
+ 
+<script>
+window.addEventListener("DOMContentLoaded", () => {
+      document.querySelectorAll("textarea").forEach(textarea => {
+        textarea.style.height = textarea.scrollHeight + "px";
+        textarea.addEventListener("input", () => {
+          textarea.style.height = "auto";
+          textarea.style.height = textarea.scrollHeight + "px";
+        });
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
     authDomain: "tours-460717.firebaseapp.com",
