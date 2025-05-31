@@ -180,19 +180,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
  
 <script>
-window.addEventListener("DOMContentLoaded", () => {
-  document.querySelectorAll("textarea").forEach(textarea => {
-    // Ajustar altura inicial
-    textarea.style.height = "auto";
-    textarea.style.height = textarea.scrollHeight + "px";
 
-    // Reajustar altura cuando el usuario escriba
-    textarea.addEventListener("input", () => {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    });
-  });
-});
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
     authDomain: "tours-460717.firebaseapp.com",
@@ -200,6 +188,12 @@ window.addEventListener("DOMContentLoaded", () => {
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+function ajustarAlturaTextareas() {
+  document.querySelectorAll("textarea").forEach(textarea => {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
+  });
+}
 
   let cargadoDesdeFormal = false;
 let hotelGuardado = null;
@@ -256,6 +250,7 @@ rellenarCampos(docSolicitud.data());
       opt.value = h.nombre;
       opt.textContent = h.nombre;
       hotelSelect.appendChild(opt);
+ajustarAlturaTextareas();
     });
     hotelSelect.onchange = () => {
       const seleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
