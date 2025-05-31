@@ -50,28 +50,22 @@
   margin-top: 10px;
   transition: background-color 0.3s ease;
 }
-function autoExpandTextareas() {
-  const campos = [
-    "incluye",
-    "itinerario",
-    "info_hotel",
-    "tours_opcionales",
-    "politicas"
-  ];
-
-  campos.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = el.scrollHeight + "px";
-
-      el.addEventListener("input", () => {
-        el.style.height = "auto";
-        el.style.height = el.scrollHeight + "px";
-      });
-    }
+<script>
+function ajustarAlturaTextareas() {
+  document.querySelectorAll("textarea").forEach(textarea => {
+    const ajustar = () => {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    };
+    ajustar(); // al cargar
+    textarea.addEventListener("input", ajustar); // al escribir
   });
 }
+
+window.addEventListener("DOMContentLoaded", () => {
+  ajustarAlturaTextareas(); // se ejecuta después de que se renderiza todo
+});
+</script>
   </style>
 </head>
 <body>
