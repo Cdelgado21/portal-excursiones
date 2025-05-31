@@ -51,12 +51,18 @@
       color: white;
     }
 
-    .btn-editar, .btn-eliminar {
-      color: #02535a;
-      border: none;
-      padding: 5px 10px;
-      cursor: pointer;
-    }
+   .btn-editar, .btn-eliminar {
+  background: none;
+  border: none;
+  color: #02535a;
+  font-weight: bold;
+  cursor: pointer;
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.btn-editar:hover, .btn-eliminar:hover {
+  text-decoration: underline;
+}
     input, textarea {
       width: 100%;
       padding: 8px;
@@ -71,6 +77,19 @@
       margin-top: 30px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+<!-- Modal del formulario -->
+<div id="modalFormulario" class="modal">
+  <div class="modal-content">
+    <h3 id="form-titulo">Agregar Tour Opcional</h3>
+    <input id="nombre" placeholder="Nombre del tour opcional" />
+    <textarea id="descripcion" placeholder="Descripción del tour opcional"></textarea>
+    <input id="precio" type="number" placeholder="Precio (USD)" />
+    <div class="btn-row">
+      <button onclick="guardarOpcional()">💾 Guardar</button>
+      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
 
   </style>
 </head>
@@ -97,27 +116,8 @@
   <button id="btnMostrarFormulario" onclick="mostrarFormulario()" style="background-color:#02535a; color:white; padding:10px 20px; border:none; border-radius:5px; font-weight:bold; margin:20px 0;">
   ➕ Agregar Tour Opcional
 </button>
-
-<!-- Formulario oculto -->
-<!-- Modal oculto inicialmente -->
-<div id="modalFormulario" class="modal">
-  <div class="modal-content">
-    <h3 id="form-titulo">Agregar Tour Opcional</h3>
-    <input id="nombre" placeholder="Nombre del tour opcional" />
-    <textarea id="descripcion" placeholder="Descripción del tour opcional"></textarea>
-    <input id="precio" type="number" placeholder="Precio (USD)" />
-    <div class="btn-row">
-      <button onclick="guardarOpcional()">💾 Guardar</button>
-      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-    </div>
-  </div>
-</div>
-
-
   <script>
-    function mostrarFormulario() {
-  document.getElementById("formularioOpcional").style.display = "block";
-}
+
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
@@ -211,7 +211,14 @@ if (!tourId) {
   alert("❌ No se proporcionó el ID del tour");
   throw new Error("Falta el parámetro tourId en la URL");
 }
-    
+    function mostrarFormulario() {
+  document.getElementById("modalFormulario").style.display = "flex";
+}
+
+function cerrarModal() {
+  document.getElementById("modalFormulario").style.display = "none";
+  limpiarFormulario();
+}
   </script>
 </body>
 </html>
