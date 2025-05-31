@@ -249,11 +249,8 @@ rellenarCampos(docSolicitud.data());
     document.getElementById("itinerario").value = data.itinerario_tours || "";
 document.getElementById("tours_opcionales").value = data.tours_opcionales || "";
 document.getElementById("politicas").value = data.politicas || "";
- 
-}
-    
 
-    const hotelSelect = document.getElementById("hotel");
+const hotelSelect = document.getElementById("hotel");
     hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
    const hoteles = Object.values(data.hoteles || {});
     hoteles.forEach(h => {
