@@ -215,13 +215,18 @@ let hotelGuardado = null;
 
   async function cargarDatosIniciales() {
     await cargarOpcionesDeDestino();
-    const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
-
-// ✅ Solo rellenar si no existe en cotizacionformal
-if (!cargadoDesdeFormal) {
-  rellenarCampos(docSolicitud.data());
+   const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
+if (docFormal.exists) {
+  cargadoDesdeFormal = true;
+  rellenarCampos(docFormal.data());
+  cargarDatosDelTour();
+  ajustarAlturaTextareas();
 }
+
+const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
+rellenarCampos(docSolicitud.data()); // ← 🚫 Esto está sobreescribiendo lo que cargaste antes
+
 
   async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
