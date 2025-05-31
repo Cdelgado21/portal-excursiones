@@ -63,58 +63,114 @@
     .btn-editar:hover, .btn-eliminar:hover {
       text-decoration: underline;
     }
+    /* MODAL BASE */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  font-family: 'Segoe UI', sans-serif;
+}
 
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      justify-content: center;
-      align-items: center;
-    }
+/* CONTENIDO DEL MODAL */
+.modal-content {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+}
 
-    .modal-content {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      width: 400px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
-    }
+.modal-content h3 {
+  color: #02535a;
+  margin-bottom: 15px;
+  font-size: 22px;
+  text-align: center;
+}
 
-    .btn-row {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 15px;
-    }
+/* CAMPOS */
+.modal-content label {
+  margin-top: 12px;
+  font-weight: bold;
+  color: #333;
+}
 
-    .btn-cancelar {
-      background-color: #999;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 8px 12px;
-      cursor: pointer;
-    }
+.modal-content input,
+.modal-content textarea {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  margin-top: 6px;
+  width: 100%;
+  font-size: 15px;
+}
+
+/* BOTONES */
+.btn-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.btn-row button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: 'Segoe UI', sans-serif;
+  transition: background-color 0.3s ease;
+}
+
+.btn-row button:first-child {
+  background-color: #f49859;
+  color: white;
+}
+
+.btn-row .btn-cancelar {
+  background-color: #02535a;
+  color: white;
+}
+
+.btn-row button:hover {
+  opacity: 0.9;
+}
   </style>
 </head>
 <body>
   <h2>Gestionar Tours Opcionales</h2>
  <button class="btn" onclick="mostrarFormulario()">➕ Agregar Tour Opcional</button>
 
-  <div id="modalFormulario" class="modal">
-    <div class="modal-content">
-      <h3 id="form-titulo">Agregar Tour Opcional</h3>
-      <input id="nombre" placeholder="Nombre del tour opcional" />
-      <textarea id="descripcion" placeholder="Descripción del tour opcional"></textarea>
-      <input id="precio" type="number" placeholder="Precio (USD)" />
-      <div class="btn-row">
-        <button onclick="guardarOpcional()">💾 Guardar</button>
-        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-      </div>
+  <!-- Modal del formulario -->
+<div id="modalFormulario" class="modal">
+  <div class="modal-content">
+    <h3 id="form-titulo">Agregar Tour Opcional</h3>
+
+    <label for="nombre">Nombre del tour opcional</label>
+    <input id="nombre" placeholder="Ej. Tour a Isla Saona" />
+
+    <label for="descripcion">Descripción del tour opcional</label>
+    <textarea id="descripcion" rows="4" placeholder="Incluye traslados, alimentación, entradas..."></textarea>
+
+    <label for="precio">Precio (USD)</label>
+    <input id="precio" type="number" placeholder="Ej. 40" />
+
+    <div class="btn-row">
+      <button onclick="guardarOpcional()">💾 Guardar</button>
+      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
     </div>
   </div>
+</div>
+
   
   <div id="tabla-container">
     <table>
