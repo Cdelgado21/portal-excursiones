@@ -228,8 +228,9 @@ if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de coti
 
 // ✅ Solo rellenar si no existe en cotizacionformal
 if (!cargadoDesdeFormal) {
-rellenarCampos(docSolicitud.data());
 }
+rellenarCampos(docSolicitud.data());
+
   async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
     const select = document.getElementById("destino");
