@@ -51,49 +51,56 @@
       color: white;
     }
 
-   .btn-editar, .btn-eliminar {
-  background: none;
-  border: none;
-  color: #02535a;
-  font-weight: bold;
-  cursor: pointer;
-  font-family: 'Segoe UI', sans-serif;
-}
-
-.btn-editar:hover, .btn-eliminar:hover {
-  text-decoration: underline;
-}
-    input, textarea {
-      width: 100%;
-      padding: 8px;
-      margin: 6px 0;
-      box-sizing: border-box;
+    .btn-editar, .btn-eliminar {
+      background: none;
+      border: none;
+      color: #02535a;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: 'Segoe UI', sans-serif;
     }
 
-    .form-container {
+    .btn-editar:hover, .btn-eliminar:hover {
+      text-decoration: underline;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
       background: white;
       padding: 20px;
       border-radius: 10px;
-      margin-top: 30px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 400px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    .btn-row {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+
+    .btn-cancelar {
+      background-color: #999;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 12px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
   <h2>Gestionar Tours Opcionales</h2>
-<!-- Modal del formulario -->
-<div id="modalFormulario" class="modal">
-  <div class="modal-content">
-    <h3 id="form-titulo">Agregar Tour Opcional</h3>
-    <input id="nombre" placeholder="Nombre del tour opcional" />
-    <textarea id="descripcion" placeholder="Descripción del tour opcional"></textarea>
-    <input id="precio" type="number" placeholder="Precio (USD)" />
-    <div class="btn-row">
-      <button onclick="guardarOpcional()">💾 Guardar</button>
-      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-    </div>
-  </div>
-</div>
 
   <div id="tabla-container">
     <table>
@@ -112,11 +119,22 @@
     </table>
   </div>
 
-  <button id="btnMostrarFormulario" onclick="mostrarFormulario()" style="background-color:#02535a; color:white; padding:10px 20px; border:none; border-radius:5px; font-weight:bold; margin:20px 0;">
-  ➕ Agregar Tour Opcional
-</button>
-  <script>
+  <button class="btn" onclick="mostrarFormulario()">➕ Agregar Tour Opcional</button>
 
+  <div id="modalFormulario" class="modal">
+    <div class="modal-content">
+      <h3 id="form-titulo">Agregar Tour Opcional</h3>
+      <input id="nombre" placeholder="Nombre del tour opcional" />
+      <textarea id="descripcion" placeholder="Descripción del tour opcional"></textarea>
+      <input id="precio" type="number" placeholder="Precio (USD)" />
+      <div class="btn-row">
+        <button onclick="guardarOpcional()">💾 Guardar</button>
+        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
@@ -124,6 +142,13 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const tourId = urlParams.get("tourId");
+    if (!tourId) {
+      alert("❌ No se proporcionó el ID del tour");
+      throw new Error("Falta el parámetro tourId en la URL");
+    }
 
     let opcionales = [];
     let indiceEditando = -1;
@@ -153,6 +178,15 @@
       });
     }
 
+    function mostrarFormulario() {
+      document.getElementById("modalFormulario").style.display = "flex";
+    }
+
+    function cerrarModal() {
+      document.getElementById("modalFormulario").style.display = "none";
+      limpiarFormulario();
+    }
+
     function guardarOpcional() {
       const nombre = document.getElementById("nombre").value.trim();
       const descripcion = document.getElementById("descripcion").value.trim();
@@ -172,7 +206,7 @@
       }
 
       db.collection("tours").doc(tourId).update({ tours_opcionales: opcionales }).then(() => {
-        limpiarFormulario();
+        cerrarModal();
         cargarOpcionales();
       });
     }
@@ -184,6 +218,7 @@
       document.getElementById("precio").value = opcional.precio;
       document.getElementById("form-titulo").innerText = "Editar Tour Opcional";
       indiceEditando = index;
+      mostrarFormulario();
     }
 
     function eliminarOpcional(index) {
@@ -203,21 +238,6 @@
     }
 
     window.onload = cargarOpcionales;
-    const urlParams = new URLSearchParams(window.location.search);
-const tourId = urlParams.get("tourId");
-
-if (!tourId) {
-  alert("❌ No se proporcionó el ID del tour");
-  throw new Error("Falta el parámetro tourId en la URL");
-}
-    function mostrarFormulario() {
-  document.getElementById("modalFormulario").style.display = "flex";
-}
-
-function cerrarModal() {
-  document.getElementById("modalFormulario").style.display = "none";
-  limpiarFormulario();
-}
   </script>
 </body>
 </html>
