@@ -216,21 +216,20 @@ let hotelGuardado = null;
   async function cargarDatosIniciales() {
     await cargarOpcionesDeDestino();
    const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
-    if (docFormal.exists) {
-      cargadoDesdeFormal = true;
-      rellenarCampos(docFormal.data());
-      cargarDatosDelTour();
+const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
 
-ajustarAlturaTextareas(); // ✅ llamada correcta
-    }
-  const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
-  if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
+if (!docSolicitud.exists) {
+  return alert("❌ No se encontró la solicitud de cotización.");
+}
 
-  // ✅ Solo rellenar si no existe en cotizacionformal
-  if (!cargadoDesdeFormal) {
-    rellenarCampos(docSolicitud.data());
-  }
-} // ❌ FALTA ESTA LLAVE DE CIERRE
+if (docFormal.exists) {
+  cargadoDesdeFormal = true;
+  rellenarCampos(docFormal.data());
+  cargarDatosDelTour();
+  ajustarAlturaTextareas();
+} else {
+  rellenarCampos(docSolicitud.data()); // Solo si no existe cotizacionformal
+}
 
   async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
