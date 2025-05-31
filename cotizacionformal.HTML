@@ -223,19 +223,17 @@ let hotelGuardado = null;
     return alert("❌ No se encontró la solicitud de cotización.");
   }
 
-  if (docFormal.exists) {
-    cargadoDesdeFormal = true;
-console.log("✅ Cargando desde cotizacionformal", docFormal.data());
-    rellenarCampos(docFormal.data());
-    cargarDatosDelTour();
-    ajustarAlturaTextareas();
-  } else {
-    rellenarCampos(docSolicitud.data()); // Solo si no existe cotizacionformal
-    ajustarAlturaTextareas(); // También se ajusta en este caso
-  }
+ if (docFormal.exists) {
+  cargadoDesdeFormal = true;
+  console.log("✅ Cargando desde cotizacionformal", docFormal.data());
+  rellenarCampos(docFormal.data()); // ya incluye hotel, política, etc.
+  ajustarAlturaTextareas();
+} else {
+  rellenarCampos(docSolicitud.data()); // si no hay cotización formal, se rellena base
+  cargarDatosDelTour(); // ahora sí, se jala desde el catálogo (por defecto)
 }
 
-  async function cargarOpcionesDeDestino() {
+async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
     const select = document.getElementById("destino");
     select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
@@ -333,7 +331,6 @@ function rellenarCampos(data) {
     document.getElementById("info_hotel").value = hotelGuardado.info;
   }
 
-  cargarDatosDelTour(); // se ejecuta después para evitar sobreescribir
 ajustarAlturaTextareas();
 }
 
