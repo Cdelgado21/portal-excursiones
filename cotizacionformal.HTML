@@ -181,13 +181,17 @@
  
 <script>
 window.addEventListener("DOMContentLoaded", () => {
-      document.querySelectorAll("textarea").forEach(textarea => {
-        textarea.style.height = textarea.scrollHeight + "px";
-        textarea.addEventListener("input", () => {
-          textarea.style.height = "auto";
-          textarea.style.height = textarea.scrollHeight + "px";
-        });
- }); // ← ESTA LLAVE FALTABA
+  document.querySelectorAll("textarea").forEach(textarea => {
+    // Ajustar altura inicial
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
+
+    // Reajustar altura cuando el usuario escriba
+    textarea.addEventListener("input", () => {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    });
+  });
 });
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
