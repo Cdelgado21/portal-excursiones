@@ -348,7 +348,18 @@ const hotelInfo = (t.hoteles || []).map(h => h.info).join('<hr>');
   <td>${hotelInfo || '-'}</td>
         <td>${t.no_incluye || '-'}</td>
         <td>${t.itinerario_tours || '-'}</td>
-        <td><button onclick="abrirOpcionales('${doc.id}')">🔍 Ver Opcionales</button></td>
+        <td>
+  <button onclick="abrirOpcionales('${doc.id}')" style="
+    background-color: #f49859;
+    color: #02535a;
+    font-weight: bold;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  ">👁️ Ver Opcionales</button>
+</td>
         <td>${t.politicas || '-'}</td>
         <td>
           <button class="btn-estado ${t.estado === 'ACTIVO' ? 'activo' : 'inactivo'}"
