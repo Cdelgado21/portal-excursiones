@@ -247,6 +247,7 @@ rellenarCampos(docSolicitud.data());
     document.getElementById("incluye").value = data.incluye || "";
     document.getElementById("no_incluye").value = data.no_incluye || "";
     document.getElementById("itinerario").value = data.itinerario_tours || "";
+console.log("Tours opcionales desde catálogo de tours:", data.tours_opcionales);
 if (Array.isArray(data.tours_opcionales)) {
   const contenedor = document.getElementById("contenedor_tours_opcionales");
   contenedor.innerHTML = `
