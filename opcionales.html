@@ -115,7 +115,7 @@
 
 <!-- Formulario oculto -->
 <div id="formularioOpcional" style="display:none; background:white; padding:20px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.1); max-width:600px;">
-  <h3 style="color:#02535a;">Agregar Tour Opcional</h3>
+<h3 id="form-titulo" style="color:#02535a;">Agregar Tour Opcional</h3>
   <input id="nombre" placeholder="Nombre del tour opcional" style="width:100%; padding:8px; margin-bottom:10px;" />
   <textarea id="descripcion" placeholder="Descripción del tour opcional" style="width:100%; padding:8px; margin-bottom:10px;"></textarea>
   <input id="precio" type="number" placeholder="Precio (USD)" style="width:100%; padding:8px; margin-bottom:10px;" />
@@ -123,6 +123,9 @@
 </div>
 
   <script>
+    function mostrarFormulario() {
+  document.getElementById("formularioOpcional").style.display = "block";
+}
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
@@ -131,7 +134,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const tourId = new URLSearchParams(window.location.search).get("id");
     let opcionales = [];
     let indiceEditando = -1;
 
@@ -217,9 +219,7 @@ if (!tourId) {
   alert("❌ No se proporcionó el ID del tour");
   throw new Error("Falta el parámetro tourId en la URL");
 }
-    function mostrarFormulario() {
-  document.getElementById("formularioOpcional").style.display = "block";
-}
+    
   </script>
 </body>
 </html>
