@@ -40,6 +40,32 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
   </style>
+#btn-guardar {
+  background-color: #28a745; /* Verde */
+  color: white;
+  font-weight: bold;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
+}
+#btn-guardar:hover {
+  background-color: #218838; /* Verde más oscuro al pasar el mouse */
+}
+<script>
+  // Función para ajustar el alto de cada textarea automáticamente
+  document.querySelectorAll("textarea").forEach(textarea => {
+    // Ajusta inicialmente
+    textarea.style.height = textarea.scrollHeight + "px";
+
+    // Ajusta en cada cambio
+    textarea.addEventListener("input", () => {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    });
+  });
 </head>
 <body>
   <h1 id="titulo-cotizacion">Detalle de Cotización</h1>
@@ -160,7 +186,7 @@
 </section>
 
 <!-- Agrega botón de guardar si aún no lo tienes -->
-<button onclick="guardarCotizacion()">Guardar Cotización</button>
+<button onclick="guardarCotizacion()" id="btn-guardar">💾 Guardar Cotización</button>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
