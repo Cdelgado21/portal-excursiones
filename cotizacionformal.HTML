@@ -225,8 +225,9 @@ if (docFormal.exists) {
 
 const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
 if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
+}
 rellenarCampos(docSolicitud.data()); // ← 🚫 Esto está sobreescribiendo lo que cargaste antes
-
+}
 
   async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
