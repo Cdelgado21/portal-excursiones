@@ -215,21 +215,13 @@ let hotelGuardado = null;
 
   async function cargarDatosIniciales() {
     await cargarOpcionesDeDestino();
-    const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
-    if (docFormal.exists) {
-      cargadoDesdeFormal = true;
-      rellenarCampos(docFormal.data());
-      cargarDatosDelTour();
-
-ajustarAlturaTextareas(); // ✅ llamada correcta
-    }
-   const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+    const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
 if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
 
 // ✅ Solo rellenar si no existe en cotizacionformal
 if (!cargadoDesdeFormal) {
+  rellenarCampos(docSolicitud.data());
 }
-rellenarCampos(docSolicitud.data());
 
   async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
