@@ -40,7 +40,7 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 #btn-guardar {
-  background-color: #28a745; /* Verde */
+  background-color: #02535a; 
   color: white;
   font-weight: bold;
   padding: 12px 24px;
@@ -50,22 +50,30 @@
   margin-top: 10px;
   transition: background-color 0.3s ease;
 }
-#btn-guardar:hover {
-  background-color: #218838; /* Verde más oscuro al pasar el mouse */
-}
-#incluye,
-#itinerario,
-#info_hotel {
-height: 200px; /* Puedes aumentar a 200px si aún no es suficiente */
-  resize: vertical; /* Opcional: permite que el usuario ajuste si quiere */
-}
-#tours_opcionales,
-#politicas {
-  height: 400px; /* Puedes aumentar a 200px si aún no es suficiente */
-  resize: vertical; /* Opcional: permite que el usuario ajuste si quiere */
-}
   </style>
 </head>
+function autoExpandTextareas() {
+  const campos = [
+    "incluye",
+    "itinerario",
+    "info_hotel",
+    "tours_opcionales",
+    "politicas"
+  ];
+
+  campos.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+
+      el.addEventListener("input", () => {
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+      });
+    }
+  });
+}
 <body>
   <h1 id="titulo-cotizacion">Detalle de Cotización</h1>
 
@@ -215,6 +223,7 @@ let hotelGuardado = null;
       rellenarCampos(docFormal.data());
       cargarDatosDelTour();
       return;
+autoExpandTextareas();
     }
    const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
 if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
