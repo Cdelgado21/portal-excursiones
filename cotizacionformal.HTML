@@ -269,7 +269,12 @@ rellenarCampos(docSolicitud.data());
   document.getElementById("info_hotel").value = seleccionado?.info || "";
 };
   }
-
+function ajustarAlturaTextareas() {
+  document.querySelectorAll("textarea").forEach(textarea => {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
+  });
+}
 function rellenarCampos(data) {
     for (const key in data) {
       const campo = document.getElementById(key);
