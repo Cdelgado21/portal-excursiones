@@ -101,7 +101,21 @@
 </head>
 <body>
   <h2>Gestionar Tours Opcionales</h2>
+ <button class="btn" onclick="mostrarFormulario()">➕ Agregar Tour Opcional</button>
 
+  <div id="modalFormulario" class="modal">
+    <div class="modal-content">
+      <h3 id="form-titulo">Agregar Tour Opcional</h3>
+      <input id="nombre" placeholder="Nombre del tour opcional" />
+      <textarea id="descripcion" placeholder="Descripción del tour opcional"></textarea>
+      <input id="precio" type="number" placeholder="Precio (USD)" />
+      <div class="btn-row">
+        <button onclick="guardarOpcional()">💾 Guardar</button>
+        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+  
   <div id="tabla-container">
     <table>
       <thead>
@@ -118,22 +132,6 @@
       </tbody>
     </table>
   </div>
-
-  <button class="btn" onclick="mostrarFormulario()">➕ Agregar Tour Opcional</button>
-
-  <div id="modalFormulario" class="modal">
-    <div class="modal-content">
-      <h3 id="form-titulo">Agregar Tour Opcional</h3>
-      <input id="nombre" placeholder="Nombre del tour opcional" />
-      <textarea id="descripcion" placeholder="Descripción del tour opcional"></textarea>
-      <input id="precio" type="number" placeholder="Precio (USD)" />
-      <div class="btn-row">
-        <button onclick="guardarOpcional()">💾 Guardar</button>
-        <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
