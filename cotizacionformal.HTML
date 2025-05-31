@@ -268,7 +268,6 @@ rellenarCampos(docSolicitud.data());
 };
   }
 ajustarAlturaTextareas();
-}
 
 function rellenarCampos(data) {
     for (const key in data) {
@@ -291,7 +290,7 @@ function rellenarCampos(data) {
   cargarDatosDelTour(); // se ejecuta después para evitar sobreescribir
 }
 ajustarAlturaTextareas();
-}
+
   function calcularTotal() {
     const a = parseFloat(document.getElementById("precio_adulto").value) || 0;
     const n = parseFloat(document.getElementById("precio_nino").value) || 0;
