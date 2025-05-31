@@ -217,7 +217,7 @@ let hotelGuardado = null;
       rellenarCampos(docFormal.data());
       cargarDatosDelTour();
 
-autoExpandTextareas();
+ajustarAlturaTextareas(); // ✅ llamada correcta
     }
    const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
 if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
