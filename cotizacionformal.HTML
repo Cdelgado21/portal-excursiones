@@ -267,6 +267,8 @@ rellenarCampos(docSolicitud.data());
   document.getElementById("info_hotel").value = seleccionado?.info || "";
 };
   }
+ajustarAlturaTextareas();
+}
 
 function rellenarCampos(data) {
     for (const key in data) {
@@ -287,6 +289,8 @@ function rellenarCampos(data) {
   }
 
   cargarDatosDelTour(); // se ejecuta después para evitar sobreescribir
+}
+ajustarAlturaTextareas();
 }
   function calcularTotal() {
     const a = parseFloat(document.getElementById("precio_adulto").value) || 0;
@@ -358,9 +362,15 @@ function agregarEquipaje() {
   document.getElementById("cantidad_equipaje").value = "";
   document.getElementById("uso_equipaje").value = "";
 }
-
+function ajustarAlturaTextareas() {
+  document.querySelectorAll("textarea").forEach(textarea => {
+    textarea.style.height = "auto";
+    textarea.style.height = textarea.scrollHeight + "px";
+  });
+}
 
   window.onload = cargarDatosIniciales;
+
   </script>
 
 </body>
