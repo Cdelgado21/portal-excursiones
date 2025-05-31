@@ -216,17 +216,17 @@ let hotelGuardado = null;
   async function cargarDatosIniciales() {
     await cargarOpcionesDeDestino();
    const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
-if (docFormal.exists) {
-  cargadoDesdeFormal = true;
-  rellenarCampos(docFormal.data());
-  cargarDatosDelTour();
-  ajustarAlturaTextareas();
-}
+    if (docFormal.exists) {
+      cargadoDesdeFormal = true;
+      rellenarCampos(docFormal.data());
+      cargarDatosDelTour();
 
-const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+ajustarAlturaTextareas(); // ✅ llamada correcta
+    }
+   const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
 if (!docSolicitud.exists) return alert("❌ No se encontró la solicitud de cotización.");
-}
-rellenarCampos(docSolicitud.data()); // ← 🚫 Esto está sobreescribiendo lo que cargaste antes
+
+rellenarCampos(docSolicitud.data());
 }
 
   async function cargarOpcionesDeDestino() {
