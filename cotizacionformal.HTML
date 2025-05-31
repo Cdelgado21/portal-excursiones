@@ -214,21 +214,24 @@ let hotelGuardado = null;
   document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
 
   async function cargarDatosIniciales() {
-    await cargarOpcionesDeDestino();
-   const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
-const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
+  await cargarOpcionesDeDestino();
 
-if (!docSolicitud.exists) {
-  return alert("❌ No se encontró la solicitud de cotización.");
-}
+  const docFormal = await db.collection("cotizacionformal").doc(codigo).get();
+  const docSolicitud = await db.collection("solicitud_cotizaciones").doc(codigo).get();
 
-if (docFormal.exists) {
-  cargadoDesdeFormal = true;
-  rellenarCampos(docFormal.data());
-  cargarDatosDelTour();
-  ajustarAlturaTextareas();
-} else {
-  rellenarCampos(docSolicitud.data()); // Solo si no existe cotizacionformal
+  if (!docSolicitud.exists) {
+    return alert("❌ No se encontró la solicitud de cotización.");
+  }
+
+  if (docFormal.exists) {
+    cargadoDesdeFormal = true;
+    rellenarCampos(docFormal.data());
+    cargarDatosDelTour();
+    ajustarAlturaTextareas();
+  } else {
+    rellenarCampos(docSolicitud.data()); // Solo si no existe cotizacionformal
+    ajustarAlturaTextareas(); // También se ajusta en este caso
+  }
 }
 
   async function cargarOpcionesDeDestino() {
