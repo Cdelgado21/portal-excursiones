@@ -225,6 +225,7 @@ let hotelGuardado = null;
 
   if (docFormal.exists) {
     cargadoDesdeFormal = true;
+console.log("✅ Cargando desde cotizacionformal", docFormal.data());
     rellenarCampos(docFormal.data());
     cargarDatosDelTour();
     ajustarAlturaTextareas();
@@ -311,10 +312,14 @@ function ajustarAlturaTextareas() {
   });
 }
 function rellenarCampos(data) {
-    for (const key in data) {
-      const campo = document.getElementById(key);
-      if (campo) campo.value = data[key];
+   for (const key in data) {
+  const campo = document.getElementById(key);
+  if (campo) {
+    campo.value = data[key];
+    console.log(`🖋️ Campo ${key} actualizado con`, data[key]);
   }
+}
+
  if (data.hotel) {
     hotelGuardado = {
       nombre: data.hotel,
