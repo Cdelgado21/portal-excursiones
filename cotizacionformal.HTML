@@ -178,7 +178,18 @@ window.addEventListener("DOMContentLoaded", () => {
 
 <section>
   <h2>Tours Opcionales</h2>
-  <textarea id="tours_opcionales"></textarea>
+  <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+    <thead style="background-color: #02535a; color: white;">
+      <tr>
+        <th style="padding: 10px; border: 1px solid #ccc;">Tour Opcional</th>
+        <th style="padding: 10px; border: 1px solid #ccc;">Precio por Persona</th>
+        <th style="padding: 10px; border: 1px solid #ccc;">Incluye</th>
+      </tr>
+    </thead>
+    <tbody id="tabla_tours_opcionales">
+      <!-- Las filas se insertarán dinámicamente desde Firebase -->
+    </tbody>
+  </table>
 </section>
 
 <section>
@@ -247,8 +258,23 @@ rellenarCampos(docSolicitud.data());
     document.getElementById("incluye").value = data.incluye || "";
     document.getElementById("no_incluye").value = data.no_incluye || "";
     document.getElementById("itinerario").value = data.itinerario_tours || "";
-    document.getElementById("tours_opcionales").value = data.tours_opcionales || "";
-    document.getElementById("politicas").value = data.politicas || "";
+document.getElementById("politicas").value = data.politicas || "";
+  const tablaBody = document.getElementById("tabla_tours_opcionales");
+tablaBody.innerHTML = ""; // Limpiar contenido anterior si existe
+
+if (data.tours_opcionales_array && Array.isArray(data.tours_opcionales_array)) {
+  data.tours_opcionales_array.forEach(tour => {
+    const fila = `
+      <tr>
+        <td style="border: 1px solid #ccc; padding: 10px;">${tour.nombre}</td>
+        <td style="border: 1px solid #ccc; padding: 10px;">${tour.precio}</td>
+        <td style="border: 1px solid #ccc; padding: 10px;">${tour.incluye}</td>
+      </tr>
+    `;
+    tablaBody.innerHTML += fila;
+  });
+}
+    
 
     const hotelSelect = document.getElementById("hotel");
     hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
