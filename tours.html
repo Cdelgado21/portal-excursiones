@@ -348,7 +348,7 @@ const hotelInfo = (t.hoteles || []).map(h => h.info).join('<hr>');
   <td>${hotelInfo || '-'}</td>
         <td>${t.no_incluye || '-'}</td>
         <td>${t.itinerario_tours || '-'}</td>
-        <td>${t.tours_opcionales || '-'}</td>
+        <td><button onclick="abrirOpcionales('${doc.id}')">🔍 Ver Opcionales</button></td>
         <td>${t.politicas || '-'}</td>
         <td>
           <button class="btn-estado ${t.estado === 'ACTIVO' ? 'activo' : 'inactivo'}"
@@ -393,7 +393,9 @@ const hotelInfo = (t.hoteles || []).map(h => h.info).join('<hr>');
       a.download = "tours.csv";
       a.click();
     }
-
+function abrirOpcionales(tourId) {
+  window.open(`opcionales.html?tourId=${tourId}`, '_blank');
+}
     window.onload = cargarTours;
   </script>
 </body>
