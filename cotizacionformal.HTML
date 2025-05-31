@@ -237,7 +237,7 @@ rellenarCampos(docSolicitud.data());
   }
   async function cargarDatosDelTour() {
     const destino = document.getElementById("destino").value;
-    if (!destino || (cargadoDesdeFormal && hotelGuardado)) return;
+if (!destino) return;
 
     const snap = await db.collection("tours").where("nombre", "==", destino).get();
     if (snap.empty) return;
