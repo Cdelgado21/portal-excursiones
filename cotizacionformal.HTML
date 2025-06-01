@@ -82,14 +82,11 @@ window.addEventListener("DOMContentLoaded", () => {
   ajustarAlturaTextareas(); // se ejecuta después de que se renderiza todo
 });
 
-<img id="fondoPagina1" src="Portadacotizaciones.png" style="display:none" crossorigin="anonymous">
-<img id="fondoPagina2" src="fondooficio.png" style="display:none" crossorigin="anonymous">
-<img id="fondoPaginaFinal" src="FINALCUENTASRRSS.PNG" style="display:none" crossorigin="anonymous">
-
 </script>
   </style>
 </head>
 <body>
+
   <h1 id="titulo-cotizacion">Detalle de Cotización</h1>
 
   <section>
@@ -217,8 +214,9 @@ window.addEventListener("DOMContentLoaded", () => {
 <button onclick="generarPDF()" id="btn-generar-pdf" style="margin-left: 10px; background-color: #02535a; color: white; font-weight: bold; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer;">
   📄 Generar PDF
 </button>
-
-</button>
+<img id="fondoPagina1" src="Portadacotizaciones.png" style="display:none" crossorigin="anonymous">
+<img id="fondoPagina2" src="fondooficio.png" style="display:none" crossorigin="anonymous">
+<img id="fondoPaginaFinal" src="FINALCUENTASRRSS.PNG" style="display:none" crossorigin="anonymous">
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
