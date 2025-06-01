@@ -456,14 +456,13 @@ function agregarEquipaje() {
   document.getElementById("cantidad_equipaje").value = "";
   document.getElementById("uso_equipaje").value = "";
 }
+<script>
 function restablecerDatosDelTour() {
   const confirmacion = confirm("¿Deseas restablecer toda la información del tour desde el catálogo?");
   if (!confirmacion) return;
 
-  // Volver a cargar desde el catálogo
   cargarDatosDelTour();
 
-  // Limpiar campos adicionales
   document.getElementById("aerolinea").value = "";
   document.getElementById("vuelo_ida").value = "";
   document.getElementById("vuelo_vuelta").value = "";
@@ -478,21 +477,18 @@ function restablecerDatosDelTour() {
   document.getElementById("total_general").value = "";
   document.getElementById("monto_reserva").value = "";
 
-  // Mostrar mensaje visual
   const mensaje = document.getElementById("mensaje-restablecer");
-  mensaje.style.display = "block";
+  if (mensaje) {
+    mensaje.style.display = "block";
+    setTimeout(() => {
+      mensaje.style.display = "none";
+    }, 4000);
+  }
 
-  setTimeout(() => {
-    mensaje.style.display = "none";
-  }, 4000); // Ocultar tras 4 segundos
+  alert("✅ Información del tour restablecida correctamente.");
 }
-alert("✅ Información del tour restablecida correctamente.");
-}
-
-  </script>
-
+</script>
   window.onload = cargarDatosIniciales;
-
   </script>
 
 </body>
