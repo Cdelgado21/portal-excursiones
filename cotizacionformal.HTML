@@ -524,7 +524,7 @@ const width = doc.internal.pageSize.getWidth();
 const codigo = new URLSearchParams(window.location.search).get("codigo") || "COT-XXX-2025";
   const destino = document.getElementById("destino")?.value || "Destino no definido";
   
-const portadaImg = document.getElementById("Portadacotizaciones.png");
+const portadaImg = document.getElementById("fondoPagina1");
  doc.addImage(portadaImg, 'PNG', 0, 0, width, height);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
@@ -534,7 +534,7 @@ const portadaImg = document.getElementById("Portadacotizaciones.png");
   doc.text(destino, width / 2, 160, { align: 'center' });
 
   doc.addPage();
-  const fondoContenido = document.getElementById("fondooficio.png");
+  const fondoContenido = document.getElementById("fondoPagina2");
   doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
 
   const htmlContent = document.querySelector("body"); // O reemplaza por un contenedor específico
@@ -552,7 +552,7 @@ const portadaImg = document.getElementById("Portadacotizaciones.png");
 
 // 3️⃣ Página final
   doc.addPage();
-  const cierreImg = document.getElementById("FINALCUENTASRRSS.PNG");
+  const cierreImg = document.getElementById("fondoPagina3");
   doc.addImage(cierreImg, 'PNG', 0, 0, width, height);
 
   const data = {
