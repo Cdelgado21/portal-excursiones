@@ -589,15 +589,23 @@ function restablecerDatosDelTour() {
   }
 
   function agregarLinea(label, valor) {
-    if (!valor || valor === "0") return;
-    if (y > 700) { doc.addPage(); doc.addImage(fondoContenido, 'PNG', 0, 0, width, height); y = 50; }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-   doc.text(`${label}: ${valor}`, margenX, y);
-   doc.setFont("helvetica", "bold");
-doc.text(`${label}:`, margenX, y);
-   y += salto;
+  if (!valor || valor === "0") return;
+  if (y > 270) { 
+    doc.addPage(); 
+    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height); 
+    y = 50; 
   }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  const labelText = `${label}: `;
+  doc.text(labelText, margenX, y);
+
+  const anchoLabel = doc.getTextWidth(labelText);
+  doc.setFont("helvetica", "normal");
+  doc.text(valor, margenX + anchoLabel, y);
+  y += salto;
+}
 
   agregarLinea("Teléfono", data.telefono);
   agregarLinea("Destino", data.destino);
