@@ -517,7 +517,7 @@ function restablecerDatosDelTour() {
     const cierre = 'FINALCUENTASRRSS.png';
 
     // Página 1 - Portada
-    doc.addImage(portada, 'PNG', 0, 0, width, height);
+    doc.addImage(portada, 'Portadacotizaciones.png', 0, 0, width, height);
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(24);
@@ -527,7 +527,7 @@ function restablecerDatosDelTour() {
 
     // Página 2 - Contenido real (html)
     doc.addPage();
-    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
+    doc.addImage(fondoContenido, 'fondooficio.png', 0, 0, width, height);
 
     // Esperar a que el HTML se renderice
     const htmlContent = document.getElementById('contenidoCotizacion');
@@ -540,12 +540,12 @@ function restablecerDatosDelTour() {
       const imgProps = doc.getImageProperties(imgData);
       const ratio = width / imgProps.width;
       const canvasHeight = imgProps.height * ratio;
-      doc.addImage(imgData, 'PNG', 10, 20, width - 20, canvasHeight);
+      doc.addImage(imgData, 'fondooficio.png', 10, 20, width - 20, canvasHeight);
     });
 
     // Página 3 - Cierre
     doc.addPage();
-    doc.addImage(cierre, 'PNG', 0, 0, width, height);
+    doc.addImage(cierre, 'FINALCUENTASRRSS.pn', 0, 0, width, height);
 
   const data = {
     telefono: document.getElementById("telefono").value,
