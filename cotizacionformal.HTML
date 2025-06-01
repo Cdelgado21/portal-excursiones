@@ -576,17 +576,35 @@ function restablecerDatosDelTour() {
   const margenX = 30;
   const salto = 10;
 
-  function agregarSeccion(titulo, textoPlano) {
-    if (!textoPlano?.trim()) return;
-    if (y > 700) { doc.addPage(); doc.addImage(fondoContenido, 'PNG', 0, 0, width, height); y = 50; }
-    doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-    doc.text(`${titulo}:`, margenX, y);
-    y += 14;
-    doc.setFont("helvetica", "normal"); doc.setFontSize(11);
-    const texto = doc.splitTextToSize(textoPlano, width - 2 * margenX);
-    doc.text(texto, margenX, y, { align: 'justify' });
-    y += texto.length * 14;
+function agregarSeccion(titulo, textoPlano) {
+  if (!textoPlano?.trim()) return;
+
+  // Salto de página si hace falta
+  if (y > 270) {
+    doc.addPage();
+    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
+    y = 50;
   }
+
+  // Título
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.text(`${titulo}:`, margenX, y);
+  y += 8;
+
+  // Contenido
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(11);
+
+  // Ajustamos el ancho real de texto para que no se salga
+  const anchoUtil = width - 2 * margenX - 10; // deja 5mm extra a cada lado
+  const texto = doc.splitTextToSize(textoPlano, anchoUtil);
+
+  doc.text(texto, margenX, y, { align: 'justify' });
+
+  // Aumentamos 'y' según cantidad de líneas
+  y += texto.length * 7;
+}
 
   function agregarLinea(label, valor) {
   if (!valor || valor === "0") return;
