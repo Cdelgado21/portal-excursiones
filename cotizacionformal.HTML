@@ -579,50 +579,36 @@ function restablecerDatosDelTour() {
 function agregarSeccion(titulo, textoPlano) {
   if (!textoPlano?.trim()) return;
 
-  // Salto de página si hace falta
-  if (y > 270) {
+  // Salto de página si ya no cabe
+  if (y > 250) {
     doc.addPage();
     doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
     y = 50;
   }
 
-  // Título
+  // Título de la sección
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.text(`${titulo}:`, margenX, y);
   y += 8;
 
-  // Contenido
+  // Contenido de la sección (con bullets, márgenes, justificado)
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
 
-  // Ajustamos el ancho real de texto para que no se salga
-  const anchoUtil = width - 2 * margenX - 10; // deja 5mm extra a cada lado
-  const texto = doc.splitTextToSize(textoPlano, anchoUtil);
+  const anchoTexto = width - 2 * margenX - 10;
+  const texto = doc.splitTextToSize(textoPlano, anchoTexto);
 
-  doc.text(texto, margenX, y, { align: 'justify' });
-
-  // Aumentamos 'y' según cantidad de líneas
-  y += texto.length * 7;
-}
-
-  function agregarLinea(label, valor) {
-  if (!valor || valor === "0") return;
-  if (y > 270) { 
-    doc.addPage(); 
-    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height); 
-    y = 50; 
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  const labelText = `${label}: `;
-  doc.text(labelText, margenX, y);
-
-  const anchoLabel = doc.getTextWidth(labelText);
-  doc.setFont("helvetica", "normal");
-  doc.text(valor, margenX + anchoLabel, y);
-  y += salto;
+  // Dibuja línea por línea controlando el espacio vertical
+  texto.forEach(linea => {
+    if (y > 270) {
+      doc.addPage();
+      doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
+      y = 50;
+    }
+    doc.text(linea, margenX, y, { align: 'justify' });
+    y += 6; // Espaciado entre líneas
+  });
 }
 
   agregarLinea("Teléfono", data.telefono);
