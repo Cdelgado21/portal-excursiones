@@ -576,30 +576,26 @@ function restablecerDatosDelTour() {
   const margenX = 30;
   const salto = 10;
 
-function agregarSeccion(titulo, textoPlano) {
+ffunction agregarSeccion(titulo, textoPlano) {
   if (!textoPlano?.trim()) return;
 
-  // Salto de página si ya no cabe
   if (y > 250) {
     doc.addPage();
     doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
     y = 50;
   }
 
-  // Título de la sección
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.text(`${titulo}:`, margenX, y);
   y += 8;
 
-  // Contenido de la sección (con bullets, márgenes, justificado)
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
 
   const anchoTexto = width - 2 * margenX - 10;
   const texto = doc.splitTextToSize(textoPlano, anchoTexto);
 
-  // Dibuja línea por línea controlando el espacio vertical
   texto.forEach(linea => {
     if (y > 270) {
       doc.addPage();
@@ -607,7 +603,8 @@ function agregarSeccion(titulo, textoPlano) {
       y = 50;
     }
     doc.text(linea, margenX, y, { align: 'justify' });
-    y += 6; // Espaciado entre líneas
+    y += 6;
+  });
 }
   agregarLinea("Teléfono", data.telefono);
   agregarLinea("Destino", data.destino);
