@@ -593,9 +593,13 @@ function restablecerDatosDelTour() {
     if (y > 700) { doc.addPage(); doc.addImage(fondoContenido, 'PNG', 0, 0, width, height); y = 50; }
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
-    doc.text(`${label}:`, margenX, y);
-    doc.setFont("helvetica", "normal");
-    doc.text(valor, margenX + 100, y);
+   doc.text(`${label}: ${valor}`, margenX, y);
+   doc.setFont("helvetica", "bold");
+doc.text(`${label}:`, margenX, y);
+
+const anchoLabel = doc.getTextWidth(`${label}: `);
+doc.setFont("helvetica", "normal");
+doc.text(`${valor}`, margenX + anchoLabel, y);
     y += salto;
   }
 
