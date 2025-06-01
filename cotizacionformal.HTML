@@ -518,11 +518,11 @@ function restablecerDatosDelTour() {
 
   // Obtener referencias de las imágenes
   const portadaImg = document.getElementById("fondoPagina1");
-  const fondoContenidoImg = document.getElementById("fondoPagina2");
+  const fondoContenido = document.getElementById("fondoPagina2");
   const cierreImg = document.getElementById("fondoPaginaFinal");
 
   // Validar que estén cargadas
-  if (!portadaImg || !fondoContenidoImg || !cierreImg) {
+  if (!portadaImg || !fondoContenido || !cierreImg) {
     alert("❌ No se pudieron cargar las imágenes de fondo. Revisa los IDs o rutas.");
     return;
   }
