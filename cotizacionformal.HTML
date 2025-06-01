@@ -649,7 +649,87 @@ function restablecerDatosDelTour() {
       doc.text(politicasLines, 50, nuevaY);
     }
   });
+const margenX = 20;
+let espacioVertical = 30;
+const anchoPagina = doc.internal.pageSize.width;
+const altoPagina = doc.internal.pageSize.height;
+const maxAnchoTexto = anchoPagina - margenX * 2;
+doc.setFont("Arial");
+doc.setFontSize(12);
 
+// Función para verificar espacio restante y agregar página si es necesario
+function verificarEspacio(extra = 20) {
+  if (espacioVertical + extra > altoPagina - 20) {
+    doc.addPage();
+    espacioVertical = 30;
+  }
+}
+
+// INCLUYE
+if (data.incluye && data.incluye.trim() !== "") {
+  doc.setFont(undefined, "bold");
+  doc.text("✅ Incluye:", margenX, espacioVertical);
+  espacioVertical += 7;
+  doc.setFont(undefined, "normal");
+  const incluyeTexto = doc.splitTextToSize(data.incluye, maxAnchoTexto);
+  verificarEspacio(incluyeTexto.length * 7);
+  doc.text(incluyeTexto, margenX, espacioVertical);
+  espacioVertical += incluyeTexto.length * 7 + 5;
+}
+
+// NO INCLUYE
+if (data.no_incluye && data.no_incluye.trim() !== "") {
+  doc.setFont(undefined, "bold");
+  doc.text("❌ No Incluye:", margenX, espacioVertical);
+  espacioVertical += 7;
+  doc.setFont(undefined, "normal");
+  const noIncluyeTexto = doc.splitTextToSize(data.no_incluye, maxAnchoTexto);
+  verificarEspacio(noIncluyeTexto.length * 7);
+  doc.text(noIncluyeTexto, margenX, espacioVertical);
+  espacioVertical += noIncluyeTexto.length * 7 + 5;
+}
+
+// ITINERARIO
+if (data.itinerario_tours && data.itinerario_tours.trim() !== "") {
+  doc.setFont(undefined, "bold");
+  doc.text("🗓️ Itinerario:", margenX, espacioVertical);
+  espacioVertical += 7;
+  doc.setFont(undefined, "normal");
+  const itinerarioTexto = doc.splitTextToSize(data.itinerario_tours, maxAnchoTexto);
+  verificarEspacio(itinerarioTexto.length * 7);
+  doc.text(itinerarioTexto, margenX, espacioVertical);
+  espacioVertical += itinerarioTexto.length * 7 + 5;
+}
+
+// TOURS OPCIONALES
+if (data.tours_opcionales && data.tours_opcionales.length > 0) {
+  doc.setFont(undefined, "bold");
+  doc.text("🎒 Tours Opcionales:", margenX, espacioVertical);
+  espacioVertical += 7;
+  doc.setFont(undefined, "normal");
+  data.tours_opcionales.forEach(tour => {
+    const linea = `• ${tour.nombre}: ${tour.descripcion} - $${tour.precio}`;
+    const textoSplit = doc.splitTextToSize(linea, maxAnchoTexto);
+    verificarEspacio(textoSplit.length * 7);
+    doc.text(textoSplit, margenX, espacioVertical);
+    espacioVertical += textoSplit.length * 7;
+  });
+  espacioVertical += 5;
+}
+
+// POLÍTICAS
+if (data.politicas && data.politicas.trim() !== "") {
+  doc.setFont(undefined, "bold");
+  doc.text("📌 Políticas y Condiciones Generales:", margenX, espacioVertical);
+  espacioVertical += 7;
+  doc.setFont(undefined, "normal");
+  const politicasTexto = doc.splitTextToSize(data.politicas, maxAnchoTexto);
+  politicasTexto.forEach(linea => {
+    verificarEspacio(7);
+    doc.text(linea, margenX, espacioVertical);
+    espacioVertical += 7;
+  });
+}
   doc.save(`Cotizacion_${dataCotizacion.destino}.pdf`);
 }
 
