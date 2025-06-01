@@ -49,7 +49,19 @@
   cursor: pointer;
   margin-top: 10px;
   transition: background-color 0.3s ease;
+    }
+#btn-restablecerDatosDelTour {
+  background-color: #02535a; 
+  color: white;
+  font-weight: bold;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s ease;
 }
+
 body, input, textarea, select, button {
   font-family: 'Segoe UI', sans-serif;
   font-size: 15px;
@@ -195,8 +207,8 @@ window.addEventListener("DOMContentLoaded", () => {
   ✅ Información del tour restablecida correctamente.
 </div>
 <button onclick="guardarCotizacion()" id="btn-guardar">💾 Guardar Cotización</button>
-<button type="button" onclick="restablecerDatosDelTour()" style="margin-top:10px; background-color:#f49859; color:white; padding:8px 16px; border:none; border-radius:5px;">
-🔄 Restablecer información del tour
+<button type="button" onclick="restablecerDatosDelTour()" id="btn-restablecerDatosDelTour">🔄 Restablecer información del tour</button>
+
 </button>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
