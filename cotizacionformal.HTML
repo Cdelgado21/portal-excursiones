@@ -543,64 +543,116 @@ function restablecerDatosDelTour() {
   doc.addPage();
   doc.addImage(contenidoImg, "PNG", 0, 0, width, height);
 
-  let y = 30;
-  const margen = 20;
-
-  function nuevaPagina() {
-    doc.addPage();
-    doc.addImage(contenidoImg, "PNG", 0, 0, width, height);
-    y = 30;
-  }
-
-  function escribirLinea(label, valor) {
-    if (!valor || valor.trim() === "0" || valor.trim() === "") return;
-    if (y > 270) nuevaPagina();
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.setTextColor(255, 255, 255);
-    doc.text(`${label}:`, margen, y);
-    doc.setFont("helvetica", "normal");
-    const texto = doc.splitTextToSize(valor, 160);
-    doc.text(texto, margen + 40, y);
-    y += texto.length * 7 + 2;
-  }
-
-  const datos = {
-    Teléfono: document.getElementById("telefono")?.value,
-    Destino: destino,
-    Fechas: document.getElementById("fechas")?.value,
-    Adultos: document.getElementById("adultos")?.value,
-    Niños: document.getElementById("ninos")?.value,
-    Bebés: document.getElementById("bebes")?.value,
-    Duración: document.getElementById("duracion")?.value,
-    "Incluye": document.getElementById("incluye")?.value,
-    "No Incluye": document.getElementById("no_incluye")?.value,
-    "Itinerario": document.getElementById("itinerario")?.value,
-    Aerolínea: document.getElementById("aerolinea")?.value,
-    "Vuelo de ida": document.getElementById("vuelo_ida")?.value,
-    "Vuelo de regreso": document.getElementById("vuelo_vuelta")?.value,
-    Equipaje: document.getElementById("equipaje")?.value,
-    Hotel: document.getElementById("hotel")?.value,
-    "Descripción del Hotel": document.getElementById("info_hotel")?.value,
-    "Precio por Adulto": `$${document.getElementById("precio_adulto")?.value}`,
-    "Precio por Niño": `$${document.getElementById("precio_nino")?.value}`,
-    "Precio por Bebé": `$${document.getElementById("precio_bebe")?.value}`,
-    "Total General": `$${document.getElementById("total_general")?.value}`,
-    "Monto de Reserva": `$${document.getElementById("monto_reserva")?.value}`,
-    "Políticas y Condiciones": document.getElementById("politicas")?.value,
+const data = {
+    telefono: document.getElementById("telefono").value,
+    destino,
+    fechas: document.getElementById("fechas").value,
+    adultos: document.getElementById("adultos").value,
+    ninos: document.getElementById("ninos").value,
+    bebes: document.getElementById("bebes").value,
+    duracion: document.getElementById("duracion").value,
+    incluye: document.getElementById("incluye").value,
+    no_incluye: document.getElementById("no_incluye").value,
+    itinerario: document.getElementById("itinerario").value,
+    aerolinea: document.getElementById("aerolinea").value,
+    vuelo_ida: document.getElementById("vuelo_ida").value,
+    vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
+    equipaje: document.getElementById("equipaje").value,
+    hotel: document.getElementById("hotel").value,
+    info_hotel: document.getElementById("info_hotel").value,
+    precio_adulto: document.getElementById("precio_adulto").value,
+    precio_nino: document.getElementById("precio_nino").value,
+    precio_bebe: document.getElementById("precio_bebe").value,
+    total_general: document.getElementById("total_general").value,
+    monto_reserva: document.getElementById("monto_reserva").value,
+    politicas: document.getElementById("politicas").value,
   };
 
-  for (const [etiqueta, valor] of Object.entries(datos)) {
-    if (etiqueta === "Niños" || etiqueta === "Bebés") {
-      if (parseInt(valor) <= 0) continue; // ocultar si es 0
+  let y = 60;
+  const margenX = 40;
+  const espacio = 16;
+
+const agregarLinea = (label, valor) => {
+    if (valor && valor !== "0") {
+      if (y > 700) { doc.addPage(); doc.addImage(contenidoImg, 'PNG', 0, 0, width, height); y = 60; }
+      doc.setFont("helvetica", "bold"); doc.text(`${label}:`, margenX, y);
+      const texto = doc.splitTextToSize(valor, 480);
+      doc.setFont("helvetica", "normal");
+      doc.text(texto, margenX + 90, y, { maxWidth: 460, align: 'justify' });
+      y += texto.length * espacio;
     }
-    if (etiqueta === "Observaciones") continue; // omitimos observaciones
-    escribirLinea(etiqueta, valor);
+  };
+
+  doc.setFontSize(20);
+  doc.text("Detalle de Cotización", width / 2, y, { align: "center" });
+  y += 30;
+
+  doc.setFontSize(12);
+  doc.setTextColor(255, 255, 255);
+  agregarLinea("Teléfono", data.telefono);
+  agregarLinea("Destino", data.destino);
+  agregarLinea("Fechas", data.fechas);
+  agregarLinea("Adultos", data.adultos);
+  if (data.ninos !== "0") agregarLinea("Niños", data.ninos);
+  if (data.bebes !== "0") agregarLinea("Bebés", data.bebes);
+  agregarLinea("Duración", data.duracion);
+
+  agregarLinea("Incluye", data.incluye.trim());
+  agregarLinea("No Incluye", data.no_incluye.trim());
+  agregarLinea("Itinerario de Tours", data.itinerario.trim());
+  agregarLinea("Aerolínea", data.aerolinea);
+  agregarLinea("Vuelo de ida", data.vuelo_ida);
+  agregarLinea("Vuelo de regreso", data.vuelo_vuelta);
+  agregarLinea("Equipaje", data.equipaje);
+
+  agregarLinea("Hotel", data.hotel);
+  agregarLinea("Información del Hotel", data.info_hotel);
+
+  // 🧾 Tabla de tours opcionales si existe
+  const tablaOpcionales = document.querySelector("#contenedor_tours_opcionales table");
+  if (tablaOpcionales) {
+    doc.autoTable({
+      html: "#contenedor_tours_opcionales table",
+      startY: y + 10,
+      styles: {
+        fontSize: 10,
+        cellPadding: 5,
+        textColor: [255, 255, 255],
+        fillColor: [45, 90, 95],
+        halign: 'center',
+      },
+      headStyles: {
+        fillColor: [2, 83, 90],
+        textColor: 255,
+        fontStyle: "bold",
+      },
+      alternateRowStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0] },
+      margin: { left: 40, right: 40 },
+    });
+    y = doc.lastAutoTable.finalY + 20;
   }
 
-  // 🧾 Última página
+  // 💰 Precios
+  agregarLinea("Precio por Adulto", `$${data.precio_adulto}`);
+  if (data.precio_nino !== "0") agregarLinea("Precio por Niño", `$${data.precio_nino}`);
+  if (data.precio_bebe !== "0") agregarLinea("Precio por Bebé", `$${data.precio_bebe}`);
+  agregarLinea("Total General", `$${data.total_general}`);
+  agregarLinea("Monto de Reserva", `$${data.monto_reserva}`);
+
+  // 📄 Políticas
+  const politicas = doc.splitTextToSize(data.politicas, 500);
+  if (y + politicas.length * espacio > 720) {
+    doc.addPage(); doc.addImage(contenidoImg, 'PNG', 0, 0, width, height); y = 60;
+  }
+  doc.setFont("helvetica", "bold");
+  doc.text("Políticas y Condiciones Generales", margenX, y);
+  y += 20;
+  doc.setFont("helvetica", "normal");
+  doc.text(politicas, margenX + 10, y, { align: 'justify' });
+
+  // 📄 Página final
   doc.addPage();
-  doc.addImage(cierreImg, "PNG", 0, 0, width, height);
+  doc.addImage(cierreImg, 'PNG', 0, 0, width, height);
 
   // Descargar
   doc.save(`Cotización ${codigo}.pdf`);
