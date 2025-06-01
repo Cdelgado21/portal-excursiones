@@ -503,103 +503,142 @@ function restablecerDatosDelTour() {
 
   alert("✅ Información del tour restablecida correctamente.");
 }
-async function generarPDF() {
+  async function generarPDF() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'pt', format: 'letter' }); // Tamaño carta
 
     let y = 40;
-    const lineHeight = 18;
-    const left = 40;
-
-    function addSection(title, content) {
-      if (y > 720) {
-        doc.addPage();
-        y = 40;
-      }
-      doc.setFont("Helvetica", "bold");
-      doc.setFontSize(13);
-      doc.text(title, left, y);
-      y += lineHeight;
-      doc.setFont("Helvetica", "normal");
-      content.split('\n').forEach(line => {
-        if (y > 750) {
-          doc.addPage();
-          y = 40;
-        }
-        doc.text(line, left + 10, y);
-        y += lineHeight;
-      });
-      y += 10;
-    }
-
-    const telefono = document.getElementById("telefono").value;
-    const destino = document.getElementById("destino").value;
-    const fechas = document.getElementById("fechas").value;
-    const adultos = document.getElementById("adultos").value;
-    const ninos = document.getElementById("ninos").value;
-    const bebes = document.getElementById("bebes").value;
-    const duracion = document.getElementById("duracion").value;
-    const incluye = document.getElementById("incluye").value;
-    const noIncluye = document.getElementById("no_incluye").value;
-    const itinerario = document.getElementById("itinerario").value;
-    const aerolinea = document.getElementById("aerolinea").value;
-    const vueloIda = document.getElementById("vuelo_ida").value;
-    const vueloVuelta = document.getElementById("vuelo_vuelta").value;
-    const equipaje = document.getElementById("equipaje").value;
-    const hotel = document.getElementById("hotel").value;
-    const infoHotel = document.getElementById("info_hotel").value;
-    const precioAdulto = document.getElementById("precio_adulto").value;
-    const precioNino = document.getElementById("precio_nino").value;
-    const precioBebe = document.getElementById("precio_bebe").value;
-    const total = document.getElementById("total_general").value;
-    const reserva = document.getElementById("monto_reserva").value;
-    const politicas = document.getElementById("politicas").value;
-    const contenedor = document.getElementById("contenedor_tours_opcionales");
-
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.setFont("Helvetica", "bold");
-    doc.text("Detalle de Cotización", doc.internal.pageSize.getWidth() / 2, y, { align: 'center' });
+    doc.text("Detalle de Cotización", 220, y);
+
     y += 30;
-
     doc.setFontSize(12);
-    doc.setFont("Helvetica", "normal");
+    doc.setFont("helvetica", "normal");
 
-    doc.text(`Teléfono: ${telefono}`, left, y); y += lineHeight;
-    doc.text(`Destino: ${destino}`, left, y); y += lineHeight;
-    doc.text(`Fechas: ${fechas}`, left, y); y += lineHeight;
-    doc.text(`Adultos: ${adultos}`, left, y); y += lineHeight;
+    const datos = {
+      telefono: document.getElementById("telefono").value,
+      destino: document.getElementById("destino").value,
+      fechas: document.getElementById("fechas").value,
+      adultos: document.getElementById("adultos").value,
+      ninos: document.getElementById("ninos").value,
+      bebes: document.getElementById("bebes").value,
+      duracion: document.getElementById("duracion").value,
+      incluye: document.getElementById("incluye").value,
+      no_incluye: document.getElementById("no_incluye").value,
+      itinerario: document.getElementById("itinerario").value,
+      aerolinea: document.getElementById("aerolinea").value,
+      vuelo_ida: document.getElementById("vuelo_ida").value,
+      vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
+      equipaje: document.getElementById("equipaje").value,
+      hotel: document.getElementById("hotel").value,
+      info_hotel: document.getElementById("info_hotel").value,
+      precio_adulto: document.getElementById("precio_adulto").value,
+      precio_nino: document.getElementById("precio_nino").value,
+      precio_bebe: document.getElementById("precio_bebe").value,
+      total_general: document.getElementById("total_general").value,
+      monto_reserva: document.getElementById("monto_reserva").value,
+      politicas: document.getElementById("politicas").value
+    };
 
-    if (ninos && parseInt(ninos) > 0) {
-      doc.text(`Niños: ${ninos}`, left, y); y += lineHeight;
+    const linea = (label, valor) => {
+      if (valor && valor !== "0") {
+        doc.text(`${label}: ${valor}`, 40, y);
+        y += 18;
+      }
+    };
+
+    // Información general
+    linea("Teléfono", datos.telefono);
+    linea("Destino", datos.destino);
+    linea("Fechas", datos.fechas);
+    linea("Adultos", datos.adultos);
+    linea("Niños", datos.ninos);
+    linea("Bebés", datos.bebes);
+    linea("Duración", datos.duracion);
+
+    // Incluye
+    y += 20;
+    doc.setFont("helvetica", "bold");
+    doc.text("Incluye:", 40, y);
+    doc.setFont("helvetica", "normal");
+    y += 16;
+    const incluyeLines = doc.splitTextToSize(datos.incluye, 520);
+    doc.text(incluyeLines, 60, y);
+    y += incluyeLines.length * 14;
+
+    // Vuelo
+    y += 20;
+    doc.setFont("helvetica", "bold");
+    doc.text("Información del vuelo", 40, y);
+    doc.setFont("helvetica", "normal");
+    y += 16;
+    linea("Aerolínea", datos.aerolinea);
+    linea("Vuelo de ida", datos.vuelo_ida);
+    linea("Vuelo de regreso", datos.vuelo_vuelta);
+
+    // Equipaje
+    y += 20;
+    doc.setFont("helvetica", "bold");
+    doc.text("Equipaje", 40, y);
+    doc.setFont("helvetica", "normal");
+    y += 16;
+    const equipajeLines = doc.splitTextToSize(datos.equipaje, 520);
+    doc.text(equipajeLines, 60, y);
+    y += equipajeLines.length * 14;
+
+    // Hotel
+    y += 20;
+    doc.setFont("helvetica", "bold");
+    doc.text("Información del hotel", 40, y);
+    doc.setFont("helvetica", "normal");
+    y += 16;
+    linea("Hotel", datos.hotel);
+    const hotelLines = doc.splitTextToSize(datos.info_hotel, 520);
+    doc.text(hotelLines, 60, y);
+    y += hotelLines.length * 14;
+
+    // Tours Opcionales
+    y += 20;
+    const tablaTours = document.querySelectorAll("#contenedor_tours_opcionales table");
+    if (tablaTours.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.text("Tours Opcionales", 40, y);
+      y += 10;
+      doc.autoTable({
+        startY: y + 10,
+        html: "#contenedor_tours_opcionales table",
+        styles: { fontSize: 10, overflow: "linebreak", cellPadding: 4 },
+        headStyles: { fillColor: [2, 83, 90] },
+      });
+      y = doc.lastAutoTable.finalY + 10;
     }
-    if (bebes && parseInt(bebes) > 0) {
-      doc.text(`Bebés: ${bebes}`, left, y); y += lineHeight;
-    }
 
-    doc.text(`Duración: ${duracion}`, left, y); y += 25;
+    // Inversión
+    y += 20;
+    doc.setFont("helvetica", "bold");
+    doc.text("Inversión por Viajero", 40, y);
+    doc.setFont("helvetica", "normal");
+    y += 16;
+    linea("Precio por adulto", datos.precio_adulto);
+    linea("Precio por niño", datos.precio_nino);
+    linea("Precio por bebé", datos.precio_bebe);
+    linea("Total general", datos.total_general);
+    linea("Monto de reserva", datos.monto_reserva);
 
-    addSection("Incluye:", incluye);
-    addSection("No Incluye:", noIncluye);
-    addSection("Itinerario:", itinerario);
+    // Políticas
+    y += 20;
+    doc.setFont("helvetica", "bold");
+    doc.text("Políticas y Condiciones Generales", 40, y);
+    doc.setFont("helvetica", "normal");
+    y += 16;
+    const politicasLines = doc.splitTextToSize(datos.politicas, 520);
+    doc.text(politicasLines, 60, y);
 
-    addSection("Información del vuelo", 
-      `Aerolínea: ${aerolinea}\nVuelo de ida: ${vueloIda}\nVuelo de regreso: ${vueloVuelta}`);
-
-    addSection("Equipaje", equipaje);
-    addSection("Información del hotel", `Hotel: ${hotel}\n${infoHotel}`);
-
-    if (contenedor && contenedor.innerText.trim()) {
-      addSection("Tours Opcionales", contenedor.innerText.trim());
-    }
-
-    addSection("Inversión por Viajero", 
-      `Adulto: $${precioAdulto}\nNiño: $${precioNino}\nBebé: $${precioBebe}\nTotal General: $${total}\nMonto de Reserva: $${reserva}`);
-
-    addSection("Políticas y Condiciones", politicas);
-
-    doc.save(`Cotizacion_${destino}.pdf`);
+    doc.save(`Cotizacion_${codigo}.pdf`);
   }
-  window.onload = cargarDatosIniciales;
+
+window.onload = cargarDatosIniciales;
   </script>
 
 </body>
