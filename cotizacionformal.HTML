@@ -596,11 +596,7 @@ function restablecerDatosDelTour() {
    doc.text(`${label}: ${valor}`, margenX, y);
    doc.setFont("helvetica", "bold");
 doc.text(`${label}:`, margenX, y);
-
-const anchoLabel = doc.getTextWidth(`${label}: `);
-doc.setFont("helvetica", "normal");
-doc.text(`${valor}`, margenX + anchoLabel, y);
-    y += salto;
+   y += salto;
   }
 
   agregarLinea("Teléfono", data.telefono);
