@@ -645,7 +645,7 @@ doc.autoTable({
 
     const politicasLines = doc.splitTextToSize(dataCotizacion.politicas || "", 520);
     doc.text(politicasLines, 50, nuevaY);
-  }
+  
   doc.save(`Cotizacion_${data.destino}.pdf`);
 }
 
