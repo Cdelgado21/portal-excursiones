@@ -611,7 +611,7 @@ const dataCotizacion = {
     doc.setFont("helvetica", "bold");
     doc.text("Tours Opcionales", 40, y);
     y += 10;
-
+}
 doc.autoTable({
   startY: y + 10,
   html: "#contenedor_tours_opcionales table",
@@ -619,7 +619,7 @@ doc.autoTable({
   headStyles: { fillColor: [2, 83, 90] },
   didDrawPage: function (data) {
     let nuevaY = data.cursor.y + 30;
-
+}
     // Verificamos si hay espacio suficiente o agregamos nueva página
     if (nuevaY + 100 > doc.internal.pageSize.getHeight()) {
       doc.addPage();
@@ -636,7 +636,7 @@ doc.autoTable({
   agregarLinea("Precio por Bebé", `$${data.precio_bebe}`);
   agregarLinea("Total General", `$${data.total_general}`);
   agregarLinea("Monto de Reserva", `$${data.monto_reserva}`);
-
+}
   // 👉 POLÍTICAS
   doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
@@ -647,7 +647,6 @@ doc.autoTable({
     const politicasLines = doc.splitTextToSize(dataCotizacion.politicas || "", 520);
     doc.text(politicasLines, 50, nuevaY);
   }
-});
   doc.save(`Cotizacion_${data.destino}.pdf`);
 }
 
