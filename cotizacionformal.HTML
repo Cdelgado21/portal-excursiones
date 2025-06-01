@@ -612,16 +612,15 @@ function restablecerDatosDelTour() {
     doc.text("Tours Opcionales", 40, y);
     y += 10;
 
-const tableResult = doc.autoTable({
+doc.autoTable({
   startY: y + 10,
   html: "#contenedor_tours_opcionales table",
   styles: { fontSize: 10, overflow: "linebreak", cellPadding: 4 },
   headStyles: { fillColor: [2, 83, 90] },
+  didDrawPage: function (data) {
+    y = data.cursor.y + 20; // 🔥 Esto asegura que y se actualiza bien al terminar la tabla
+  }
 });
-
-// ✅ Actualiza la posición Y para lo que sigue debajo
-y = tableResult.lastAutoTable.finalY + 20;
- }
   // 👉 INVERSIÓN
   doc.setFont("helvetica", "bold");
   doc.text("Inversión por Viajero", 40, y);
