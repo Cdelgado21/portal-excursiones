@@ -553,14 +553,13 @@ if (typeof doc.autoTable !== 'function') {
     }
   };
 
-    // Información general
-    linea("Teléfono", datos.telefono);
-    linea("Destino", datos.destino);
-    linea("Fechas", datos.fechas);
-    linea("Adultos", datos.adultos);
-    linea("Niños", datos.ninos);
-    linea("Bebés", datos.bebes);
-    linea("Duración", datos.duracion);
+gregarLinea("Teléfono", data.telefono);
+  agregarLinea("Destino", data.destino);
+  agregarLinea("Fechas", data.fechas);
+  agregarLinea("Adultos", data.adultos);
+  agregarLinea("Niños", data.ninos);
+  agregarLinea("Bebés", data.bebes);
+  agregarLinea("Duración", data.duracion);
 
     // Incluye
     y += 10;
