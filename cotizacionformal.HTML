@@ -316,9 +316,37 @@ function rellenarCampos(data) {
   if (campo) {
     campo.value = data[key];
     console.log(`🖋️ Campo ${key} actualizado con`, data[key]);
+mostrarToursOpcionalesGuardados(data);
   }
 }
+function mostrarToursOpcionalesGuardados(data) {
+  const contenedor = document.getElementById("contenedor_tours_opcionales");
 
+  if (Array.isArray(data.tours_opcionales) && data.tours_opcionales.length > 0) {
+    contenedor.innerHTML = `
+      <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+          <tr style="background-color:#02535a; color:white;">
+            <th style="padding: 8px; border: 1px solid #ccc;">Tour Opcional</th>
+            <th style="padding: 8px; border: 1px solid #ccc;">Descripción</th>
+            <th style="padding: 8px; border: 1px solid #ccc;">Precio ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.tours_opcionales.map(tour => `
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ccc;">${tour.nombre}</td>
+              <td style="padding: 8px; border: 1px solid #ccc;">${tour.descripcion}</td>
+              <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">${tour.precio}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } else {
+    contenedor.innerHTML = `<p style="color:#999">No hay tours opcionales disponibles.</p>`;
+  }
+}
  if (data.hotel) {
     hotelGuardado = {
       nombre: data.hotel,
