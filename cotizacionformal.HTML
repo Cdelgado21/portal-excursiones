@@ -523,8 +523,17 @@ const width = doc.internal.pageSize.getWidth();
   }
 const codigo = new URLSearchParams(window.location.search).get("codigo") || "COT-XXX-2025";
   const destino = document.getElementById("destino")?.value || "Destino no definido";
-  
-const portadaImg = document.getElementById("fondoPagina1");
+
+ // 🔹 Obtener referencias de imágenes desde el DOM
+  const portadaImg = document.getElementById("fondoPagina1");
+  const fondoContenido = document.getElementById("fondoPagina2");
+  const cierreImg = document.getElementById("fondoPaginaFinal");
+  // 🔍 Validación de imágenes
+  if (!portadaImg || !fondoContenido || !cierreImg) {
+    alert("❌ No se pudieron cargar las imágenes de fondo. Revisa los IDs o rutas de imagen.");
+    return;
+  }
+
  doc.addImage(portadaImg, 'PNG', 0, 0, width, height);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
@@ -534,7 +543,6 @@ const portadaImg = document.getElementById("fondoPagina1");
   doc.text(destino, width / 2, 160, { align: 'center' });
 
   doc.addPage();
-  const fondoContenido = document.getElementById("fondoPagina2");
   doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
 
   const htmlContent = document.querySelector("body"); // O reemplaza por un contenedor específico
