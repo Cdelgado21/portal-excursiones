@@ -81,6 +81,11 @@ function ajustarAlturaTextareas() {
 window.addEventListener("DOMContentLoaded", () => {
   ajustarAlturaTextareas(); // se ejecuta después de que se renderiza todo
 });
+
+<img id="fondoPagina1" src="Portadacotizaciones.png" style="display:none" crossorigin="anonymous">
+<img id="fondoPagina2" src="fondooficio.png" style="display:none" crossorigin="anonymous">
+<img id="fondoPaginaFinal" src="FINALCUENTASRRSS.PNG" style="display:none" crossorigin="anonymous">
+
 </script>
   </style>
 </head>
@@ -205,6 +210,7 @@ window.addEventListener("DOMContentLoaded", () => {
 <!-- Agrega botón de guardar si aún no lo tienes -->
 <div id="mensaje-restablecer" style="display:none; padding:10px; margin-top:10px; border-radius:5px; background:#d4edda; color:#155724; font-weight:bold;">
   ✅ Información del tour restablecida correctamente.
+
 </div>
 <button onclick="guardarCotizacion()" id="btn-guardar">💾 Guardar Cotización</button>
 <button type="button" onclick="restablecerDatosDelTour()" id="btn-restablecerDatosDelTour">🔄 Restablecer información del tour</button>
@@ -218,6 +224,7 @@ window.addEventListener("DOMContentLoaded", () => {
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
 
   const firebaseConfig = {
