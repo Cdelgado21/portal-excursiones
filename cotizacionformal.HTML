@@ -528,7 +528,7 @@ function restablecerDatosDelTour() {
   };
 
   y += 30;
-  const data = {
+const dataCotizacion = {
     telefono: document.getElementById("telefono").value,
     destino: document.getElementById("destino").value,
     fechas: document.getElementById("fechas").value,
@@ -618,9 +618,14 @@ doc.autoTable({
   styles: { fontSize: 10, overflow: "linebreak", cellPadding: 4 },
   headStyles: { fillColor: [2, 83, 90] },
   didDrawPage: function (data) {
-    y = data.cursor.y + 20; // 🔥 Esto asegura que y se actualiza bien al terminar la tabla
-  }
-});
+    let nuevaY = data.cursor.y + 30;
+
+    // Verificamos si hay espacio suficiente o agregamos nueva página
+    if (nuevaY + 100 > doc.internal.pageSize.getHeight()) {
+      doc.addPage();
+      nuevaY = 40;
+    }
+
   // 👉 INVERSIÓN
   doc.setFont("helvetica", "bold");
   doc.text("Inversión por Viajero", 40, y);
@@ -633,20 +638,16 @@ doc.autoTable({
   agregarLinea("Monto de Reserva", `$${data.monto_reserva}`);
 
   // 👉 POLÍTICAS
-  y += 25;
-  if (y >= 700) doc.addPage(); y = 40;
-
   doc.setFont("helvetica", "bold");
-  doc.text("Políticas y Condiciones Generales", 40, y);
-  y += 14;
-  doc.setFont("helvetica", "normal");
-  const politicasLines = doc.splitTextToSize(data.politicas, 520);
-  if (y + politicasLines.length * 14 > 760) {
-    doc.addPage();
-    y = 40;
+    doc.setFontSize(12);
+    doc.text("Políticas y Condiciones Generales", 40, nuevaY);
+    nuevaY += 14;
+    doc.setFont("helvetica", "normal");
+
+    const politicasLines = doc.splitTextToSize(dataCotizacion.politicas || "", 520);
+    doc.text(politicasLines, 50, nuevaY);
   }
-  doc.text(politicasLines, 50, y);
-}
+});
   doc.save(`Cotizacion_${data.destino}.pdf`);
 }
 
