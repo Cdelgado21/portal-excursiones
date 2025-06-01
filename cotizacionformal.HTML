@@ -505,10 +505,9 @@ function restablecerDatosDelTour() {
 }
   async function generarPDF() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'pt', format: 'letter' }); // Tamaño carta
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' }); // Carta
 
   if (typeof doc.autoTable !== 'function') {
-    console.error("❌ autoTable no está disponible.");
     alert("Error: No se cargó la función autoTable.");
     return;
   }
@@ -528,7 +527,8 @@ function restablecerDatosDelTour() {
   };
 
   y += 30;
-const dataCotizacion = {
+
+  const dataCotizacion = {
     telefono: document.getElementById("telefono").value,
     destino: document.getElementById("destino").value,
     fechas: document.getElementById("fechas").value,
@@ -553,22 +553,20 @@ const dataCotizacion = {
     politicas: document.getElementById("politicas").value
   };
 
-
-
-  agregarLinea("Teléfono", data.telefono);
-  agregarLinea("Destino", data.destino);
-  agregarLinea("Fechas", data.fechas);
-  agregarLinea("Adultos", data.adultos);
-  agregarLinea("Niños", data.ninos);
-  agregarLinea("Bebés", data.bebes);
-  agregarLinea("Duración", data.duracion);
+  agregarLinea("Teléfono", dataCotizacion.telefono);
+  agregarLinea("Destino", dataCotizacion.destino);
+  agregarLinea("Fechas", dataCotizacion.fechas);
+  agregarLinea("Adultos", dataCotizacion.adultos);
+  agregarLinea("Niños", dataCotizacion.ninos);
+  agregarLinea("Bebés", dataCotizacion.bebes);
+  agregarLinea("Duración", dataCotizacion.duracion);
 
   y += 10;
   doc.setFont("helvetica", "bold");
   doc.text("Incluye:", 40, y);
   y += 15;
   doc.setFont("helvetica", "normal");
-  const incluyeLines = doc.splitTextToSize(data.incluye, 520);
+  const incluyeLines = doc.splitTextToSize(dataCotizacion.incluye, 520);
   doc.text(incluyeLines, 50, y);
   y += incluyeLines.length * 14;
 
@@ -577,9 +575,9 @@ const dataCotizacion = {
   doc.text("Información del vuelo", 40, y);
   y += 16;
   doc.setFont("helvetica", "normal");
-  agregarLinea("Aerolínea", data.aerolinea);
-  const vueloIda = doc.splitTextToSize(`Vuelo de ida: ${data.vuelo_ida}`, 520);
-  const vueloRegreso = doc.splitTextToSize(`Vuelo de regreso: ${data.vuelo_vuelta}`, 520);
+  agregarLinea("Aerolínea", dataCotizacion.aerolinea);
+  const vueloIda = doc.splitTextToSize(`Vuelo de ida: ${dataCotizacion.vuelo_ida}`, 520);
+  const vueloRegreso = doc.splitTextToSize(`Vuelo de regreso: ${dataCotizacion.vuelo_vuelta}`, 520);
   doc.text(vueloIda, 50, y);
   y += vueloIda.length * 14;
   doc.text(vueloRegreso, 50, y);
@@ -590,7 +588,7 @@ const dataCotizacion = {
   doc.text("Equipaje", 40, y);
   y += 16;
   doc.setFont("helvetica", "normal");
-  const equipajeLines = doc.splitTextToSize(data.equipaje, 520);
+  const equipajeLines = doc.splitTextToSize(dataCotizacion.equipaje, 520);
   doc.text(equipajeLines, 50, y);
   y += equipajeLines.length * 14;
 
@@ -599,54 +597,60 @@ const dataCotizacion = {
   doc.text("Información del hotel", 40, y);
   y += 16;
   doc.setFont("helvetica", "normal");
-  agregarLinea("Hotel", data.hotel);
-  const hotelLines = doc.splitTextToSize(data.info_hotel, 520);
+  agregarLinea("Hotel", dataCotizacion.hotel);
+  const hotelLines = doc.splitTextToSize(dataCotizacion.info_hotel, 520);
   doc.text(hotelLines, 50, y);
   y += hotelLines.length * 14;
 
-  // 👉 TOURS OPCIONALES
-  const tablaTours = document.querySelectorAll("#contenedor_tours_opcionales table");
-  if (tablaTours.length > 0) {
-    y += 20;
-    doc.setFont("helvetica", "bold");
-    doc.text("Tours Opcionales", 40, y);
-    y += 10;
-}
-doc.autoTable({
-  startY: y + 10,
-  html: "#contenedor_tours_opcionales table",
-  styles: { fontSize: 10, overflow: "linebreak", cellPadding: 4 },
-  headStyles: { fillColor: [2, 83, 90] },
-  didDrawPage: function (data) {
-    let nuevaY = data.cursor.y + 30;
-    // Verificamos si hay espacio suficiente o agregamos nueva página
-    if (nuevaY + 100 > doc.internal.pageSize.getHeight()) {
-      doc.addPage();
-      nuevaY = 40;
+  // 👉 TOURS OPCIONALES + POLÍTICAS DENTRO DE autoTable
+  doc.autoTable({
+    startY: y + 20,
+    html: "#contenedor_tours_opcionales table",
+    styles: { fontSize: 10, overflow: "linebreak", cellPadding: 4 },
+    headStyles: { fillColor: [2, 83, 90] },
+    didDrawPage: function (data) {
+      let nuevaY = data.cursor.y + 30;
+
+      if (nuevaY + 100 > doc.internal.pageSize.getHeight()) {
+        doc.addPage();
+        nuevaY = 40;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("Inversión por Viajero", 40, nuevaY);
+      nuevaY += 16;
+      doc.setFont("helvetica", "normal");
+
+      const agregarY = (label, val) => {
+        if (val && val !== "0") {
+          doc.text(`${label}: ${val}`, 50, nuevaY);
+          nuevaY += 14;
+        }
+      };
+
+      agregarY("Precio por Adulto", `$${dataCotizacion.precio_adulto}`);
+      agregarY("Precio por Niño", `$${dataCotizacion.precio_nino}`);
+      agregarY("Precio por Bebé", `$${dataCotizacion.precio_bebe}`);
+      agregarY("Total General", `$${dataCotizacion.total_general}`);
+      agregarY("Monto de Reserva", `$${dataCotizacion.monto_reserva}`);
+
+      nuevaY += 25;
+      if (nuevaY + 100 > doc.internal.pageSize.getHeight()) {
+        doc.addPage();
+        nuevaY = 40;
+      }
+
+      doc.setFont("helvetica", "bold");
+      doc.text("Políticas y Condiciones Generales", 40, nuevaY);
+      nuevaY += 14;
+      doc.setFont("helvetica", "normal");
+      const politicasLines = doc.splitTextToSize(dataCotizacion.politicas || "", 520);
+      doc.text(politicasLines, 50, nuevaY);
     }
+  });
 
-  // 👉 INVERSIÓN
-  doc.setFont("helvetica", "bold");
-  doc.text("Inversión por Viajero", 40, y);
-  y += 16;
-  doc.setFont("helvetica", "normal");
-  agregarLinea("Precio por Adulto", `$${data.precio_adulto}`);
-  agregarLinea("Precio por Niño", `$${data.precio_nino}`);
-  agregarLinea("Precio por Bebé", `$${data.precio_bebe}`);
-  agregarLinea("Total General", `$${data.total_general}`);
-  agregarLinea("Monto de Reserva", `$${data.monto_reserva}`);
-
-// 👉 POLÍTICAS
-  doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("Políticas y Condiciones Generales", 40, nuevaY);
-    nuevaY += 14;
-    doc.setFont("helvetica", "normal");
-
-    const politicasLines = doc.splitTextToSize(dataCotizacion.politicas || "", 520);
-    doc.text(politicasLines, 50, nuevaY);
-  
-  doc.save(`Cotizacion_${data.destino}.pdf`);
+  doc.save(`Cotizacion_${dataCotizacion.destino}.pdf`);
 }
 
 window.onload = cargarDatosIniciales;
