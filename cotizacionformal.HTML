@@ -375,6 +375,7 @@ ajustarAlturaTextareas();
 
  async function guardarCotizacion() {
   const data = {
+tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
     telefono: document.getElementById("telefono").value,
     destino: document.getElementById("destino").value,
     fechas: document.getElementById("fechas").value,
@@ -403,7 +404,25 @@ ajustarAlturaTextareas();
     politicas: document.getElementById("politicas").value,
     timestamp: new Date()
   };
+function obtenerToursOpcionalesDesdeDOM() {
+  const tabla = document.querySelector("#contenedor_tours_opcionales table tbody");
+  if (!tabla) return [];
 
+  const filas = tabla.querySelectorAll("tr");
+  const tours = [];
+
+  filas.forEach(fila => {
+    const columnas = fila.querySelectorAll("td");
+    if (columnas.length === 3) {
+      const nombre = columnas[0].textContent.trim();
+      const descripcion = columnas[1].textContent.trim();
+      const precio = parseFloat(columnas[2].textContent.trim().replace("$", "")) || 0;
+      tours.push({ nombre, descripcion, precio });
+    }
+  });
+
+  return tours;
+}
   try {
     await db.collection("cotizacionformal").doc(codigo).set(data, { merge: true });
     alert("✅ Cotización guardada correctamente.");
