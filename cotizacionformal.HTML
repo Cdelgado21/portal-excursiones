@@ -663,8 +663,11 @@ console.log("🔴 Verificando datos no_incluye:", data.no_incluye);
 agregarTituloSeccion("Itinerario de Vuelo y Hotel");
   agregarLinea("Aerolínea", data.aerolinea);
   agregarSeccion("Vuelo de Ida", data.vuelo_ida);
+y += 5;
   agregarSeccion("Vuelo de Regreso", data.vuelo_vuelta);
+y += 5;
   agregarSeccion("Equipaje", data.equipaje);
+y += 5;
   agregarLinea("Hotel", data.hotel);
   agregarSeccion("Información del Hotel", data.info_hotel);
 
@@ -674,7 +677,7 @@ agregarTituloSeccion("Inversión por Viajero");
   if (data.precio_bebe !== "0") agregarLinea("Precio Bebé", `$${data.precio_bebe}`);
   agregarLinea("Total General", `$${data.total_general}`);
   agregarLinea("Monto de Reserva", `$${data.monto_reserva}`);
-
+y += 10;
   agregarSeccion("Políticas y Condiciones Generales", data.politicas);
 
   // Página 3: Tabla de tours opcionales
