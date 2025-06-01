@@ -633,6 +633,8 @@ function agregarSeccion(titulo, textoPlano) {
   if (data.bebes !== "0") agregarLinea("Bebés", data.bebes);
   agregarLinea("Duración", data.duracion);
 
+console.log("🟢 Verificando datos incluye:", data.incluye);
+console.log("🔴 Verificando datos no_incluye:", data.no_incluye);
   agregarSeccion("Incluye", data.incluye);
   agregarSeccion("No Incluye", data.no_incluye);
   agregarSeccion("Itinerario", data.itinerario);
