@@ -515,13 +515,11 @@ if (typeof doc.autoTable !== 'function') {
     let y = 40;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("Detalle de Cotización", 220, y);
+    doc.text("Detalle de Cotización", doc.internal.pageSize.getWidth() / 2, y, { align: "center" });
 
     y += 30;
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-
-    const datos = {
+  const data = {
+  
       telefono: document.getElementById("telefono").value,
       destino: document.getElementById("destino").value,
       fechas: document.getElementById("fechas").value,
@@ -546,12 +544,14 @@ if (typeof doc.autoTable !== 'function') {
       politicas: document.getElementById("politicas").value
     };
 
-    const linea = (label, valor) => {
-      if (valor && valor !== "0") {
-        doc.text(`${label}: ${valor}`, 40, y);
-        y += 18;
-      }
-    };
+  const agregarLinea = (label, value) => {
+    if (value && value !== "0") {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.text(`${label}: ${value}`, 40, y);
+      y += 18;
+    }
+  };
 
     // Información general
     linea("Teléfono", datos.telefono);
@@ -563,44 +563,49 @@ if (typeof doc.autoTable !== 'function') {
     linea("Duración", datos.duracion);
 
     // Incluye
-    y += 20;
+    y += 10;
     doc.setFont("helvetica", "bold");
     doc.text("Incluye:", 40, y);
     doc.setFont("helvetica", "normal");
-    y += 16;
+    y += 15;
     const incluyeLines = doc.splitTextToSize(datos.incluye, 520);
-    doc.text(incluyeLines, 60, y);
+    doc.text(incluyeLines, 50, y);
     y += incluyeLines.length * 14;
 
     // Vuelo
-    y += 20;
+    y += 10;
     doc.setFont("helvetica", "bold");
     doc.text("Información del vuelo", 40, y);
     doc.setFont("helvetica", "normal");
     y += 16;
-    linea("Aerolínea", datos.aerolinea);
-    linea("Vuelo de ida", datos.vuelo_ida);
-    linea("Vuelo de regreso", datos.vuelo_vuelta);
+  doc.setFont("helvetica", "normal");
+  agregarLinea("Aerolínea", data.aerolinea);
+  const vueloIda = doc.splitTextToSize(`Vuelo de ida: ${data.vuelo_ida}`, 520);
+  const vueloRegreso = doc.splitTextToSize(`Vuelo de regreso: ${data.vuelo_vuelta}`, 520);
+  doc.text(vueloIda, 50, y);
+  y += vueloIda.length * 14;
+  doc.text(vueloRegreso, 50, y);
+  y += vueloRegreso.length * 14;
 
     // Equipaje
-    y += 20;
+    y += 10;
     doc.setFont("helvetica", "bold");
     doc.text("Equipaje", 40, y);
     doc.setFont("helvetica", "normal");
     y += 16;
     const equipajeLines = doc.splitTextToSize(datos.equipaje, 520);
-    doc.text(equipajeLines, 60, y);
+    doc.text(equipajeLines, 50, y);
     y += equipajeLines.length * 14;
 
     // Hotel
-    y += 20;
+    y += 10;
     doc.setFont("helvetica", "bold");
     doc.text("Información del hotel", 40, y);
     doc.setFont("helvetica", "normal");
     y += 16;
     linea("Hotel", datos.hotel);
     const hotelLines = doc.splitTextToSize(datos.info_hotel, 520);
-    doc.text(hotelLines, 60, y);
+    doc.text(hotelLines, 50, y);
     y += hotelLines.length * 14;
 
     // Tours Opcionales
@@ -632,13 +637,19 @@ if (typeof doc.autoTable !== 'function') {
     linea("Monto de reserva", datos.monto_reserva);
 
     // Políticas
-    y += 20;
-    doc.setFont("helvetica", "bold");
-    doc.text("Políticas y Condiciones Generales", 40, y);
-    doc.setFont("helvetica", "normal");
-    y += 16;
-    const politicasLines = doc.splitTextToSize(datos.politicas, 520);
-    doc.text(politicasLines, 60, y);
+  y += 25;
+  if (y >= 700) doc.addPage(); y = 40;
+
+  doc.setFont("helvetica", "bold");
+  doc.text("Políticas y Condiciones Generales", 40, y);
+  y += 14;
+  doc.setFont("helvetica", "normal");
+  const politicasLines = doc.splitTextToSize(data.politicas, 520);
+  if (y + politicasLines.length * 14 > 760) {
+    doc.addPage();
+    y = 40;
+  }
+  doc.text(politicasLines, 50, y);
 
     doc.save(`Cotizacion_${codigo}.pdf`);
   }
