@@ -507,6 +507,11 @@ function restablecerDatosDelTour() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'pt', format: 'letter' }); // Tamaño carta
 
+if (typeof doc.autoTable !== 'function') {
+  console.error("❌ autoTable no está disponible.");
+  alert("Error: No se cargó la función autoTable.");
+  return;
+}
     let y = 40;
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
