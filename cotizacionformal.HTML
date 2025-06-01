@@ -191,7 +191,13 @@ window.addEventListener("DOMContentLoaded", () => {
 </section>
 
 <!-- Agrega botón de guardar si aún no lo tienes -->
+<div id="mensaje-restablecer" style="display:none; padding:10px; margin-top:10px; border-radius:5px; background:#d4edda; color:#155724; font-weight:bold;">
+  ✅ Información del tour restablecida correctamente.
+</div>
 <button onclick="guardarCotizacion()" id="btn-guardar">💾 Guardar Cotización</button>
+<button type="button" onclick="restablecerDatosDelTour()" style="margin-top:10px; background-color:#f49859; color:white; padding:8px 16px; border:none; border-radius:5px;">
+🔄 Restablecer información del tour
+</button>
 
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -449,6 +455,38 @@ function agregarEquipaje() {
   document.getElementById("tipo_equipaje").value = "";
   document.getElementById("cantidad_equipaje").value = "";
   document.getElementById("uso_equipaje").value = "";
+}
+function restablecerDatosDelTour() {
+  const confirmacion = confirm("¿Deseas restablecer toda la información del tour desde el catálogo?");
+  if (!confirmacion) return;
+
+  // Volver a cargar desde el catálogo
+  cargarDatosDelTour();
+
+  // Limpiar campos adicionales
+  document.getElementById("aerolinea").value = "";
+  document.getElementById("vuelo_ida").value = "";
+  document.getElementById("vuelo_vuelta").value = "";
+  document.getElementById("tipo_equipaje").value = "";
+  document.getElementById("cantidad_equipaje").value = "";
+  document.getElementById("uso_equipaje").value = "";
+  document.getElementById("equipaje").value = "";
+
+  document.getElementById("precio_adulto").value = "";
+  document.getElementById("precio_nino").value = "";
+  document.getElementById("precio_bebe").value = "";
+  document.getElementById("total_general").value = "";
+  document.getElementById("monto_reserva").value = "";
+
+  // Mostrar mensaje visual
+  const mensaje = document.getElementById("mensaje-restablecer");
+  mensaje.style.display = "block";
+
+  setTimeout(() => {
+    mensaje.style.display = "none";
+  }, 4000); // Ocultar tras 4 segundos
+}
+alert("✅ Información del tour restablecida correctamente.");
 }
   window.onload = cargarDatosIniciales;
 
