@@ -511,7 +511,42 @@ function restablecerDatosDelTour() {
     alert("❌ Error: autoTable no está disponible.");
     return;
   }
+ // Rutas o base64 de tus imágenes de fondo
+    const portada = 'Portadacotizaciones.png';
+    const fondoContenido = 'fondooficio.png';
+    const cierre = 'FINALCUENTASRRSS.png';
 
+    // Página 1 - Portada
+    doc.addImage(portada, 'PNG', 0, 0, width, height);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.text('COT-003-2025', width / 2, 140, { align: 'center' });
+    doc.setFontSize(18);
+    doc.text('SUPER PROMOCIÓN MEDELLÍN', width / 2, 155, { align: 'center' });
+
+    // Página 2 - Contenido real (html)
+    doc.addPage();
+    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
+
+    // Esperar a que el HTML se renderice
+    const htmlContent = document.getElementById('contenidoCotizacion');
+
+    await html2canvas(htmlContent, {
+      backgroundColor: null,
+      scale: 2
+    }).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const imgProps = doc.getImageProperties(imgData);
+      const ratio = width / imgProps.width;
+      const canvasHeight = imgProps.height * ratio;
+      doc.addImage(imgData, 'PNG', 10, 20, width - 20, canvasHeight);
+    });
+
+    // Página 3 - Cierre
+    doc.addPage();
+    doc.addImage(cierre, 'PNG', 0, 0, width, height);
+}
   const data = {
     telefono: document.getElementById("telefono").value,
     destino: document.getElementById("destino").value,
@@ -550,42 +585,7 @@ function restablecerDatosDelTour() {
       y += espacioVertical;
     }
   };
-    // Rutas o base64 de tus imágenes de fondo
-    const portada = 'ruta_o_base64_de_la_imagen_1.png';
-    const fondoContenido = 'ruta_o_base64_de_la_imagen_2.png';
-    const cierre = 'ruta_o_base64_de_la_imagen_3.png';
-
-    // Página 1 - Portada
-    doc.addImage(portada, 'PNG', 0, 0, width, height);
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
-    doc.text('COT-003-2025', width / 2, 140, { align: 'center' });
-    doc.setFontSize(18);
-    doc.text('SUPER PROMOCIÓN MEDELLÍN', width / 2, 155, { align: 'center' });
-
-    // Página 2 - Contenido real (html)
-    doc.addPage();
-    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
-
-    // Esperar a que el HTML se renderice
-    const htmlContent = document.getElementById('contenidoCotizacion');
-
-    await html2canvas(htmlContent, {
-      backgroundColor: null,
-      scale: 2
-    }).then(canvas => {
-      const imgData = canvas.toDataURL('image/png');
-      const imgProps = doc.getImageProperties(imgData);
-      const ratio = width / imgProps.width;
-      const canvasHeight = imgProps.height * ratio;
-      doc.addImage(imgData, 'PNG', 10, 20, width - 20, canvasHeight);
-    });
-
-    // Página 3 - Cierre
-    doc.addPage();
-    doc.addImage(cierre, 'PNG', 0, 0, width, height);
-}
+   
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.text("Detalle de Cotización", doc.internal.pageSize.getWidth() / 2, y, { align: "center" });
