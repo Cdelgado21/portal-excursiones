@@ -619,7 +619,6 @@ doc.autoTable({
   headStyles: { fillColor: [2, 83, 90] },
   didDrawPage: function (data) {
     let nuevaY = data.cursor.y + 30;
-}
     // Verificamos si hay espacio suficiente o agregamos nueva página
     if (nuevaY + 100 > doc.internal.pageSize.getHeight()) {
       doc.addPage();
