@@ -525,6 +525,7 @@ const codigo = new URLSearchParams(window.location.search).get("codigo") || "COT
  // 🔹 Obtener referencias de imágenes desde el DOM
   const portadaImg = document.getElementById("fondoPagina1");
   const fondoContenido = document.getElementById("fondoPagina2");
+  const cierreImg = document.getElementById("fondoPaginaFinal");
   // 🔍 Validación de imágenes
   if (!portadaImg || !fondoContenido || !cierreImg) {
     alert("❌ No se pudieron cargar las imágenes de fondo. Revisa los IDs o rutas de imagen.");
@@ -557,7 +558,6 @@ const codigo = new URLSearchParams(window.location.search).get("codigo") || "COT
 
 // 3️⃣ Página final
   doc.addPage();
-  const cierreImg = document.getElementById("fondoPaginaFinal");
 doc.addImage(cierreImg, 'PNG', 0, 0, width, height);
 
   const data = {
