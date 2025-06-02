@@ -236,6 +236,7 @@ storageBucket: "tours-460717.appspot.com", // ← ¡Esto es importante!
 };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+const storage = firebase.storage();
 
   let cargadoDesdeFormal = false;
 let hotelGuardado = null;
