@@ -582,7 +582,7 @@ function agregarSeccion(titulo, textoPlano) {
   if (y > 250) {
     doc.addPage();
     doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
-    y = 30;
+    y = 35;
   }
 
   doc.setFont("helvetica", "bold");
@@ -600,7 +600,7 @@ function agregarSeccion(titulo, textoPlano) {
     if (y > 270) {
       doc.addPage();
       doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
-      y = 50;
+      y = 35;
     }
     doc.text(linea, margenX, y, { align: 'justify' });
     y += 6;
@@ -650,7 +650,7 @@ function agregarLinea(label, valor) {
   if (data.ninos !== "0") agregarLinea("Niños", data.ninos);
   if (data.bebes !== "0") agregarLinea("Bebés", data.bebes);
   agregarLinea("Duración", data.duracion);
-y += 8;
+y += 15;
 agregarTituloSeccion("Información del Tour");
   agregarSeccion("Incluye", data.incluye);
   agregarSeccion("No Incluye", data.no_incluye);
