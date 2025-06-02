@@ -6,17 +6,18 @@
   <title>Login - Excursiones Delgado</title>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <style>
     body {
       background-color: #f4f7f8;
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      min-height: 100vh;
     }
     .login-container {
       background-color: white;
@@ -35,6 +36,9 @@
       color: #555;
       margin-bottom: 20px;
     }
+    .input-group {
+      position: relative;
+    }
     input {
       width: 100%;
       padding: 12px;
@@ -42,7 +46,14 @@
       border: 1px solid #ccc;
       border-radius: 6px;
     }
-    button {
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+    }
+    .login-container button {
       background-color: #02535a;
       color: white;
       padding: 12px;
@@ -50,6 +61,7 @@
       width: 100%;
       border-radius: 6px;
       cursor: pointer;
+      margin-top: 10px;
     }
     button:hover {
       background-color: #037177;
@@ -57,6 +69,21 @@
     .logo {
       width: 120px;
       margin-bottom: 20px;
+    }
+    .forgot-password {
+      display: block;
+      margin-top: 10px;
+      font-size: 0.9em;
+      color: #02535a;
+      text-decoration: none;
+    }
+    .forgot-password:hover {
+      text-decoration: underline;
+    }
+    .welcome-msg {
+      margin-top: 10px;
+      color: #02535a;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -67,9 +94,14 @@
     <p class="subtitle">Excursiones Delgado</p>
     <form id="loginForm">
       <input type="email" id="correo" placeholder="Correo electrónico" required>
-      <input type="password" id="clave" placeholder="Contraseña" required>
+      <div class="input-group">
+        <input type="password" id="clave" placeholder="Contraseña" required>
+        <span class="toggle-password" onclick="togglePassword()">👁️</span>
+      </div>
+      <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
       <button type="submit">Iniciar Sesión</button>
     </form>
+    <div id="bienvenida" class="welcome-msg"></div>
   </div>
 
   <script>
@@ -83,6 +115,12 @@
     };
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    function togglePassword() {
+      const passwordInput = document.getElementById('clave');
+      passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+    }
 
     document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
@@ -91,8 +129,26 @@
 
       auth.signInWithEmailAndPassword(email, password)
         .then(userCredential => {
-          alert("Inicio de sesión exitoso");
-          window.location.href = "/dashboard.html";
+          const user = userCredential.user;
+          return db.collection("usuarios").doc(user.uid).get().then(doc => ({ user, doc }));
+        })
+        .then(({ user, doc }) => {
+          if (doc.exists) {
+            const data = doc.data();
+            const rol = data.rol || "";
+            if (rol === "Administrador") {
+              document.getElementById('bienvenida').innerText = `Bienvenido @${user.email}`;
+              setTimeout(() => {
+                window.location.href = "/dashboard.html";
+              }, 1500);
+            } else {
+              alert("Acceso denegado: Solo los administradores pueden ingresar.");
+              auth.signOut();
+            }
+          } else {
+            alert("No se encontró información adicional del usuario.");
+            auth.signOut();
+          }
         })
         .catch(error => {
           alert("Error: " + error.message);
@@ -101,4 +157,3 @@
   </script>
 </body>
 </html>
-
