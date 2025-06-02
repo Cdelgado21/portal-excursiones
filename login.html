@@ -128,16 +128,7 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    auth.signInWithEmailAndPassword(correo, contrasena)
-  .then(userCredential => {
-    // Usuario autenticado, redireccionar
-    alert("Bienvenido @" + userCredential.user.email);
-    window.location.href = "dashboard.html";
-  })
-  .catch(error => {
-    alert("Error: " + error.message);
-  });
-    function togglePassword() {
+   function togglePassword() {
       const passwordInput = document.getElementById('clave');
       const icon = document.getElementById('eyeIcon');
       if (passwordInput.type === 'password') {
