@@ -12,6 +12,10 @@
     th {
       background-color: #02535a !important;
       color: white !important;
+      border: 1px solid #ccc;
+    }
+    td {
+      border: 1px solid #ccc;
     }
     tr:nth-child(even) {
       background-color: #eaf4f4;
@@ -118,6 +122,17 @@
       document.getElementById('modalForm').classList.toggle('hidden');
     }
 
+    async function toggleEstado(docId, estadoActual) {
+      const nuevoEstado = estadoActual === 'Activo' ? 'Inactivo' : 'Activo';
+      await db.collection('usuarios').doc(docId).update({ estado: nuevoEstado });
+      cargarUsuarios();
+    }
+
+    async function eliminarUsuario(docId) {
+      await db.collection('usuarios').doc(docId).delete();
+      cargarUsuarios();
+    }
+
     async function cargarUsuarios() {
       tabla.innerHTML = '';
       const snapshot = await db.collection('usuarios').get();
@@ -132,12 +147,13 @@
           <td class="px-4 py-2">${u.correo}</td>
           <td class="px-4 py-2">${u.pasaporte || ''}</td>
           <td class="px-4 py-2">${u.rol}</td>
-          <td class="px-4 py-2">${u.estado}</td>
+          <td class="px-4 py-2 text-center">
+            <button onclick="toggleEstado('${doc.id}', '${u.estado}')" class="${u.estado === 'Activo' ? 'bg-green-500' : 'bg-red-500'} text-white px-2 py-1 rounded">${u.estado}</button>
+          </td>
           <td class="px-4 py-2">${u.fechaRegistro}</td>
-          <td class="px-4 py-2 space-x-2">
-            <button class="bg-yellow-500 text-white px-2 py-1 rounded">Editar</button>
-            <button class="${u.estado === 'Activo' ? 'bg-red-500' : 'bg-green-500'} text-white px-2 py-1 rounded">${u.estado === 'Activo' ? 'Inactivar' : 'Activar'}</button>
-            <button class="bg-gray-700 text-white px-2 py-1 rounded">Eliminar</button>
+          <td class="px-4 py-2 text-center space-x-1">
+            <button class="bg-yellow-500 text-white px-2 py-1 rounded" title="Editar">✏️</button>
+            <button onclick="eliminarUsuario('${doc.id}')" class="bg-gray-700 text-white px-2 py-1 rounded" title="Eliminar">🗑️</button>
           </td>
         `;
         tabla.appendChild(tr);
