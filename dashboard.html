@@ -69,14 +69,13 @@ h2 {
   position: fixed;
   top: 0;
   left: 0;
-  width: 250px;
-  height: 100%;
-  background-color: #02535a;
-  color: white;
-  padding: 20px;
-  transform: translateX(-100%);
+  width: 260px;
+  height: 100vh; /* toda la altura */
+  background-color: #02535a; /* verde principal */
+  padding-top: 20px;
+  z-index: 1001;
+  overflow-y: auto;
   transition: transform 0.3s ease;
-  z-index: 1000;
 }
 
 .sidebar.active {
@@ -86,16 +85,13 @@ h2 {
 
 .toggle-btn {
   position: fixed;
-  top: 20px;
-  left: 20px;
-  font-size: 24px;
-  background: white; /* Fondo blanco para contraste */
-  color: #02535a;     /* Ícono verde */
-  border: none;
+  top: 15px;
+  left: 15px;
+  background-color: white;
   border-radius: 50%;
-  padding: 8px 12px;
-  z-index: 1100;
-  box-shadow: 0 0 5px rgba(0,0,0,0.2);
+  padding: 10px;
+  border: none;
+  z-index: 1100; /* más alto que el sidebar */
 }
 
     .user-info {
@@ -177,7 +173,10 @@ h2 {
 </head>
 <body>
 <h2>Bienvenido al Panel de Control</h2>
-
+.main-content {
+  margin-top: 70px; /* o mayor si se requiere separación del botón */
+  padding: 20px;
+}
   <div class="dashboard-section dashboard-cards">
     <div class="card">🧾 Cotizaciones hoy: <strong>12</strong></div>
     <div class="card">📦 Reservas activas: <strong>8</strong></div>
