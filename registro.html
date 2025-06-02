@@ -194,12 +194,11 @@
       const id = form.usuarioId.value;
      try {
   if (id) {
-    await db.collection('usuarios').doc(id).update(datos);
-  } else {
-    const cred = await auth.createUserWithEmailAndPassword(datos.correo, '123456');
-    await db.collection('usuarios').doc(cred.user.uid).set(datos);
-    alert("Usuario creado correctamente con contraseña 123456");
-  }
+  await db.collection('usuarios').doc(id).update(datos);
+} else {
+  await db.collection('usuarios').add(datos);
+  alert("Usuario registrado correctamente.");
+}
   form.reset();
   form.usuarioId.value = '';
   toggleModal();
