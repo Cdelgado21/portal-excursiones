@@ -650,11 +650,8 @@ function agregarLinea(label, valor) {
   if (data.ninos !== "0") agregarLinea("Niños", data.ninos);
   if (data.bebes !== "0") agregarLinea("Bebés", data.bebes);
   agregarLinea("Duración", data.duracion);
-
+y += 8;
 agregarTituloSeccion("Información del Tour");
-
-console.log("🟢 Verificando datos incluye:", data.incluye);
-console.log("🔴 Verificando datos no_incluye:", data.no_incluye);
   agregarSeccion("Incluye", data.incluye);
   agregarSeccion("No Incluye", data.no_incluye);
   agregarSeccion("Itinerario de Tours", data.itinerario);
