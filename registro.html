@@ -4,82 +4,154 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestión de Usuarios</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <style>
+    body {
+      background-color: #f4f7f8;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      padding: 30px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: bold;
+      color: #02535a;
+      margin-bottom: 20px;
+    }
+    .btn-agregar {
+      background-color: #02535a;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .btn-agregar:hover {
+      background-color: #037177;
+    }
     th {
-      background-color: #02535a !important;
-      color: white !important;
+      background-color: #02535a;
+      color: white;
+      padding: 10px;
       border: 1px solid #ccc;
     }
     td {
+      padding: 10px;
       border: 1px solid #ccc;
     }
     tr:nth-child(even) {
       background-color: #eaf4f4;
     }
-    button {
-      transition: background-color 0.2s;
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      display: none;
     }
-    button:hover {
-      filter: brightness(1.1);
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .modal h2 {
+      color: #02535a;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .btn {
+      padding: 8px 14px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-editar {
+      background-color: orange;
+      color: white;
+    }
+    .btn-eliminar {
+      background-color: #444;
+      color: white;
+    }
+    .btn-estado {
+      width: 80px;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 6px 8px;
+      cursor: pointer;
+    }
+    .acciones {
+      text-align: center;
     }
   </style>
 </head>
-<body class="bg-gray-100 font-sans">
-  <div class="container mx-auto p-6">
-    <h1 class="text-3xl font-bold text-[#02535a] mb-4">Gestión de Usuarios</h1>
-    <button onclick="toggleModal()" class="bg-[#02535a] hover:bg-[#037177] text-white px-4 py-2 rounded mb-4">Agregar Usuario</button>
+<body>
+  <div class="container">
+    <h1>Gestión de Usuarios</h1>
+    <button onclick="toggleModal()" class="btn-agregar">Agregar Usuario</button>
 
     <!-- Modal -->
-    <div id="modalForm" class="fixed z-10 inset-0 overflow-y-auto hidden">
-      <div class="flex items-center justify-center min-h-screen bg-black bg-opacity-50">
-        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-xl">
-          <h2 class="text-xl font-semibold mb-4 text-[#02535a]">Nuevo Usuario</h2>
-
-          <form id="formulario">
-            <input type="text" id="nombre" placeholder="Nombre" class="border rounded w-full mb-2 p-2">
-            <input type="text" id="apellidos" placeholder="Apellidos" class="border rounded w-full mb-2 p-2">
-            <input type="date" id="fechaNacimiento" class="border rounded w-full mb-2 p-2">
-            <input type="text" id="telefono" placeholder="Teléfono" class="border rounded w-full mb-2 p-2">
-            <input type="email" id="correo" placeholder="Correo electrónico" class="border rounded w-full mb-2 p-2">
-            <input type="text" id="pasaporte" placeholder="N° Pasaporte" class="border rounded w-full mb-2 p-2">
-            <select id="rol" class="border rounded w-full mb-4 p-2">
-              <option value="Cotizaciones">Cotizaciones</option>
-              <option value="Reservas">Reservas</option>
-              <option value="Finanzas">Finanzas</option>
-            </select>
-            <div class="flex justify-end">
-              <button type="button" onclick="toggleModal()" class="mr-2 text-gray-500">Cancelar</button>
-              <button type="submit" class="bg-[#02535a] hover:bg-[#037177] text-white px-4 py-2 rounded">Guardar Usuario</button>
-            </div>
-          </form>
-        </div>
+    <div id="modalForm" class="modal">
+      <div class="modal-content">
+        <h2>Nuevo Usuario</h2>
+        <form id="formulario">
+          <input type="hidden" id="usuarioId">
+          <input type="text" id="nombre" placeholder="Nombre">
+          <input type="text" id="apellidos" placeholder="Apellidos">
+          <input type="date" id="fechaNacimiento">
+          <input type="text" id="telefono" placeholder="Teléfono">
+          <input type="email" id="correo" placeholder="Correo electrónico">
+          <input type="text" id="pasaporte" placeholder="N° Pasaporte">
+          <select id="rol">
+            <option value="Cotizaciones">Cotizaciones</option>
+            <option value="Reservas">Reservas</option>
+            <option value="Finanzas">Finanzas</option>
+          </select>
+          <div style="text-align: right;">
+            <button type="button" onclick="toggleModal()" class="btn">Cancelar</button>
+            <button type="submit" class="btn" style="background-color:#02535a;color:white;">Guardar Usuario</button>
+          </div>
+        </form>
       </div>
     </div>
 
     <!-- Tabla -->
     <div class="overflow-x-auto">
-      <table class="min-w-full border border-gray-300">
+      <table style="width: 100%; border-collapse: collapse;">
         <thead>
           <tr>
-            <th class="px-4 py-2">Nombre</th>
-            <th class="px-4 py-2">Apellidos</th>
-            <th class="px-4 py-2">Fecha Nac.</th>
-            <th class="px-4 py-2">Teléfono</th>
-            <th class="px-4 py-2">Correo</th>
-            <th class="px-4 py-2">Pasaporte</th>
-            <th class="px-4 py-2">Rol</th>
-            <th class="px-4 py-2">Estado</th>
-            <th class="px-4 py-2">Fecha Registro</th>
-            <th class="px-4 py-2">Acciones</th>
+            <th>Nombre</th>
+            <th>Apellidos</th>
+            <th>Fecha Nac.</th>
+            <th>Teléfono</th>
+            <th>Correo</th>
+            <th>Pasaporte</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Fecha Registro</th>
+            <th>Acciones</th>
           </tr>
         </thead>
-        <tbody id="tablaUsuarios" class="bg-white divide-y divide-gray-200">
-          <!-- Aquí se cargarán los usuarios -->
-        </tbody>
+        <tbody id="tablaUsuarios"></tbody>
       </table>
     </div>
   </div>
@@ -112,14 +184,22 @@
         estado: 'Activo',
         fechaRegistro: new Date().toLocaleDateString("es-CR")
       };
-      await db.collection('usuarios').add(datos);
+
+      const id = form.usuarioId.value;
+      if (id) {
+        await db.collection('usuarios').doc(id).update(datos);
+      } else {
+        await db.collection('usuarios').add(datos);
+      }
       form.reset();
+      form.usuarioId.value = '';
       toggleModal();
       cargarUsuarios();
     });
 
     function toggleModal() {
-      document.getElementById('modalForm').classList.toggle('hidden');
+      const modal = document.getElementById('modalForm');
+      modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
     }
 
     async function toggleEstado(docId, estadoActual) {
@@ -140,24 +220,40 @@
         const u = doc.data();
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td class="px-4 py-2">${u.nombre}</td>
-          <td class="px-4 py-2">${u.apellidos}</td>
-          <td class="px-4 py-2">${u.fechaNacimiento}</td>
-          <td class="px-4 py-2">${u.telefono}</td>
-          <td class="px-4 py-2">${u.correo}</td>
-          <td class="px-4 py-2">${u.pasaporte || ''}</td>
-          <td class="px-4 py-2">${u.rol}</td>
-          <td class="px-4 py-2 text-center">
-            <button onclick="toggleEstado('${doc.id}', '${u.estado}')" class="${u.estado === 'Activo' ? 'bg-green-500' : 'bg-red-500'} text-white px-2 py-1 rounded">${u.estado}</button>
+          <td>${u.nombre}</td>
+          <td>${u.apellidos}</td>
+          <td>${u.fechaNacimiento}</td>
+          <td>${u.telefono}</td>
+          <td>${u.correo}</td>
+          <td>${u.pasaporte || ''}</td>
+          <td>${u.rol}</td>
+          <td class="acciones">
+            <button onclick="toggleEstado('${doc.id}', '${u.estado}')" class="btn-estado" style="background-color:${u.estado === 'Activo' ? '#1b9e3c' : '#c0392b'}">${u.estado}</button>
           </td>
-          <td class="px-4 py-2">${u.fechaRegistro}</td>
-          <td class="px-4 py-2 text-center space-x-1">
-            <button class="text-white px-2 py-1 rounded" title="Editar">✏️</button>
-            <button onclick="eliminarUsuario('${doc.id}')" class="text-white px-2 py-1 rounded" title="Eliminar">🗑️</button>
+          <td>${u.fechaRegistro}</td>
+          <td class="acciones">
+            <button onclick="editarUsuario('${doc.id}')" title="Editar">✏️</button>
+            <button onclick="eliminarUsuario('${doc.id}')" title="Eliminar">🗑️</button>
           </td>
         `;
         tabla.appendChild(tr);
       });
+    }
+
+    async function editarUsuario(id) {
+      const doc = await db.collection('usuarios').doc(id).get();
+      if (doc.exists) {
+        const u = doc.data();
+        form.usuarioId.value = id;
+        form.nombre.value = u.nombre;
+        form.apellidos.value = u.apellidos;
+        form.fechaNacimiento.value = u.fechaNacimiento;
+        form.telefono.value = u.telefono;
+        form.correo.value = u.correo;
+        form.pasaporte.value = u.pasaporte || '';
+        form.rol.value = u.rol;
+        toggleModal();
+      }
     }
 
     window.onload = cargarUsuarios;
