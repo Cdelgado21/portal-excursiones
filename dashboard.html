@@ -1,112 +1,121 @@
-<!-- DASHBOARD HTML MEJORADO -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard - Excursiones Delgado</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f7f8;
       margin: 0;
-      padding: 0;
+      font-family: Arial, sans-serif;
     }
-    header {
+
+    .sidebar {
+      width: 240px;
+      height: 100vh;
       background-color: #02535a;
       color: white;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 20px 15px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
     }
-    header h2 {
+
+    .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+
+    .user-info h3 {
+      font-size: 1rem;
       margin: 0;
     }
-    .logout-btn {
-      background-color: #f49859;
-      border: none;
-      padding: 8px 15px;
-      border-radius: 8px;
-      cursor: pointer;
+
+    .user-info small {
+      font-size: 0.8rem;
+      color: #f5e2b8;
+    }
+
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+
+    .nav-links li {
+      margin: 12px 0;
+    }
+
+    .nav-links a {
       color: white;
-      font-weight: bold;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 6px;
+      transition: background 0.3s;
     }
-    .container {
-      padding: 2rem;
+
+    .nav-links a:hover {
+      background-color: #037177;
     }
-    .welcome {
-      font-size: 1.4rem;
-      margin-bottom: 20px;
-      color: #02535a;
+
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
     }
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
-    }
-    .card {
-      background-color: white;
+
+    main {
+      margin-left: 240px;
       padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      text-align: center;
-      transition: transform 0.2s ease;
     }
-    .card:hover {
-      transform: translateY(-5px);
-    }
-    .card h3 {
-      margin-bottom: 10px;
+
+    h1 {
       color: #02535a;
-    }
-    .card p {
-      color: #333;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h2>Panel de Control</h2>
-    <button class="logout-btn" onclick="cerrarSesion()">Cerrar sesión</button>
-  </header>
-  <div class="container">
-    <div class="welcome" id="bienvenida">¡Hola!</div>
-    <div class="cards">
-      <div class="card">
-        <h3>Reservas</h3>
-        <p>Gestiona las reservas activas</p>
-      </div>
-      <div class="card">
-        <h3>Cotizaciones</h3>
-        <p>Revisa y crea nuevas cotizaciones</p>
-      </div>
-      <div class="card">
-        <h3>Clientes</h3>
-        <p>Accede al listado de clientes</p>
-      </div>
-      <div class="card">
-        <h3>Estadísticas</h3>
-        <p>Consulta métricas generales</p>
-      </div>
+
+  <div class="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
     </div>
+
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span> Inicio</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span> Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span> Clientes</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span> Cotizaciones</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span> Reservas</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span> Productos</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span> Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesion()"><span class="icon">🚪</span> Cerrar sesión</a></li>
+    </ul>
   </div>
 
+  <main>
+    <h1>Bienvenido al Panel Principal</h1>
+    <p>Aquí puedes gestionar todas las funciones del sistema integral de Excursiones Delgado.</p>
+  </main>
+
   <script>
-    // Recuperar datos del usuario desde localStorage
     const usuario = JSON.parse(localStorage.getItem("usuario"));
-    const bienvenida = document.getElementById("bienvenida");
-
-    if (!usuario || usuario.estado !== "Activo") {
-      window.location.href = "login.html";
+    if (usuario) {
+      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+      document.getElementById("rolUsuario").innerText = usuario.rol || "";
     } else {
-      bienvenida.textContent = `¡Hola, ${usuario.nombre || usuario.correo}!`;
-
-      // Rol de ejemplo: restringir acceso por rol
-      if (usuario.rol !== "Administrador") {
-        // ocultar ciertas tarjetas (ejemplo)
-        document.querySelectorAll(".card")[3].style.display = "none"; // Estadísticas
-      }
+      alert("No tienes una sesión activa. Redirigiendo...");
+      window.location.href = "login.html";
     }
 
     function cerrarSesion() {
@@ -114,5 +123,6 @@
       window.location.href = "login.html";
     }
   </script>
+
 </body>
 </html>
