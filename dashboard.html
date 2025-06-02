@@ -5,21 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard - Excursiones Delgado</title>
   <style>
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
+      background-color: #f4f7f8;
     }
 
     .sidebar {
-      width: 240px;
+      width: 250px;
       height: 100vh;
       background-color: #02535a;
       color: white;
-      padding: 20px 15px;
       position: fixed;
       top: 0;
       left: 0;
+      padding: 20px 15px;
       overflow-y: auto;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
+    .toggle-btn {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      background: #02535a;
+      border: none;
+      color: white;
+      padding: 10px 12px;
+      font-size: 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 1001;
     }
 
     .user-info {
@@ -73,18 +94,33 @@
     }
 
     main {
-      margin-left: 240px;
+      margin-left: 250px;
       padding: 20px;
+      transition: margin-left 0.3s ease;
     }
 
-    h1 {
-      color: #02535a;
+    main.full {
+      margin-left: 0;
+    }
+
+    @media screen and (max-width: 768px) {
+      .sidebar {
+        transform: translateX(-100%);
+      }
+      .sidebar.show {
+        transform: translateX(0);
+      }
+      main {
+        margin-left: 0;
+      }
     }
   </style>
 </head>
 <body>
 
-  <div class="sidebar">
+  <button class="toggle-btn" onclick="toggleSidebar()">&#9776;</button>
+
+  <div class="sidebar" id="sidebar">
     <div class="user-info">
       <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
       <h3 id="nombreUsuario">Cargando...</h3>
@@ -103,13 +139,16 @@
     </ul>
   </div>
 
-  <main>
+  <main id="contenido">
     <h1>Bienvenido al Panel Principal</h1>
     <p>Aquí puedes gestionar todas las funciones del sistema integral de Excursiones Delgado.</p>
   </main>
 
   <script>
     const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const sidebar = document.getElementById("sidebar");
+    const main = document.getElementById("contenido");
+
     if (usuario) {
       document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
       document.getElementById("rolUsuario").innerText = usuario.rol || "";
@@ -121,6 +160,10 @@
     function cerrarSesion() {
       localStorage.removeItem("usuario");
       window.location.href = "login.html";
+    }
+
+    function toggleSidebar() {
+      sidebar.classList.toggle("show");
     }
   </script>
 
