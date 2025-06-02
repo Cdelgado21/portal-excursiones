@@ -615,12 +615,12 @@ function agregarTituloSeccion(nombre) {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15); // tamaño más grande
-  doc.text(nombre, margenX, y, { align: "center" })
+  doc.text(nombre, width / 2, y, { align: "center" })
   y += 8;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
-  doc.text("- - - - - - - - - - - - - - - - - - -", margenX, y, { align: "center" })
+  doc.text("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -", width / 2, y, { align: "center" })
   y += 10;
 }
 
