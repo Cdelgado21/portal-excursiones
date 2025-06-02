@@ -172,6 +172,7 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
     const form = document.getElementById('formulario');
     const tabla = document.getElementById('tablaUsuarios');
