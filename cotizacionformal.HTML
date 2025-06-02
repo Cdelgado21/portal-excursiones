@@ -509,6 +509,23 @@ function restablecerDatosDelTour() {
 
   alert("✅ Información del tour restablecida correctamente.");
 }
+async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
+  try {
+    const storageRef = firebase.storage().ref();
+    const archivoRef = storageRef.child(`cotizaciones/${codigo}.pdf`);
+    await archivoRef.put(pdfBlob);
+    const urlDescarga = await archivoRef.getDownloadURL();
+
+    await firebase.firestore().collection("cotizacionformal").doc(codigo).update({
+      link_pdf: urlDescarga
+    });
+
+    alert("✅ PDF generado y guardado en Firebase correctamente.");
+  } catch (error) {
+    console.error("❌ Error al subir PDF a Firebase:", error);
+    alert("❌ No se pudo guardar el PDF.");
+  }
+}
   async function generarPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
@@ -711,26 +728,7 @@ y += 5;
 
 doc.save(`Cotización ${codigo}.pdf`);
 }
-async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
-  const storageRef = firebase.storage().ref();
-  const pdfRef = storageRef.child(`cotizacionesPDF/${codigo}.pdf`);
 
-  try {
-    await pdfRef.put(pdfBlob);
-    const url = await pdfRef.getDownloadURL();
-
- // Guardamos la URL en Firestore
-    await db.collection("cotizacionformal").doc(codigo).update({
-      pdf_url: url
-    });
-
-    alert("✅ PDF generado y almacenado correctamente.");
-  } catch (err) {
-    console.error("❌ Error al subir PDF o guardar URL:", err);
-    alert("❌ No se pudo guardar el PDF.");
-  }
-}
-  
 const pdfBlob = doc.output("blob");
 
 // Envuelve en una función async interna
