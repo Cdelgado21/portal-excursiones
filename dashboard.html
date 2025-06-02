@@ -11,7 +11,60 @@
       font-family: Arial, sans-serif;
       background-color: #f4f7f8;
     }
-
+h2 {
+      color: #02535a;
+      margin-bottom: 10px;
+    }
+    .dashboard-section {
+      margin-bottom: 30px;
+    }
+    .dashboard-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+    }
+    .card {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.05);
+      text-align: center;
+      font-weight: bold;
+      color: #02535a;
+    }
+    .alertas ul, .recordatorios ul, .tareas ul {
+      padding-left: 20px;
+      list-style: none;
+    }
+    .alertas li, .recordatorios li, .tareas li {
+      background: #fff3cd;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    table {
+      width: 100%;
+      background: white;
+      border-collapse: collapse;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    table th, table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    table th {
+      background-color: #02535a;
+      color: white;
+    }
+    ol {
+      padding-left: 20px;
+    }
+    .ranking ol li {
+      margin-bottom: 6px;
+     } 
 .sidebar {
   position: fixed;
   top: 0;
@@ -105,7 +158,11 @@
       margin-left: 0;
     }
 
-    @media screen and (max-width: 768px) {
+    @media screen and (max-width: 600px) {
+      .dashboard-cards {
+        grid-template-columns: 1fr;
+      }
+    }
       .sidebar {
         transform: translateX(-100%);
       }
@@ -119,8 +176,62 @@
   </style>
 </head>
 <body>
+<h2>Bienvenido al Panel de Control</h2>
 
-  <button class="toggle-btn" onclick="toggleSidebar()">&#9776;</button>
+  <div class="dashboard-section dashboard-cards">
+    <div class="card">🧾 Cotizaciones hoy: <strong>12</strong></div>
+    <div class="card">📦 Reservas activas: <strong>8</strong></div>
+    <div class="card">🎯 Meta mensual: <strong>$18,400</strong></div>
+    <div class="card">📅 Viajes esta semana: <strong>3</strong></div>
+  </div>
+
+  <div class="dashboard-section alertas">
+    <h2>⚠️ Alertas internas</h2>
+    <ul>
+      <li>Cliente Ana Pérez aún no ha enviado pasaporte</li>
+      <li>Reserva #568 sin abono confirmado</li>
+      <li>Viaje a Panamá sale en 3 días sin check-in</li>
+    </ul>
+  </div>
+
+  <div class="dashboard-section">
+    <h2>🧳 Próximos viajes confirmados</h2>
+    <table>
+      <thead>
+        <tr><th>Destino</th><th>Fecha</th><th>Embajador</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Medellín</td><td>05/06/2025</td><td>Yare</td></tr>
+        <tr><td>Guatemala</td><td>07/06/2025</td><td>Tatiana</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="dashboard-section ranking">
+    <h2>🏆 Embajadores destacados</h2>
+    <ol>
+      <li>Cristopher Delgado – $3,200</li>
+      <li>Marcela – $2,900</li>
+      <li>Yuliana – $2,700</li>
+    </ol>
+  </div>
+
+  <div class="dashboard-section recordatorios">
+    <h2>🎉 Cumpleaños esta semana</h2>
+    <ul>
+      <li>María López – 04/06</li>
+      <li>Jorge Ramos – 06/06</li>
+    </ul>
+  </div>
+
+  <div class="dashboard-section tareas">
+    <h2>📋 Tareas asignadas</h2>
+    <ul>
+      <li>Dar seguimiento a cotización #145</li>
+      <li>Confirmar hospedaje para Santo Domingo</li>
+      <li>Verificar pasaportes de grupo Panamá</li>
+  
+      <button class="toggle-btn" onclick="toggleSidebar()">&#9776;</button>
 
   <div class="sidebar" id="sidebar">
     <div class="user-info">
