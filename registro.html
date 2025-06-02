@@ -8,6 +8,15 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+  <style>
+    th {
+      background-color: #02535a !important;
+      color: white !important;
+    }
+    tr:nth-child(even) {
+      background-color: #eaf4f4;
+    }
+  </style>
 </head>
 <body class="bg-gray-100 font-sans">
   <div class="container mx-auto p-6">
@@ -44,7 +53,7 @@
     <!-- Tabla -->
     <div class="overflow-x-auto">
       <table class="min-w-full border border-gray-300">
-        <thead class="bg-[#02535a] text-white">
+        <thead class="text-white">
           <tr>
             <th class="px-4 py-2">Nombre</th>
             <th class="px-4 py-2">Apellidos</th>
@@ -130,4 +139,3 @@
   </script>
 </body>
 </html>
-
