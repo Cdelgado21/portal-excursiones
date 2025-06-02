@@ -125,6 +125,7 @@
           <input type="text" id="telefono" placeholder="Teléfono">
           <input type="email" id="correo" placeholder="Correo electrónico">
           <input type="text" id="pasaporte" placeholder="N° Pasaporte">
+          <input type="password" id="clave" placeholder="Contraseña">
           <select id="rol">
             <option value="Cotizaciones">Cotizaciones</option>
             <option value="Reservas">Reservas</option>
@@ -149,6 +150,7 @@
             <th>Fecha Nac.</th>
             <th>Teléfono</th>
             <th>Correo</th>
+            <th>Clave</th>
             <th>Pasaporte</th>
             <th>Rol</th>
             <th>Estado</th>
@@ -186,6 +188,7 @@
         telefono: form.telefono.value,
         correo: form.correo.value,
         pasaporte: form.pasaporte.value,
+        clave: form.clave.value || '123456', // valor por defecto si queda vacío
         rol: form.rol.value,
         estado: 'Activo',
         fechaRegistro: new Date().toLocaleDateString("es-CR", { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -236,6 +239,7 @@
           <td>${u.apellidos}</td>
           <td>${fechaFormateada}</td>
           <td>${u.telefono}</td>
+          <td>${u.clave || '-'}</td>
           <td>${u.correo}</td>
           <td>${u.pasaporte || ''}</td>
           <td>${u.rol}</td>
