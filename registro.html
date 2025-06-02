@@ -192,17 +192,22 @@
       };
 
       const id = form.usuarioId.value;
-      if (id) {
-        await db.collection('usuarios').doc(id).update(datos);
-      } else {
-        const cred = await auth.createUserWithEmailAndPassword(datos.correo, '123456');
-        await db.collection('usuarios').doc(cred.user.uid).set(datos);
-      }
-      form.reset();
-      form.usuarioId.value = '';
-      toggleModal();
-      cargarUsuarios();
-    });
+     try {
+  if (id) {
+    await db.collection('usuarios').doc(id).update(datos);
+  } else {
+    const cred = await auth.createUserWithEmailAndPassword(datos.correo, '123456');
+    await db.collection('usuarios').doc(cred.user.uid).set(datos);
+    alert("Usuario creado correctamente con contraseña 123456");
+  }
+  form.reset();
+  form.usuarioId.value = '';
+  toggleModal();
+  cargarUsuarios();
+} catch (error) {
+  console.error("Error al guardar el usuario:", error);
+  alert("Error: " + error.message);
+}
 
     function toggleModal() {
       const modal = document.getElementById('modalForm');
