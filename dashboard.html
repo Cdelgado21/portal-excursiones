@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7f8;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #02535a;
+      color: white;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      margin: 0;
+    }
+    header button {
+      background-color: white;
+      color: #02535a;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .container {
+      padding: 20px;
+    }
+    .bienvenida {
+      font-size: 1.2em;
+      margin-top: 10px;
+      color: #02535a;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Panel de Control</h1>
+    <button onclick="cerrarSesion()">Cerrar Sesión</button>
+  </header>
+  <div class="container">
+    <div class="bienvenida" id="bienvenida"></div>
+    <p>Aquí puedes gestionar usuarios, cotizaciones, reservas y mucho más.</p>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.firebasestorage.app",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        db.collection("usuarios").doc(user.uid).get().then(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            const nombre = data.nombre || "Usuario";
+            const rol = data.rol || "";
+            if (rol === "Administrador") {
+              document.getElementById('bienvenida').innerText = `Bienvenido @${nombre}`;
+            } else {
+              alert("Acceso denegado: Solo administradores.");
+              auth.signOut().then(() => window.location.href = "/index.html");
+            }
+          }
+        });
+      } else {
+        window.location.href = "/index.html";
+      }
+    });
+
+    function cerrarSesion() {
+      auth.signOut().then(() => {
+        window.location.href = "/index.html";
+      });
+    }
+  </script>
+</body>
+</html>
