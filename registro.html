@@ -12,8 +12,7 @@
 <body class="bg-gray-100 font-sans">
   <div class="container mx-auto p-6">
     <h1 class="text-3xl font-bold text-[#02535a] mb-4">Gestión de Usuarios</h1>
-
-    <button onclick="toggleModal()" class="bg-[#02535a] text-white px-4 py-2 rounded">Agregar Usuario</button>
+    <button onclick="toggleModal()" class="bg-[#02535a] text-white px-4 py-2 rounded mb-4">Agregar Usuario</button>
 
     <!-- Modal -->
     <div id="modalForm" class="fixed z-10 inset-0 overflow-y-auto hidden">
@@ -43,7 +42,7 @@
     </div>
 
     <!-- Tabla -->
-    <div class="overflow-x-auto mt-6">
+    <div class="overflow-x-auto">
       <table class="min-w-full border border-gray-300">
         <thead class="bg-[#02535a] text-white">
           <tr>
@@ -66,9 +65,63 @@
   </div>
 
   <script>
+    const firebaseConfig = {
+      // Agrega aquí tu configuración
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const form = document.getElementById('formulario');
+    const tabla = document.getElementById('tablaUsuarios');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const datos = {
+        nombre: form.nombre.value,
+        apellidos: form.apellidos.value,
+        fechaNacimiento: form.fechaNacimiento.value,
+        telefono: form.telefono.value,
+        correo: form.correo.value,
+        rol: form.rol.value,
+        estado: 'Activo',
+        fechaRegistro: new Date().toLocaleDateString("es-CR")
+      };
+      await db.collection('usuarios').add(datos);
+      form.reset();
+      toggleModal();
+      cargarUsuarios();
+    });
+
     function toggleModal() {
       document.getElementById('modalForm').classList.toggle('hidden');
     }
+
+    async function cargarUsuarios() {
+      tabla.innerHTML = '';
+      const snapshot = await db.collection('usuarios').get();
+      snapshot.forEach(doc => {
+        const u = doc.data();
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-4 py-2">${u.nombre}</td>
+          <td class="px-4 py-2">${u.apellidos}</td>
+          <td class="px-4 py-2">${u.fechaNacimiento}</td>
+          <td class="px-4 py-2">${u.telefono}</td>
+          <td class="px-4 py-2">${u.correo}</td>
+          <td class="px-4 py-2">${u.rol}</td>
+          <td class="px-4 py-2">${u.estado}</td>
+          <td class="px-4 py-2">${u.fechaRegistro}</td>
+          <td class="px-4 py-2 space-x-2">
+            <button class="bg-yellow-500 text-white px-2 py-1 rounded">Editar</button>
+            <button class="bg-${u.estado === 'Activo' ? 'red' : 'green'}-500 text-white px-2 py-1 rounded">${u.estado === 'Activo' ? 'Inactivar' : 'Activar'}</button>
+            <button class="bg-gray-700 text-white px-2 py-1 rounded">Eliminar</button>
+          </td>
+        `;
+        tabla.appendChild(tr);
+      });
+    }
+
+    window.onload = cargarUsuarios;
   </script>
 </body>
 </html>
