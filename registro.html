@@ -66,7 +66,12 @@
 
   <script>
     const firebaseConfig = {
-      // Agrega aquí tu configuración
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.firebasestorage.app",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -113,7 +118,7 @@
           <td class="px-4 py-2">${u.fechaRegistro}</td>
           <td class="px-4 py-2 space-x-2">
             <button class="bg-yellow-500 text-white px-2 py-1 rounded">Editar</button>
-            <button class="bg-${u.estado === 'Activo' ? 'red' : 'green'}-500 text-white px-2 py-1 rounded">${u.estado === 'Activo' ? 'Inactivar' : 'Activar'}</button>
+            <button class="${u.estado === 'Activo' ? 'bg-red-500' : 'bg-green-500'} text-white px-2 py-1 rounded">${u.estado === 'Activo' ? 'Inactivar' : 'Activar'}</button>
             <button class="bg-gray-700 text-white px-2 py-1 rounded">Eliminar</button>
           </td>
         `;
@@ -125,3 +130,4 @@
   </script>
 </body>
 </html>
+
