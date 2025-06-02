@@ -40,15 +40,16 @@
       position: relative;
     }
     input {
-      width: 100%;
+      width: calc(100% - 24px);
       padding: 12px;
-      margin: 10px 0;
+      margin: 10px auto;
       border: 1px solid #ccc;
       border-radius: 6px;
+      display: block;
     }
     .toggle-password {
       position: absolute;
-      right: 12px;
+      right: 10px;
       top: 50%;
       transform: translateY(-50%);
       cursor: pointer;
@@ -85,18 +86,28 @@
       color: #02535a;
       font-weight: bold;
     }
+    @media screen and (max-width: 480px) {
+      .login-container {
+        padding: 20px;
+      }
+      input {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
   <div class="login-container">
-    <img src="LOGO SIED.JPG" alt="Logo Excursiones Delgado" class="logo">
+    <img src="https://excursionesdelgado.com/logo.png" alt="Logo Excursiones Delgado" class="logo">
     <h1>Sistema Integral</h1>
     <p class="subtitle">Excursiones Delgado</p>
     <form id="loginForm">
       <input type="email" id="correo" placeholder="Correo electrónico" required>
       <div class="input-group">
         <input type="password" id="clave" placeholder="Contraseña" required>
-        <span class="toggle-password" onclick="togglePassword()">👁️</span>
+        <span class="toggle-password" onclick="togglePassword()">
+          <img id="eyeIcon" src="https://cdn-icons-png.flaticon.com/512/709/709612.png" width="20" alt="Mostrar">
+        </span>
       </div>
       <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
       <button type="submit">Iniciar Sesión</button>
@@ -119,7 +130,14 @@
 
     function togglePassword() {
       const passwordInput = document.getElementById('clave');
-      passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+      const icon = document.getElementById('eyeIcon');
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.src = "https://cdn-icons-png.flaticon.com/512/709/709612.png"; // ojo abierto
+      } else {
+        passwordInput.type = 'password';
+        icon.src = "https://cdn-icons-png.flaticon.com/512/709/709610.png"; // ojo cerrado
+      }
     }
 
     document.getElementById('loginForm').addEventListener('submit', function(e) {
@@ -157,3 +175,4 @@
   </script>
 </body>
 </html>
+
