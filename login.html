@@ -112,9 +112,21 @@
       <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
       <button type="submit">Iniciar Sesión</button>
     </form>
-    <div id="bienvenida" class="welcome-msg"></div>
-  </div>
-
+    <div id="modal-bienvenida" style="
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #02535a;
+  color: white;
+  padding: 25px 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  z-index: 1000;
+  text-align: center;
+  font-size: 1.1rem;">
+</div>
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -168,7 +180,17 @@
       // Guarda los datos del usuario si deseas
       localStorage.setItem("usuario", JSON.stringify(usuario));
 
-      mensaje.textContent = `Bienvenido @${email}`;
+      const modal = document.getElementById("modal-bienvenida");
+modal.textContent = `¡Bienvenido ${nombre}!`;
+modal.style.display = "block";
+setTimeout(() => {
+  modal.style.display = "none";
+  if (usuario.rol === "Administrador") {
+    window.location.href = "dashboard.html";
+  } else {
+    window.location.href = "menu.html";
+  }
+}, 2000);
 
       // Redirigir según rol
       setTimeout(() => {
