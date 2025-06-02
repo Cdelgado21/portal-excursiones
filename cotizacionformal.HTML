@@ -650,12 +650,12 @@ function agregarLinea(label, valor) {
   if (data.ninos !== "0") agregarLinea("Niños", data.ninos);
   if (data.bebes !== "0") agregarLinea("Bebés", data.bebes);
   agregarLinea("Duración", data.duracion);
-y += 15;
+y += 5;
 agregarTituloSeccion("Información del Tour");
   agregarSeccion("Incluye", data.incluye);
   agregarSeccion("No Incluye", data.no_incluye);
   agregarSeccion("Itinerario de Tours", data.itinerario);
-
+y += 5;
 agregarTituloSeccion("Itinerario de Vuelo y Hotel");
   agregarLinea("Aerolínea", data.aerolinea);
   agregarSeccion("Vuelo de Ida", data.vuelo_ida);
@@ -666,7 +666,7 @@ y += 5;
 y += 5;
   agregarLinea("Hotel", data.hotel);
   agregarSeccion("Información del Hotel", data.info_hotel);
-
+y += 10;
 agregarTituloSeccion("Inversión por Viajero");
   agregarLinea("Precio Adulto", `$${data.precio_adulto}`);
   if (data.precio_nino !== "0") agregarLinea("Precio Niño", `$${data.precio_nino}`);
