@@ -719,11 +719,12 @@ async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
     await pdfRef.put(pdfBlob);
     const url = await pdfRef.getDownloadURL();
 
-    // Guardamos la URL en Firestore
-    await db.collection("cotizacionformal").doc(codigo).update({
-      pdf_url: url
-    });
+  const pdfBlob = doc.output("blob");
 
+// Envuelve en una función async interna
+(async () => {
+  await subirPDFyGuardarEnFirestore(pdfBlob, codigo);
+})();
     alert("✅ PDF generado y almacenado correctamente.");
   } catch (err) {
     console.error("❌ Error al subir PDF o guardar URL:", err);
