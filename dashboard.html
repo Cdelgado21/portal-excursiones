@@ -1,12 +1,10 @@
+<!-- DASHBOARD HTML MEJORADO -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard - Excursiones Delgado</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,79 +15,103 @@
     header {
       background-color: #02535a;
       color: white;
-      padding: 15px 20px;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
-    header h1 {
+    header h2 {
       margin: 0;
     }
-    header button {
-      background-color: white;
-      color: #02535a;
+    .logout-btn {
+      background-color: #f49859;
       border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
+      padding: 8px 15px;
+      border-radius: 8px;
       cursor: pointer;
+      color: white;
+      font-weight: bold;
     }
     .container {
-      padding: 20px;
+      padding: 2rem;
     }
-    .bienvenida {
-      font-size: 1.2em;
-      margin-top: 10px;
+    .welcome {
+      font-size: 1.4rem;
+      margin-bottom: 20px;
       color: #02535a;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+    }
+    .card {
+      background-color: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    .card h3 {
+      margin-bottom: 10px;
+      color: #02535a;
+    }
+    .card p {
+      color: #333;
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Panel de Control</h1>
-    <button onclick="cerrarSesion()">Cerrar Sesión</button>
+    <h2>Panel de Control</h2>
+    <button class="logout-btn" onclick="cerrarSesion()">Cerrar sesión</button>
   </header>
   <div class="container">
-    <div class="bienvenida" id="bienvenida"></div>
-    <p>Aquí puedes gestionar usuarios, cotizaciones, reservas y mucho más.</p>
+    <div class="welcome" id="bienvenida">¡Hola!</div>
+    <div class="cards">
+      <div class="card">
+        <h3>Reservas</h3>
+        <p>Gestiona las reservas activas</p>
+      </div>
+      <div class="card">
+        <h3>Cotizaciones</h3>
+        <p>Revisa y crea nuevas cotizaciones</p>
+      </div>
+      <div class="card">
+        <h3>Clientes</h3>
+        <p>Accede al listado de clientes</p>
+      </div>
+      <div class="card">
+        <h3>Estadísticas</h3>
+        <p>Consulta métricas generales</p>
+      </div>
+    </div>
   </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717",
-      storageBucket: "tours-460717.firebasestorage.app",
-      messagingSenderId: "1000749333444",
-      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    // Recuperar datos del usuario desde localStorage
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const bienvenida = document.getElementById("bienvenida");
 
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        db.collection("usuarios").doc(user.uid).get().then(doc => {
-          if (doc.exists) {
-            const data = doc.data();
-            const nombre = data.nombre || "Usuario";
-            const rol = data.rol || "";
-            if (rol === "Administrador") {
-              document.getElementById('bienvenida').innerText = `Bienvenido @${nombre}`;
-            } else {
-              alert("Acceso denegado: Solo administradores.");
-              auth.signOut().then(() => window.location.href = "/login.html");
-            }
-          }
-        });
-      } else {
-        window.location.href = "/login.html";
+    if (!usuario || usuario.estado !== "Activo") {
+      window.location.href = "login.html";
+    } else {
+      bienvenida.textContent = `¡Hola, ${usuario.nombre || usuario.correo}!`;
+
+      // Rol de ejemplo: restringir acceso por rol
+      if (usuario.rol !== "Administrador") {
+        // ocultar ciertas tarjetas (ejemplo)
+        document.querySelectorAll(".card")[3].style.display = "none"; // Estadísticas
       }
-    });
+    }
 
     function cerrarSesion() {
-      auth.signOut().then(() => {
-        window.location.href = "/login.html";
-      });
+      localStorage.removeItem("usuario");
+      window.location.href = "login.html";
     }
   </script>
 </body>
