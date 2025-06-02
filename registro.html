@@ -1,30 +1,113 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Registro de Compañeras</title>
+  <meta charset="UTF-8">
+  <title>Gestión de Compañeras</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      color: #02535a;
+    }
+    button {
+      background-color: #02535a;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #5f9296;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #eaf4f4;
+    }
+    .acciones button {
+      margin-right: 5px;
+    }
+    #formularioUsuario {
+      display: none;
+      margin-top: 20px;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+  </style>
 </head>
 <body>
-  <h2>Registrar nueva compañera</h2>
-  <form id="registroForm">
-    <input type="email" id="email" placeholder="Correo electrónico" required><br>
-    <input type="password" id="password" placeholder="Contraseña" required><br>
-    <select id="rol">
-      <option value="cotizaciones">Cotizaciones</option>
-      <option value="embajadora">Embajadora</option>
-      <option value="admin">Admin</option>
-    </select><br>
-    <button type="submit">Registrar</button>
-  </form>
+  <h2>Gestión de Compañeras</h2>
+  <button onclick="document.getElementById('formularioUsuario').style.display='block'">Agregar Usuario</button>
+
+  <div id="formularioUsuario">
+    <h3>Nuevo Usuario</h3>
+    <form id="registroForm">
+      <input type="text" id="nombre" placeholder="Nombre" required>
+      <input type="text" id="apellidos" placeholder="Apellidos" required>
+      <input type="date" id="fechaNacimiento" placeholder="Fecha de Nacimiento" required>
+      <input type="tel" id="telefono" placeholder="Teléfono" required>
+      <input type="email" id="email" placeholder="Correo electrónico" required>
+      <input type="password" id="password" placeholder="Contraseña" required>
+      <select id="rol">
+        <option value="cotizaciones">Cotizaciones</option>
+        <option value="embajadora">Embajadora</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button type="submit">Guardar Usuario</button>
+    </form>
+  </div>
+
+  <table id="tablaUsuarios">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Apellidos</th>
+        <th>Fecha Nac.</th>
+        <th>Teléfono</th>
+        <th>Correo</th>
+        <th>Rol</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Usuarios se cargarán aquí -->
+    </tbody>
+  </table>
 
   <script>
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
       authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717",
+      projectId: "tours-460717"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -33,22 +116,60 @@
 
     document.getElementById("registroForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+      const nombre = document.getElementById("nombre").value;
+      const apellidos = document.getElementById("apellidos").value;
+      const fechaNacimiento = document.getElementById("fechaNacimiento").value;
+      const telefono = document.getElementById("telefono").value;
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
       const rol = document.getElementById("rol").value;
 
       try {
-        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-        const uid = userCredential.user.uid;
-        await db.collection("usuarios").doc(uid).set({
-          email: email,
-          rol: rol,
+        const userCred = await auth.createUserWithEmailAndPassword(email, password);
+        await db.collection("usuarios").doc(userCred.user.uid).set({
+          nombre, apellidos, fechaNacimiento, telefono, email, rol, estado: "activo"
         });
-        alert("Usuario registrado correctamente.");
+        alert("Usuario creado correctamente");
+        location.reload();
       } catch (error) {
         alert("Error: " + error.message);
       }
     });
+
+    db.collection("usuarios").onSnapshot(snapshot => {
+      const tbody = document.querySelector("#tablaUsuarios tbody");
+      tbody.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = `<tr>
+          <td>${data.nombre}</td>
+          <td>${data.apellidos}</td>
+          <td>${data.fechaNacimiento}</td>
+          <td>${data.telefono}</td>
+          <td>${data.email}</td>
+          <td>${data.rol}</td>
+          <td>${data.estado}</td>
+          <td class="acciones">
+            <button onclick="editarUsuario('${doc.id}')">Editar</button>
+            <button onclick="cambiarEstado('${doc.id}', '${data.estado}')">${data.estado === "activo" ? "Inactivar" : "Activar"}</button>
+            <button onclick="eliminarUsuario('${doc.id}')">Eliminar</button>
+          </td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    });
+
+    function cambiarEstado(uid, estadoActual) {
+      const nuevoEstado = estadoActual === "activo" ? "inactivo" : "activo";
+      db.collection("usuarios").doc(uid).update({ estado: nuevoEstado });
+    }
+
+    function eliminarUsuario(uid) {
+      if (confirm("¿Seguro que deseas eliminar este usuario?")) {
+        db.collection("usuarios").doc(uid).delete();
+      }
+    }
   </script>
 </body>
 </html>
+
