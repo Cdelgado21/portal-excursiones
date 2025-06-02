@@ -666,14 +666,14 @@ y += 5;
 y += 5;
   agregarLinea("Hotel", data.hotel);
   agregarSeccion("Información del Hotel", data.info_hotel);
-y += 20;
+y += 25;
 agregarTituloSeccion("Inversión por Viajero");
   agregarLinea("Precio Adulto", `$${data.precio_adulto}`);
   if (data.precio_nino !== "0") agregarLinea("Precio Niño", `$${data.precio_nino}`);
   if (data.precio_bebe !== "0") agregarLinea("Precio Bebé", `$${data.precio_bebe}`);
   agregarLinea("Total General", `$${data.total_general}`);
   agregarLinea("Monto de Reserva", `$${data.monto_reserva}`);
-y += 10;
+y += 5;
   agregarSeccion("Políticas y Condiciones Generales", data.politicas);
 
   // Página 3: Tabla de tours opcionales
