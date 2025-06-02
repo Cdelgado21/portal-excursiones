@@ -41,7 +41,7 @@
             <input type="date" id="fechaNacimiento" class="border rounded w-full mb-2 p-2">
             <input type="text" id="telefono" placeholder="Teléfono" class="border rounded w-full mb-2 p-2">
             <input type="email" id="correo" placeholder="Correo electrónico" class="border rounded w-full mb-2 p-2">
-            <input type="password" id="contrasena" placeholder="Contraseña" class="border rounded w-full mb-2 p-2">
+            <input type="text" id="pasaporte" placeholder="N° Pasaporte" class="border rounded w-full mb-2 p-2">
             <select id="rol" class="border rounded w-full mb-4 p-2">
               <option value="Cotizaciones">Cotizaciones</option>
               <option value="Reservas">Reservas</option>
@@ -66,6 +66,7 @@
             <th class="px-4 py-2">Fecha Nac.</th>
             <th class="px-4 py-2">Teléfono</th>
             <th class="px-4 py-2">Correo</th>
+            <th class="px-4 py-2">Pasaporte</th>
             <th class="px-4 py-2">Rol</th>
             <th class="px-4 py-2">Estado</th>
             <th class="px-4 py-2">Fecha Registro</th>
@@ -102,6 +103,7 @@
         fechaNacimiento: form.fechaNacimiento.value,
         telefono: form.telefono.value,
         correo: form.correo.value,
+        pasaporte: form.pasaporte.value,
         rol: form.rol.value,
         estado: 'Activo',
         fechaRegistro: new Date().toLocaleDateString("es-CR")
@@ -128,6 +130,7 @@
           <td class="px-4 py-2">${u.fechaNacimiento}</td>
           <td class="px-4 py-2">${u.telefono}</td>
           <td class="px-4 py-2">${u.correo}</td>
+          <td class="px-4 py-2">${u.pasaporte || ''}</td>
           <td class="px-4 py-2">${u.rol}</td>
           <td class="px-4 py-2">${u.estado}</td>
           <td class="px-4 py-2">${u.fechaRegistro}</td>
