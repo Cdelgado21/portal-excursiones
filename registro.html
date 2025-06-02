@@ -44,9 +44,10 @@
     td {
       padding: 10px;
       border: 1px solid #ccc;
+      background-color: white;
     }
-    tr:nth-child(even) {
-      background-color: #eaf4f4;
+    tr:nth-child(even) td {
+      background-color: #f1f1f1;
     }
     .modal {
       position: fixed;
@@ -57,14 +58,16 @@
       justify-content: center;
       align-items: center;
       display: none;
+      z-index: 9999;
     }
     .modal-content {
       background: white;
       padding: 20px;
       border-radius: 10px;
-      width: 100%;
+      width: 90%;
       max-width: 500px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: relative;
     }
     .modal h2 {
       color: #02535a;
@@ -83,14 +86,6 @@
       border: none;
       cursor: pointer;
     }
-    .btn-editar {
-      background-color: orange;
-      color: white;
-    }
-    .btn-eliminar {
-      background-color: #444;
-      color: white;
-    }
     .btn-estado {
       width: 80px;
       color: white;
@@ -101,6 +96,13 @@
     }
     .acciones {
       text-align: center;
+    }
+    .acciones button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      margin: 0 5px;
     }
   </style>
 </head>
@@ -136,7 +138,7 @@
 
     <!-- Tabla -->
     <div class="overflow-x-auto">
-      <table style="width: 100%; border-collapse: collapse;">
+      <table style="width: 100%; border-collapse: collapse; background-color: white;">
         <thead>
           <tr>
             <th>Nombre</th>
@@ -182,7 +184,7 @@
         pasaporte: form.pasaporte.value,
         rol: form.rol.value,
         estado: 'Activo',
-        fechaRegistro: new Date().toLocaleDateString("es-CR")
+        fechaRegistro: new Date().toLocaleDateString("es-CR", { day: '2-digit', month: '2-digit', year: 'numeric' })
       };
 
       const id = form.usuarioId.value;
