@@ -725,16 +725,17 @@ y += 5;
   // Página final con cierre
   doc.addPage();
   doc.addImage(cierreImg, 'PNG', 0, 0, width, height);
-
-doc.save(`Cotización ${codigo}.pdf`);
-}
-
 const pdfBlob = doc.output("blob");
 
 // Envuelve en una función async interna
 (async () => {
   await subirPDFyGuardarEnFirestore(pdfBlob, codigo);
 })();
+
+doc.save(`Cotización ${codigo}.pdf`);
+}
+
+
 
 window.onload = cargarDatosIniciales;
   </script>
