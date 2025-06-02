@@ -155,9 +155,7 @@
     e.preventDefault();
     const email = document.getElementById('correo').value.trim();
     const password = document.getElementById('clave').value.trim();
-    const mensaje = document.getElementById('bienvenida');
 
-    mensaje.textContent = "";
 
     try {
       const query = await db.collection("usuarios")
