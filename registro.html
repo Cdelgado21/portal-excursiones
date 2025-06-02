@@ -194,7 +194,8 @@
       if (id) {
         await db.collection('usuarios').doc(id).update(datos);
       } else {
-        await db.collection('usuarios').add(datos);
+        const cred = await auth.createUserWithEmailAndPassword(datos.correo, '123456');
+        await db.collection('usuarios').doc(cred.user.uid).set(datos);
       }
       form.reset();
       form.usuarioId.value = '';
