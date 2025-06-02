@@ -12,36 +12,36 @@
       background-color: #f4f7f8;
     }
 
-    .sidebar {
-      width: 250px;
-      height: 100vh;
-      background-color: #02535a;
-      color: white;
-      position: fixed;
-      top: 0;
-      left: 0;
-      padding: 20px 15px;
-      overflow-y: auto;
-      transition: transform 0.3s ease;
-    }
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background-color: #02535a;
+  color: white;
+  padding: 20px;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+}
 
-    .sidebar.hidden {
-      transform: translateX(-100%);
-    }
+.sidebar.active {
+  transform: translateX(0);
+}
 
-    .toggle-btn {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      background: #02535a;
-      border: none;
-      color: white;
-      padding: 10px 12px;
-      font-size: 18px;
-      border-radius: 6px;
-      cursor: pointer;
-      z-index: 1001;
-    }
+
+.toggle-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: #02535a;
+  cursor: pointer;
+  z-index: 1100;
+}
 
     .user-info {
       text-align: center;
@@ -126,7 +126,7 @@
       <h3 id="nombreUsuario">Cargando...</h3>
       <small id="rolUsuario">-</small>
     </div>
-
+r
     <ul class="nav-links">
       <li><a href="dashboard.html"><span class="icon">🏠</span> Inicio</a></li>
       <li><a href="registro.html"><span class="icon">👥</span> Usuarios</a></li>
@@ -162,9 +162,25 @@
       window.location.href = "login.html";
     }
 
-    function toggleSidebar() {
-      sidebar.classList.toggle("show");
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('active');
+  }
+
+  function checkScreenSize() {
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.querySelector('.toggle-btn');
+    if (window.innerWidth <= 768) {
+      sidebar.classList.remove('active');
+      toggleBtn.style.display = "block";
+    } else {
+      sidebar.classList.add('active');
+      toggleBtn.style.display = "none";
     }
+  }
+
+  window.addEventListener('resize', checkScreenSize);
+  window.addEventListener('load', checkScreenSize);
+    
   </script>
 
 </body>
