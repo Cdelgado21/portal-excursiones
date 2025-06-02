@@ -77,18 +77,18 @@
               document.getElementById('bienvenida').innerText = `Bienvenido @${nombre}`;
             } else {
               alert("Acceso denegado: Solo administradores.");
-              auth.signOut().then(() => window.location.href = "/index.html");
+              auth.signOut().then(() => window.location.href = "/login.html");
             }
           }
         });
       } else {
-        window.location.href = "/index.html";
+        window.location.href = "/login.html";
       }
     });
 
     function cerrarSesion() {
       auth.signOut().then(() => {
-        window.location.href = "/index.html";
+        window.location.href = "/login.html";
       });
     }
   </script>
