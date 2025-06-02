@@ -518,9 +518,14 @@ async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
   try {
     const storageRef = firebase.storage().ref();
     const archivoRef = storageRef.child(`cotizaciones/${codigo}.pdf`);
+
+    // Subir el PDF
     await archivoRef.put(pdfBlob);
+
+    // Obtener el enlace público
     const urlDescarga = await archivoRef.getDownloadURL();
 
+    // Guardar el enlace en Firestore
     await firebase.firestore().collection("cotizacionformal").doc(codigo).update({
       link_pdf: urlDescarga
     });
