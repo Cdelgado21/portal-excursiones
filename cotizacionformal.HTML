@@ -709,9 +709,31 @@ y += 5;
   doc.addPage();
   doc.addImage(cierreImg, 'PNG', 0, 0, width, height);
 
-  doc.save(`Cotización ${codigo}.pdf`);
+doc.save(`Cotización ${codigo}.pdf`);
 }
+async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
+  const storageRef = firebase.storage().ref();
+  const pdfRef = storageRef.child(`cotizacionesPDF/${codigo}.pdf`);
 
+  try {
+    await pdfRef.put(pdfBlob);
+    const url = await pdfRef.getDownloadURL();
+
+    // Guardamos la URL en Firestore
+    await db.collection("cotizacionformal").doc(codigo).update({
+      pdf_url: url
+    });
+
+    alert("✅ PDF generado y almacenado correctamente.");
+  } catch (err) {
+    console.error("❌ Error al subir PDF o guardar URL:", err);
+    alert("❌ No se pudo guardar el PDF.");
+  }
+}
+  
+const pdfBlob = doc.output("blob");
+await subirPDFyGuardarEnFirestore(pdfBlob, codigo);
+}
 
 window.onload = cargarDatosIniciales;
   </script>
