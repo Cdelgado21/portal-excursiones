@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Registro de Compañeras</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <h2>Registrar nueva compañera</h2>
+  <form id="registroForm">
+    <input type="email" id="email" placeholder="Correo electrónico" required><br>
+    <input type="password" id="password" placeholder="Contraseña" required><br>
+    <select id="rol">
+      <option value="cotizaciones">Cotizaciones</option>
+      <option value="embajadora">Embajadora</option>
+      <option value="admin">Admin</option>
+    </select><br>
+    <button type="submit">Registrar</button>
+  </form>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "TU_API_KEY",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    document.getElementById("registroForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const rol = document.getElementById("rol").value;
+
+      try {
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+        const uid = userCredential.user.uid;
+        await db.collection("usuarios").doc(uid).set({
+          email: email,
+          rol: rol,
+        });
+        alert("Usuario registrado correctamente.");
+      } catch (error) {
+        alert("Error: " + error.message);
+      }
+    });
+  </script>
+</body>
+</html>
