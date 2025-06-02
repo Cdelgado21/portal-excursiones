@@ -621,7 +621,7 @@ function agregarTituloSeccion(nombre) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.text("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -", width / 2, y, { align: "center" })
-  y += 5;
+  y += 3;
 }
 
 function agregarLinea(label, valor) {
@@ -666,7 +666,7 @@ y += 5;
 y += 5;
   agregarLinea("Hotel", data.hotel);
   agregarSeccion("Información del Hotel", data.info_hotel);
-y += 10;
+y += 20;
 agregarTituloSeccion("Inversión por Viajero");
   agregarLinea("Precio Adulto", `$${data.precio_adulto}`);
   if (data.precio_nino !== "0") agregarLinea("Precio Niño", `$${data.precio_nino}`);
