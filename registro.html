@@ -16,12 +16,18 @@
     tr:nth-child(even) {
       background-color: #eaf4f4;
     }
+    button {
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      filter: brightness(1.1);
+    }
   </style>
 </head>
 <body class="bg-gray-100 font-sans">
   <div class="container mx-auto p-6">
     <h1 class="text-3xl font-bold text-[#02535a] mb-4">Gestión de Usuarios</h1>
-    <button onclick="toggleModal()" class="bg-[#02535a] text-white px-4 py-2 rounded mb-4">Agregar Usuario</button>
+    <button onclick="toggleModal()" class="bg-[#02535a] hover:bg-[#037177] text-white px-4 py-2 rounded mb-4">Agregar Usuario</button>
 
     <!-- Modal -->
     <div id="modalForm" class="fixed z-10 inset-0 overflow-y-auto hidden">
@@ -43,7 +49,7 @@
             </select>
             <div class="flex justify-end">
               <button type="button" onclick="toggleModal()" class="mr-2 text-gray-500">Cancelar</button>
-              <button type="submit" class="bg-[#02535a] text-white px-4 py-2 rounded">Guardar Usuario</button>
+              <button type="submit" class="bg-[#02535a] hover:bg-[#037177] text-white px-4 py-2 rounded">Guardar Usuario</button>
             </div>
           </form>
         </div>
@@ -53,7 +59,7 @@
     <!-- Tabla -->
     <div class="overflow-x-auto">
       <table class="min-w-full border border-gray-300">
-        <thead class="text-white">
+        <thead>
           <tr>
             <th class="px-4 py-2">Nombre</th>
             <th class="px-4 py-2">Apellidos</th>
