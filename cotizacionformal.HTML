@@ -719,12 +719,11 @@ async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
     await pdfRef.put(pdfBlob);
     const url = await pdfRef.getDownloadURL();
 
-  const pdfBlob = doc.output("blob");
+ // Guardamos la URL en Firestore
+    await db.collection("cotizacionformal").doc(codigo).update({
+      pdf_url: url
+    });
 
-// Envuelve en una función async interna
-(async () => {
-  await subirPDFyGuardarEnFirestore(pdfBlob, codigo);
-})();
     alert("✅ PDF generado y almacenado correctamente.");
   } catch (err) {
     console.error("❌ Error al subir PDF o guardar URL:", err);
@@ -733,8 +732,11 @@ async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
 }
   
 const pdfBlob = doc.output("blob");
-await subirPDFyGuardarEnFirestore(pdfBlob, codigo);
-}
+
+// Envuelve en una función async interna
+(async () => {
+  await subirPDFyGuardarEnFirestore(pdfBlob, codigo);
+})();
 
 window.onload = cargarDatosIniciales;
   </script>
