@@ -180,7 +180,8 @@
       // Guarda los datos del usuario si deseas
       localStorage.setItem("usuario", JSON.stringify(usuario));
 
-      const modal = document.getElementById("modal-bienvenida");
+     const nombre = usuario.nombre || email;
+const modal = document.getElementById("modal-bienvenida");
 modal.textContent = `¡Bienvenido ${nombre}!`;
 modal.style.display = "block";
 setTimeout(() => {
@@ -192,16 +193,7 @@ setTimeout(() => {
   }
 }, 2000);
 
-      // Redirigir según rol
-      setTimeout(() => {
-        if (usuario.rol === "Administrador") {
-          window.location.href = "dashboard.html";
-        } else {
-          window.location.href = "menu.html";
-        }
-      }, 1500);
-
-    } catch (error) {
+      } catch (error) {
       console.error("Error al iniciar sesión:", error);
       alert("Ocurrió un error al validar tus datos.");
     }
