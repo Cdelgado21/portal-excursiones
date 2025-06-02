@@ -1,143 +1,108 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Iniciar Sesión</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
   <style>
     body {
+      background-color: #f4f7f8;
       font-family: Arial, sans-serif;
-      background-color: #eaf4f4;
-      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
       height: 100vh;
-      display: grid;
-      place-items: center;
+      margin: 0;
     }
-
-    .login-container {
+    .login-box {
       background: white;
       padding: 30px;
       border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
       width: 100%;
       max-width: 400px;
-      text-align: center;
     }
-
-    .logo {
-      width: 120px;
-      margin-bottom: 15px;
-    }
-
     h2 {
+      text-align: center;
       color: #02535a;
-      margin: 10px 0 5px;
+      margin-bottom: 20px;
     }
-
-    p {
-      color: #5f9296;
-      font-size: 14px;
-      margin-top: 0;
-    }
-
-    input[type="text"], input[type="password"] {
-      width: calc(100% - 20px);
+    input {
+      width: 100%;
       padding: 10px;
       margin: 10px 0;
-      border-radius: 6px;
       border: 1px solid #ccc;
-      font-size: 16px;
+      border-radius: 6px;
     }
-
-    .input-wrapper {
-      position: relative;
-    }
-
-    .input-wrapper img {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      cursor: pointer;
-      width: 20px;
-    }
-
     button {
       width: 100%;
-      padding: 12px;
+      padding: 10px;
       background-color: #02535a;
       color: white;
       border: none;
       border-radius: 6px;
-      font-size: 16px;
       cursor: pointer;
     }
-
-    .forgot {
-      display: block;
+    button:hover {
+      background-color: #037177;
+    }
+    .error {
+      color: red;
+      text-align: center;
       margin-top: 10px;
-      font-size: 13px;
-      color: #02535a;
-      text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <img src="LOGO SIED.JPG" alt="Excursiones Delgado" class="logo" />
+  <div class="login-box">
     <h2>Iniciar Sesión</h2>
-    <p>Sistema Integral de Excursiones Delgado</p>
-    <input type="text" id="usuario" placeholder="Usuario" />
-    <div class="input-wrapper">
-      <input type="password" id="clave" placeholder="Contraseña" />
-      <img src="https://cdn-icons-png.flaticon.com/512/709/709612.png" onclick="toggleClave()" id="ojo" alt="Ver" />
-    </div>
-    <button onclick="iniciarSesion()">Ingresar</button>
-    <a class="forgot" href="https://forms.gle/7iESjc1ouV3iJ6AR6" target="_blank">
-      ¿Olvidaste tu contraseña?
-    </a>
+    <input type="email" id="email" placeholder="Correo electrónico">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button onclick="login()">Ingresar</button>
+    <div id="mensajeError" class="error"></div>
   </div>
 
   <script>
-    const url = "https://script.google.com/macros/s/AKfycbw8Me5CyT3RP7U_mRPoaxPYFF-Ail84JHGJ37a3mtC5axLhjhWMyo6MhBG0FKptrg3t/exec";
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.firebasestorage.app",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    function toggleClave() {
-      const input = document.getElementById("clave");
-      input.type = input.type === "password" ? "text" : "password";
-    }
+    async function login() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const mensaje = document.getElementById('mensajeError');
+      mensaje.textContent = '';
 
-    function iniciarSesion() {
-      const usuario = document.getElementById("usuario").value.trim().toLowerCase();
-      const clave = document.getElementById("clave").value.trim();
+      try {
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
 
-      if (!usuario || !clave) {
-        alert("⚠️ Debes ingresar usuario y contraseña.");
-        return;
+        const doc = await db.collection('usuarios').doc(user.uid).get();
+        const rol = doc.exists ? doc.data().rol : null;
+
+        if (rol === 'Administrador') {
+          window.location.href = 'registro.html';
+        } else if (rol === 'Cotizaciones') {
+          window.location.href = 'cotizaciones.html';
+        } else {
+          window.location.href = 'inicio.html';
+        }
+      } catch (error) {
+        mensaje.textContent = 'Credenciales incorrectas o el usuario no existe.';
+        console.error(error);
       }
-
-      fetch(`${url}?accion=login&usuario=${encodeURIComponent(usuario)}&clave=${encodeURIComponent(clave)}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            alert(`✅ ¡Bienvenido ${data.nombre}!`);
-
-            if (data.rol === "admin") {
-              location.href = "menu.html";
-            } else if (data.rol === "cotizador") {
-              location.href = "cotizaciones.html";
-            } else {
-              location.href = "panel.html";
-            }
-          } else {
-            alert("❌ " + data.mensaje);
-          }
-        })
-        .catch(error => {
-          console.error("Error:", error);
-          alert("❌ Error al intentar iniciar sesión.");
-        });
     }
   </script>
 </body>
 </html>
-
