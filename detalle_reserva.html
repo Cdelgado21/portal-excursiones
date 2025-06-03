@@ -307,67 +307,39 @@ function guardarReserva() {
       alert("Ocurrió un error al guardar.");
     });
 }
+async function generarCodigoReservaSeguro() {
+    const añoActual = new Date().getFullYear();
+    const docRef = db.collection("counters").doc(`reservas-${añoActual}`);
 
-  document.addEventListener("DOMContentLoaded", async () => {
-  const añoActual = new Date().getFullYear();
-  const prefijo = `ED-`;
+    try {
+      const resultado = await db.runTransaction(async (t) => {
+        const doc = await t.get(docRef);
+        let nuevoNumero = 1;
 
-  try {
-    const snapshot = await db.collection("reservas")
-      .orderBy(firebase.firestore.FieldPath.documentId())
-      .get();
-
-    let maxNumero = 0;
-    snapshot.forEach(doc => {
-      const id = doc.id; // ejemplo: ED-003-2025
-      const partes = id.split("-");
-      if (partes.length === 3 && partes[2] === añoActual.toString()) {
-        const numero = parseInt(partes[1], 10);
-        if (!isNaN(numero) && numero > maxNumero) {
-          maxNumero = numero;
+        if (doc.exists) {
+          const actual = doc.data().valor || 0;
+          nuevoNumero = actual + 1;
+          t.update(docRef, { valor: nuevoNumero });
+        } else {
+          t.set(docRef, { valor: nuevoNumero });
         }
-     async function generarCodigoReservaSeguro() {
-  const añoActual = new Date().getFullYear();
-  const docRef = db.collection("counters").doc(`reservas-${añoActual}`);
 
-  try {
-    const resultado = await db.runTransaction(async (t) => {
-      const doc = await t.get(docRef);
-      let nuevoNumero = 1;
+        return nuevoNumero;
+      });
 
-      if (doc.exists) {
-        const actual = doc.data().valor || 0;
-        nuevoNumero = actual + 1;
-        t.update(docRef, { valor: nuevoNumero });
-      } else {
-        t.set(docRef, { valor: nuevoNumero });
-      }
+      const numeroFormateado = String(resultado).padStart(3, "0");
+      const codigoGenerado = `ED-${numeroFormateado}-${añoActual}`;
+      document.getElementById("codigoReserva").value = codigoGenerado;
 
-      return nuevoNumero;
-    });
-
-    const numeroFormateado = String(resultado).padStart(3, "0");
-    const codigoGenerado = `ED-${numeroFormateado}-${añoActual}`;
-    document.getElementById("codigoReserva").value = codigoGenerado;
-
-  } catch (e) {
-    console.error("Error generando código con transacción:", e);
-    alert("Ocurrió un error al generar el código de reserva.");
+    } catch (e) {
+      console.error("Error generando código con transacción:", e);
+      alert("Ocurrió un error al generar el código de reserva.");
+    }
   }
-}
 
-document.addEventListener("DOMContentLoaded", () => {
-  generarCodigoReservaSeguro();
-});
-    const nuevoNumero = String(maxNumero + 1).padStart(3, "0");
-    const codigoGenerado = `${prefijo}${nuevoNumero}-${añoActual}`;
-    document.getElementById("codigoReserva").value = codigoGenerado;
-
-  } catch (error) {
-    console.error("Error generando código de reserva:", error);
-    alert("No se pudo generar el código de reserva automáticamente.");
-  }
-});
+  document.addEventListener("DOMContentLoaded", () => {
+    generarCodigoReservaSeguro();
+  });
 
 </script>
 
