@@ -162,7 +162,34 @@ h2 {
       main {
         margin-left: 0;
       }
-    }
+    @media (min-width: 769px) {
+  .sidebar {
+    transform: translateX(0); /* Siempre visible en desktop */
+  }
+
+  .toggle-btn {
+    display: none; /* Oculta el botón en desktop */
+  }
+
+  main.sidebar-visible {
+    margin-left: 250px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  main {
+    margin-left: 0;
+  }
+}
+ 
   </style>
 </head>
 <body>
@@ -279,6 +306,7 @@ function toggleSidebar() {
       toggleBtn.style.display = "block";
     } else {
       sidebar.classList.add('active');
+      main.classList.add('sidebar-visible');
       toggleBtn.style.display = "none";
     }
   }
