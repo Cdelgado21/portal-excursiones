@@ -326,7 +326,7 @@ function guardarReserva() {
         if (!isNaN(numero) && numero > maxNumero) {
           maxNumero = numero;
         }
-      sync function generarCodigoReservaSeguro() {
+     async function generarCodigoReservaSeguro() {
   const añoActual = new Date().getFullYear();
   const docRef = db.collection("counters").doc(`reservas-${añoActual}`);
 
@@ -354,7 +354,8 @@ function guardarReserva() {
     console.error("Error generando código con transacción:", e);
     alert("Ocurrió un error al generar el código de reserva.");
   }
-  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   generarCodigoReservaSeguro();
 });
