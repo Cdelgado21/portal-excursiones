@@ -188,6 +188,37 @@ h2 {
   main {
     margin-left: 0;
   }
+  .collapse-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 20px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  display: none;
+}
+
+.sidebar.colapsado {
+  width: 60px;
+}
+
+.sidebar.colapsado .user-info,
+.sidebar.colapsado .nav-links a span:not(.icon) {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .collapse-btn {
+    display: block;
+  }
+
+  .sidebar.colapsado + main {
+    margin-left: 60px;
+  }
+
+  main.sidebar-visible {
+    margin-left: 250px;
+  }
 }
  
   </style>
@@ -252,6 +283,7 @@ h2 {
 
   <div class="sidebar" id="sidebar">
     <div class="user-info">
+      <button class="collapse-btn" onclick="colapsarSidebar()">☰</button>
       <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
       <h3 id="nombreUsuario">Cargando...</h3>
       <small id="rolUsuario">-</small>
@@ -310,7 +342,16 @@ function toggleSidebar() {
       toggleBtn.style.display = "none";
     }
   }
-
+function colapsarSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('contenido');
+  sidebar.classList.toggle('colapsado');
+  if (sidebar.classList.contains('colapsado')) {
+    main.style.marginLeft = '60px';
+  } else {
+    main.style.marginLeft = '250px';
+  }
+}
   window.addEventListener('resize', checkScreenSize);
   window.addEventListener('load', checkScreenSize);
     
