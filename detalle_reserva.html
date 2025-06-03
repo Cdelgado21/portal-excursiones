@@ -355,7 +355,9 @@ function guardarReserva() {
     alert("Ocurrió un error al generar el código de reserva.");
   }
   });
-
+document.addEventListener("DOMContentLoaded", () => {
+  generarCodigoReservaSeguro();
+});
     const nuevoNumero = String(maxNumero + 1).padStart(3, "0");
     const codigoGenerado = `${prefijo}${nuevoNumero}-${añoActual}`;
     document.getElementById("codigoReserva").value = codigoGenerado;
