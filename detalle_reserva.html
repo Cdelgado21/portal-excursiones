@@ -3,86 +3,145 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detalle de Reserva</title>
+  <title>Reservas - Excursiones Delgado</title>
   <style>
-    body { font-family: Arial, sans-serif; background-color: #f0f7f7; margin: 0; padding: 20px; }
-    .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    h2 { color: #02535a; text-align: center; }
-    label { display: block; margin-top: 10px; font-weight: bold; }
-    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
-    .row { display: flex; gap: 10px; }
-    .row > div { flex: 1; }
-    .actions { text-align: center; margin-top: 20px; }
-    button { background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7f8;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      color: #02535a;
+      margin-top: 30px;
+      border-bottom: 2px solid #02535a;
+      padding-bottom: 5px;
+    }
+    .section {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+      box-shadow: 0 0 8px rgba(0, 0, 0, 0.05);
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      margin-top: 5px;
+    }
+    button {
+      margin-top: 20px;
+      background-color: #02535a;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #014245;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Detalle de Reserva</h2>
 
-    <label>Código de Reserva</label>
-    <input type="text" id="codigo" disabled>
+  <h1>Agregar nueva reserva</h1>
 
-    <h3>Información del Cliente</h3>
-    <label>Nombre</label>
-    <input type="text" id="nombre">
-    <label>Apellidos</label>
-    <input type="text" id="apellidos">
-    <label>Teléfono</label>
-    <input type="text" id="telefono">
-    <label>Correo electrónico</label>
-    <input type="email" id="correo">
-    <label>Fecha de nacimiento</label>
+  <div class="section">
+    <h2>🔎 Código de Cotización</h2>
+    <label for="codigoCotizacion">Ingrese el código (ej. COT-001-2025):</label>
+    <input type="text" id="codigoCotizacion">
+    <button onclick="precargarDatos()">Cargar datos</button>
+  </div>
+
+  <div class="section">
+    <h2>🧑 Información del Cliente</h2>
+    <label>Nombre completo:</label>
+    <input id="nombreCliente">
+
+    <label>Teléfono:</label>
+    <input id="telefonoCliente">
+
+    <label>Correo electrónico:</label>
+    <input id="correoCliente">
+
+    <label>Fecha de nacimiento:</label>
     <input type="date" id="fechaNacimiento">
-    <label>Edad</label>
-    <input type="text" id="edad" disabled>
-    <label>N° Pasaporte</label>
-    <input type="text" id="pasaporte">
-    <label>Fecha de vencimiento del pasaporte</label>
-    <input type="date" id="fechaVencimiento">
 
-    <h3>Información del Viaje</h3>
-    <label>Destino</label>
-    <input type="text" id="destino">
-    <label>Fecha de viaje</label>
-    <input type="date" id="fechaViaje">
-    <label>Aerolínea</label>
-    <input type="text" id="aerolinea">
-    <label>Código de reserva de aerolínea</label>
-    <input type="text" id="reservaAereo">
-    <label>Equipaje</label>
-    <input type="text" id="equipaje">
-    <label>Itinerario</label>
+    <label>Edad:</label>
+    <input id="edad" disabled>
+
+    <label>Número de pasaporte:</label>
+    <input id="pasaporte">
+
+    <label>Fecha de vencimiento del pasaporte:</label>
+    <input type="date" id="vencimientoPasaporte">
+  </div>
+
+  <div class="section">
+    <h2>🧳 Información del Viaje</h2>
+    <label>Código de reserva (Excursiones):</label>
+    <input id="codigoReserva" disabled>
+
+    <label>Aerolínea:</label>
+    <select id="aerolinea">
+      <option value="Avianca">Avianca</option>
+      <option value="Copa Airlines">Copa Airlines</option>
+      <option value="Volaris">Volaris</option>
+      <option value="Wingo">Wingo</option>
+    </select>
+
+    <label>Código de reserva del vuelo:</label>
+    <input id="codigoVuelo">
+
+    <label>Destino:</label>
+    <input id="destino">
+
+    <label>Itinerario:</label>
     <textarea id="itinerario"></textarea>
-    <label>Operador del tour</label>
-    <input type="text" id="operador">
-    <label>Reunión previa realizada</label>
-    <select id="reunionPrevia">
+
+    <label>Equipaje:</label>
+    <input id="equipaje">
+
+    <label>¿Reunión realizada?</label>
+    <select id="reunion">
       <option value="Sí">Sí</option>
       <option value="No">No</option>
     </select>
 
-    <div class="actions">
-      <button onclick="guardarReserva()">Guardar</button>
-    </div>
+    <label>Operador del tour:</label>
+    <input id="operador">
   </div>
 
+  <button onclick="guardarReserva()">Guardar reserva</button>
+
   <script>
-    // Aquí se podría conectar a Firebase para cargar los datos al ingresar el código en la URL
-    // También se calcularía la edad automáticamente
-    document.getElementById('fechaNacimiento').addEventListener('change', () => {
-      const fecha = new Date(document.getElementById('fechaNacimiento').value);
+    function precargarDatos() {
+      const codigo = document.getElementById('codigoCotizacion').value;
+      // Aquí se conectará a Firestore y cargará datos de la colección 'cotizaciones'
+    }
+
+    function guardarReserva() {
+      // Aquí se conectará a Firestore para guardar en la colección 'reservas'
+    }
+
+    document.getElementById("fechaNacimiento").addEventListener("change", function() {
+      const fecha = new Date(this.value);
       const hoy = new Date();
       let edad = hoy.getFullYear() - fecha.getFullYear();
       const m = hoy.getMonth() - fecha.getMonth();
-      if (m < 0 || (m === 0 && hoy.getDate() < fecha.getDate())) edad--;
-      document.getElementById('edad').value = edad + ' años';
+      if (m < 0 || (m === 0 && hoy.getDate() < fecha.getDate())) {
+        edad--;
+      }
+      document.getElementById("edad").value = edad;
     });
-
-    function guardarReserva() {
-      alert("Reserva guardada (simulación)");
-      // Aquí se conectaría a Firebase para guardar la reserva
-    }
   </script>
 </body>
 </html>
