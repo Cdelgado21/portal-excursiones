@@ -6,23 +6,28 @@
   <title>Dashboard - Excursiones Delgado</title>
   <style>
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background-color: #f4f7f8;
     }
-h2 {
+
+    h2 {
       color: #02535a;
       margin-bottom: 10px;
     }
+
     .dashboard-section {
       margin-bottom: 30px;
     }
+
     .dashboard-cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 15px;
     }
+
     .card {
       background-color: white;
       padding: 20px;
@@ -32,10 +37,12 @@ h2 {
       font-weight: bold;
       color: #02535a;
     }
+
     .alertas ul, .recordatorios ul, .tareas ul {
-      padding-left: 20px;
+      padding-left: 0;
       list-style: none;
     }
+
     .alertas li, .recordatorios li, .tareas li {
       background: #B3CBCD;
       margin: 5px 0;
@@ -43,6 +50,7 @@ h2 {
       border-radius: 8px;
       font-size: 0.95rem;
     }
+
     table {
       width: 100%;
       background: white;
@@ -50,52 +58,60 @@ h2 {
       border-radius: 10px;
       overflow: hidden;
     }
+
     table th, table td {
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #eee;
     }
+
     table th {
       background-color: #02535a;
       color: white;
     }
-    ol {
+
+    .ranking ol {
       padding-left: 20px;
     }
+
     .ranking ol li {
       margin-bottom: 6px;
-     } 
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 250px;
-  height: 100%;
-  background-color: #02535a;
-  color: white;
-  padding: 20px;
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
-  z-index: 1000;
-}
+    }
 
-.sidebar.active {
-  transform: translateX(0);
-}
+    /* Botón toggle */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+    }
 
+    /* Sidebar */
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
 
-.toggle-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  font-size: 24px;
-  background: white; /* Fondo blanco para contraste */
-  color: #02535a;     /* Ícono verde */
-  border: none;
-  border-radius: 50%;
-  padding: 8px 12px;
-  z-index: 1100;
-}
+    .sidebar.active {
+      transform: translateX(0);
+    }
 
     .user-info {
       text-align: center;
@@ -119,190 +135,52 @@ h2 {
       color: #f4f7f8;
     }
 
-    .nav-links li a {
-  background-color: transparent;
-  color: #02535a;
-  padding: 6px 12px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-}
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
 
-.nav-links li a:hover {
-  background-color: rgba(255,255,255,0.1);
-}
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+    }
+
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+
     .nav-links .icon {
       margin-right: 10px;
       font-size: 1.2rem;
     }
 
+    /* Contenido principal */
     main {
-      margin-left: 250px;
+      margin-left: 0;
       padding: 20px;
       transition: margin-left 0.3s ease;
     }
 
-    main.full {
-      margin-left: 0;
+    main.sidebar-visible {
+      margin-left: 250px;
     }
 
-    @media screen and (max-width: 600px) {
-      .dashboard-cards {
-        grid-template-columns: 1fr;
-      }
-    }
-      .sidebar {
-        overflow-y: auto;
-        transform: translateX(-100%);
-      }
-      .sidebar.show {
-        transform: translateX(0);
-      }
-      main {
+    @media screen and (max-width: 768px) {
+      main.sidebar-visible {
         margin-left: 0;
       }
-    @media (min-width: 769px) {
-  .sidebar {
-    transform: translateX(0); /* Siempre visible en desktop */
-  }
-
-  .toggle-btn {
-    display: none; /* Oculta el botón en desktop */
-  }
-
-  main.sidebar-visible {
-    margin-left: 250px;
-  }
-}
-
-@media (max-width: 768px) {
-  .sidebar {
-    transform: translateX(-100%);
-  }
-
- .toggle-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  font-size: 24px;
-  background: white;
-  color: #02535a;
-  border: none;
-  border-radius: 50%;
-  padding: 8px 12px;
-  z-index: 1100;
-  cursor: pointer;
-}
-
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 250px;
-  height: 100%;
-  background-color: #02535a;
-  color: white;
-  padding: 20px;
-  transform: translateX(-250px);
-  transition: transform 0.3s ease;
-  z-index: 1000;
-  overflow-y: auto;
-}
-
-.sidebar.active {
-  transform: translateX(0);
-}
-
-main {
-  margin-left: 0;
-  padding: 20px;
-  transition: margin-left 0.3s ease;
-}
-
-main.sidebar-visible {
-  margin-left: 250px;
-}
-
-.toggle-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  font-size: 24px;
-  background: white;
-  color: #02535a;
-  border: none;
-  border-radius: 50%;
-  padding: 8px 12px;
-  z-index: 1100;
-  cursor: pointer;
-}
-
-/* Mostrar menú fijo solo si es deseado (opcional) */
-@media screen and (max-width: 768px) {
-  main.sidebar-visible {
-    margin-left: 0;
-  }
-}
+    }
   </style>
 </head>
 <body>
   <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-<h2>Bienvenido al Panel de Control</h2>
-  <main id="contenido">
-  <div class="dashboard-section dashboard-cards">
-    <div class="card">🧾 Cotizaciones hoy: <strong>12</strong></div>
-    <div class="card">📦 Reservas activas: <strong>8</strong></div>
-    <div class="card">🎯 Meta mensual: <strong>$18,400</strong></div>
-    <div class="card">📅 Viajes esta semana: <strong>3</strong></div>
-  </div>
 
-  <div class="dashboard-section alertas">
-    <h2>⚠️ Alertas internas</h2>
-    <ul>
-      <li>Cliente Ana Pérez aún no ha enviado pasaporte</li>
-      <li>Reserva #568 sin abono confirmado</li>
-      <li>Viaje a Panamá sale en 3 días sin check-in</li>
-    </ul>
-  </div>
-
-  <div class="dashboard-section">
-    <h2>🧳 Próximos viajes confirmados</h2>
-    <table>
-      <thead>
-        <tr><th>Destino</th><th>Fecha</th><th>Embajador</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Medellín</td><td>05/06/2025</td><td>Yare</td></tr>
-        <tr><td>Guatemala</td><td>07/06/2025</td><td>Tatiana</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="dashboard-section ranking">
-    <h2>🏆 Embajadores destacados</h2>
-    <ol>
-      <li>Cristopher Delgado – $3,200</li>
-      <li>Marcela – $2,900</li>
-      <li>Yuliana – $2,700</li>
-    </ol>
-  </div>
-
-  <div class="dashboard-section recordatorios">
-    <h2>🎉 Cumpleaños esta semana</h2>
-    <ul>
-      <li>María López – 04/06</li>
-      <li>Jorge Ramos – 06/06</li>
-    </ul>
-  </div>
-
-  <div class="dashboard-section tareas">
-    <h2>📋 Tareas asignadas</h2>
-    <ul>
-      <li>Dar seguimiento a cotización #145</li>
-      <li>Confirmar hospedaje para Santo Domingo</li>
-      <li>Verificar pasaportes de grupo Panamá</li>
-  
   <div class="sidebar" id="sidebar">
     <div class="user-info">
       <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
@@ -310,25 +188,82 @@ main.sidebar-visible {
       <small id="rolUsuario">-</small>
     </div>
     <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span> Inicio</a></li>
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
       <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html"><span class="icon">📄</span> Cotizaciones</a></li>
-      <li><a href="reservas.html"><span class="icon">🧳</span> Reservas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span> Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span> Clientes</a></li>
-      <li><a href="tours.html"><span class="icon">🌎</span> Productos</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span> Finanzas</a></li>
-      <li><a href="#" onclick="cerrarSesion()"><span class="icon">🚪</span> Cerrar sesión</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesion()"><span class="icon">🚪</span>Cerrar sesión</a></li>
     </ul>
   </div>
 
+  <main id="contenido">
+    <h2>Bienvenido al Panel de Control</h2>
 
-   </main>
+    <div class="dashboard-section dashboard-cards">
+      <div class="card">🧾 Cotizaciones hoy: <strong>12</strong></div>
+      <div class="card">📦 Reservas activas: <strong>8</strong></div>
+      <div class="card">🎯 Meta mensual: <strong>$18,400</strong></div>
+      <div class="card">📅 Viajes esta semana: <strong>3</strong></div>
+    </div>
 
-<script>
+    <div class="dashboard-section alertas">
+      <h2>⚠️ Alertas internas</h2>
+      <ul>
+        <li>Cliente Ana Pérez aún no ha enviado pasaporte</li>
+        <li>Reserva #568 sin abono confirmado</li>
+        <li>Viaje a Panamá sale en 3 días sin check-in</li>
+      </ul>
+    </div>
+
+    <div class="dashboard-section">
+      <h2>🧳 Próximos viajes confirmados</h2>
+      <table>
+        <thead>
+          <tr><th>Destino</th><th>Fecha</th><th>Embajador</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Medellín</td><td>05/06/2025</td><td>Yare</td></tr>
+          <tr><td>Guatemala</td><td>07/06/2025</td><td>Tatiana</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="dashboard-section ranking">
+      <h2>🏆 Embajadores destacados</h2>
+      <ol>
+        <li>Cristopher Delgado – $3,200</li>
+        <li>Marcela – $2,900</li>
+        <li>Yuliana – $2,700</li>
+      </ol>
+    </div>
+
+    <div class="dashboard-section recordatorios">
+      <h2>🎉 Cumpleaños esta semana</h2>
+      <ul>
+        <li>María López – 04/06</li>
+        <li>Jorge Ramos – 06/06</li>
+      </ul>
+    </div>
+
+    <div class="dashboard-section tareas">
+      <h2>📋 Tareas asignadas</h2>
+      <ul>
+        <li>Dar seguimiento a cotización #145</li>
+        <li>Confirmar hospedaje para Santo Domingo</li>
+        <li>Verificar pasaportes de grupo Panamá</li>
+      </ul>
+    </div>
+  </main>
+
+  <script>
     const usuario = JSON.parse(localStorage.getItem("usuario"));
     const sidebar = document.getElementById("sidebar");
     const main = document.getElementById("contenido");
+    const toggleBtn = document.querySelector('.toggle-btn');
 
     if (usuario) {
       document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
@@ -343,37 +278,25 @@ main.sidebar-visible {
       window.location.href = "login.html";
     }
 
-function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('active');
-    const sidebar = document.getElementById('sidebar');
-  const main = document.getElementById('contenido');
-  sidebar.classList.toggle('active');
-  main.classList.toggle('sidebar-visible');
-  }
-
-  function checkScreenSize() {
-    const sidebar = document.getElementById('sidebar');
-    const toggleBtn = document.querySelector('.toggle-btn');
-    if (window.innerWidth <= 768) {
-      sidebar.classList.remove('active');
-      toggleBtn.style.display = "block";
-    } else {
-      sidebar.classList.add('active');
-      main.classList.add('sidebar-visible');
-      toggleBtn.style.display = "none";
+    function toggleSidebar() {
+      sidebar.classList.toggle('active');
+      main.classList.toggle('sidebar-visible');
     }
-  }
-  function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  sidebar.classList.toggle('active');
-}
-  window.addEventListener('resize', checkScreenSize);
-  window.addEventListener('load', checkScreenSize);
-    
+
+    function checkScreenSize() {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('active');
+        main.classList.remove('sidebar-visible');
+        toggleBtn.style.display = "block";
+      } else {
+        sidebar.classList.add('active');
+        main.classList.add('sidebar-visible');
+        toggleBtn.style.display = "block"; // Mostrar también en escritorio
+      }
+    }
+
+    window.addEventListener('resize', checkScreenSize);
+    window.addEventListener('load', checkScreenSize);
   </script>
-
-</body>
-</html>
-
 </body>
 </html>
