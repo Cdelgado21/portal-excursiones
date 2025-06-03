@@ -270,7 +270,7 @@ function calcularEdadPasajero(input) {
       const codigo = document.getElementById("codigoCotizacion").value.trim();
       if (!codigo) return alert("Por favor ingresa el código de cotización.");
 
-      const docRef = db.collection("cotizaciones").doc(codigo);
+      const docRef = db.collection("cotizacionformal").doc(codigo);
       const doc = await docRef.get();
 
       if (!doc.exists) return alert("No se encontró la cotización.");
