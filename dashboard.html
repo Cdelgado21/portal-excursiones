@@ -284,8 +284,6 @@ main {
       <li>Confirmar hospedaje para Santo Domingo</li>
       <li>Verificar pasaportes de grupo Panamá</li>
   
-      <button class="toggle-btn" onclick="toggleSidebar()">&#9776;</button>
-
   <div class="sidebar" id="sidebar">
     <div class="user-info">
       <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
@@ -346,10 +344,7 @@ function toggleSidebar() {
       toggleBtn.style.display = "none";
     }
   }
-  function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  sidebar.classList.toggle('active');
-}
+ 
   window.addEventListener('resize', checkScreenSize);
   window.addEventListener('load', checkScreenSize);
     
