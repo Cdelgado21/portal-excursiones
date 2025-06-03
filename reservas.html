@@ -2,169 +2,167 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Registrar Reserva - Excursiones Delgado</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reservas - Excursiones Delgado</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <style>
-    body { font-family: Arial; background: #f0f7f7; padding: 40px; margin: 0; }
-    .container { background: white; padding: 30px; border-radius: 12px; max-width: 800px; margin: auto; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
-    h2 { color: #02535a; margin-bottom: 20px; text-align: center; }
-    label { display: block; margin-top: 14px; font-weight: bold; color: #02535a; }
-    input, select, textarea { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; }
-    .checkbox { display: flex; align-items: center; margin-top: 10px; }
-    .checkbox input { width: auto; margin-right: 8px; }
-    button { margin-top: 20px; background: #02535a; color: white; padding: 12px; border: none; border-radius: 8px; width: 100%; font-size: 1rem; cursor: pointer; }
-    button:hover { background: #013e44; }
+    body { font-family: Arial, sans-serif; background: #f0f7f7; margin: 0; padding: 20px; }
+    h2 { color: #02535a; }
+    button { background: #02535a; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; background: white; }
+    th, td { padding: 10px; border: 1px solid #ccc; }
+    th { background: #02535a; color: white; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; }
+    .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, textarea, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; }
+    .close-btn { float: right; background: red; padding: 5px 10px; border-radius: 5px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Registrar Nueva Reserva</h2>
+  <h2>Reservas Confirmadas</h2>
+  <button onclick="abrirModal()">+ Agregar Reserva</button>
 
-    <form id="formReserva">
-      <!-- Información del Cliente -->
-      <label>Nombre completo</label>
-      <input type="text" name="nombre" required>
+  <table id="tablaReservas">
+    <thead>
+      <tr><th>Código</th><th>Cliente</th><th>Destino</th><th>Fecha</th><th>Embajador</th><th>Operador</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-      <label>Cédula o pasaporte</label>
-      <input type="text" name="documento" required>
+  <div class="modal" id="modalReserva">
+    <div class="modal-content">
+      <button class="close-btn" onclick="cerrarModal()">X</button>
+      <h3>Agregar nueva reserva</h3>
 
-      <label>Fecha de nacimiento</label>
-      <input type="date" name="fechaNacimiento" onchange="calcularEdad()" required>
+      <label>Código de Cotización</label>
+      <input type="text" id="codigoCotizacion" placeholder="Ej: COT-001-2025" onblur="cargarCotizacion()">
 
-      <label>Edad</label>
-      <input type="number" name="edad" id="edad" readonly>
+      <label>Código de Reserva</label>
+      <input type="text" id="codigoReserva" readonly>
 
-      <label>Fecha de vencimiento del pasaporte</label>
-      <input type="date" name="vencimientoPasaporte">
+      <label>Nombre del Cliente</label>
+      <input type="text" id="cliente">
 
       <label>Teléfono</label>
-      <input type="tel" name="telefono" required>
+      <input type="text" id="telefono">
 
-      <label>Correo electrónico</label>
-      <input type="email" name="correo" required>
+      <label>Fecha de Nacimiento</label>
+      <input type="date" id="nacimiento" onblur="calcularEdad()">
 
-      <!-- Información del Viaje -->
+      <label>Edad</label>
+      <input type="text" id="edad" readonly>
+
       <label>Destino</label>
-      <input type="text" name="destino" required>
+      <input type="text" id="destino">
 
-      <label>Aerolínea</label>
-      <input type="text" name="aerolinea">
+      <label>Fecha de Viaje</label>
+      <input type="date" id="fecha">
 
-      <label>Código de reserva de aerolínea</label>
-      <input type="text" name="codigoAereo">
+      <label>Aerolínea (código)</label>
+      <input type="text" id="aerolinea">
 
-      <label>Fecha de salida</label>
-      <input type="date" name="fechaSalida">
-
-      <label>Fecha de regreso</label>
-      <input type="date" name="fechaRegreso">
-
-      <!-- Equipaje -->
-      <label>Equipaje</label>
-      <input type="text" name="equipaje" placeholder="Ej: 1 artículo personal + 1 maleta de mano por persona">
-
-      <!-- Hospedaje -->
       <label>Hotel</label>
-      <input type="text" name="hotel">
+      <input type="text" id="hotel">
 
-      <!-- Reunión previa -->
-      <div class="checkbox">
-        <input type="checkbox" name="reunion" id="reunion">
-        <label for="reunion">¿Reunión realizada (15 días antes)?</label>
-      </div>
+      <label>Itinerario</label>
+      <textarea id="itinerario" rows="3"></textarea>
 
-      <!-- Extras -->
-      <label>Operador del tour</label>
-      <input type="text" name="operador">
+      <label>¿Reunión Previa Realizada?</label>
+      <select id="reunion">
+        <option value="No">No</option>
+        <option value="Sí">Sí</option>
+      </select>
 
-      <label>Observaciones logísticas</label>
-      <textarea name="observaciones"></textarea>
+      <label>Operador Responsable</label>
+      <input type="text" id="operador">
 
-      <!-- Embajadora -->
-      <label>Embajadora responsable</label>
-      <input type="text" name="embajadora">
-
-      <label>Comisión (%)</label>
-      <input type="number" name="comision" step="0.01" min="0" max="100">
-
-      <!-- Financiero -->
-      <label>Precio total (USD)</label>
-      <input type="number" name="precioTotal" step="0.01">
-
-      <label>Monto abonado</label>
-      <input type="number" name="abonado" step="0.01">
-
-      <label>Monto de reserva</label>
-      <input type="number" name="montoReserva" step="0.01">
-
-      <label>Método de pago</label>
-      <input type="text" name="metodoPago">
-
-      <label>Fecha del abono</label>
-      <input type="date" name="fechaAbono">
-
-      <!-- Guardar -->
-      <button type="submit">Guardar Reserva</button>
-    </form>
+      <button onclick="guardarReserva()">Guardar</button>
+    </div>
   </div>
 
   <script>
-    function calcularEdad() {
-      const nacimiento = document.querySelector('input[name="fechaNacimiento"]').value;
-      const edadInput = document.getElementById('edad');
-      if (nacimiento) {
-        const hoy = new Date();
-        const cumple = new Date(nacimiento);
-        let edad = hoy.getFullYear() - cumple.getFullYear();
-        const m = hoy.getMonth() - cumple.getMonth();
-        if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) {
-          edad--;
-        }
-        edadInput.value = edad;
-      }
-      document.getElementById("formReserva").addEventListener("submit", async function(e) {
-  e.preventDefault();
-
-  const form = e.target;
-  const data = Object.fromEntries(new FormData(form).entries());
-
-  // Convertir valores necesarios
-  data.edad = parseInt(data.edad);
-  data.precioTotal = parseFloat(data.precioTotal || 0);
-  data.abonado = parseFloat(data.abonado || 0);
-  data.comision = parseFloat(data.comision || 0);
-  data.reunion = form.reunion.checked;
-
-  // Generar código ED-001-2025
-  const año = new Date().getFullYear();
-  const snapshot = await db.collection("reservas").where("año", "==", año).get();
-  const consecutivo = snapshot.size + 1;
-  const codigo = `ED-${String(consecutivo).padStart(3, '0')}-${año}`;
-
-  data.codigoReserva = codigo;
-  data.año = año;
-  data.fechaCreacion = new Date().toISOString();
-
-  // Guardar en Firestore
-  await db.collection("reservas").doc(codigo).set(data);
-  alert(`Reserva guardada con código: ${codigo}`);
-  form.reset();
-  document.getElementById("edad").value = '';
-});
     const firebaseConfig = {
-    apiKey: "TU_API_KEY",
-    authDomain: "TU_DOMINIO.firebaseapp.com",
-    projectId: "excursiones-delgado",
-    storageBucket: "excursiones-delgado.appspot.com",
-    messagingSenderId: "1234567890",
-    appId: "APP_ID"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+      // Tu configuración de Firebase
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let contador = 0;
+    async function generarCodigoReserva() {
+      const snapshot = await db.collection("reservas").get();
+      contador = snapshot.size + 1;
+      const num = String(contador).padStart(3, '0');
+      document.getElementById("codigoReserva").value = `ED-${num}-2025`;
     }
+
+    function abrirModal() {
+      document.getElementById('modalReserva').style.display = 'flex';
+      generarCodigoReserva();
     }
+
+    function cerrarModal() {
+      document.getElementById('modalReserva').style.display = 'none';
+    }
+
+    async function cargarCotizacion() {
+      const cod = document.getElementById("codigoCotizacion").value.trim();
+      if (!cod) return;
+      const doc = await db.collection("cotizaciones").doc(cod).get();
+      if (!doc.exists) return alert("Cotización no encontrada");
+      const data = doc.data();
+      document.getElementById("cliente").value = data.nombre || '';
+      document.getElementById("telefono").value = data.telefono || '';
+      document.getElementById("destino").value = data.destino || '';
+      document.getElementById("fecha").value = data.fecha_salida || '';
+      document.getElementById("aerolinea").value = data.aerolinea || '';
+      document.getElementById("hotel").value = data.hotel || '';
+      document.getElementById("itinerario").value = data.itinerario || '';
+    }
+
+    function calcularEdad() {
+      const fnac = new Date(document.getElementById("nacimiento").value);
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - fnac.getFullYear();
+      const m = hoy.getMonth() - fnac.getMonth();
+      if (m < 0 || (m === 0 && hoy.getDate() < fnac.getDate())) edad--;
+      document.getElementById("edad").value = edad;
+    }
+
+    async function guardarReserva() {
+      const data = {
+        codigo: document.getElementById("codigoReserva").value,
+        cliente: document.getElementById("cliente").value,
+        telefono: document.getElementById("telefono").value,
+        nacimiento: document.getElementById("nacimiento").value,
+        edad: document.getElementById("edad").value,
+        destino: document.getElementById("destino").value,
+        fecha: document.getElementById("fecha").value,
+        aerolinea: document.getElementById("aerolinea").value,
+        hotel: document.getElementById("hotel").value,
+        itinerario: document.getElementById("itinerario").value,
+        reunion: document.getElementById("reunion").value,
+        operador: document.getElementById("operador").value,
+        timestamp: new Date()
+      };
+      await db.collection("reservas").doc(data.codigo).set(data);
+      alert("Reserva guardada");
+      cerrarModal();
+      location.reload();
+    }
+
+    async function cargarReservas() {
+      const tabla = document.querySelector("#tablaReservas tbody");
+      const snap = await db.collection("reservas").get();
+      snap.forEach(doc => {
+        const r = doc.data();
+        const fila = `<tr><td>${r.codigo}</td><td>${r.cliente}</td><td>${r.destino}</td><td>${r.fecha}</td><td>${r.embajador || '-'}</td><td>${r.operador || '-'}</td></tr>`;
+        tabla.innerHTML += fila;
+      });
+    }
+    cargarReservas();
   </script>
 </body>
 </html>
