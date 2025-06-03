@@ -245,7 +245,7 @@ h2 {
 
    </main>
 
-  <script>
+<script>
     const usuario = JSON.parse(localStorage.getItem("usuario"));
     const sidebar = document.getElementById("sidebar");
     const main = document.getElementById("contenido");
@@ -265,6 +265,10 @@ h2 {
 
 function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('active');
+    const sidebar = document.getElementById('sidebar');
+  const main = document.getElementById('contenido');
+  sidebar.classList.toggle('active');
+  main.classList.toggle('sidebar-visible');
   }
 
   function checkScreenSize() {
