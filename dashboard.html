@@ -181,49 +181,54 @@ h2 {
     transform: translateX(-100%);
   }
 
-  .sidebar.active {
-    transform: translateX(0);
-  }
-
-  main {
-    margin-left: 0;
-  }
-  .collapse-btn {
-  background: transparent;
+ .toggle-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-size: 24px;
+  background: white;
+  color: #02535a;
   border: none;
-  color: white;
-  font-size: 20px;
-  margin-bottom: 20px;
+  border-radius: 50%;
+  padding: 8px 12px;
+  z-index: 1100;
   cursor: pointer;
-  display: none;
 }
 
-.sidebar.colapsado {
-  width: 60px;
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background-color: #02535a;
+  color: white;
+  padding: 20px;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  z-index: 1000;
+  overflow-y: auto;
 }
 
-.sidebar.colapsado .user-info,
-.sidebar.colapsado .nav-links a span:not(.icon) {
-  display: none;
+.sidebar.active {
+  transform: translateX(0);
 }
 
-@media (min-width: 769px) {
-  .collapse-btn {
-    display: block;
-  }
+main {
+  margin-left: 0;
+  padding: 20px;
+  transition: margin-left 0.3s ease;
+}
 
-  .sidebar.colapsado + main {
-    margin-left: 60px;
-  }
-
-  main.sidebar-visible {
+@media screen and (min-width: 769px) {
+  .sidebar.active + main {
     margin-left: 250px;
   }
-}
- 
+} 
   </style>
 </head>
 <body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
 <h2>Bienvenido al Panel de Control</h2>
   <main id="contenido">
   <div class="dashboard-section dashboard-cards">
@@ -283,7 +288,6 @@ h2 {
 
   <div class="sidebar" id="sidebar">
     <div class="user-info">
-      <button class="collapse-btn" onclick="colapsarSidebar()">☰</button>
       <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
       <h3 id="nombreUsuario">Cargando...</h3>
       <small id="rolUsuario">-</small>
@@ -342,15 +346,9 @@ function toggleSidebar() {
       toggleBtn.style.display = "none";
     }
   }
-function colapsarSidebar() {
+  function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
-  const main = document.getElementById('contenido');
-  sidebar.classList.toggle('colapsado');
-  if (sidebar.classList.contains('colapsado')) {
-    main.style.marginLeft = '60px';
-  } else {
-    main.style.marginLeft = '250px';
-  }
+  sidebar.classList.toggle('active');
 }
   window.addEventListener('resize', checkScreenSize);
   window.addEventListener('load', checkScreenSize);
