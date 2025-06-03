@@ -72,6 +72,11 @@
 
 <section>
   <h2>Información del Cliente</h2>
+
+  <label>Código de Cotización:</label>
+    <input type="text" id="codigoCotizacion" placeholder="Ej: COT-001-2025">
+    <button onclick="cargarDesdeCotizacion()">Cargar datos</button>
+  
   <label>Nombre completo</label>
   <input type="text" id="nombreCliente">
 
@@ -82,10 +87,10 @@
   <input type="email" id="correoCliente">
 
   <label>Fecha de nacimiento</label>
-  <input type="date" id="fechaNacimiento">
+  <input type="date" id="fechaNacimiento" onchange="calcularEdad()">
 
   <label>Edad</label>
-  <input type="text" id="edad" readonly>
+  <input type="text" id="edadCliente" readonly>
 
   <label>Nacionalidad</label>
   <input type="text" id="nacionalidad">
@@ -99,7 +104,7 @@
 
 <section>
   <h2>Información del Viaje</h2>
-  <label>Código de reserva</label>
+  <label>Código de reserva (ED):</label>
   <input type="text" id="codigoReserva" readonly>
 
   <label>Fecha del viaje</label>
@@ -111,18 +116,32 @@
   <label>Aerolínea</label>
   <input type="text" id="aerolinea">
 
+  <label>Vuelo de ida:</label>
+    <input type="text" id="vueloIda">
+
+    <label>Vuelo de regreso:</label>
+    <input type="text" id="vueloRegreso">
+
   <label>Equipaje</label>
   <input type="text" id="equipaje">
+
+      <label>Hotel:</label>
+    <input type="text" id="hotel">
 
   <label>Itinerario</label>
   <textarea id="itinerario"></textarea>
 
-  <label>¿Se realizó la reunión previa?</label>
-  <input type="checkbox" id="reunionPrevia">
-
+<label>Reunión pre-viaje realizada:</label>
+    <select id="reunion">
+      <option value="Sí">Sí</option>
+      <option value="No">No</option>
+    </select>
+  
   <label>Operador del tour (interno)</label>
   <input type="text" id="operadorTour">
 </section>
+
+  <button onclick="guardarReserva()">Guardar Reserva</button>
 
 <section>
   <h2>Pasajeros Acompañantes</h2>
@@ -207,6 +226,12 @@
 <button onclick="guardarReserva()">Guardar Reserva</button>
 
 <script>
+  const firebaseConfig = {
+      // Configuración Firebase aquí
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+  
 function agregarPasajero() {
   const tbody = document.querySelector('#tablaPasajeros tbody');
   const row = document.createElement('tr');
@@ -220,13 +245,53 @@ function agregarPasajero() {
   `;
   tbody.appendChild(row);
 }
-
+function calcularEdad() {
+      const fecha = new Date(document.getElementById("fechaNacimiento").value);
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - fecha.getFullYear();
+      const mes = hoy.getMonth() - fecha.getMonth();
+      if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) {
+        edad--;
+      }
+      document.getElementById("edadCliente").value = edad;
+    }
 function calcularEdadPasajero(input) {
   const nacimiento = new Date(input.value);
   const hoy = new Date();
   const edad = hoy.getFullYear() - nacimiento.getFullYear();
   input.parentElement.nextElementSibling.firstElementChild.value = edad;
 }
+  async function cargarDesdeCotizacion() {
+      const codigo = document.getElementById("codigoCotizacion").value.trim();
+      if (!codigo) return alert("Por favor ingresa el código de cotización.");
+
+      const docRef = db.collection("cotizaciones").doc(codigo);
+      const doc = await docRef.get();
+
+      if (!doc.exists) return alert("No se encontró la cotización.");
+
+      const data = doc.data();
+
+      document.getElementById("nombreCliente").value = data.nombre || "";
+      document.getElementById("telefonoCliente").value = data.telefono || "";
+      document.getElementById("correoCliente").value = data.correo || "";
+      document.getElementById("destino").value = data.destino || "";
+      document.getElementById("aerolinea").value = data.aerolinea || "";
+      document.getElementById("equipaje").value = data.equipaje || "";
+      document.getElementById("hotel").value = data.hotel || "";
+      document.getElementById("itinerario").value = data.itinerario || "";
+    }
+
+    function guardarReserva() {
+      // Esta función se completa en el siguiente paso
+      alert("Reserva guardada correctamente (demo)");
+    }
+
+    // Generar código reserva ED-XXX-2025 automáticamente (demo)
+    document.addEventListener("DOMContentLoaded", () => {
+      const numero = Math.floor(Math.random() * 900 + 100);
+      document.getElementById("codigoReserva").value = `ED-${numero}-2025`;
+    });
 </script>
 
 </body>
