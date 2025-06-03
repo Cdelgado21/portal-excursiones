@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Registrar Reserva - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: Arial; background: #f0f7f7; padding: 40px; margin: 0; }
     .container { background: white; padding: 30px; border-radius: 12px; max-width: 800px; margin: auto; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
@@ -122,6 +124,46 @@
         }
         edadInput.value = edad;
       }
+      document.getElementById("formReserva").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const form = e.target;
+  const data = Object.fromEntries(new FormData(form).entries());
+
+  // Convertir valores necesarios
+  data.edad = parseInt(data.edad);
+  data.precioTotal = parseFloat(data.precioTotal || 0);
+  data.abonado = parseFloat(data.abonado || 0);
+  data.comision = parseFloat(data.comision || 0);
+  data.reunion = form.reunion.checked;
+
+  // Generar código ED-001-2025
+  const año = new Date().getFullYear();
+  const snapshot = await db.collection("reservas").where("año", "==", año).get();
+  const consecutivo = snapshot.size + 1;
+  const codigo = `ED-${String(consecutivo).padStart(3, '0')}-${año}`;
+
+  data.codigoReserva = codigo;
+  data.año = año;
+  data.fechaCreacion = new Date().toISOString();
+
+  // Guardar en Firestore
+  await db.collection("reservas").doc(codigo).set(data);
+  alert(`Reserva guardada con código: ${codigo}`);
+  form.reset();
+  document.getElementById("edad").value = '';
+});
+    const firebaseConfig = {
+    apiKey: "TU_API_KEY",
+    authDomain: "TU_DOMINIO.firebaseapp.com",
+    projectId: "excursiones-delgado",
+    storageBucket: "excursiones-delgado.appspot.com",
+    messagingSenderId: "1234567890",
+    appId: "APP_ID"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+    }
     }
   </script>
 </body>
