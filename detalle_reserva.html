@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle de Reserva</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #f0f7f7; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    h2 { color: #02535a; text-align: center; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select, textarea { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
+    .row { display: flex; gap: 10px; }
+    .row > div { flex: 1; }
+    .actions { text-align: center; margin-top: 20px; }
+    button { background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Detalle de Reserva</h2>
+
+    <label>Código de Reserva</label>
+    <input type="text" id="codigo" disabled>
+
+    <h3>Información del Cliente</h3>
+    <label>Nombre</label>
+    <input type="text" id="nombre">
+    <label>Apellidos</label>
+    <input type="text" id="apellidos">
+    <label>Teléfono</label>
+    <input type="text" id="telefono">
+    <label>Correo electrónico</label>
+    <input type="email" id="correo">
+    <label>Fecha de nacimiento</label>
+    <input type="date" id="fechaNacimiento">
+    <label>Edad</label>
+    <input type="text" id="edad" disabled>
+    <label>N° Pasaporte</label>
+    <input type="text" id="pasaporte">
+    <label>Fecha de vencimiento del pasaporte</label>
+    <input type="date" id="fechaVencimiento">
+
+    <h3>Información del Viaje</h3>
+    <label>Destino</label>
+    <input type="text" id="destino">
+    <label>Fecha de viaje</label>
+    <input type="date" id="fechaViaje">
+    <label>Aerolínea</label>
+    <input type="text" id="aerolinea">
+    <label>Código de reserva de aerolínea</label>
+    <input type="text" id="reservaAereo">
+    <label>Equipaje</label>
+    <input type="text" id="equipaje">
+    <label>Itinerario</label>
+    <textarea id="itinerario"></textarea>
+    <label>Operador del tour</label>
+    <input type="text" id="operador">
+    <label>Reunión previa realizada</label>
+    <select id="reunionPrevia">
+      <option value="Sí">Sí</option>
+      <option value="No">No</option>
+    </select>
+
+    <div class="actions">
+      <button onclick="guardarReserva()">Guardar</button>
+    </div>
+  </div>
+
+  <script>
+    // Aquí se podría conectar a Firebase para cargar los datos al ingresar el código en la URL
+    // También se calcularía la edad automáticamente
+    document.getElementById('fechaNacimiento').addEventListener('change', () => {
+      const fecha = new Date(document.getElementById('fechaNacimiento').value);
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - fecha.getFullYear();
+      const m = hoy.getMonth() - fecha.getMonth();
+      if (m < 0 || (m === 0 && hoy.getDate() < fecha.getDate())) edad--;
+      document.getElementById('edad').value = edad + ' años';
+    });
+
+    function guardarReserva() {
+      alert("Reserva guardada (simulación)");
+      // Aquí se conectaría a Firebase para guardar la reserva
+    }
+  </script>
+</body>
+</html>
