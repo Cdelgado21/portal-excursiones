@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Registrar Reserva - Excursiones Delgado</title>
+  <style>
+    body { font-family: Arial; background: #f0f7f7; padding: 40px; margin: 0; }
+    .container { background: white; padding: 30px; border-radius: 12px; max-width: 800px; margin: auto; box-shadow: 0 0 12px rgba(0,0,0,0.1); }
+    h2 { color: #02535a; margin-bottom: 20px; text-align: center; }
+    label { display: block; margin-top: 14px; font-weight: bold; color: #02535a; }
+    input, select, textarea { width: 100%; padding: 10px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; }
+    .checkbox { display: flex; align-items: center; margin-top: 10px; }
+    .checkbox input { width: auto; margin-right: 8px; }
+    button { margin-top: 20px; background: #02535a; color: white; padding: 12px; border: none; border-radius: 8px; width: 100%; font-size: 1rem; cursor: pointer; }
+    button:hover { background: #013e44; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Registrar Nueva Reserva</h2>
+
+    <form id="formReserva">
+      <!-- Información del Cliente -->
+      <label>Nombre completo</label>
+      <input type="text" name="nombre" required>
+
+      <label>Cédula o pasaporte</label>
+      <input type="text" name="documento" required>
+
+      <label>Fecha de nacimiento</label>
+      <input type="date" name="fechaNacimiento" onchange="calcularEdad()" required>
+
+      <label>Edad</label>
+      <input type="number" name="edad" id="edad" readonly>
+
+      <label>Fecha de vencimiento del pasaporte</label>
+      <input type="date" name="vencimientoPasaporte">
+
+      <label>Teléfono</label>
+      <input type="tel" name="telefono" required>
+
+      <label>Correo electrónico</label>
+      <input type="email" name="correo" required>
+
+      <!-- Información del Viaje -->
+      <label>Destino</label>
+      <input type="text" name="destino" required>
+
+      <label>Aerolínea</label>
+      <input type="text" name="aerolinea">
+
+      <label>Código de reserva de aerolínea</label>
+      <input type="text" name="codigoAereo">
+
+      <label>Fecha de salida</label>
+      <input type="date" name="fechaSalida">
+
+      <label>Fecha de regreso</label>
+      <input type="date" name="fechaRegreso">
+
+      <!-- Equipaje -->
+      <label>Equipaje</label>
+      <input type="text" name="equipaje" placeholder="Ej: 1 artículo personal + 1 maleta de mano por persona">
+
+      <!-- Hospedaje -->
+      <label>Hotel</label>
+      <input type="text" name="hotel">
+
+      <!-- Reunión previa -->
+      <div class="checkbox">
+        <input type="checkbox" name="reunion" id="reunion">
+        <label for="reunion">¿Reunión realizada (15 días antes)?</label>
+      </div>
+
+      <!-- Extras -->
+      <label>Operador del tour</label>
+      <input type="text" name="operador">
+
+      <label>Observaciones logísticas</label>
+      <textarea name="observaciones"></textarea>
+
+      <!-- Embajadora -->
+      <label>Embajadora responsable</label>
+      <input type="text" name="embajadora">
+
+      <label>Comisión (%)</label>
+      <input type="number" name="comision" step="0.01" min="0" max="100">
+
+      <!-- Financiero -->
+      <label>Precio total (USD)</label>
+      <input type="number" name="precioTotal" step="0.01">
+
+      <label>Monto abonado</label>
+      <input type="number" name="abonado" step="0.01">
+
+      <label>Monto de reserva</label>
+      <input type="number" name="montoReserva" step="0.01">
+
+      <label>Método de pago</label>
+      <input type="text" name="metodoPago">
+
+      <label>Fecha del abono</label>
+      <input type="date" name="fechaAbono">
+
+      <!-- Guardar -->
+      <button type="submit">Guardar Reserva</button>
+    </form>
+  </div>
+
+  <script>
+    function calcularEdad() {
+      const nacimiento = document.querySelector('input[name="fechaNacimiento"]').value;
+      const edadInput = document.getElementById('edad');
+      if (nacimiento) {
+        const hoy = new Date();
+        const cumple = new Date(nacimiento);
+        let edad = hoy.getFullYear() - cumple.getFullYear();
+        const m = hoy.getMonth() - cumple.getMonth();
+        if (m < 0 || (m === 0 && hoy.getDate() < cumple.getDate())) {
+          edad--;
+        }
+        edadInput.value = edad;
+      }
+    }
+  </script>
+</body>
+</html>
