@@ -170,41 +170,6 @@
 
   <label>Tipo de habitación</label>
   <input type="text" id="tipoHabitacion">
-
-  <label>Check-in</label>
-  <input type="date" id="checkIn">
-
-  <label>Check-out</label>
-  <input type="date" id="checkOut">
-</section>
-
-<section>
-  <h2>Vuelos</h2>
-  <h3>Vuelo de Ida</h3>
-  <label>Aerolínea</label>
-  <input type="text" id="aerolineaIda">
-
-  <label>Fecha y hora</label>
-  <input type="datetime-local" id="fechaHoraIda">
-
-  <label>Aeropuerto de salida</label>
-  <input type="text" id="aeropuertoSalidaIda">
-
-  <label>Aeropuerto de llegada</label>
-  <input type="text" id="aeropuertoLlegadaIda">
-
-  <h3>Vuelo de Regreso</h3>
-  <label>Aerolínea</label>
-  <input type="text" id="aerolineaVuelta">
-
-  <label>Fecha y hora</label>
-  <input type="datetime-local" id="fechaHoraVuelta">
-
-  <label>Aeropuerto de salida</label>
-  <input type="text" id="aeropuertoSalidaVuelta">
-
-  <label>Aeropuerto de llegada</label>
-  <input type="text" id="aeropuertoLlegadaVuelta">
 </section>
 
 <section>
@@ -287,16 +252,94 @@ function calcularEdadPasajero(input) {
       document.getElementById("itinerario").value = data.itinerario || "";
     }
 
-    function guardarReserva() {
-      // Esta función se completa en el siguiente paso
-      alert("Reserva guardada correctamente (demo)");
-    }
+function guardarReserva() {
+  const codigo = document.getElementById("codigoReserva").value;
 
-    // Generar código reserva ED-XXX-2025 automáticamente (demo)
-    document.addEventListener("DOMContentLoaded", () => {
-      const numero = Math.floor(Math.random() * 900 + 100);
-      document.getElementById("codigoReserva").value = `ED-${numero}-2025`;
+  const reservaData = {
+    codigoCotizacion: document.getElementById("codigoCotizacion").value,
+    nombreCliente: document.getElementById("nombreCliente").value,
+    telefonoCliente: document.getElementById("telefonoCliente").value,
+    correoCliente: document.getElementById("correoCliente").value,
+    fechaNacimiento: document.getElementById("fechaNacimiento").value,
+    edadCliente: document.getElementById("edadCliente").value,
+    nacionalidad: document.getElementById("nacionalidad").value,
+    pasaporte: document.getElementById("pasaporte").value,
+    vencimientoPasaporte: document.getElementById("vencimientoPasaporte").value,
+    destino: document.getElementById("destino").value,
+    fechaViaje: document.getElementById("fechaViaje").value,
+    aerolinea: document.getElementById("aerolinea").value,
+    vueloIda: document.getElementById("vueloIda").value,
+    vueloRegreso: document.getElementById("vueloRegreso").value,
+    equipaje: document.getElementById("equipaje").value,
+    hotel: document.getElementById("hotel").value,
+    itinerario: document.getElementById("itinerario").value,
+    reunion: document.getElementById("reunion").value,
+    operadorTour: document.getElementById("operadorTour").value,
+    tipoHabitacion: document.getElementById("tipoHabitacion").value,
+    precioTotal: document.getElementById("precioTotal").value,
+    abonado: document.getElementById("abonado").value,
+    saldoPendiente: document.getElementById("saldoPendiente").value,
+    metodoPago: document.getElementById("metodoPago").value,
+    fechaAbono: document.getElementById("fechaAbono").value,
+    pasajeros: []
+  };
+
+  // Recolectar pasajeros acompañantes
+  const rows = document.querySelectorAll("#tablaPasajeros tbody tr");
+  rows.forEach(row => {
+    const cells = row.querySelectorAll("input");
+    reservaData.pasajeros.push({
+      nombre: cells[0].value,
+      fechaNacimiento: cells[1].value,
+      edad: cells[2].value,
+      documento: cells[3].value,
+      pasaporte: cells[4].value
     });
+  });
+
+  // Guardar en Firebase
+  db.collection("reservas").doc(codigo).set(reservaData)
+    .then(() => {
+      alert("Reserva guardada correctamente.");
+    })
+    .catch(error => {
+      console.error("Error al guardar la reserva: ", error);
+      alert("Ocurrió un error al guardar.");
+    });
+}
+
+
+   document.addEventListener("DOMContentLoaded", async () => {
+  const añoActual = new Date().getFullYear();
+  const prefijo = `ED-`;
+
+  try {
+    const snapshot = await db.collection("reservas")
+      .orderBy(firebase.firestore.FieldPath.documentId())
+      .get();
+
+    let maxNumero = 0;
+    snapshot.forEach(doc => {
+      const id = doc.id; // ejemplo: ED-003-2025
+      const partes = id.split("-");
+      if (partes.length === 3 && partes[2] === añoActual.toString()) {
+        const numero = parseInt(partes[1], 10);
+        if (!isNaN(numero) && numero > maxNumero) {
+          maxNumero = numero;
+        }
+      }
+    });
+
+    const nuevoNumero = String(maxNumero + 1).padStart(3, "0");
+    const codigoGenerado = `${prefijo}${nuevoNumero}-${añoActual}`;
+    document.getElementById("codigoReserva").value = codigoGenerado;
+
+  } catch (error) {
+    console.error("Error generando código de reserva:", error);
+    alert("No se pudo generar el código de reserva automáticamente.");
+  }
+});
+
 </script>
 
 </body>
