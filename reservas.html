@@ -81,15 +81,11 @@
   </table>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "TU_API_KEY",
-      authDomain: "TU_AUTH_DOMAIN",
-      projectId: "TU_PROJECT_ID",
-      storageBucket: "TU_BUCKET",
-      messagingSenderId: "TU_SENDER_ID",
-      appId: "TU_APP_ID"
-    };
-
+   const firebaseConfig = {
+  apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+  authDomain: "tours-460717.firebaseapp.com",
+  projectId: "tours-460717"
+};
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -100,16 +96,16 @@
         snapshot.forEach(doc => {
           const data = doc.data();
           const fila = document.createElement("tr");
-          fila.innerHTML = `
-            <td>${data.codigo}</td>
-            <td>${data.nombre} ${data.apellido}</td>
-            <td>${data.telefono || '-'}</td>
-            <td>${data.email || '-'}</td>
-            <td>${data.destino || '-'}</td>
-            <td>${data.personas || '-'}</td>
-            <td>${data.fecha_viaje || '-'}</td>
+         fila.innerHTML = `
+  <td>${doc.id}</td>
+  <td>${data.nombreCliente || '-'}</td>
+  <td>${data.telefonoCliente || '-'}</td>
+  <td>${data.correoCliente || '-'}</td>
+  <td>${data.destino || '-'}</td>
+  <td>${(data.pasajeros?.length || 0) + 1}</td>
+  <td>${data.fechaViaje || '-'}</td>
             <td class="acciones">
-              <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${data.codigo}'">✏️</button>
+              <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?id=${doc.id}'">✏️</button>
               <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
             </td>
           `;
