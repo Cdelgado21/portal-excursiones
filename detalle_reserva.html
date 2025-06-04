@@ -339,8 +339,68 @@ async function generarCodigoReservaSeguro() {
 
   document.addEventListener("DOMContentLoaded", () => {
     generarCodigoReservaSeguro();
-  });
+    document.addEventListener("DOMContentLoaded", () => {
+  generarCodigoReservaSeguro();
 
+  const codigoURL = obtenerIdDesdeURL();
+  if (codigoURL) {
+    document.getElementById("codigoReserva").value = codigoURL;
+    cargarReservaDesdeFirebase(codigoURL);
+  }
+});
+function obtenerIdDesdeURL() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("codigo"); // ejemplo: ED-003-2025
+}
+    async function cargarReservaDesdeFirebase(codigo) {
+  const docRef = db.collection("reservas").doc(codigo);
+  const doc = await docRef.get();
+  if (!doc.exists) return alert("Reserva no encontrada.");
+
+  const data = doc.data();
+  document.getElementById("codigoCotizacion").value = data.codigoCotizacion || "";
+  document.getElementById("nombreCliente").value = data.nombreCliente || "";
+  document.getElementById("telefonoCliente").value = data.telefonoCliente || "";
+  document.getElementById("correoCliente").value = data.correoCliente || "";
+  document.getElementById("fechaNacimiento").value = data.fechaNacimiento || "";
+  document.getElementById("edadCliente").value = data.edadCliente || "";
+  document.getElementById("nacionalidad").value = data.nacionalidad || "";
+  document.getElementById("pasaporte").value = data.pasaporte || "";
+  document.getElementById("vencimientoPasaporte").value = data.vencimientoPasaporte || "";
+  document.getElementById("destino").value = data.destino || "";
+  document.getElementById("fechaViaje").value = data.fechaViaje || "";
+  document.getElementById("aerolinea").value = data.aerolinea || "";
+  document.getElementById("vueloIda").value = data.vueloIda || "";
+  document.getElementById("vueloRegreso").value = data.vueloRegreso || "";
+  document.getElementById("equipaje").value = data.equipaje || "";
+  document.getElementById("hotel").value = data.hotel || "";
+  document.getElementById("itinerario").value = data.itinerario || "";
+  document.getElementById("reunion").value = data.reunion || "No";
+  document.getElementById("operadorTour").value = data.operadorTour || "";
+  document.getElementById("tipoHabitacion").value = data.tipoHabitacion || "";
+  document.getElementById("precioTotal").value = data.precioTotal || "";
+  document.getElementById("abonado").value = data.abonado || "";
+  document.getElementById("saldoPendiente").value = data.saldoPendiente || "";
+  document.getElementById("metodoPago").value = data.metodoPago || "";
+  document.getElementById("fechaAbono").value = data.fechaAbono || "";
+
+  // Cargar acompañantes
+  const tbody = document.querySelector("#tablaPasajeros tbody");
+  tbody.innerHTML = "";
+  if (Array.isArray(data.pasajeros)) {
+    data.pasajeros.forEach(p => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td><input type="text" value="${p.nombre || ""}"></td>
+        <td><input type="date" value="${p.fechaNacimiento || ""}" onchange="calcularEdadPasajero(this)"></td>
+        <td><input type="text" value="${p.edad || ""}" readonly></td>
+        <td><input type="text" value="${p.documento || ""}"></td>
+        <td><input type="text" value="${p.pasaporte || ""}"></td>
+        <td><button onclick="this.parentElement.parentElement.remove()">❌</button></td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
 </script>
 
 </body>
