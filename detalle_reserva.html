@@ -166,7 +166,7 @@
 <section>
   <h2>Hospedaje</h2>
   <label>Hotel</label>
-  <input type="text" id="hotelHospedaje">
+  <input type="text" id="hotel">
 
   <label>Tipo de habitación</label>
   <input type="text" id="tipoHabitacion">
@@ -374,8 +374,7 @@ async function cargarReservaDesdeFirebase(codigo) {
   document.getElementById("saldoPendiente").value = data.saldoPendiente || "";
   document.getElementById("metodoPago").value = data.metodoPago || "";
   document.getElementById("fechaAbono").value = data.fechaAbono || "";
-  document.getElementById("hotelHospedaje").value = data.hotelHospedaje || "";
-
+ 
 
   const tbody = document.querySelector("#tablaPasajeros tbody");
   tbody.innerHTML = "";
