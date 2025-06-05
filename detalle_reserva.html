@@ -190,15 +190,14 @@
 <button onclick="guardarReserva()">Guardar Reserva</button>
 
 <script>
-  
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-  
+const firebaseConfig = {
+  apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+  authDomain: "tours-460717.firebaseapp.com",
+  projectId: "tours-460717"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
 function agregarPasajero() {
   const tbody = document.querySelector('#tablaPasajeros tbody');
   const row = document.createElement('tr');
@@ -212,42 +211,99 @@ function agregarPasajero() {
   `;
   tbody.appendChild(row);
 }
+
 function calcularEdad() {
-      const fecha = new Date(document.getElementById("fechaNacimiento").value);
-      const hoy = new Date();
-      let edad = hoy.getFullYear() - fecha.getFullYear();
-      const mes = hoy.getMonth() - fecha.getMonth();
-      if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) {
-        edad--;
-      }
-      document.getElementById("edadCliente").value = edad;
-    }
+  const fecha = new Date(document.getElementById("fechaNacimiento").value);
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - fecha.getFullYear();
+  const mes = hoy.getMonth() - fecha.getMonth();
+  if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) edad--;
+  document.getElementById("edadCliente").value = edad;
+}
+
 function calcularEdadPasajero(input) {
   const nacimiento = new Date(input.value);
   const hoy = new Date();
   const edad = hoy.getFullYear() - nacimiento.getFullYear();
   input.parentElement.nextElementSibling.firstElementChild.value = edad;
 }
-  async function cargarDesdeCotizacion() {
-      const codigo = document.getElementById("codigoCotizacion").value.trim();
-      if (!codigo) return alert("Por favor ingresa el código de cotización.");
 
-      const docRef = db.collection("cotizacionformal").doc(codigo);
-      const doc = await docRef.get();
+async function cargarDesdeCotizacion() {
+  const codigo = document.getElementById("codigoCotizacion").value.trim();
+  if (!codigo) return alert("Por favor ingresa el código de cotización.");
 
-      if (!doc.exists) return alert("No se encontró la cotización.");
+  const docRef = db.collection("cotizacionformal").doc(codigo);
+  const doc = await docRef.get();
 
-      const data = doc.data();
+  if (!doc.exists) return alert("No se encontró la cotización.");
 
-      document.getElementById("nombreCliente").value = data.nombre || "";
-      document.getElementById("telefonoCliente").value = data.telefono || "";
-      document.getElementById("correoCliente").value = data.correo || "";
-      document.getElementById("destino").value = data.destino || "";
-      document.getElementById("aerolinea").value = data.aerolinea || "";
-      document.getElementById("equipaje").value = data.equipaje || "";
-      document.getElementById("hotel").value = data.hotel || "";
-      document.getElementById("itinerario").value = data.itinerario || "";
+  const data = doc.data();
+
+  document.getElementById("nombreCliente").value = data.nombre || "";
+  document.getElementById("telefonoCliente").value = data.telefono || "";
+  document.getElementById("correoCliente").value = data.correo || "";
+  document.getElementById("destino").value = data.destino || "";
+  document.getElementById("aerolinea").value = data.aerolinea || "";
+  document.getElementById("equipaje").value = data.equipaje || "";
+  document.getElementById("hotel").value = data.hotel || "";
+  document.getElementById("itinerario").value = data.itinerario || "";
+}
+
+async function cargarDesdeTourSiNoHayCotizacion() {
+  const destino = document.getElementById("destino").value.trim();
+  if (!destino) return alert("Por favor ingresá un destino para cargar la información base.");
+
+  try {
+    const snapshot = await db.collection("tours").where("nombre", "==", destino).get();
+    if (snapshot.empty) return alert("⚠️ No se encontró el destino en Firebase.");
+
+    const tour = snapshot.docs[0].data();
+
+    document.getElementById("itinerario").value = tour.itinerario_tours || '';
+    document.getElementById("equipaje").value = tour.equipaje || '';
+
+    // Hoteles
+    window.hotelesDelTour = tour.hoteles || [];
+    const listaHoteles = document.getElementById("listaHoteles");
+    const selectHotel = document.getElementById("hotel");
+
+    listaHoteles.innerHTML = "";
+    selectHotel.innerHTML = '<option value="">-- Seleccione un hotel --</option>';
+
+    if (tour.hoteles && tour.hoteles.length > 0) {
+      const tabla = document.createElement("table");
+      tabla.innerHTML = `
+        <thead><tr><th>Nombre del Hotel</th><th>Descripción</th></tr></thead>
+        <tbody>
+          ${tour.hoteles.map(h => `
+            <tr><td><strong>${h.nombre}</strong></td><td>${h.info}</td></tr>
+          `).join("")}
+        </tbody>
+      `;
+      listaHoteles.appendChild(tabla);
+
+      tour.hoteles.forEach(hotel => {
+        const opt = document.createElement("option");
+        opt.value = hotel.nombre;
+        opt.textContent = hotel.nombre;
+        selectHotel.appendChild(opt);
+      });
+    } else {
+      listaHoteles.textContent = "No hay hoteles disponibles.";
     }
+
+  } catch (e) {
+    console.error("Error al cargar desde tours:", e);
+    alert("❌ Error al cargar datos del destino.");
+  }
+}
+
+function mostrarInfoHotel() {
+  const nombreHotel = document.getElementById("hotel").value;
+  const infoDiv = document.getElementById("infoHotelSeleccionado");
+  const hotel = (window.hotelesDelTour || []).find(h => h.nombre === nombreHotel);
+  infoDiv.textContent = hotel ? hotel.info : '';
+}
 
 function guardarReserva() {
   const codigo = document.getElementById("codigoReserva").value;
@@ -281,7 +337,6 @@ function guardarReserva() {
     pasajeros: []
   };
 
-  // Recolectar pasajeros acompañantes
   const rows = document.querySelectorAll("#tablaPasajeros tbody tr");
   rows.forEach(row => {
     const cells = row.querySelectorAll("input");
@@ -294,16 +349,14 @@ function guardarReserva() {
     });
   });
 
-  // Guardar en Firebase
   db.collection("reservas").doc(codigo).set(reservaData)
-    .then(() => {
-      alert("Reserva guardada correctamente.");
-    })
+    .then(() => alert("✅ Reserva guardada correctamente."))
     .catch(error => {
       console.error("Error al guardar la reserva: ", error);
-      alert("Ocurrió un error al guardar.");
+      alert("❌ Ocurrió un error al guardar.");
     });
 }
+
 async function generarCodigoReservaSeguro() {
   const añoActual = new Date().getFullYear();
   const docRef = db.collection("counters").doc(`reservas-${añoActual}`);
@@ -312,7 +365,6 @@ async function generarCodigoReservaSeguro() {
     const resultado = await db.runTransaction(async (t) => {
       const doc = await t.get(docRef);
       let nuevoNumero = 1;
-
       if (doc.exists) {
         const actual = doc.data().valor || 0;
         nuevoNumero = actual + 1;
@@ -320,21 +372,18 @@ async function generarCodigoReservaSeguro() {
       } else {
         t.set(docRef, { valor: nuevoNumero });
       }
-
       return nuevoNumero;
     });
 
     const numeroFormateado = String(resultado).padStart(3, "0");
     const codigoGenerado = `ED-${numeroFormateado}-${añoActual}`;
     document.getElementById("codigoReserva").value = codigoGenerado;
-
   } catch (e) {
-    console.error("Error generando código con transacción:", e);
-    alert("Ocurrió un error al generar el código de reserva.");
+    console.error("Error generando código:", e);
+    alert("❌ Error al generar el código de reserva.");
   }
 }
 
-// ✅ Estas funciones deben estar **afuera**
 function obtenerIdDesdeURL() {
   const params = new URLSearchParams(window.location.search);
   return params.get("codigo"); // ejemplo: ED-003-2025
@@ -371,7 +420,6 @@ async function cargarReservaDesdeFirebase(codigo) {
   document.getElementById("saldoPendiente").value = data.saldoPendiente || "";
   document.getElementById("metodoPago").value = data.metodoPago || "";
   document.getElementById("fechaAbono").value = data.fechaAbono || "";
- 
 
   const tbody = document.querySelector("#tablaPasajeros tbody");
   tbody.innerHTML = "";
@@ -391,7 +439,6 @@ async function cargarReservaDesdeFirebase(codigo) {
   }
 }
 
-// ✅ Este es el correcto DOMContentLoaded final
 document.addEventListener("DOMContentLoaded", () => {
   const codigoURL = obtenerIdDesdeURL();
   if (codigoURL) {
@@ -400,9 +447,5 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     generarCodigoReservaSeguro(); // Si no hay código, genera uno nuevo
   }
-     });
-  
+});
 </script>
-
-</body>
-</html>
