@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f7f7;
+      margin: 0;
+      padding: 20px;
+      color: #02535a;
+    }
+    h1 {
+      text-align: center;
+      background-color: #02535a;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    input[type="search"] {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+    th {
+      background-color: #5f9296;
+      color: white;
+    }
+    tr:hover {
+      background-color: #f5f5f5;
+    }
+    button {
+      background-color: #f49859;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Gestión de Clientes</h1>
+  <input type="search" id="buscador" placeholder="Buscar por nombre, teléfono, correo o ID de reserva...">
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Teléfono</th>
+        <th>Correo</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tablaClientes"></tbody>
+  </table>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const tabla = document.getElementById("tablaClientes");
+    const buscador = document.getElementById("buscador");
+    let clientes = [];
+    let reservas = [];
+
+    function mostrarClientes(filtrados) {
+      tabla.innerHTML = "";
+      filtrados.forEach(cli => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${cli.nombre}</td>
+          <td>${cli.telefono}</td>
+          <td>${cli.correo}</td>
+          <td>
+            <button onclick="verReservas('${cli.telefono}')">🔍 Reservas</button>
+            <button onclick="registrarAbono('${cli.telefono}')">💰 Abono</button>
+            <button onclick="verFacturas('${cli.telefono}')">🧾 Facturas</button>
+          </td>
+        `;
+        tabla.appendChild(row);
+      });
+    }
+
+    function filtrarClientes() {
+      const texto = buscador.value.toLowerCase();
+      const filtrados = clientes.filter(c =>
+        c.nombre.toLowerCase().includes(texto) ||
+        c.telefono.toLowerCase().includes(texto) ||
+        c.correo.toLowerCase().includes(texto)
+      );
+
+      // Si es un código de reserva tipo ED-001-2025
+      if (texto.startsWith("ed-")) {
+        const clienteRelacionado = reservas.find(r => r.codigo.toLowerCase() === texto);
+        if (clienteRelacionado) {
+          const cliente = clientes.find(c => c.telefono === clienteRelacionado.telefonoCliente);
+          if (cliente) return mostrarClientes([cliente]);
+        }
+      }
+
+      mostrarClientes(filtrados);
+    }
+
+    function verReservas(telefono) {
+      window.location.href = `detalle_reserva.html?telefono=${telefono}`;
+    }
+
+    function registrarAbono(telefono) {
+      alert("💰 Aquí se abrirá el formulario de abono para el cliente: " + telefono);
+    }
+
+    function verFacturas(telefono) {
+      alert("🧾 Aquí se listarán las facturas emitidas al cliente: " + telefono);
+    }
+
+    buscador.addEventListener("input", filtrarClientes);
+
+    // Cargar datos de clientes y reservas
+    Promise.all([
+      db.collection("clientes").get(),
+      db.collection("reservas").get()
+    ]).then(([clientesSnap, reservasSnap]) => {
+      clientes = clientesSnap.docs.map(doc => doc.data());
+      reservas = reservasSnap.docs.map(doc => ({ ...doc.data(), codigo: doc.id }));
+      mostrarClientes(clientes);
+    });
+  </script>
+</body>
+</html>
