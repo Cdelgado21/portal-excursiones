@@ -166,10 +166,34 @@
             <button onclick="abrirModalReservas('${cli.telefono}')">🔍 Reservas</button>
             <button onclick="registrarAbono('${cli.telefono}')">💰 Abono</button>
             <button onclick="verFacturas('${cli.telefono}')">🧾 Facturas</button>
+            <button onclick="editarCliente('${cli.telefono}')">✏️ Editar</button>
+            <button onclick="eliminarCliente('${cli.telefono}')">🗑️ Eliminar</button>
           </td>
         `;
         tabla.appendChild(row);
       });
+    }
+
+    function editarCliente(telefono) {
+      const cliente = clientes.find(c => c.telefono === telefono);
+      if (cliente) {
+        document.getElementById("nuevoNombre").value = cliente.nombre;
+        document.getElementById("nuevoTelefono").value = cliente.telefono;
+        document.getElementById("nuevoCorreo").value = cliente.correo;
+        document.getElementById("nuevaNacionalidad").value = cliente.nacionalidad || '';
+        document.getElementById("nuevoPasaporte").value = cliente.pasaporte || '';
+        mostrarModal();
+      }
+    }
+
+    function eliminarCliente(telefono) {
+      if (confirm("¿Estás seguro de eliminar este cliente?")) {
+        db.collection("clientes").doc(telefono).delete().then(() => {
+          clientes = clientes.filter(c => c.telefono !== telefono);
+          mostrarClientes(clientes);
+          alert("Cliente eliminado.");
+        }).catch(err => alert("Error al eliminar: " + err));
+      }
     }
 
     function filtrarClientes() {
@@ -252,10 +276,12 @@
       };
 
       db.collection("clientes").doc(telefono).set(nuevo).then(() => {
-        clientes.push(nuevo);
+        const index = clientes.findIndex(c => c.telefono === telefono);
+        if (index !== -1) clientes[index] = nuevo;
+        else clientes.push(nuevo);
         mostrarClientes(clientes);
         cerrarModal();
-        alert("✅ Cliente creado correctamente.");
+        alert("✅ Cliente guardado correctamente.");
       }).catch(err => {
         console.error("Error al guardar cliente:", err);
         alert("❌ Hubo un error al guardar.");
