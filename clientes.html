@@ -57,10 +57,44 @@
       cursor: pointer;
       margin-right: 5px;
     }
+    #crearClienteBtn {
+      margin-bottom: 20px;
+      background-color: #02535a;
+    }
+    #modal, #modalReservas {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    #modalContent, #modalReservasContent {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 600px;
+    }
+    #modalContent input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    #tablaReservas td, #tablaReservas th {
+      padding: 8px;
+      border: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
   <h1>Gestión de Clientes</h1>
+  <button id="crearClienteBtn" onclick="mostrarModal()">➕ Crear Cliente</button>
   <input type="search" id="buscador" placeholder="Buscar por nombre, teléfono, correo o ID de reserva...">
 
   <table>
@@ -69,11 +103,40 @@
         <th>Nombre</th>
         <th>Teléfono</th>
         <th>Correo</th>
+        <th>Nacionalidad</th>
+        <th>Pasaporte</th>
         <th>Acciones</th>
       </tr>
     </thead>
     <tbody id="tablaClientes"></tbody>
   </table>
+
+  <div id="modal">
+    <div id="modalContent">
+      <h3>Nuevo Cliente</h3>
+      <input type="text" id="nuevoNombre" placeholder="Nombre completo">
+      <input type="text" id="nuevoTelefono" placeholder="Teléfono">
+      <input type="email" id="nuevoCorreo" placeholder="Correo electrónico">
+      <input type="text" id="nuevaNacionalidad" placeholder="Nacionalidad">
+      <input type="text" id="nuevoPasaporte" placeholder="Número de pasaporte">
+      <button onclick="guardarNuevoCliente()">Guardar</button>
+      <button onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
+
+  <div id="modalReservas">
+    <div id="modalReservasContent">
+      <h3>Reservas del Cliente</h3>
+      <table id="tablaReservas">
+        <thead>
+          <tr><th>Código</th><th>Destino</th><th>Fecha Viaje</th><th>Acción</th></tr>
+        </thead>
+        <tbody id="bodyReservas"></tbody>
+      </table>
+      <br>
+      <button onclick="cerrarModalReservas()">Cerrar</button>
+    </div>
+  </div>
 
   <script>
     const firebaseConfig = {
@@ -97,8 +160,10 @@
           <td>${cli.nombre}</td>
           <td>${cli.telefono}</td>
           <td>${cli.correo}</td>
+          <td>${cli.nacionalidad || ''}</td>
+          <td>${cli.pasaporte || ''}</td>
           <td>
-            <button onclick="verReservas('${cli.telefono}')">🔍 Reservas</button>
+            <button onclick="abrirModalReservas('${cli.telefono}')">🔍 Reservas</button>
             <button onclick="registrarAbono('${cli.telefono}')">💰 Abono</button>
             <button onclick="verFacturas('${cli.telefono}')">🧾 Facturas</button>
           </td>
@@ -115,7 +180,6 @@
         c.correo.toLowerCase().includes(texto)
       );
 
-      // Si es un código de reserva tipo ED-001-2025
       if (texto.startsWith("ed-")) {
         const clienteRelacionado = reservas.find(r => r.codigo.toLowerCase() === texto);
         if (clienteRelacionado) {
@@ -127,8 +191,27 @@
       mostrarClientes(filtrados);
     }
 
-    function verReservas(telefono) {
-      window.location.href = `detalle_reserva.html?telefono=${telefono}`;
+    function abrirModalReservas(telefono) {
+      const body = document.getElementById("bodyReservas");
+      body.innerHTML = "";
+      const reservasCliente = reservas.filter(r => r.telefonoCliente === telefono);
+
+      reservasCliente.forEach(r => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${r.codigo}</td>
+          <td>${r.destino || ''}</td>
+          <td>${r.fechaViaje || ''}</td>
+          <td><button onclick="window.location.href='detalle_reserva.html?codigo=${r.codigo}'">Ver</button></td>
+        `;
+        body.appendChild(fila);
+      });
+
+      document.getElementById("modalReservas").style.display = "flex";
+    }
+
+    function cerrarModalReservas() {
+      document.getElementById("modalReservas").style.display = "none";
     }
 
     function registrarAbono(telefono) {
@@ -139,9 +222,48 @@
       alert("🧾 Aquí se listarán las facturas emitidas al cliente: " + telefono);
     }
 
+    function mostrarModal() {
+      document.getElementById("modal").style.display = "flex";
+    }
+
+    function cerrarModal() {
+      document.getElementById("modal").style.display = "none";
+    }
+
+    function guardarNuevoCliente() {
+      const nombre = document.getElementById("nuevoNombre").value.trim();
+      const telefono = document.getElementById("nuevoTelefono").value.trim();
+      const correo = document.getElementById("nuevoCorreo").value.trim();
+      const nacionalidad = document.getElementById("nuevaNacionalidad").value.trim();
+      const pasaporte = document.getElementById("nuevoPasaporte").value.trim();
+
+      if (!nombre || !telefono || !correo) {
+        alert("Por favor complete todos los campos obligatorios.");
+        return;
+      }
+
+      const nuevo = {
+        nombre,
+        telefono,
+        correo,
+        nacionalidad,
+        pasaporte,
+        fechaRegistro: new Date().toISOString()
+      };
+
+      db.collection("clientes").doc(telefono).set(nuevo).then(() => {
+        clientes.push(nuevo);
+        mostrarClientes(clientes);
+        cerrarModal();
+        alert("✅ Cliente creado correctamente.");
+      }).catch(err => {
+        console.error("Error al guardar cliente:", err);
+        alert("❌ Hubo un error al guardar.");
+      });
+    }
+
     buscador.addEventListener("input", filtrarClientes);
 
-    // Cargar datos de clientes y reservas
     Promise.all([
       db.collection("clientes").get(),
       db.collection("reservas").get()
