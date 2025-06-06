@@ -159,6 +159,28 @@
   </table>
   <button class="add-btn" onclick="agregarPasajero()">+ Agregar pasajero</button>
 </section>
+  <section>
+  <h2>Detalle de Pagos</h2>
+  <div id="detallePrecios"></div>
+
+  <h3>Resumen de Abonos</h3>
+  <table style="width:100%; border-collapse: collapse;">
+    <thead>
+      <tr>
+        <th>Método</th>
+        <th>Fecha</th>
+        <th>Monto</th>
+      </tr>
+    </thead>
+    <tbody id="tablaAbonos"></tbody>
+  </table>
+
+  <div style="margin-top: 15px;">
+    <p><strong>Total abonado:</strong> $<span id="totalAbonado">0.00</span></p>
+    <p><strong>Total a pagar:</strong> $<span id="totalReserva">0.00</span></p>
+    <p><strong style="font-size: 1.1em; color: #d1342c;">Saldo pendiente:</strong> $<span id="saldoPendiente">0.00</span></p>
+  </div>
+</section>
 
 <section>
   <h2>Hospedaje</h2>
@@ -169,23 +191,7 @@
   <input type="text" id="tipoHabitacion">
 </section>
 
-<section>
-  <h2>Precios y Pagos</h2>
-  <label>Precio total</label>
-  <input type="number" id="precioTotal">
-
-  <label>Abonado</label>
-  <input type="number" id="abonado">
-
-  <label>Saldo pendiente</label>
-  <input type="number" id="saldoPendiente" readonly>
-
-  <label>Método de pago</label>
-  <input type="text" id="metodoPago">
-
-  <label>Fecha de abono</label>
-  <input type="date" id="fechaAbono">
-</section>
+<
 
 <button onclick="guardarReserva()">Guardar Reserva</button>
 
@@ -401,7 +407,52 @@ function guardarReserva() {
       alert("❌ Ocurrió un error al guardar.");
     });
 }
+function mostrarPagosDesdeFirebase(data) {
+  const precioAdulto = data.precioAdulto || 0;
+  const precioNino = data.precioNino || 0;
+  const precioBebe = data.precioBebe || 0;
+  const adultos = data.cantidadAdultos || 0;
+  const ninos = data.cantidadNinos || 0;
+  const bebes = data.cantidadBebes || 0;
 
+  const totalAdultos = adultos * precioAdulto;
+  const totalNinos = ninos * precioNino;
+  const totalBebes = bebes * precioBebe;
+
+  const total = totalAdultos + totalNinos + totalBebes;
+
+  const detalle = `
+    <ul>
+      <li><strong>Adultos (${adultos} x $${precioAdulto}):</strong> $${totalAdultos.toFixed(2)}</li>
+      <li><strong>Niños (${ninos} x $${precioNino}):</strong> $${totalNinos.toFixed(2)}</li>
+      <li><strong>Bebés (${bebes} x $${precioBebe}):</strong> $${totalBebes.toFixed(2)}</li>
+    </ul>
+  `;
+
+  document.getElementById("detallePrecios").innerHTML = detalle;
+  document.getElementById("totalReserva").textContent = total.toFixed(2);
+
+  // Cargar abonos
+  const abonos = data.abonos || [];
+  let totalAbonado = 0;
+  const tbody = document.getElementById("tablaAbonos");
+  tbody.innerHTML = "";
+
+  abonos.forEach(abono => {
+    totalAbonado += abono.monto || 0;
+    const fila = `
+      <tr>
+        <td>${abono.metodo || ''}</td>
+        <td>${abono.fecha || ''}</td>
+        <td>$${(abono.monto || 0).toFixed(2)}</td>
+      </tr>
+    `;
+    tbody.innerHTML += fila;
+  });
+
+  document.getElementById("totalAbonado").textContent = totalAbonado.toFixed(2);
+  document.getElementById("saldoPendiente").textContent = (total - totalAbonado).toFixed(2);
+}
 async function generarCodigoReservaSeguro() {
   const añoActual = new Date().getFullYear();
   const docRef = db.collection("counters").doc(`reservas-${añoActual}`);
@@ -502,6 +553,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Actualizar título solo una vez
   document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
+}
+  mostrarPagosDesdeFirebase(data);
 });
   function actualizarSaldoPendiente() {
     const precio = parseFloat(document.getElementById("precioTotal").value) || 0;
