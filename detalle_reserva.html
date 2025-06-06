@@ -544,43 +544,41 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (codigoURL) {
     codigo = codigoURL;
-    document.getElementById("codigoReserva").value = codigoURL;
-    await cargarReservaDesdeFirebase(codigoURL);
+    document.getElementById("codigoReserva").value = codigo;
+    document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
+    document.getElementById("codigoReservaEncabezado").textContent = codigo;
+    await cargarReservaDesdeFirebase(codigo);
   } else {
     await generarCodigoReservaSeguro();
     codigo = document.getElementById("codigoReserva").value;
+    document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
+    document.getElementById("codigoReservaEncabezado").textContent = codigo;
   }
 
-  // Actualizar título solo una vez
-  document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
-  mostrarPagosDesdeFirebase(data);
-});
-  function actualizarSaldoPendiente() {
-    const precio = parseFloat(document.getElementById("precioTotal").value) || 0;
-    const abono = parseFloat(document.getElementById("abonado").value) || 0;
-    const saldo = precio - abono;
-    document.getElementById("saldoPendiente").value = saldo.toFixed(2);
-  }
-
-  document.getElementById("precioTotal").addEventListener("input", actualizarSaldoPendiente);
-  document.getElementById("abonado").addEventListener("input", actualizarSaldoPendiente);
-document.addEventListener("DOMContentLoaded", () => {
-    const precioInput = document.getElementById("precioTotal");
-    const abonoInput = document.getElementById("abonado");
-
-    if (precioInput && abonoInput) {
-      function actualizarSaldoPendiente() {
-        const precio = parseFloat(precioInput.value) || 0;
-        const abono = parseFloat(abonoInput.value) || 0;
-        const saldo = precio - abono;
-        document.getElementById("saldoPendiente").value = saldo.toFixed(2);
-      }
-
-      precioInput.addEventListener("input", actualizarSaldoPendiente);
-      abonoInput.addEventListener("input", actualizarSaldoPendiente);
-    } else {
-      console.warn("❗ No se encontró el campo 'precioTotal' o 'abonado' en el DOM.");
+  // Intentar cargar detalles de pago si están disponibles
+  try {
+    const doc = await db.collection("reservas").doc(codigo).get();
+    if (doc.exists) {
+      mostrarPagosDesdeFirebase(doc.data());
     }
-  });
+  } catch (err) {
+    console.error("Error mostrando pagos desde Firebase:", err);
+  }
+
+  // Configurar escucha de cambios para actualizar saldo pendiente
+  const precioInput = document.getElementById("precioTotal");
+  const abonoInput = document.getElementById("abonado");
+
+  if (precioInput && abonoInput) {
+    function actualizarSaldoPendiente() {
+      const precio = parseFloat(precioInput.value) || 0;
+      const abono = parseFloat(abonoInput.value) || 0;
+      const saldo = precio - abono;
+      document.getElementById("saldoPendiente").value = saldo.toFixed(2);
+    }
+    precioInput.addEventListener("input", actualizarSaldoPendiente);
+    abonoInput.addEventListener("input", actualizarSaldoPendiente);
+  }
+});
 </script>
 </script>
