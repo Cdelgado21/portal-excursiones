@@ -405,7 +405,7 @@ async function generarCodigoReservaSeguro() {
 
 function obtenerIdDesdeURL() {
   const params = new URLSearchParams(window.location.search);
-  return params.get("codigo"); // ejemplo: ED-003-2025
+  return params.get("id"); // <- esto sí coincide con tu URL
 }
 
 async function cargarReservaDesdeFirebase(codigo) {
