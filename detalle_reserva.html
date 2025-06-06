@@ -349,30 +349,33 @@ function guardarReserva() {
     });
   });
 
-db.collection("reservas").doc(codigo).set(reservaData)
-  .then(() => alert("✅ Reserva guardada correctamente."))
-  .catch(error => {
-    console.error("Error al guardar la reserva: ", error);
-    alert("❌ Ocurrió un error al guardar.");
-  });
+  db.collection("reservas").doc(codigo).set(reservaData)
+    .then(() => {
+      alert("✅ Reserva guardada correctamente.");
 
-// Guardar o actualizar cliente
-const clienteID = document.getElementById("telefonoCliente").value;
-const clienteData = {
-  nombre: document.getElementById("nombreCliente").value,
-  telefono: clienteID,
-  correo: document.getElementById("correoCliente").value,
-  fechaNacimiento: document.getElementById("fechaNacimiento").value,
-  nacionalidad: document.getElementById("nacionalidad").value,
-  pasaporte: document.getElementById("pasaporte").value,
-  vencimientoPasaporte: document.getElementById("vencimientoPasaporte").value,
-  fechaRegistro: new Date().toISOString()
-};
+      // Guardar o actualizar cliente
+      const clienteID = document.getElementById("telefonoCliente").value;
+      const clienteData = {
+        nombre: document.getElementById("nombreCliente").value,
+        telefono: clienteID,
+        correo: document.getElementById("correoCliente").value,
+        fechaNacimiento: document.getElementById("fechaNacimiento").value,
+        nacionalidad: document.getElementById("nacionalidad").value,
+        pasaporte: document.getElementById("pasaporte").value,
+        vencimientoPasaporte: document.getElementById("vencimientoPasaporte").value,
+        fechaRegistro: new Date().toISOString()
+      };
 
-db.collection("clientes").doc(clienteID).set(clienteData, { merge: true })
-  .then(() => console.log("✅ Cliente guardado/actualizado correctamente"))
-  .catch(err => console.error("❌ Error al guardar cliente:", err));
+      db.collection("clientes").doc(clienteID).set(clienteData, { merge: true })
+        .then(() => console.log("✅ Cliente guardado/actualizado correctamente"))
+        .catch(err => console.error("❌ Error al guardar cliente:", err));
+    })
+    .catch(error => {
+      console.error("Error al guardar la reserva: ", error);
+      alert("❌ Ocurrió un error al guardar.");
+    });
 }
+
 async function generarCodigoReservaSeguro() {
   const añoActual = new Date().getFullYear();
   const docRef = db.collection("counters").doc(`reservas-${añoActual}`);
