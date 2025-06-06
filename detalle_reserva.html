@@ -564,5 +564,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("precioTotal").addEventListener("input", actualizarSaldoPendiente);
   document.getElementById("abonado").addEventListener("input", actualizarSaldoPendiente);
+  }
+document.addEventListener("DOMContentLoaded", () => {
+    const precioInput = document.getElementById("precioTotal");
+    const abonoInput = document.getElementById("abonado");
 
+    if (precioInput && abonoInput) {
+      function actualizarSaldoPendiente() {
+        const precio = parseFloat(precioInput.value) || 0;
+        const abono = parseFloat(abonoInput.value) || 0;
+        const saldo = precio - abono;
+        document.getElementById("saldoPendiente").value = saldo.toFixed(2);
+      }
+
+      precioInput.addEventListener("input", actualizarSaldoPendiente);
+      abonoInput.addEventListener("input", actualizarSaldoPendiente);
+    } else {
+      console.warn("❗ No se encontró el campo 'precioTotal' o 'abonado' en el DOM.");
+    }
+  });
+</script>
 </script>
