@@ -304,36 +304,64 @@ function mostrarInfoHotel() {
   const hotel = (window.hotelesDelTour || []).find(h => h.nombre === nombreHotel);
   infoDiv.textContent = hotel ? hotel.info : '';
 }
+  function capitalizar(texto) {
+  return texto.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()).trim();
+}
 
 function guardarReserva() {
   const codigo = document.getElementById("codigoReserva").value;
 
+  const nombreCliente = capitalizar(document.getElementById("nombreCliente").value);
+  const telefono = document.getElementById("telefonoCliente").value.trim();
+  const correo = document.getElementById("correoCliente").value.trim().toLowerCase();
+  const nacionalidad = capitalizar(document.getElementById("nacionalidad").value);
+  const pasaporte = document.getElementById("pasaporte").value.trim();
+  const vencimientoPasaporte = document.getElementById("vencimientoPasaporte").value;
+  const fechaNacimiento = document.getElementById("fechaNacimiento").value;
+  const edadCliente = document.getElementById("edadCliente").value;
+  const destino = capitalizar(document.getElementById("destino").value);
+  const fechaViaje = document.getElementById("fechaViaje").value;
+  const aerolinea = capitalizar(document.getElementById("aerolinea").value);
+  const vueloIda = document.getElementById("vueloIda").value.trim();
+  const vueloRegreso = document.getElementById("vueloRegreso").value.trim();
+  const equipaje = document.getElementById("equipaje").value.trim();
+  const hotel = capitalizar(document.getElementById("hotel").value);
+  const itinerario = document.getElementById("itinerario").value.trim();
+  const reunion = document.getElementById("reunion").value;
+  const operadorTour = capitalizar(document.getElementById("operadorTour").value);
+  const tipoHabitacion = document.getElementById("tipoHabitacion").value.trim();
+  const precioTotal = parseFloat(document.getElementById("precioTotal").value) || 0;
+  const abonado = parseFloat(document.getElementById("abonado").value) || 0;
+  const saldoPendiente = precioTotal - abonado;
+  const metodoPago = document.getElementById("metodoPago").value.trim();
+  const fechaAbono = document.getElementById("fechaAbono").value;
+
   const reservaData = {
-    codigoCotizacion: document.getElementById("codigoCotizacion").value,
-    nombreCliente: document.getElementById("nombreCliente").value,
-    telefonoCliente: document.getElementById("telefonoCliente").value,
-    correoCliente: document.getElementById("correoCliente").value,
-    fechaNacimiento: document.getElementById("fechaNacimiento").value,
-    edadCliente: document.getElementById("edadCliente").value,
-    nacionalidad: document.getElementById("nacionalidad").value,
-    pasaporte: document.getElementById("pasaporte").value,
-    vencimientoPasaporte: document.getElementById("vencimientoPasaporte").value,
-    destino: document.getElementById("destino").value,
-    fechaViaje: document.getElementById("fechaViaje").value,
-    aerolinea: document.getElementById("aerolinea").value,
-    vueloIda: document.getElementById("vueloIda").value,
-    vueloRegreso: document.getElementById("vueloRegreso").value,
-    equipaje: document.getElementById("equipaje").value,
-    hotel: document.getElementById("hotel").value,
-    itinerario: document.getElementById("itinerario").value,
-    reunion: document.getElementById("reunion").value,
-    operadorTour: document.getElementById("operadorTour").value,
-    tipoHabitacion: document.getElementById("tipoHabitacion").value,
-    precioTotal: document.getElementById("precioTotal").value,
-    abonado: document.getElementById("abonado").value,
-    saldoPendiente: document.getElementById("saldoPendiente").value,
-    metodoPago: document.getElementById("metodoPago").value,
-    fechaAbono: document.getElementById("fechaAbono").value,
+    codigoCotizacion: document.getElementById("codigoCotizacion").value.trim(),
+    nombreCliente,
+    telefonoCliente: telefono,
+    correoCliente: correo,
+    fechaNacimiento,
+    edadCliente,
+    nacionalidad,
+    pasaporte,
+    vencimientoPasaporte,
+    destino,
+    fechaViaje,
+    aerolinea,
+    vueloIda,
+    vueloRegreso,
+    equipaje,
+    hotel,
+    itinerario,
+    reunion,
+    operadorTour,
+    tipoHabitacion,
+    precioTotal: precioTotal.toFixed(2),
+    abonado: abonado.toFixed(2),
+    saldoPendiente: saldoPendiente.toFixed(2),
+    metodoPago,
+    fechaAbono,
     pasajeros: []
   };
 
@@ -341,11 +369,11 @@ function guardarReserva() {
   rows.forEach(row => {
     const cells = row.querySelectorAll("input");
     reservaData.pasajeros.push({
-      nombre: cells[0].value,
+      nombre: capitalizar(cells[0].value),
       fechaNacimiento: cells[1].value,
       edad: cells[2].value,
-      documento: cells[3].value,
-      pasaporte: cells[4].value
+      documento: cells[3].value.trim(),
+      pasaporte: cells[4].value.trim()
     });
   });
 
@@ -353,25 +381,23 @@ function guardarReserva() {
     .then(() => {
       alert("✅ Reserva guardada correctamente.");
 
-      // Guardar o actualizar cliente
-      const clienteID = document.getElementById("telefonoCliente").value;
       const clienteData = {
-        nombre: document.getElementById("nombreCliente").value,
-        telefono: clienteID,
-        correo: document.getElementById("correoCliente").value,
-        fechaNacimiento: document.getElementById("fechaNacimiento").value,
-        nacionalidad: document.getElementById("nacionalidad").value,
-        pasaporte: document.getElementById("pasaporte").value,
-        vencimientoPasaporte: document.getElementById("vencimientoPasaporte").value,
+        nombre: nombreCliente,
+        telefono: telefono,
+        correo: correo,
+        fechaNacimiento,
+        nacionalidad,
+        pasaporte,
+        vencimientoPasaporte,
         fechaRegistro: new Date().toISOString()
       };
 
-      db.collection("clientes").doc(clienteID).set(clienteData, { merge: true })
-        .then(() => console.log("✅ Cliente guardado/actualizado correctamente"))
+      db.collection("clientes").doc(telefono).set(clienteData, { merge: true })
+        .then(() => console.log("✅ Cliente guardado correctamente"))
         .catch(err => console.error("❌ Error al guardar cliente:", err));
     })
     .catch(error => {
-      console.error("Error al guardar la reserva: ", error);
+      console.error("Error al guardar la reserva:", error);
       alert("❌ Ocurrió un error al guardar.");
     });
 }
