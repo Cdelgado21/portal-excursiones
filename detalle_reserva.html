@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detalle de Reserva</title>
+  <h1>Detalle de Reserva</h1>
+<h3 style="margin-top: -10px; color: #02535a;">
+  Código: <span id="codigoReservaEncabezado">---</span>
+</h3>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -422,7 +425,8 @@ async function generarCodigoReservaSeguro() {
 
     const numeroFormateado = String(resultado).padStart(3, "0");
     const codigoGenerado = `ED-${numeroFormateado}-${añoActual}`;
-    document.getElementById("codigoReserva").value = codigoGenerado;
+   document.getElementById("codigoReserva").value = codigoGenerado;
+document.getElementById("codigoReservaEncabezado").textContent = codigoGenerado;
   } catch (e) {
     console.error("Error generando código:", e);
     alert("❌ Error al generar el código de reserva.");
@@ -480,6 +484,8 @@ async function cargarReservaDesdeFirebase(codigo) {
         <td><button onclick="this.parentElement.parentElement.remove()">❌</button></td>
       `;
       tbody.appendChild(row);
+      document.getElementById("codigoReserva").value = codigoURL;
+document.getElementById("codigoReservaEncabezado").textContent = codigoURL;
     });
   }
 }
