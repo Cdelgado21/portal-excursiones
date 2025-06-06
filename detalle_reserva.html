@@ -481,7 +481,7 @@ async function cargarReservaDesdeFirebase(codigo) {
         <td><button onclick="this.parentElement.parentElement.remove()">❌</button></td>
       `;
       tbody.appendChild(row);
-      document.getElementById("codigoReserva").value = codigoURL;
+document.getElementById("codigoReserva").value = codigo;
 document.getElementById("codigoReservaEncabezado").textContent = codigo;
     });
   }
