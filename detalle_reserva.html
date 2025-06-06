@@ -3,10 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <h1>Detalle de Reserva</h1>
-<h3 style="margin-top: -10px; color: #02535a;">
-  Código: <span id="codigoReservaEncabezado">---</span>
-</h3>
+<h1 id="tituloReserva">Detalle de Reserva</h1>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -490,14 +487,19 @@ document.getElementById("codigoReservaEncabezado").textContent = codigoURL;
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const codigoURL = obtenerIdDesdeURL();
+
   if (codigoURL) {
     document.getElementById("codigoReserva").value = codigoURL;
-    cargarReservaDesdeFirebase(codigoURL);
+    document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigoURL}`;
+    await cargarReservaDesdeFirebase(codigoURL);
   } else {
-    generarCodigoReservaSeguro();
+    await generarCodigoReservaSeguro();
+    const nuevoCodigo = document.getElementById("codigoReserva").value;
+    document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${nuevoCodigo}`;
   }
+});
 
   function actualizarSaldoPendiente() {
     const precio = parseFloat(document.getElementById("precioTotal").value) || 0;
