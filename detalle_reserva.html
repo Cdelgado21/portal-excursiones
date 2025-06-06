@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<h1 id="tituloReserva" style="color:#02535a; font-size: 28px; font-weight: bold;">Detalle de Reserva</h1>
+<h1 id="tituloReserva" style="color:#02535a; text-align:center;">
+  Detalle de Reserva <span id="codigoReservaEncabezado">---</span>
+</h1>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -482,7 +484,7 @@ async function cargarReservaDesdeFirebase(codigo) {
       `;
       tbody.appendChild(row);
       document.getElementById("codigoReserva").value = codigoURL;
-document.getElementById("codigoReservaEncabezado").textContent = codigoURL;
+document.getElementById("codigoReservaEncabezado").textContent = codigo;
     });
   }
 }
