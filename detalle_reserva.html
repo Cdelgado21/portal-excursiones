@@ -533,7 +533,7 @@ async function cargarReservaDesdeFirebase(codigo) {
       `;
       tbody.appendChild(row);
 document.getElementById("codigoReserva").value = codigo;
-document.getElementById("codigoReservaEncabezado").textContent = codigo;
+
     });
   }
 }
@@ -551,8 +551,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   } else {
     await generarCodigoReservaSeguro();
     codigo = document.getElementById("codigoReserva").value;
-    document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
-    document.getElementById("codigoReservaEncabezado").textContent = codigo;
   }
 
   // Intentar cargar detalles de pago si están disponibles
