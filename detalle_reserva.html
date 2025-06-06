@@ -489,18 +489,20 @@ document.getElementById("codigoReservaEncabezado").textContent = codigo;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const codigoURL = obtenerIdDesdeURL();
+  let codigo = "";
 
   if (codigoURL) {
+    codigo = codigoURL;
     document.getElementById("codigoReserva").value = codigoURL;
-    document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigoURL}`;
     await cargarReservaDesdeFirebase(codigoURL);
   } else {
     await generarCodigoReservaSeguro();
-    const nuevoCodigo = document.getElementById("codigoReserva").value;
-    document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${nuevoCodigo}`;
+    codigo = document.getElementById("codigoReserva").value;
   }
-});
 
+  // Actualizar título solo una vez
+  document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
+});
   function actualizarSaldoPendiente() {
     const precio = parseFloat(document.getElementById("precioTotal").value) || 0;
     const abono = parseFloat(document.getElementById("abonado").value) || 0;
