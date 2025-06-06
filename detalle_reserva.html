@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<h1 id="tituloReserva" style="color:#02535a; text-align:center;">
-  Detalle de Reserva <span id="codigoReservaEncabezado">---</span>
-</h1>
+<title>Detalle de Reserva</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -71,7 +69,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <body>
-
+<h1 id="tituloReserva" class="titulo-reserva">
+    Detalle de Reserva <span id="codigoReservaEncabezado">---</span>
+  </h1>
 <section>
   <h2>Información del Cliente</h2>
 
@@ -203,6 +203,11 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
+  function obtenerIdDesdeURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("id");
+    }
 
 function agregarPasajero() {
   const tbody = document.querySelector('#tablaPasajeros tbody');
