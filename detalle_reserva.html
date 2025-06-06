@@ -193,6 +193,7 @@
  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
+     document.addEventListener("DOMContentLoaded", async () => {
 const firebaseConfig = {
   apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
   authDomain: "tours-460717.firebaseapp.com",
@@ -205,6 +206,44 @@ const db = firebase.firestore();
       const params = new URLSearchParams(window.location.search);
       return params.get("id");
     }
+       const codigoURL = obtenerIdDesdeURL();
+  let codigo = "";
+
+  if (codigoURL) {
+    codigo = codigoURL;
+    document.getElementById("codigoReserva").value = codigo;
+    document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
+    document.getElementById("codigoReservaEncabezado").textContent = codigo;
+    await cargarReservaDesdeFirebase(codigo);
+  } else {
+    await generarCodigoReservaSeguro();
+    codigo = document.getElementById("codigoReserva").value;
+  }
+
+  // Intentar cargar detalles de pago si están disponibles
+  try {
+    const doc = await db.collection("reservas").doc(codigo).get();
+    if (doc.exists) {
+      mostrarPagosDesdeFirebase(doc.data());
+    }
+  } catch (err) {
+    console.error("Error mostrando pagos desde Firebase:", err);
+  }
+
+  // Configurar escucha de cambios para actualizar saldo pendiente
+  const precioInput = document.getElementById("precioTotal");
+  const abonoInput = document.getElementById("abonado");
+
+  if (precioInput && abonoInput) {
+    function actualizarSaldoPendiente() {
+      const precio = parseFloat(precioInput.value) || 0;
+      const abono = parseFloat(abonoInput.value) || 0;
+      const saldo = precio - abono;
+      document.getElementById("saldoPendiente").value = saldo.toFixed(2);
+    }
+    precioInput.addEventListener("input", actualizarSaldoPendiente);
+    abonoInput.addEventListener("input", actualizarSaldoPendiente);
+  }
 
 function agregarPasajero() {
   const tbody = document.querySelector('#tablaPasajeros tbody');
@@ -541,43 +580,7 @@ document.getElementById("codigoReserva").value = codigo;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const codigoURL = obtenerIdDesdeURL();
-  let codigo = "";
-
-  if (codigoURL) {
-    codigo = codigoURL;
-    document.getElementById("codigoReserva").value = codigo;
-    document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
-    document.getElementById("codigoReservaEncabezado").textContent = codigo;
-    await cargarReservaDesdeFirebase(codigo);
-  } else {
-    await generarCodigoReservaSeguro();
-    codigo = document.getElementById("codigoReserva").value;
-  }
-
-  // Intentar cargar detalles de pago si están disponibles
-  try {
-    const doc = await db.collection("reservas").doc(codigo).get();
-    if (doc.exists) {
-      mostrarPagosDesdeFirebase(doc.data());
-    }
-  } catch (err) {
-    console.error("Error mostrando pagos desde Firebase:", err);
-  }
-
-  // Configurar escucha de cambios para actualizar saldo pendiente
-  const precioInput = document.getElementById("precioTotal");
-  const abonoInput = document.getElementById("abonado");
-
-  if (precioInput && abonoInput) {
-    function actualizarSaldoPendiente() {
-      const precio = parseFloat(precioInput.value) || 0;
-      const abono = parseFloat(abonoInput.value) || 0;
-      const saldo = precio - abono;
-      document.getElementById("saldoPendiente").value = saldo.toFixed(2);
-    }
-    precioInput.addEventListener("input", actualizarSaldoPendiente);
-    abonoInput.addEventListener("input", actualizarSaldoPendiente);
+  
   }
 });
 </script>
