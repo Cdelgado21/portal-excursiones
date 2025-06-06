@@ -464,16 +464,16 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("codigoReserva").value = codigoURL;
     cargarReservaDesdeFirebase(codigoURL);
   } else {
-    generarCodigoReservaSeguro(); // Si no hay código, genera uno nuevo
+    generarCodigoReservaSeguro();
   }
-  function actualizarSaldoPendiente() {
-  const precio = parseFloat(document.getElementById("precioTotal").value) || 0;
-  const abono = parseFloat(document.getElementById("abonado").value) || 0;
-  const saldo = precio - abono;
-  document.getElementById("saldoPendiente").value = saldo.toFixed(2);
-}
 
-document.addEventListener("DOMContentLoaded", () => {
+  function actualizarSaldoPendiente() {
+    const precio = parseFloat(document.getElementById("precioTotal").value) || 0;
+    const abono = parseFloat(document.getElementById("abonado").value) || 0;
+    const saldo = precio - abono;
+    document.getElementById("saldoPendiente").value = saldo.toFixed(2);
+  }
+
   document.getElementById("precioTotal").addEventListener("input", actualizarSaldoPendiente);
   document.getElementById("abonado").addEventListener("input", actualizarSaldoPendiente);
 });
