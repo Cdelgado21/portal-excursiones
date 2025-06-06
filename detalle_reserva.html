@@ -213,6 +213,32 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
+    let db;
+ 
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const codigoURL = new URLSearchParams(window.location.search).get("id");
+    let codigo = "";
+
+    if (codigoURL) {
+      codigo = codigoURL;
+      document.getElementById("codigoReserva").value = codigo;
+      document.getElementById("codigoReservaEncabezado").textContent = codigo;
+      document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
+      await cargarReservaDesdeFirebase(codigo);
+    } else {
+      await generarCodigoReservaSeguro();
+      codigo = document.getElementById("codigoReserva").value;
+      document.getElementById("codigoReservaEncabezado").textContent = codigo;
+      document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
+    }
+
   function guardarReserva() {
   const codigo = document.getElementById("codigoReserva").value;
 
@@ -401,31 +427,6 @@ document.getElementById("codigoReservaEncabezado").textContent = codigoGenerado;
     alert("❌ Error al generar el código de reserva.");
   }
 }
-  let db;
-  document.addEventListener("DOMContentLoaded", async () => {
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    const codigoURL = new URLSearchParams(window.location.search).get("id");
-    let codigo = "";
-
-    if (codigoURL) {
-      codigo = codigoURL;
-      document.getElementById("codigoReserva").value = codigo;
-      document.getElementById("codigoReservaEncabezado").textContent = codigo;
-      document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
-      await cargarReservaDesdeFirebase(codigo);
-    } else {
-      await generarCodigoReservaSeguro();
-      codigo = document.getElementById("codigoReserva").value;
-      document.getElementById("codigoReservaEncabezado").textContent = codigo;
-      document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
-    }
 
     try {
       const doc = await db.collection("reservas").doc(codigo).get();
