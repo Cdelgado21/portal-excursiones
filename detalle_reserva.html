@@ -214,12 +214,9 @@
 <textarea id="infoVueloRegreso" rows="3" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM"></textarea>
 </section>
    <section>
-  <h3>Equipaje</h3>
-
-  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
-
-    <!-- Tipo de Equipaje -->
-    <div style="flex: 1; min-width: 200px;">
+     <h3>Equipaje</h3>
+       <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
+ <div style="flex: 1; min-width: 200px;">
       <label for="tipoEquipaje">Tipo de Equipaje</label>
       <select id="tipoEquipaje">
         <option value="">-- Seleccionar --</option>
@@ -229,14 +226,12 @@
       </select>
     </div>
 
-    <!-- Cantidad -->
-    <div style="flex: 1; min-width: 120px;">
+  <div style="flex: 1; min-width: 120px;">
       <label for="cantidadEquipaje">Cantidad</label>
       <input type="number" id="cantidadEquipaje" placeholder="Ej. 2">
     </div>
-
-    <!-- Uso -->
-    <div style="flex: 1; min-width: 180px;">
+         
+      <div style="flex: 1; min-width: 180px;">
       <label for="usoEquipaje">Uso</label>
       <select id="usoEquipaje">
         <option value="">-- Seleccionar --</option>
@@ -246,12 +241,10 @@
     </div>
   </div>
 
-  <button onclick="agregarEquipaje()" style="margin-bottom: 15px;">➕ Agregar equipaje</button>
+ <button onclick="agregarEquipaje()" style="margin-bottom: 15px;">➕ Agregar equipaje</button>
 
-  <div>
-    <label style="font-weight: bold;">Resumen de Equipaje</label>
-    <textarea id="resumenEquipaje" rows="3" placeholder="Aquí aparecerán los tipos de equipaje agregados"></textarea>
-  </div>
+  <label style="margin-top: 15px;">Resumen de Equipaje</label>
+  <textarea id="equipaje" readonly rows="5" placeholder="Aquí aparecerán los tipos de equipaje agregados."></textarea>
 </section>
 </section>
 <!-- Script -->
@@ -433,7 +426,7 @@ function calcularEdad(fechaNacimiento) {
   const tipo = document.getElementById("tipo_equipaje").value;
   const cantidad = document.getElementById("cantidad_equipaje").value;
   const uso = document.getElementById("uso_equipaje").value;
-const textarea = document.getElementById("resumenEquipaje");
+const textarea = document.getElementById("equipaje");
     
   if (!tipo || !cantidad || !uso) {
     alert("Por favor completa los tres campos antes de agregar el equipaje.");
