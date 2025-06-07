@@ -213,23 +213,24 @@
 <label for="infoVueloRegreso">Información del Vuelo de Regreso</label>
 <textarea id="infoVueloRegreso" rows="3" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM"></textarea>
 </section>
-   <h3>Equipaje</h3>
+   <section>
+  <h3>Equipaje</h3>
 
   <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
-    
-    <!-- Tipo de equipaje -->
+
+    <!-- Tipo de Equipaje -->
     <div style="flex: 1; min-width: 200px;">
       <label for="tipoEquipaje">Tipo de Equipaje</label>
       <select id="tipoEquipaje">
         <option value="">-- Seleccionar --</option>
         <option value="Artículo personal">Artículo personal</option>
-        <option value="Maleta de mano">Maleta de mano de 10Kg</option>
-        <option value="Maleta documentada">Maleta documentada de 23Kg</option>
+        <option value="Maleta de mano">Maleta de mano</option>
+        <option value="Maleta documentada">Maleta documentada</option>
       </select>
     </div>
 
     <!-- Cantidad -->
-    <div style="flex: 1; min-width: 150px;">
+    <div style="flex: 1; min-width: 120px;">
       <label for="cantidadEquipaje">Cantidad</label>
       <input type="number" id="cantidadEquipaje" placeholder="Ej. 2">
     </div>
@@ -245,13 +246,9 @@
     </div>
   </div>
 
-  <!-- Botón -->
-  <button onclick="agregarEquipaje()" style="display: inline-flex; align-items: center; gap: 6px;">
-    ➕ Agregar equipaje
-  </button>
+  <button onclick="agregarEquipaje()" style="margin-bottom: 15px;">➕ Agregar equipaje</button>
 
-  <!-- Resumen -->
-  <div style="margin-top: 20px;">
+  <div>
     <label style="font-weight: bold;">Resumen de Equipaje</label>
     <textarea id="resumenEquipaje" rows="3" style="width: 100%; background-color: #f9f9f9;" readonly>Aquí aparecerán los tipos de equipaje agregados.</textarea>
   </div>
