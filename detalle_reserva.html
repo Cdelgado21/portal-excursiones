@@ -81,29 +81,30 @@
 
 <section>
   <h2>Información del Vuelo</h2>
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-    <h3 style="margin: 0;">Vuelo de Ida</h3>
-    <button id="btnAgregarVuelo" style="font-size: 12px; padding: 6px 12px;">➕ Agregar Vuelo Intermedio</button>
-  </div>
-  <label for="aerolinea">Aerolínea</label>
-  <select id="aerolinea">
-    <option value="">Seleccione una</option>
-    <option value="Avianca">Avianca</option>
-    <option value="Volaris">Volaris</option>
-    <option value="Copa Airlines">Copa Airlines</option>
-    <option value="Wingo">Wingo</option>
-  </select>
+  <h3 style="margin: 0;">Vuelo de Ida</h3>
 
-  <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <label for="fechaIda">Fecha:</label>
-      <input type="date" id="fechaIda" style="max-width: 160px;">
-    </div>
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <label for="vueloIda">N° de Vuelo:</label>
-      <input type="text" id="vueloIda" placeholder="Ej. AV637" style="max-width: 150px;">
-    </div>
+<div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 200px;">
+    <label for="aerolineaIda">Aerolínea</label>
+    <select id="aerolineaIda" style="width: 100%;">
+      <option value="">Seleccione una</option>
+      <option value="Avianca">Avianca</option>
+      <option value="Volaris">Volaris</option>
+      <option value="Copa Airlines">Copa Airlines</option>
+      <option value="Wingo">Wingo</option>
+    </select>
   </div>
+
+  <div style="flex: 1; min-width: 160px;">
+    <label for="fechaIda">Fecha:</label>
+    <input type="date" id="fechaIda" style="width: 100%;">
+  </div>
+
+  <div style="flex: 1; min-width: 160px;">
+    <label for="vueloIda">N° de Vuelo:</label>
+    <input type="text" id="vueloIda" placeholder="Ej. AV637" style="width: 100%;">
+  </div>
+</div>
 
   <label for="infoVueloIda">Información del Vuelo de Ida</label>
   <textarea id="infoVueloIda" rows="3" placeholder="Ej. SJO → PTY → MDE, llegada 9:30 AM"></textarea>
@@ -111,24 +112,29 @@
   <div id="vuelosIntermediosContainer"></div>
   
   <h3>Vuelo de Regreso</h3>
-  <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-      <label>Aerolínea</label>
-<select style="width: 100%; margin-bottom: 10px;">
-  <option value="">Seleccione una</option>
-  <option value="Avianca">Avianca</option>
-  <option value="Volaris">Volaris</option>
-  <option value="Copa Airlines">Copa Airlines</option>
-  <option value="Wingo">Wingo</option>
-</select>
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <label for="fechaRegreso">Fecha:</label>
-      <input type="date" id="fechaRegreso" style="max-width: 160px;">
-    </div>
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <label for="vueloRegreso">N° de Vuelo:</label>
-      <input type="text" id="vueloRegreso" placeholder="Ej. AV640" style="max-width: 150px;">
-    </div>
+
+<div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 200px;">
+    <label for="aerolineaRegreso">Aerolínea</label>
+    <select id="aerolineaRegreso" style="width: 100%;">
+      <option value="">Seleccione una</option>
+      <option value="Avianca">Avianca</option>
+      <option value="Volaris">Volaris</option>
+      <option value="Copa Airlines">Copa Airlines</option>
+      <option value="Wingo">Wingo</option>
+    </select>
   </div>
+
+  <div style="flex: 1; min-width: 160px;">
+    <label for="fechaRegreso">Fecha:</label>
+    <input type="date" id="fechaRegreso" style="width: 100%;">
+  </div>
+
+  <div style="flex: 1; min-width: 160px;">
+    <label for="vueloRegreso">N° de Vuelo:</label>
+    <input type="text" id="vueloRegreso" placeholder="Ej. AV640" style="width: 100%;">
+  </div>
+</div>
   <label for="infoVueloRegreso">Información del Vuelo de Regreso</label>
   <textarea id="infoVueloRegreso" rows="3" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM"></textarea>
 </section>
@@ -169,28 +175,31 @@
   function agregarVueloIntermedio() {
     const container = document.getElementById("vuelosIntermediosContainer");
     const html = `
-      <section style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; position: relative;">
+     <section style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; position: relative;">
       <button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: none; color: red; border: none; font-size: 18px; font-weight: bold; cursor: pointer;">×</button>
       
       <h4>Vuelo Intermedio</h4>
 
-      <label>Aerolínea</label>
-      <select style="width: 100%; margin-bottom: 10px;">
-        <option value="">Seleccione una</option>
-        <option value="Avianca">Avianca</option>
-        <option value="Volaris">Volaris</option>
-        <option value="Copa Airlines">Copa Airlines</option>
-        <option value="Wingo">Wingo</option>
-      </select>
-
       <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <label>Fecha:</label>
-          <input type="date" style="max-width: 160px;">
+        <div style="flex: 1; min-width: 200px;">
+          <label>Aerolínea</label>
+          <select style="width: 100%;">
+            <option value="">Seleccione una</option>
+            <option value="Avianca">Avianca</option>
+            <option value="Volaris">Volaris</option>
+            <option value="Copa Airlines">Copa Airlines</option>
+            <option value="Wingo">Wingo</option>
+          </select>
         </div>
-        <div style="display: flex; align-items: center; gap: 8px;">
+
+        <div style="flex: 1; min-width: 160px;">
+          <label>Fecha:</label>
+          <input type="date" style="width: 100%;">
+        </div>
+
+        <div style="flex: 1; min-width: 160px;">
           <label>N° de Vuelo:</label>
-          <input type="text" placeholder="Ej. AV678" style="max-width: 150px;">
+          <input type="text" placeholder="Ej. AV678" style="width: 100%;">
         </div>
       </div>
 
