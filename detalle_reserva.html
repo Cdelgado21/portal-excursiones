@@ -104,14 +104,31 @@
     <label for="telefonoTitular">Número de Teléfono</label>
     <input type="tel" id="telefonoTitular" placeholder="Ej. 8888-8888" style="width: 100%;">
   </div>
+
+<div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+
+  <!-- Nacionalidad -->
+  <div style="flex: 1; min-width: 250px;">
+    <label for="nacionalidadTitular">Nacionalidad</label>
+    <input type="text" id="nacionalidadTitular" placeholder="Ej. Costarricense" style="width: 100%;">
+  </div>
+
+  <!-- Género -->
+  <div style="flex: 1; min-width: 250px;">
+    <label>Género</label><br>
+    <label><input type="radio" name="generoTitular" value="Masculino"> Masculino</label>
+    <label><input type="radio" name="generoTitular" value="Femenino"> Femenino</label>
+    <label><input type="radio" name="generoTitular" value="Otro"> Otro</label>
+  </div>
+
 </div>
 </section>
-
 
 <section>
   <h3>Pasajeros</h3>
   <div id="pasajerosContainer"></div>
   <button onclick="agregarPasajero()">Agregar Pasajero</button>
+    <div id="pasajerosContainer" style="margin-top: 15px;"></div>
 </section>
 
 <section>
@@ -258,48 +275,62 @@
     vueloCounter++;
   }
 
-  // Pasajeros
-  let pasajeros = [];
-  function agregarPasajero() {
-    const nombre = prompt("Nombre:");
-    const pasaporte = prompt("Pasaporte o cédula:");
-    const nacimiento = prompt("Fecha de nacimiento (YYYY-MM-DD):");
-    const edad = calcularEdad(nacimiento);
-    if (nombre && pasaporte && nacimiento) {
-      pasajeros.push({ nombre, pasaporte, nacimiento, edad });
-      mostrarPasajeros();
-    } else {
-      alert("Por favor completa todos los datos del pasajero.");
-    }
+let pasajeros = [];
+let contadorPasajeros = 0;
+
+function calcularEdad(fecha) {
+  const nacimiento = new Date(fecha);
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - nacimiento.getFullYear();
+  const m = hoy.getMonth() - nacimiento.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
+  return edad;
+}
+
+function agregarPasajero() {
+  const container = document.getElementById("pasajerosContainer");
+  const index = contadorPasajeros++;
+
+  cconst pasajeroHTML = `
+  <div style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative;">
+    <button onclick="eliminarPasajero(${index})" style="position: absolute; top: 8px; right: 8px; background: red; color: white; border: none; border-radius: 4px; cursor: pointer;">X</button>
+    
+    <label>Nombre Completo</label>
+    <input type="text" id="nombre_${index}" style="width: 100%;" placeholder="Ej. Juan Pérez">
+
+    <label>Cédula o Pasaporte</label>
+    <input type="text" id="pasaporte_${index}" style="width: 100%;" placeholder="Ej. 123456789">
+
+    <label>Fecha de Nacimiento</label>
+    <input type="date" id="nacimiento_${index}" style="width: 100%;" onchange="mostrarEdadPasajero(${index})">
+    <span id="edad_${index}" style="font-weight: bold; display: inline-block; margin-top: 5px;">Edad: -</span>
+
+    <label>Nacionalidad</label>
+    <input type="text" id="nacionalidad_${index}" style="width: 100%;" placeholder="Ej. Costarricense">
+
+    <label>Género</label><br>
+    <label><input type="radio" name="genero_${index}" value="Masculino"> Masculino</label>
+    <label><input type="radio" name="genero_${index}" value="Femenino"> Femenino</label>
+    <label><input type="radio" name="genero_${index}" value="Otro"> Otro</label>
+  </div>
+`;
+
+  container.insertAdjacentHTML("beforeend", pasajeroHTML);
+}
+
+function mostrarEdadPasajero(index) {
+  const fecha = document.getElementById(`nacimiento_${index}`).value;
+  const span = document.getElementById(`edad_${index}`);
+  if (!fecha) {
+    span.textContent = "Edad: -";
+    return;
   }
+  span.textContent = "Edad: " + calcularEdad(fecha);
+}
 
-  function mostrarPasajeros() {
-    const container = document.getElementById("pasajerosContainer");
-    if (pasajeros.length === 0) {
-      container.innerHTML = "<p>No hay pasajeros agregados aún.</p>";
-      return;
-    }
-
-    let html = `
-      <table style="width:100%; border-collapse: collapse; margin-top:10px;">
-        <thead><tr style="background-color: #02535a; color: white;">
-          <th>Nombre</th><th>Pasaporte</th><th>Fecha de Nacimiento</th><th>Eliminar</th></tr>
-        </thead><tbody>
-    `;
-    pasajeros.forEach((p, i) => {
-      html += `
-        <tr style="background-color:#f9f9f9;">
-          <td>${p.nombre}</td><td>${p.pasaporte}</td><td>${p.nacimiento}</td>
-          <td><button onclick="eliminarPasajero(${i})" style="background:red; color:white;">X</button></td>
-        </tr>`;
-    });
-    html += "</tbody></table>";
-    container.innerHTML = html;
-  }
-
-  function eliminarPasajero(index) {
-    pasajeros.splice(index, 1);
-    mostrarPasajeros();
+function eliminarPasajero(index) {
+  const div = document.getElementById(`nombre_${index}`).closest("div");
+  div.remove();
   }
 document.getElementById("fechaNacimientoTitular").addEventListener("change", function () {
   const fecha = this.value;
