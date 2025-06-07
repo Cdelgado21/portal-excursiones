@@ -94,8 +94,7 @@
 
 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
   <h3 style="margin: 0;">Vuelo de Ida</h3>
-  <button type="button" onclick="agregarVueloIntermedio()" style="font-size: 12px; padding: 4px 8px; background-color: #5f9296; color: white; border: none; border-radius: 6px;">
-    ➕ Agregar Vuelo Intermedio
+ <button id="btnAgregarVuelo">➕ Agregar Vuelo Intermedio</button>
   </button>
  </div>
 <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
@@ -243,35 +242,38 @@
     pasajeros.splice(index, 1);
     mostrarPasajeros();
   }
-  document.addEventListener("DOMContentLoaded", () => {
-    let vueloCounter = 1;
+  let vueloCounter = 1;
 
-    // 👇 Hacemos que la función sea global
-    window.agregarVueloIntermedio = function () {
-      const container = document.getElementById("vuelosIntermediosContainer");
+  // Función que agrega vuelo intermedio
+  function agregarVueloIntermedio() {
+    const container = document.getElementById("vuelosIntermediosContainer");
 
-      const html = `
-        <section style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; position: relative;">
-          <button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: red; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer;">×</button>
-          <h4>Vuelo Intermedio ${vueloCounter}</h4>
-          <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <label>Fecha:</label>
-              <input type="date" style="max-width: 160px;">
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <label>N° de Vuelo:</label>
-              <input type="text" placeholder="Ej. AV678" style="max-width: 150px;">
-            </div>
+    const html = `
+      <section style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; position: relative;">
+        <button onclick="this.parentElement.remove()" style="position: absolute; top: 8px; right: 8px; background: red; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer;">×</button>
+        <h4>Vuelo Intermedio ${vueloCounter}</h4>
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label>Fecha:</label>
+            <input type="date" style="max-width: 160px;">
           </div>
-          <label style="display:block; margin-top: 10px;">Información del Vuelo</label>
-          <textarea placeholder="Ej. Medellín → Cartagena, escala de 2h" rows="2" style="width: 100%;"></textarea>
-        </section>
-      `;
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label>N° de Vuelo:</label>
+            <input type="text" placeholder="Ej. AV678" style="max-width: 150px;">
+          </div>
+        </div>
+        <label style="display:block; margin-top: 10px;">Información del Vuelo</label>
+        <textarea placeholder="Ej. Medellín → Cartagena, escala de 2h" rows="2" style="width: 100%;"></textarea>
+      </section>
+    `;
 
-      container.insertAdjacentHTML("beforeend", html);
-      vueloCounter++;
-    };
+    container.insertAdjacentHTML("beforeend", html);
+    vueloCounter++;
+  }
+
+  // Asignar evento al botón cuando el DOM está listo
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
   });
   </script>
 
