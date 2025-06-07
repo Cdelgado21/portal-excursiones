@@ -63,7 +63,27 @@
   <section id="infoCotizacion">
     <!-- Aquí se mostrarán los datos de la cotización si existen -->
   </section>
+<section>
+  <h3>Información del Titular</h3>
+  <label for="nombreTitular">Nombre Completo</label>
+  <input type="text" id="nombreTitular" placeholder="Ej. María Fernández Rodríguez">
 
+  <label for="cedulaTitular">Cédula o Pasaporte</label>
+  <input type="text" id="cedulaTitular" placeholder="Ej. 012345678">
+
+  <label for="fechaNacimientoTitular">Fecha de Nacimiento</label>
+  <input type="date" id="fechaNacimientoTitular">
+
+  <label for="correoTitular">Correo Electrónico</label>
+  <input type="email" id="correoTitular" placeholder="Ej. maria@email.com">
+</section>
+
+<section>
+  <h3>Pasajeros</h3>
+  <div id="pasajerosContainer"></div>
+
+  <button onclick="agregarPasajero()">Agregar Pasajero</button>
+</section>
   <script>
     // Tu configuración de Firebase aquí
     const firebaseConfig = {
@@ -101,6 +121,60 @@
         contenedor.innerHTML = `<p style="color:red;">Error al cargar datos. Revisa la consola.</p>`;
       });
     }
+    let pasajeros = [];
+
+  function agregarPasajero() {
+    const nombre = prompt("Nombre del pasajero:");
+    const pasaporte = prompt("Pasaporte o cédula:");
+    const nacimiento = prompt("Fecha de nacimiento (YYYY-MM-DD):");
+
+    if (nombre && pasaporte && nacimiento) {
+      pasajeros.push({ nombre, pasaporte, nacimiento });
+      mostrarPasajeros();
+    } else {
+      alert("Por favor completa todos los datos del pasajero.");
+    }
+  }
+
+  function mostrarPasajeros() {
+    const container = document.getElementById("pasajerosContainer");
+    if (pasajeros.length === 0) {
+      container.innerHTML = "<p>No hay pasajeros agregados aún.</p>";
+      return;
+    }
+
+    let html = `
+      <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+        <thead>
+          <tr style="background-color: #02535a; color: white;">
+            <th>Nombre</th>
+            <th>Pasaporte</th>
+            <th>Fecha de Nacimiento</th>
+            <th>Eliminar</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    pasajeros.forEach((p, index) => {
+      html += `
+        <tr style="background-color:#f9f9f9;">
+          <td>${p.nombre}</td>
+          <td>${p.pasaporte}</td>
+          <td>${p.nacimiento}</td>
+          <td><button onclick="eliminarPasajero(${index})" style="background:red; color:white; border:none; padding:5px;">X</button></td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+  }
+
+  function eliminarPasajero(index) {
+    pasajeros.splice(index, 1);
+    mostrarPasajeros();
+  }
   </script>
 
 </body>
