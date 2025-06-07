@@ -274,6 +274,7 @@
       <label style="display:block; margin-top: 10px;">Información del Vuelo</label>
       <textarea placeholder="Ej. Cartagena → Bogotá, escala de 2h" rows="2" style="width: 100%;"></textarea>
     </section>
+    
   `;
     container.insertAdjacentHTML("beforeend", html);
     vueloCounter++;
@@ -282,44 +283,79 @@
 let pasajeros = [];
 let contadorPasajeros = 0;
 
-function calcularEdad(fecha) {
-  const nacimiento = new Date(fecha);
-  const hoy = new Date();
-  let edad = hoy.getFullYear() - nacimiento.getFullYear();
-  const m = hoy.getMonth() - nacimiento.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
-  return edad;
-}
-
 function agregarPasajero() {
   const container = document.getElementById("pasajerosContainer");
-  const index = contadorPasajeros++;
 
-  cconst pasajeroHTML = `
-  <div style="border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 10px; position: relative;">
-    <button onclick="eliminarPasajero(${index})" style="position: absolute; top: 8px; right: 8px; background: red; color: white; border: none; border-radius: 4px; cursor: pointer;">X</button>
-    
-    <label>Nombre Completo</label>
-    <input type="text" id="nombre_${index}" style="width: 100%;" placeholder="Ej. Juan Pérez">
+  const pasajeroDiv = document.createElement("div");
+  pasajeroDiv.style = "border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 8px; background: #f9f9f9;";
+  pasajeroDiv.innerHTML = `
+    <h4>Pasajero ${contadorPasajeros}</h4>
 
-    <label>Cédula o Pasaporte</label>
-    <input type="text" id="pasaporte_${index}" style="width: 100%;" placeholder="Ej. 123456789">
+    <!-- Fila 1 -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <div style="flex: 1; min-width: 250px;">
+        <label>Nombre Completo</label>
+        <input type="text" class="nombrePasajero" placeholder="Ej. Juan Pérez">
+      </div>
 
-    <label>Fecha de Nacimiento</label>
-    <input type="date" id="nacimiento_${index}" style="width: 100%;" onchange="mostrarEdadPasajero(${index})">
-    <span id="edad_${index}" style="font-weight: bold; display: inline-block; margin-top: 5px;">Edad: -</span>
+      <div style="flex: 1; min-width: 250px;">
+        <label>Cédula o Pasaporte</label>
+        <input type="text" class="documentoPasajero" placeholder="Ej. 123456789">
+      </div>
+    </div>
 
-    <label>Nacionalidad</label>
-    <input type="text" id="nacionalidad_${index}" style="width: 100%;" placeholder="Ej. Costarricense">
+    <!-- Fila 2 -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
+      <div style="flex: 1; min-width: 200px;">
+        <label>Fecha de Nacimiento</label>
+        <input type="date" class="fechaNacimientoPasajero" onchange="calcularEdad(this)">
+      </div>
 
-    <label>Género</label><br>
-    <label><input type="radio" name="genero_${index}" value="Masculino"> Masculino</label>
-    <label><input type="radio" name="genero_${index}" value="Femenino"> Femenino</label>
-    <label><input type="radio" name="genero_${index}" value="Otro"> Otro</label>
-  </div>
-`;
+      <div style="flex: 1; min-width: 100px; display: flex; flex-direction: column;">
+        <label>Edad</label>
+        <span class="edadPasajero" style="font-weight: bold; padding-top: 6px;">-</span>
+      </div>
 
-  container.insertAdjacentHTML("beforeend", pasajeroHTML);
+      <div style="flex: 1; min-width: 200px;">
+        <label>Fecha de Vencimiento del Pasaporte</label>
+        <input type="date" class="vencimientoPasaportePasajero">
+      </div>
+    </div>
+
+    <!-- Fila 3 -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
+      <div style="flex: 1; min-width: 200px;">
+        <label>Nacionalidad</label>
+        <input type="text" class="nacionalidadPasajero" placeholder="Ej. Costarricense">
+      </div>
+
+      <div style="flex: 1; min-width: 200px;">
+        <label>Género</label>
+        <select class="generoPasajero" style="width: 100%;">
+          <option value="">Seleccione</option>
+          <option value="Femenino">Femenino</option>
+          <option value="Masculino">Masculino</option>
+          <option value="Otro">Otro</option>
+          <option value="Prefiero no decirlo">Prefiero no decirlo</option>
+        </select>
+      </div>
+    </div>
+  `;
+
+  container.appendChild(pasajeroDiv);
+  contadorPasajeros++;
+}
+
+function calcularEdad(inputFecha) {
+  const spanEdad = inputFecha.parentElement.nextElementSibling.querySelector(".edadPasajero");
+  const fechaNacimiento = new Date(inputFecha.value);
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
+  const m = hoy.getMonth() - fechaNacimiento.getMonth();
+  if (m < 0 || (m === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+    edad--;
+  }
+  spanEdad.textContent = `${edad} años`;
 }
 
 function mostrarEdadPasajero(index) {
