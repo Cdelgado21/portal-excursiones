@@ -12,11 +12,10 @@
       margin: 0;
       padding: 20px;
     }
-    h2 {
-      background-color: #02535a;
-      color: white;
-      padding: 10px;
-      border-radius: 8px;
+    h1 {
+      text-align: center;
+      color: #02535a;
+      margin-bottom: 20px;
     }
     section {
       background: white;
@@ -26,16 +25,17 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     label {
-      display: block;
-      margin-top: 10px;
       font-weight: bold;
+      margin-top: 10px;
+      display: block;
     }
     input, select, textarea {
       width: 100%;
       padding: 8px;
+      margin-top: 5px;
+      margin-bottom: 10px;
       border: 1px solid #ccc;
       border-radius: 6px;
-      margin-top: 5px;
     }
     table {
       width: 100%;
@@ -43,9 +43,8 @@
       margin-top: 10px;
     }
     th, td {
+      padding: 10px;
       border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
     }
     th {
       background-color: #5f9296;
@@ -54,548 +53,135 @@
     button {
       background-color: #02535a;
       color: white;
-      border: none;
       padding: 10px 20px;
-      margin-top: 10px;
+      border: none;
       border-radius: 8px;
       cursor: pointer;
+      margin-top: 10px;
     }
-    .add-btn {
-      background-color: #f49859;
-      margin-top: 15px;
-    }
-    .titulo-reserva {
-  text-align: center;
-  font-size: 28px;
-  margin-bottom: 30px;
-}
   </style>
 </head>
 <body>
-<h1 id="tituloReserva" class="titulo-reserva">
-  Detalle de Reserva <span id="codigoReservaEncabezado">---</span>
-</h1>
-<section>
-  <h2>Información del Cliente</h2>
+  <h1>Detalle de Reserva <span id="codigoReservaEncabezado">---</span></h1>
 
-  <label>Código de Cotización:</label>
-    <input type="text" id="codigoCotizacion" placeholder="Ej: COT-001-2025">
-    <button onclick="cargarDesdeCotizacion()">Cargar datos</button>
-  
-  <label>Nombre completo de la persona titular de la reserva</label>
-  <input type="text" id="nombreCliente">
-
-  <label>Teléfono</label>
-  <input type="tel" id="telefonoCliente">
-
-  <label>Correo electrónico</label>
-  <input type="email" id="correoCliente">
-
-  <label>Fecha de nacimiento</label>
-  <input type="date" id="fechaNacimiento" onchange="calcularEdad()">
-
-  <label>Edad</label>
-  <input type="text" id="edadCliente" readonly>
-
-  <label>Nacionalidad</label>
-  <input type="text" id="nacionalidad">
-
-  <label>N° de pasaporte</label>
-  <input type="text" id="pasaporte">
-
-  <label>Fecha de vencimiento del pasaporte</label>
-  <input type="date" id="vencimientoPasaporte">
-</section>
-
-<section>
-  <h2>Información del Viaje</h2>
-  <label>Código de reserva (ED):</label>
-  <input type="text" id="codigoReserva" readonly>
-
-  <label>Fecha del viaje</label>
-  <input type="date" id="fechaViaje">
-
-  <label>Destino</label>
-  <input type="text" id="destino">
-
-  <label>Aerolínea</label>
-  <input type="text" id="aerolinea">
-
-  <label>Vuelo de ida:</label>
-    <input type="text" id="vueloIda">
-
-    <label>Vuelo de regreso:</label>
-    <input type="text" id="vueloRegreso">
-
-  <label>Equipaje</label>
-  <input type="text" id="equipaje">
-
-  <label>Itinerario</label>
-  <textarea id="itinerario"></textarea>
-
-<label>Reunión pre-viaje realizada:</label>
-    <select id="reunion">
-      <option value="Sí">Sí</option>
-      <option value="No">No</option>
-    </select>
-  
-  <label>Operador del tour (interno)</label>
-  <input type="text" id="operadorTour">
-</section>
-
-<section>
-  <h2>Pasajeros Acompañantes</h2>
-  <table id="tablaPasajeros">
-    <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Fecha Nacimiento</th>
-        <th>Edad</th>
-        <th>Documento</th>
-        <th>Pasaporte</th>
-        <th>Eliminar</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <button class="add-btn" onclick="agregarPasajero()">+ Agregar pasajero</button>
-</section>
-  <h2>Información de Pago</h2>
-
-  <label>Precio total</label>
-  <input type="number" id="precioTotal">
-
-  <label>Monto abonado</label>
-  <input type="number" id="abonado">
-
-  <label>Saldo pendiente</label>
-  <input type="number" id="saldoPendiente" readonly>
-
-  <label>Método de pago</label>
-  <input type="text" id="metodoPago">
-
-  <label>Fecha del abono</label>
-  <input type="date" id="fechaAbono">
   <section>
-  <h2>Detalle de Pagos</h2>
-  <div id="detallePrecios"></div>
+    <label for="codigoCotizacion">Código de Cotización (opcional):</label>
+    <input type="text" id="codigoCotizacion" placeholder="Ej: COT-001-2025">
 
-  <h3>Resumen de Abonos</h3>
-  <table style="width:100%; border-collapse: collapse;">
-    <thead>
-      <tr>
-        <th>Método</th>
-        <th>Fecha</th>
-        <th>Monto</th>
-      </tr>
-    </thead>
-    <tbody id="tablaAbonos"></tbody>
-  </table>
+    <label for="codigoReserva">Código de Reserva:</label>
+    <input type="text" id="codigoReserva" readonly>
 
-  <div style="margin-top: 15px;">
-    <p><strong>Total abonado:</strong> $<span id="totalAbonado">0.00</span></p>
-    <p><strong>Total a pagar:</strong> $<span id="totalReserva">0.00</span></p>
-    <p><strong style="font-size: 1.1em; color: #d1342c;">Saldo pendiente:</strong> $<span id="saldoPendiente">0.00</span></p>
-  </div>
-</section>
+    <label for="nombreTitular">Nombre completo del titular:</label>
+    <input type="text" id="nombreTitular">
 
-<section>
-  <h2>Hospedaje</h2>
-  <label>Hotel</label>
-  <input type="text" id="hotel">
+    <label for="destino">Destino:</label>
+    <select id="destino">
+      <option value="">Seleccione un destino</option>
+      <option value="Guatemala">Guatemala</option>
+      <option value="México">México</option>
+      <option value="Medellín">Medellín</option>
+      <option value="Cartagena">Cartagena</option>
+    </select>
 
-  <label>Tipo de habitación</label>
-  <input type="text" id="tipoHabitacion">
-  
-<button onclick="guardarReserva()">Guardar Reserva</button>
-</section>
+    <label for="aerolinea">Aerolínea:</label>
+    <select id="aerolinea">
+      <option value="">Seleccione una aerolínea</option>
+      <option value="Avianca">Avianca</option>
+      <option value="Copa">Copa</option>
+      <option value="Volaris">Volaris</option>
+      <option value="Wingo">Wingo</option>
+    </select>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script>
-    let db;
- 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    <label for="hotel">Hotel:</label>
+    <input type="text" id="hotel">
 
-    const codigoURL = new URLSearchParams(window.location.search).get("id");
-    let codigo = "";
+    <label for="habitacion">Tipo de habitación:</label>
+    <input type="text" id="habitacion">
 
-    if (codigoURL) {
-      codigo = codigoURL;
+    <label for="equipaje">Equipaje:</label>
+    <textarea id="equipaje" rows="3" placeholder="Ej: 1 maleta documentada compartida + 1 de mano por persona"></textarea>
+
+    <label for="precioAdulto">Precio por Adulto:</label>
+    <input type="number" id="precioAdulto">
+    <label for="precioNino">Precio por Niño:</label>
+    <input type="number" id="precioNino">
+    <label for="precioBebe">Precio por Bebé:</label>
+    <input type="number" id="precioBebe">
+    <label for="precioTotal">Precio Total:</label>
+    <input type="number" id="precioTotal">
+
+    <label for="reunion">¿Reunión de guía realizada?</label>
+    <input type="checkbox" id="reunion"> Sí
+
+    <h3>Abonos</h3>
+    <table id="tablaAbonos">
+      <thead>
+        <tr>
+          <th>Fecha de Pago</th>
+          <th>Monto</th>
+          <th>Método</th>
+          <th>Cuenta Bancaria</th>
+          <th>Tipo de Cambio</th>
+        </tr>
+      </thead>
+      <tbody id="tbodyAbonos">
+        <tr>
+          <td><input type="date"></td>
+          <td><input type="number"></td>
+          <td>
+            <select>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Transferencia">Transferencia</option>
+              <option value="Tarjeta">Tarjeta</option>
+            </select>
+          </td>
+          <td><input type="text" placeholder="BAC, BN, etc."></td>
+          <td><input type="number" placeholder="Si aplica"></td>
+        </tr>
+      </tbody>
+    </table>
+    <button onclick="agregarAbono()">+ Agregar otro abono</button>
+
+    <label for="pendiente">Saldo Pendiente:</label>
+    <input type="text" id="pendiente" readonly>
+
+    <button onclick="guardarReserva()">Guardar Reserva</button>
+  </section>
+
+  <script>
+    function agregarAbono() {
+      const fila = document.createElement("tr");
+      fila.innerHTML = \`
+        <td><input type="date"></td>
+        <td><input type="number"></td>
+        <td>
+          <select>
+            <option value="Efectivo">Efectivo</option>
+            <option value="Transferencia">Transferencia</option>
+            <option value="Tarjeta">Tarjeta</option>
+          </select>
+        </td>
+        <td><input type="text" placeholder="BAC, BN, etc."></td>
+        <td><input type="number" placeholder="Si aplica"></td>
+      \`;
+      document.getElementById("tbodyAbonos").appendChild(fila);
+    }
+
+    function guardarReserva() {
+      alert("Aquí se guardaría en Firebase... (conectaremos después)");
+    }
+
+    window.onload = function () {
+      const random = Math.floor(Math.random() * 1000);
+      const year = new Date().getFullYear();
+      const codigo = \`ED-\${random}-\${year}\`;
       document.getElementById("codigoReserva").value = codigo;
       document.getElementById("codigoReservaEncabezado").textContent = codigo;
-      document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
-      await cargarReservaDesdeFirebase(codigo);
-    } else {
-      await generarCodigoReservaSeguro();
-      codigo = document.getElementById("codigoReserva").value;
-      document.getElementById("codigoReservaEncabezado").textContent = codigo;
-      document.getElementById("tituloReserva").textContent = `Detalle de Reserva ${codigo}`;
     }
+  </script>
+</body>
+</html>
 
-  function guardarReserva() {
-  const codigo = document.getElementById("codigoReserva").value;
-
-  const nombreCliente = capitalizar(document.getElementById("nombreCliente").value);
-  const telefono = document.getElementById("telefonoCliente").value.trim();
-  const correo = document.getElementById("correoCliente").value.trim().toLowerCase();
-  const nacionalidad = capitalizar(document.getElementById("nacionalidad").value);
-  const pasaporte = document.getElementById("pasaporte").value.trim();
-  const vencimientoPasaporte = document.getElementById("vencimientoPasaporte").value;
-  const fechaNacimiento = document.getElementById("fechaNacimiento").value;
-  const edadCliente = document.getElementById("edadCliente").value;
-  const destino = capitalizar(document.getElementById("destino").value);
-  const fechaViaje = document.getElementById("fechaViaje").value;
-  const aerolinea = capitalizar(document.getElementById("aerolinea").value);
-  const vueloIda = document.getElementById("vueloIda").value.trim();
-  const vueloRegreso = document.getElementById("vueloRegreso").value.trim();
-  const equipaje = document.getElementById("equipaje").value.trim();
-  const hotel = capitalizar(document.getElementById("hotel").value);
-  const itinerario = document.getElementById("itinerario").value.trim();
-  const reunion = document.getElementById("reunion").value;
-  const operadorTour = capitalizar(document.getElementById("operadorTour").value);
-  const tipoHabitacion = document.getElementById("tipoHabitacion").value.trim();
-  const precioTotal = parseFloat(document.getElementById("precioTotal").value) || 0;
-  const abonado = parseFloat(document.getElementById("abonado").value) || 0;
-  const saldoPendiente = precioTotal - abonado;
-  const metodoPago = document.getElementById("metodoPago").value.trim();
-  const fechaAbono = document.getElementById("fechaAbono").value;
-
-  const reservaData = {
-    codigoCotizacion: document.getElementById("codigoCotizacion").value.trim(),
-    nombreCliente,
-    telefonoCliente: telefono,
-    correoCliente: correo,
-    fechaNacimiento,
-    edadCliente,
-    nacionalidad,
-    pasaporte,
-    vencimientoPasaporte,
-    destino,
-    fechaViaje,
-    aerolinea,
-    vueloIda,
-    vueloRegreso,
-    equipaje,
-    hotel,
-    itinerario,
-    reunion,
-    operadorTour,
-    tipoHabitacion,
-    precioTotal: precioTotal.toFixed(2),
-    abonado: abonado.toFixed(2),
-    saldoPendiente: saldoPendiente.toFixed(2),
-    metodoPago,
-    fechaAbono,
-    pasajeros: []
-  };
-
-  const rows = document.querySelectorAll("#tablaPasajeros tbody tr");
-  rows.forEach(row => {
-    const cells = row.querySelectorAll("input");
-    reservaData.pasajeros.push({
-      nombre: capitalizar(cells[0].value),
-      fechaNacimiento: cells[1].value,
-      edad: cells[2].value,
-      documento: cells[3].value.trim(),
-      pasaporte: cells[4].value.trim()
-    });
-  });
-
-  db.collection("reservas").doc(codigo).set(reservaData)
-    .then(() => {
-      alert("✅ Reserva guardada correctamente.");
-
-      const clienteData = {
-        nombre: nombreCliente,
-        telefono: telefono,
-        correo: correo,
-        fechaNacimiento,
-        nacionalidad,
-        pasaporte,
-        vencimientoPasaporte,
-        fechaRegistro: new Date().toISOString()
-      };
-
-      db.collection("clientes").doc(telefono).set(clienteData, { merge: true })
-        .then(() => console.log("✅ Cliente guardado correctamente"))
-        .catch(err => console.error("❌ Error al guardar cliente:", err));
-    })
-    .catch(error => {
-      console.error("Error al guardar la reserva:", error);
-      alert("❌ Ocurrió un error al guardar.");
-    });
-}
-  async function cargarDesdeCotizacion() {
-  const codigo = document.getElementById("codigoCotizacion").value.trim();
-  if (!codigo) return alert("Por favor ingresa el código de cotización.");
-
-  const docRef = db.collection("cotizacionformal").doc(codigo);
-  const doc = await docRef.get();
-
-  if (!doc.exists) return alert("No se encontró la cotización.");
-
-  const data = doc.data();
-
-  document.getElementById("nombreCliente").value = data.nombre || "";
-  document.getElementById("telefonoCliente").value = data.telefono || "";
-  document.getElementById("correoCliente").value = data.correo || "";
-  document.getElementById("destino").value = data.destino || "";
-  document.getElementById("aerolinea").value = data.aerolinea || "";
-  document.getElementById("equipaje").value = data.equipaje || "";
-  document.getElementById("hotel").value = data.hotel || "";
-  document.getElementById("itinerario").value = data.itinerario || "";
-  }
-  async function cargarDesdeTourSiNoHayCotizacion() {
-  const destino = document.getElementById("destino").value.trim();
-  if (!destino) return alert("Por favor ingresá un destino para cargar la información base.");
-
-  try {
-    const snapshot = await db.collection("tours").where("nombre", "==", destino).get();
-    if (snapshot.empty) return alert("⚠️ No se encontró el destino en Firebase.");
-
-    const tour = snapshot.docs[0].data();
-
-    document.getElementById("itinerario").value = tour.itinerario_tours || '';
-    document.getElementById("equipaje").value = tour.equipaje || '';
-
-    // Hoteles
-    window.hotelesDelTour = tour.hoteles || [];
-    const listaHoteles = document.getElementById("listaHoteles");
-    const selectHotel = document.getElementById("hotel");
-
-    listaHoteles.innerHTML = "";
-    selectHotel.innerHTML = '<option value="">-- Seleccione un hotel --</option>';
-
-    if (tour.hoteles && tour.hoteles.length > 0) {
-      const tabla = document.createElement("table");
-      tabla.innerHTML = `
-        <thead><tr><th>Nombre del Hotel</th><th>Descripción</th></tr></thead>
-        <tbody>
-          ${tour.hoteles.map(h => `
-            <tr><td><strong>${h.nombre}</strong></td><td>${h.info}</td></tr>
-          `).join("")}
-        </tbody>
-      `;
-      listaHoteles.appendChild(tabla);
-
-      tour.hoteles.forEach(hotel => {
-        const opt = document.createElement("option");
-        opt.value = hotel.nombre;
-        opt.textContent = hotel.nombre;
-        selectHotel.appendChild(opt);
-      });
-    } else {
-      listaHoteles.textContent = "No hay hoteles disponibles.";
-    }
-
-  } catch (e) {
-    console.error("Error al cargar desde tours:", e);
-    alert("❌ Error al cargar datos del destino.");
-  }
-}
-  async function generarCodigoReservaSeguro() {
-  const añoActual = new Date().getFullYear();
-  const docRef = db.collection("counters").doc(`reservas-${añoActual}`);
-
-  try {
-    const resultado = await db.runTransaction(async (t) => {
-      const doc = await t.get(docRef);
-      let nuevoNumero = 1;
-      if (doc.exists) {
-        const actual = doc.data().valor || 0;
-        nuevoNumero = actual + 1;
-        t.update(docRef, { valor: nuevoNumero });
-      } else {
-        t.set(docRef, { valor: nuevoNumero });
-      }
-      return nuevoNumero;
-    });
-
-    const numeroFormateado = String(resultado).padStart(3, "0");
-    const codigoGenerado = `ED-${numeroFormateado}-${añoActual}`;
-   document.getElementById("codigoReserva").value = codigoGenerado;
-document.getElementById("codigoReservaEncabezado").textContent = codigoGenerado;
-  } catch (e) {
-    console.error("Error generando código:", e);
-    alert("❌ Error al generar el código de reserva.");
-  }
-}
-
-    try {
-      const doc = await db.collection("reservas").doc(codigo).get();
-      if (doc.exists) {
-        mostrarPagosDesdeFirebase(doc.data());
-      }
-    } catch (err) {
-      console.error("Error mostrando pagos desde Firebase:", err);
-    }
-
-    const precioInput = document.getElementById("precioTotal");
-    const abonoInput = document.getElementById("abonado");
-    const saldoPendiente = document.getElementById("saldoPendiente");
-
-    if (precioInput && abonoInput && saldoPendiente) {
-      function actualizarSaldoPendiente() {
-        const precio = parseFloat(precioInput.value) || 0;
-        const abono = parseFloat(abonoInput.value) || 0;
-        const saldo = precio - abono;
-        saldoPendiente.value = saldo.toFixed(2);
-      }
-      precioInput.addEventListener("input", actualizarSaldoPendiente);
-      abonoInput.addEventListener("input", actualizarSaldoPendiente);
-    }
-function agregarPasajero() {
-  const tbody = document.querySelector('#tablaPasajeros tbody');
-  const row = document.createElement('tr');
-  row.innerHTML = `
-    <td><input type="text"></td>
-    <td><input type="date" onchange="calcularEdadPasajero(this)"></td>
-    <td><input type="text" readonly></td>
-    <td><input type="text"></td>
-    <td><input type="text"></td>
-    <td><button onclick="this.parentElement.parentElement.remove()">❌</button></td>
-  `;
-  tbody.appendChild(row);
-}
-
-function calcularEdad() {
-  const fecha = new Date(document.getElementById("fechaNacimiento").value);
-  const hoy = new Date();
-  let edad = hoy.getFullYear() - fecha.getFullYear();
-  const mes = hoy.getMonth() - fecha.getMonth();
-  if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) edad--;
-  document.getElementById("edadCliente").value = edad;
-}
-
-function calcularEdadPasajero(input) {
-  const nacimiento = new Date(input.value);
-  const hoy = new Date();
-  const edad = hoy.getFullYear() - nacimiento.getFullYear();
-  input.parentElement.nextElementSibling.firstElementChild.value = edad;
-}
-
-function mostrarInfoHotel() {
-  const nombreHotel = document.getElementById("hotel").value;
-  const infoDiv = document.getElementById("infoHotelSeleccionado");
-  const hotel = (window.hotelesDelTour || []).find(h => h.nombre === nombreHotel);
-  infoDiv.textContent = hotel ? hotel.info : '';
-}
-  function capitalizar(texto) {
-  return texto.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()).trim();
-}
-});
-
-
-function mostrarPagosDesdeFirebase(data) {
-  const precioAdulto = data.precioAdulto || 0;
-  const precioNino = data.precioNino || 0;
-  const precioBebe = data.precioBebe || 0;
-  const adultos = data.cantidadAdultos || 0;
-  const ninos = data.cantidadNinos || 0;
-  const bebes = data.cantidadBebes || 0;
-
-  const totalAdultos = adultos * precioAdulto;
-  const totalNinos = ninos * precioNino;
-  const totalBebes = bebes * precioBebe;
-
-  const total = totalAdultos + totalNinos + totalBebes;
-
-  const detalle = `
-    <ul>
-      <li><strong>Adultos (${adultos} x $${precioAdulto}):</strong> $${totalAdultos.toFixed(2)}</li>
-      <li><strong>Niños (${ninos} x $${precioNino}):</strong> $${totalNinos.toFixed(2)}</li>
-      <li><strong>Bebés (${bebes} x $${precioBebe}):</strong> $${totalBebes.toFixed(2)}</li>
-    </ul>
-  `;
-
-  document.getElementById("detallePrecios").innerHTML = detalle;
-  document.getElementById("totalReserva").textContent = total.toFixed(2);
-
-  // Cargar abonos
-  const abonos = data.abonos || [];
-  let totalAbonado = 0;
-  const tbody = document.getElementById("tablaAbonos");
-  tbody.innerHTML = "";
-
-  abonos.forEach(abono => {
-    totalAbonado += abono.monto || 0;
-    const fila = `
-      <tr>
-        <td>${abono.metodo || ''}</td>
-        <td>${abono.fecha || ''}</td>
-        <td>$${(abono.monto || 0).toFixed(2)}</td>
-      </tr>
-    `;
-    tbody.innerHTML += fila;
-  });
-
-  document.getElementById("totalAbonado").textContent = totalAbonado.toFixed(2);
-  document.getElementById("saldoPendiente").textContent = (total - totalAbonado).toFixed(2);
-}
-
-
-function obtenerIdDesdeURL() {
-  const params = new URLSearchParams(window.location.search);
-  return params.get("id"); // <- esto sí coincide con tu URL
-}
-
-async function cargarReservaDesdeFirebase(codigo) {
-  const docRef = db.collection("reservas").doc(codigo);
-  const doc = await docRef.get();
-  if (!doc.exists) return alert("Reserva no encontrada.");
-
-  const data = doc.data();
-  document.getElementById("codigoCotizacion").value = data.codigoCotizacion || "";
-  document.getElementById("nombreCliente").value = data.nombreCliente || "";
-  document.getElementById("telefonoCliente").value = data.telefonoCliente || "";
-  document.getElementById("correoCliente").value = data.correoCliente || "";
-  document.getElementById("fechaNacimiento").value = data.fechaNacimiento || "";
-  document.getElementById("edadCliente").value = data.edadCliente || "";
-  document.getElementById("nacionalidad").value = data.nacionalidad || "";
-  document.getElementById("pasaporte").value = data.pasaporte || "";
-  document.getElementById("vencimientoPasaporte").value = data.vencimientoPasaporte || "";
-  document.getElementById("destino").value = data.destino || "";
-  document.getElementById("fechaViaje").value = data.fechaViaje || "";
-  document.getElementById("aerolinea").value = data.aerolinea || "";
-  document.getElementById("vueloIda").value = data.vueloIda || "";
-  document.getElementById("vueloRegreso").value = data.vueloRegreso || "";
-  document.getElementById("equipaje").value = data.equipaje || "";
-  document.getElementById("hotel").value = data.hotel || "";
-  document.getElementById("itinerario").value = data.itinerario || "";
-  document.getElementById("reunion").value = data.reunion || "No";
-  document.getElementById("operadorTour").value = data.operadorTour || "";
-  document.getElementById("tipoHabitacion").value = data.tipoHabitacion || "";
-  document.getElementById("precioTotal").value = data.precioTotal || "";
-  document.getElementById("abonado").value = data.abonado || "";
-  document.getElementById("saldoPendiente").value = data.saldoPendiente || "";
-  document.getElementById("metodoPago").value = data.metodoPago || "";
-  document.getElementById("fechaAbono").value = data.fechaAbono || "";
-
-  const tbody = document.querySelector("#tablaPasajeros tbody");
-  tbody.innerHTML = "";
-  if (Array.isArray(data.pasajeros)) {
-    data.pasajeros.forEach(p => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td><input type="text" value="${p.nombre || ""}"></td>
-        <td><input type="date" value="${p.fechaNacimiento || ""}" onchange="calcularEdadPasajero(this)"></td>
-        <td><input type="text" value="${p.edad || ""}" readonly></td>
-        <td><input type="text" value="${p.documento || ""}"></td>
-        <td><input type="text" value="${p.pasaporte || ""}"></td>
-        <td><button onclick="this.parentElement.parentElement.remove()">❌</button></td>
-      `;
-      tbody.appendChild(row);
-    });
-  }
-}
-</script>
 
 </body>
 </html>
