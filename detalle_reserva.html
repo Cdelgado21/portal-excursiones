@@ -243,7 +243,6 @@
   }
   let vueloCounter = 1;
 
-  // Función que agrega vuelo intermedio
   function agregarVueloIntermedio() {
     const container = document.getElementById("vuelosIntermediosContainer");
 
@@ -270,7 +269,7 @@
     vueloCounter++;
   }
 
-  // Asignar evento al botón cuando el DOM está listo
+  // Este evento se ejecuta solo si el DOM ya cargó
   document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
   });
