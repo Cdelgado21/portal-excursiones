@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Detalle de Reserva</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -53,16 +55,44 @@
   <h2>Detalle de Reserva</h2>
 
   <section>
-    <label for="aerolinea">Aerolínea</label>
-    <select id="aerolinea">
-      <option value="">Seleccione una</option>
-      <option value="Avianca">Avianca</option>
-      <option value="Volaris">Volaris</option>
-      <option value="Copa Airlines">Copa Airlines</option>
-      <option value="Wingo">Wingo</option>
-    </select>
+    <label for="codigoCotizacion">Código de Cotización</label>
+    <input type="text" id="codigoCotizacion" placeholder="Ej: COT-003-2025">
+    <button onclick="cargarDesdeCotizacion()">Cargar Información</button>
+  </section>
+<section>
+  <h2>Información del Titular</h2>
+  <label for="nombreTitular">Nombre Completo</label>
+  <input type="text" id="nombreTitular" placeholder="Ej. María Fernández Rodríguez">
 
-    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+  <label for="cedulaTitular">Cédula o Pasaporte</label>
+  <input type="text" id="cedulaTitular" placeholder="Ej. 012345678">
+
+  <label for="fechaNacimientoTitular">Fecha de Nacimiento</label>
+  <input type="date" id="fechaNacimientoTitular">
+
+  <label for="correoTitular">Correo Electrónico</label>
+  <input type="email" id="correoTitular" placeholder="Ej. maria@email.com">
+</section>
+
+<section>
+  <h3>Pasajeros</h3>
+  <div id="pasajerosContainer"></div>
+
+  <button onclick="agregarPasajero()">Agregar Pasajero</button>
+</section>
+  <section>
+  <h2>Información del Vuelo</h2>
+
+  <label for="aerolinea">Aerolínea</label>
+  <select id="aerolinea">
+    <option value="">Seleccione una</option>
+    <option value="Avianca">Avianca</option>
+    <option value="Volaris">Volaris</option>
+    <option value="Copa Airlines">Copa Airlines</option>
+    <option value="Wingo">Wingo</option>
+  </select>
+
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
       <h3 style="margin: 0;">Vuelo de Ida</h3>
       <button id="btnAgregarVuelo">➕ Agregar Vuelo Intermedio</button>
     </div>
@@ -99,8 +129,123 @@
     <textarea id="infoVueloRegreso" placeholder="Ej. Medellín → Panamá (1h escala) → San José, llegada 9:30 AM" rows="3"></textarea>
   </section>
 
-  <script>
-    let vueloCounter = 1;
+<section>
+  <h3>Información de Equipaje</h3>
+
+  <label><input type="checkbox" id="articuloPersonal"> Artículo Personal</label>
+
+  <label for="maletaMano">Maleta de Mano (kg)</label>
+  <input type="number" id="maletaMano" placeholder="Ej. 10">
+
+  <label for="maletaManoTipo">¿Por persona o compartida?</label>
+  <select id="maletaManoTipo">
+    <option value="">Seleccione</option>
+    <option value="Por persona">Por persona</option>
+    <option value="Compartida">Compartida</option>
+  </select>
+
+  <label for="maletaDocumentada">Maleta Documentada (kg)</label>
+  <input type="number" id="maletaDocumentada" placeholder="Ej. 23">
+
+  <label for="maletaDocumentadaTipo">¿Por persona o compartida?</label>
+  <select id="maletaDocumentadaTipo">
+    <option value="">Seleccione</option>
+    <option value="Por persona">Por persona</option>
+    <option value="Compartida">Compartida</option>
+  </select>
+</section>
+<script>
+    // Tu configuración de Firebase aquí
+    const firebaseConfig = {
+      // ... tu config
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function cargarDesdeCotizacion() {
+      const codigo = document.getElementById('codigoCotizacion').value.trim();
+      if (!codigo) {
+        alert("Por favor ingresa un código de cotización.");
+        return;
+      }
+
+      const contenedor = document.getElementById("infoCotizacion");
+      contenedor.innerHTML = "Cargando información...";
+
+      db.collection("cotizaciones").doc(codigo).get().then(doc => {
+        if (doc.exists) {
+          const data = doc.data();
+          contenedor.innerHTML = `
+            <h3>Resumen de la Cotización</h3>
+            <p><strong>Destino:</strong> ${data.destino || 'No disponible'}</p>
+            <p><strong>Aerolínea:</strong> ${data.aerolinea || 'No disponible'}</p>
+            <p><strong>Hotel:</strong> ${data.hotel || 'No disponible'}</p>
+            <p><strong>Incluye:</strong> ${data.incluye || 'No disponible'}</p>
+            <!-- Aquí se agregan más campos según necesitemos -->
+          `;
+        } else {
+          contenedor.innerHTML = `<p style="color:red;">No se encontró una cotización con ese código.</p>`;
+        }
+      }).catch(error => {
+        console.error("Error al cargar cotización:", error);
+        contenedor.innerHTML = `<p style="color:red;">Error al cargar datos. Revisa la consola.</p>`;
+      });
+    }
+    let pasajeros = [];
+
+  function agregarPasajero() {
+    const nombre = prompt("Nombre del pasajero:");
+    const pasaporte = prompt("Pasaporte o cédula:");
+    const nacimiento = prompt("Fecha de nacimiento (YYYY-MM-DD):");
+
+    if (nombre && pasaporte && nacimiento) {
+      pasajeros.push({ nombre, pasaporte, nacimiento });
+      mostrarPasajeros();
+    } else {
+      alert("Por favor completa todos los datos del pasajero.");
+    }
+  }
+
+  function mostrarPasajeros() {
+    const container = document.getElementById("pasajerosContainer");
+    if (pasajeros.length === 0) {
+      container.innerHTML = "<p>No hay pasajeros agregados aún.</p>";
+      return;
+    }
+
+    let html = `
+      <table style="width:100%; border-collapse: collapse; margin-top:10px;">
+        <thead>
+          <tr style="background-color: #02535a; color: white;">
+            <th>Nombre</th>
+            <th>Pasaporte</th>
+            <th>Fecha de Nacimiento</th>
+            <th>Eliminar</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    pasajeros.forEach((p, index) => {
+      html += `
+        <tr style="background-color:#f9f9f9;">
+          <td>${p.nombre}</td>
+          <td>${p.pasaporte}</td>
+          <td>${p.nacimiento}</td>
+          <td><button onclick="eliminarPasajero(${index})" style="background:red; color:white; border:none; padding:5px;">X</button></td>
+        </tr>
+      `;
+    });
+
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+  }
+
+  function eliminarPasajero(index) {
+    pasajeros.splice(index, 1);
+    mostrarPasajeros();
+  }
+ let vueloCounter = 1;
 
     function agregarVueloIntermedio() {
       const container = document.getElementById("vuelosIntermediosContainer");
