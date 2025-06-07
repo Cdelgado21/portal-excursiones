@@ -80,6 +80,64 @@
 
   <button onclick="agregarPasajero()">Agregar Pasajero</button>
 </section>
+  <section>
+  <h2>Información del Vuelo</h2>
+
+  <label for="aerolinea">Aerolínea</label>
+  <select id="aerolinea">
+    <option value="">Seleccione una</option>
+    <option value="Avianca">Avianca</option>
+    <option value="Volaris">Volaris</option>
+    <option value="Copa Airlines">Copa Airlines</option>
+    <option value="Wingo">Wingo</option>
+  </select>
+
+  <h3>Vuelo de Ida</h3>
+  <label for="fechaIda">Fecha</label>
+<input type="date" id="fechaIda">
+
+<label for="vueloIda">N° de Vuelo de Ida</label>
+<input type="text" id="vueloIda" placeholder="Ej. AV637">
+
+<label for="horaIda">Horario de Vuelo de Ida</label>
+<input type="datetime-local" id="horaIda">
+
+  <h3>Vuelo de Regreso</h3>
+  <label for="fechaRegreso">Fecha</label>
+<input type="date" id="fechaRegreso">
+
+<label for="vueloRegreso">N° de Vuelo de Regreso</label>
+<input type="text" id="vueloRegreso" placeholder="Ej. AV640">
+
+<label for="horaRegreso">Horario de Vuelo de Regreso</label>
+<input type="datetime-local" id="horaRegreso">
+</section>
+
+<section>
+  <h3>Información de Equipaje</h3>
+
+  <label><input type="checkbox" id="articuloPersonal"> Artículo Personal</label>
+
+  <label for="maletaMano">Maleta de Mano (kg)</label>
+  <input type="number" id="maletaMano" placeholder="Ej. 10">
+
+  <label for="maletaManoTipo">¿Por persona o compartida?</label>
+  <select id="maletaManoTipo">
+    <option value="">Seleccione</option>
+    <option value="Por persona">Por persona</option>
+    <option value="Compartida">Compartida</option>
+  </select>
+
+  <label for="maletaDocumentada">Maleta Documentada (kg)</label>
+  <input type="number" id="maletaDocumentada" placeholder="Ej. 23">
+
+  <label for="maletaDocumentadaTipo">¿Por persona o compartida?</label>
+  <select id="maletaDocumentadaTipo">
+    <option value="">Seleccione</option>
+    <option value="Por persona">Por persona</option>
+    <option value="Compartida">Compartida</option>
+  </select>
+</section>
   <script>
     // Tu configuración de Firebase aquí
     const firebaseConfig = {
