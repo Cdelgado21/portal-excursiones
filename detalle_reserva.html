@@ -80,10 +80,8 @@
 </section>
 
 <section>
-  <h2>Información del Vuelo</h2>
-  <h3 style="margin: 0;">Vuelo de Ida</h3>
+ <h3 style="margin: 0;">Vuelo de Ida</h3>
 <div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px;">
-
   <!-- Aerolínea -->
   <div style="display: flex; flex-direction: column;">
     <label for="aerolineaIda">Aerolínea:</label>
@@ -107,24 +105,20 @@
     <label for="vueloIda">N° de Vuelo:</label>
     <input type="text" id="vueloIda" placeholder="Ej. AV637" style="min-width: 150px;">
   </div>
-
 </div>
 
-</div>
-  <label for="infoVueloIda">Información del Vuelo de Ida</label>
-  <textarea id="infoVueloIda" rows="3" placeholder="Ej. SJO → PTY → MDE, llegada 9:30 AM"></textarea>
+<label for="infoVueloIda">Información del Vuelo de Ida</label>
+<textarea id="infoVueloIda" rows="3" placeholder="Ej. SJO → PTY → MDE, llegada 9:30 AM"></textarea>
 <button id="btnAgregarVuelo" style="font-size: 12px; padding: 6px 12px;">➕ Agregar Vuelo Intermedio</button>
   </div>
   <div id="vuelosIntermediosContainer"></div>
   
-  <h3>Vuelo de Regreso</h3>
-
+ <h3>Vuelo de Regreso</h3>
 <div style="display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px;">
-
   <!-- Aerolínea -->
   <div style="display: flex; flex-direction: column;">
-    <label for="aerolineaIda">Aerolínea:</label>
-    <select id="aerolineaIda" style="min-width: 180px;">
+    <label for="aerolineaRegreso">Aerolínea:</label>
+    <select id="aerolineaRegreso" style="min-width: 180px;">
       <option value="">Seleccione una</option>
       <option value="Avianca">Avianca</option>
       <option value="Volaris">Volaris</option>
@@ -135,19 +129,19 @@
 
   <!-- Fecha -->
   <div style="display: flex; flex-direction: column;">
-    <label for="fechaIda">Fecha:</label>
-    <input type="date" id="fechaIda" style="min-width: 160px;">
+    <label for="fechaRegreso">Fecha:</label>
+    <input type="date" id="fechaRegreso" style="min-width: 160px;">
   </div>
 
   <!-- Número de Vuelo -->
   <div style="display: flex; flex-direction: column;">
-    <label for="vueloIda">N° de Vuelo:</label>
-    <input type="text" id="vueloIda" placeholder="Ej. AV637" style="min-width: 150px;">
+    <label for="vueloRegreso">N° de Vuelo:</label>
+    <input type="text" id="vueloRegreso" placeholder="Ej. AV640" style="min-width: 150px;">
   </div>
-
 </div>
-  <label for="infoVueloRegreso">Información del Vuelo de Regreso</label>
-  <textarea id="infoVueloRegreso" rows="3" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM"></textarea>
+
+<label for="infoVueloRegreso">Información del Vuelo de Regreso</label>
+<textarea id="infoVueloRegreso" rows="3" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM"></textarea>
 </section>
 
 <!-- Script -->
