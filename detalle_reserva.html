@@ -67,8 +67,11 @@
   <input type="text" id="nombreTitular" placeholder="Ej. María Fernández Rodríguez">
   <label for="cedulaTitular">Cédula o Pasaporte</label>
   <input type="text" id="cedulaTitular" placeholder="Ej. 012345678">
+  <label for="vencimientoPasaporteTitular">Fecha de Vencimiento del Pasaporte</label>
+<input type="date" id="vencimientoPasaporteTitular">
   <label for="fechaNacimientoTitular">Fecha de Nacimiento</label>
   <input type="date" id="fechaNacimientoTitular">
+  <p id="edadTitular" style="margin-top: 5px; font-weight: bold;"></p>
   <label for="correoTitular">Correo Electrónico</label>
   <input type="email" id="correoTitular" placeholder="Ej. maria@email.com">
 </section>
@@ -229,8 +232,9 @@
     const nombre = prompt("Nombre:");
     const pasaporte = prompt("Pasaporte o cédula:");
     const nacimiento = prompt("Fecha de nacimiento (YYYY-MM-DD):");
+    const edad = calcularEdad(nacimiento);
     if (nombre && pasaporte && nacimiento) {
-      pasajeros.push({ nombre, pasaporte, nacimiento });
+      pasajeros.push({ nombre, pasaporte, nacimiento, edad });
       mostrarPasajeros();
     } else {
       alert("Por favor completa todos los datos del pasajero.");
@@ -265,7 +269,22 @@
     pasajeros.splice(index, 1);
     mostrarPasajeros();
   }
+document.getElementById("fechaNacimientoTitular").addEventListener("change", function () {
+  const fecha = this.value;
+  const edad = calcularEdad(fecha);
+  document.getElementById("edadTitular").textContent = `Edad: ${edad} años`;
+});
 
+function calcularEdad(fechaNacimiento) {
+  const hoy = new Date();
+  const nacimiento = new Date(fechaNacimiento);
+  let edad = hoy.getFullYear() - nacimiento.getFullYear();
+  const mes = hoy.getMonth() - nacimiento.getMonth();
+  if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+    edad--;
+  }
+  return edad;
+}
   // Activar botón al cargar
   document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
