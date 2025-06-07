@@ -165,6 +165,10 @@
     <label for="vueloIda" style="white-space: nowrap;">N° de Vuelo:</label>
     <input type="text" id="vueloIda" placeholder="Ej. AV637" style="min-width: 130px;">
   </div>
+  <div style="display: flex; align-items: center; gap: 6px;">
+  <label for="codigoBoletoIda" style="white-space: nowrap;">Código de Boleto:</label>
+  <input type="text" id="codigoBoletoIda" placeholder="Ej. 230000654321" style="min-width: 160px;">
+</div>
 
 </div>
 
@@ -201,7 +205,9 @@
     <label for="vueloIda" style="white-space: nowrap;">N° de Vuelo:</label>
     <input type="text" id="vueloIda" placeholder="Ej. AV637" style="min-width: 130px;">
   </div>
-
+  <label for="codigoBoletoRegreso" style="white-space: nowrap;">Código de Boleto:</label>
+<input type="text" id="codigoBoletoRegreso" placeholder="Ej. 230000654322" style="min-width: 160px;">
+</div>
 </div>
 
 <label for="infoVueloRegreso">Información del Vuelo de Regreso</label>
@@ -269,6 +275,10 @@
     <label for="vueloIda" style="white-space: nowrap;">N° de Vuelo:</label>
     <input type="text" id="vueloIda" placeholder="Ej. AV637" style="min-width: 130px;">
   </div>
+  <div style="display: flex; align-items: center; gap: 6px;">
+  <label style="white-space: nowrap;">Código de Boleto:</label>
+  <input type="text" placeholder="Ej. 230000654323" style="min-width: 160px;">
+</div>
 
  </div>
       <label style="display:block; margin-top: 10px;">Información del Vuelo</label>
@@ -327,7 +337,7 @@ function agregarPasajero() {
           <input type="date" class="fechaNacimientoPasajero" onchange="calcularEdadPasajero(this)" style="width: 100%;">
           <span class="edadPasajero" style="font-weight: bold; white-space: nowrap;">Edad: -</span>
         </div>
-  </div>
+          </div>
 </div>
     <!-- Fila 3 -->
     <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px;">
