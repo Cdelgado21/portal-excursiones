@@ -345,12 +345,6 @@ function agregarPasajero() {
         </select>
       </div>
     </div>
-
-    <div style="margin-top: 20px; text-align: right;">
-      <button onclick="guardarPasajero(this)" style="background-color: #02535a; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">
-        ✅ Guardar Pasajero
-      </button>
-    </div>
   `;
 
   container.appendChild(pasajeroDiv);
@@ -369,9 +363,6 @@ function calcularEdadPasajero(inputFecha) {
   edadSpan.textContent = isNaN(edad) ? "Edad: -" : `Edad: ${edad}`;
 }
 
-function guardarPasajero(btn) {
-  alert("Guardado (simulado)");
-}
 document.getElementById("fechaNacimientoTitular").addEventListener("change", function () {
   const fecha = this.value;
   const edad = calcularEdad(fecha);
