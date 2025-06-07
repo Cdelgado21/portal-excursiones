@@ -81,6 +81,10 @@
 
 <section>
   <h2>Información del Vuelo</h2>
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+    <h3 style="margin: 0;">Vuelo de Ida</h3>
+    <button id="btnAgregarVuelo" style="font-size: 12px; padding: 6px 12px;">➕ Agregar Vuelo Intermedio</button>
+  </div>
   <label for="aerolinea">Aerolínea</label>
   <select id="aerolinea">
     <option value="">Seleccione una</option>
@@ -89,11 +93,6 @@
     <option value="Copa Airlines">Copa Airlines</option>
     <option value="Wingo">Wingo</option>
   </select>
-
-  <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-    <h3 style="margin: 0;">Vuelo de Ida</h3>
-    <button id="btnAgregarVuelo" style="font-size: 12px; padding: 6px 12px;">➕ Agregar Vuelo Intermedio</button>
-  </div>
 
   <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -110,8 +109,10 @@
   <textarea id="infoVueloIda" rows="3" placeholder="Ej. SJO → PTY → MDE, llegada 9:30 AM"></textarea>
 
   <div id="vuelosIntermediosContainer"></div>
-
-  <label>Aerolínea</label>
+  
+  <h3>Vuelo de Regreso</h3>
+  <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+      <label>Aerolínea</label>
 <select style="width: 100%; margin-bottom: 10px;">
   <option value="">Seleccione una</option>
   <option value="Avianca">Avianca</option>
@@ -119,9 +120,6 @@
   <option value="Copa Airlines">Copa Airlines</option>
   <option value="Wingo">Wingo</option>
 </select>
-  
-  <h3>Vuelo de Regreso</h3>
-  <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
     <div style="display: flex; align-items: center; gap: 8px;">
       <label for="fechaRegreso">Fecha:</label>
       <input type="date" id="fechaRegreso" style="max-width: 160px;">
