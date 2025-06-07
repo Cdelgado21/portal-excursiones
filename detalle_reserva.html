@@ -104,7 +104,7 @@
     <label for="telefonoTitular">Número de Teléfono</label>
     <input type="tel" id="telefonoTitular" placeholder="Ej. 8888-8888" style="width: 100%;">
   </div>
-
+ </div>
 <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
 
   <!-- Nacionalidad -->
@@ -114,12 +114,16 @@
   </div>
 
   <!-- Género -->
-  <div style="flex: 1; min-width: 250px;">
-    <label>Género</label><br>
-    <label><input type="radio" name="generoTitular" value="Masculino"> Masculino</label>
-    <label><input type="radio" name="generoTitular" value="Femenino"> Femenino</label>
-    <label><input type="radio" name="generoTitular" value="Otro"> Otro</label>
-  </div>
+<div style="flex: 1; min-width: 180px;">
+  <label for="generoTitular">Género</label>
+  <select id="generoTitular" style="width: 100%;">
+    <option value="">Seleccione</option>
+    <option value="Femenino">Femenino</option>
+    <option value="Masculino">Masculino</option>
+
+   </select>
+</div>
+
 
 </div>
 </section>
