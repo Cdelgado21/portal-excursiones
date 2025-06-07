@@ -214,28 +214,48 @@
 <textarea id="infoVueloRegreso" rows="3" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM"></textarea>
 </section>
    <h3>Equipaje</h3>
-  <label>Tipo de Equipaje</label>
-  <select id="tipo_equipaje">
-    <option value="">-- Seleccionar --</option>
-    <option value="Artículo personal">Artículo personal (bolso de espalda)</option>
-    <option value="Maleta de mano">Maleta de mano 10kg</option>
-    <option value="Maleta documentada">Maleta documentada 23kg</option>
-  </select>
 
-  <label>Cantidad</label>
-  <input type="number" id="cantidad_equipaje" placeholder="Ej. 2" min="1" />
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
+    
+    <!-- Tipo de equipaje -->
+    <div style="flex: 1; min-width: 200px;">
+      <label for="tipoEquipaje">Tipo de Equipaje</label>
+      <select id="tipoEquipaje">
+        <option value="">-- Seleccionar --</option>
+        <option value="Artículo personal">Artículo personal</option>
+        <option value="Maleta de mano">Maleta de mano de 10Kg</option>
+        <option value="Maleta documentada">Maleta documentada de 23Kg</option>
+      </select>
+    </div>
 
-  <label>Uso</label>
-  <select id="uso_equipaje">
-    <option value="">-- Seleccionar --</option>
-    <option value="por persona">Por persona</option>
-    <option value="compartido">Compartido</option>
-  </select>
+    <!-- Cantidad -->
+    <div style="flex: 1; min-width: 150px;">
+      <label for="cantidadEquipaje">Cantidad</label>
+      <input type="number" id="cantidadEquipaje" placeholder="Ej. 2">
+    </div>
 
-  <button type="button" onclick="agregarEquipaje()" style="margin-top:10px; background-color:#02535a; color:white; padding:8px 16px; border:none; border-radius:5px;">➕ Agregar equipaje</button>
+    <!-- Uso -->
+    <div style="flex: 1; min-width: 180px;">
+      <label for="usoEquipaje">Uso</label>
+      <select id="usoEquipaje">
+        <option value="">-- Seleccionar --</option>
+        <option value="Por persona">Por persona</option>
+        <option value="Compartido">Compartido</option>
+      </select>
+    </div>
+  </div>
 
-  <label style="margin-top: 15px;">Resumen de Equipaje</label>
-  <textarea id="equipaje" readonly rows="5" placeholder="Aquí aparecerán los tipos de equipaje agregados."></textarea>
+  <!-- Botón -->
+  <button onclick="agregarEquipaje()" style="display: inline-flex; align-items: center; gap: 6px;">
+    ➕ Agregar equipaje
+  </button>
+
+  <!-- Resumen -->
+  <div style="margin-top: 20px;">
+    <label style="font-weight: bold;">Resumen de Equipaje</label>
+    <textarea id="resumenEquipaje" rows="3" style="width: 100%; background-color: #f9f9f9;" readonly>Aquí aparecerán los tipos de equipaje agregados.</textarea>
+  </div>
+</section>
 </section>
 <!-- Script -->
 <script>
