@@ -63,17 +63,36 @@
 
 <section>
   <h2>Información del Titular</h2>
-  <label for="nombreTitular">Nombre Completo</label>
-  <input type="text" id="nombreTitular" placeholder="Ej. María Fernández Rodríguez">
-  <label for="cedulaTitular">Cédula o Pasaporte</label>
-  <input type="text" id="cedulaTitular" placeholder="Ej. 012345678">
-  <label for="vencimientoPasaporteTitular">Fecha de Vencimiento del Pasaporte</label>
-<input type="date" id="vencimientoPasaporteTitular">
-  <label for="fechaNacimientoTitular">Fecha de Nacimiento</label>
-  <input type="date" id="fechaNacimientoTitular">
-  <p id="edadTitular" style="margin-top: 5px; font-weight: bold;"></p>
-  <label for="correoTitular">Correo Electrónico</label>
-  <input type="email" id="correoTitular" placeholder="Ej. maria@email.com">
+
+  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 250px;">
+      <label for="nombreTitular">Nombre Completo</label>
+      <input type="text" id="nombreTitular" placeholder="Ej. María Fernández Rodríguez">
+    </div>
+
+    <div style="flex: 1; min-width: 250px;">
+      <label for="cedulaTitular">Cédula o Pasaporte</label>
+      <input type="text" id="cedulaTitular" placeholder="Ej. 012345678">
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+    <div style="flex: 1; min-width: 250px;">
+      <label for="vencimientoPasaporteTitular">Fecha de Vencimiento del Pasaporte</label>
+      <input type="date" id="vencimientoPasaporteTitular">
+    </div>
+
+    <div style="flex: 1; min-width: 250px;">
+      <label for="fechaNacimientoTitular">Fecha de Nacimiento</label>
+      <input type="date" id="fechaNacimientoTitular">
+      <p id="edadTitular" style="font-weight: bold; margin: 5px 0 0;"></p>
+    </div>
+  </div>
+
+  <div style="margin-top: 15px;">
+    <label for="correoTitular">Correo Electrónico</label>
+    <input type="email" id="correoTitular" placeholder="Ej. maria@email.com" style="width: 100%;">
+  </div>
 </section>
 
 <section>
