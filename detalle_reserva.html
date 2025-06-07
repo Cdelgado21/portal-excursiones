@@ -422,12 +422,12 @@ function calcularEdad(fechaNacimiento) {
   }
   return edad;
 }
-  function agregarEquipaje() {
+ function agregarEquipaje() {
   const tipo = document.getElementById("tipo_equipaje").value;
   const cantidad = document.getElementById("cantidad_equipaje").value;
   const uso = document.getElementById("uso_equipaje").value;
-const textarea = document.getElementById("equipaje");
-    
+  const textarea = document.getElementById("equipaje");
+
   if (!tipo || !cantidad || !uso) {
     alert("Por favor completa los tres campos antes de agregar el equipaje.");
     return;
