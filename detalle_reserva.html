@@ -224,8 +224,8 @@
       <select id="tipoEquipaje">
         <option value="">-- Seleccionar --</option>
         <option value="Artículo personal">Artículo personal</option>
-        <option value="Maleta de mano">Maleta de mano</option>
-        <option value="Maleta documentada">Maleta documentada</option>
+        <option value="Maleta de mano">Maleta de mano de 10Kg</option>
+        <option value="Maleta documentada">Maleta documentada de 23kg</option>
       </select>
     </div>
 
@@ -433,8 +433,8 @@ function calcularEdad(fechaNacimiento) {
   const tipo = document.getElementById("tipo_equipaje").value;
   const cantidad = document.getElementById("cantidad_equipaje").value;
   const uso = document.getElementById("uso_equipaje").value;
-  const textarea = document.getElementById("equipaje");
-
+const textarea = document.getElementById("resumenEquipaje");
+    
   if (!tipo || !cantidad || !uso) {
     alert("Por favor completa los tres campos antes de agregar el equipaje.");
     return;
