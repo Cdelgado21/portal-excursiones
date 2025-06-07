@@ -243,9 +243,10 @@
     pasajeros.splice(index, 1);
     mostrarPasajeros();
   }
-   document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", () => {
     let vueloCounter = 1;
 
+    // 👇 Hacemos que la función sea global
     window.agregarVueloIntermedio = function () {
       const container = document.getElementById("vuelosIntermediosContainer");
 
