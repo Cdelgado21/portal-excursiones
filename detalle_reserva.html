@@ -93,6 +93,10 @@
   </select>
 
 <h3>Vuelo de Ida</h3>
+    <button type="button" onclick="agregarVueloIntermedio()" style="margin: 10px 0; background-color: #5f9296; color: white; border: none; padding: 6px 12px; border-radius: 6px;">
+  ➕ Agregar Vuelo Intermedio
+</button>
+  <div id="vuelosIntermediosContainer"></div>  
 <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
   <div style="display: flex; align-items: center; gap: 8px;">
     <label for="fechaIda">Fecha:</label>
@@ -237,6 +241,32 @@
   function eliminarPasajero(index) {
     pasajeros.splice(index, 1);
     mostrarPasajeros();
+  }
+    let vueloCounter = 1;
+
+  function agregarVueloIntermedio() {
+    const container = document.getElementById("vuelosIntermediosContainer");
+
+    const html = `
+      <section style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px;">
+        <h4>Vuelo Intermedio ${vueloCounter}</h4>
+        <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label>Fecha:</label>
+            <input type="date" style="max-width: 160px;">
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label>N° de Vuelo:</label>
+            <input type="text" placeholder="Ej. AV678" style="max-width: 150px;">
+          </div>
+        </div>
+        <label style="display:block; margin-top: 10px;">Información del Vuelo</label>
+        <textarea placeholder="Ej. Medellín → Cartagena, escala de 2h" rows="2" style="width: 100%;"></textarea>
+      </section>
+    `;
+
+    container.insertAdjacentHTML("beforeend", html);
+    vueloCounter++;
   }
   </script>
 
