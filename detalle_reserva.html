@@ -281,52 +281,63 @@
   }
 
 let pasajeros = [];
-let contadorPasajeros = 0;
-
 function agregarPasajero() {
   const container = document.getElementById("pasajerosContainer");
 
   const pasajeroDiv = document.createElement("div");
-  pasajeroDiv.style = "border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 8px; background: #f9f9f9;";
+  pasajeroDiv.classList.add("tarjeta-pasajero");
+  pasajeroDiv.style = `
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    position: relative;
+  `;
+
   pasajeroDiv.innerHTML = `
-    <h4>Pasajero ${contadorPasajeros}</h4>
+    <span onclick="this.parentElement.remove()" 
+          style="position:absolute; top:10px; right:10px; cursor:pointer; color:#b00020; font-weight:bold;">❌</span>
+
+    <h4 style="color:#02535a; margin-bottom: 15px;">Pasajero ${contadorPasajeros}</h4>
 
     <!-- Fila 1 -->
     <div style="display: flex; gap: 20px; flex-wrap: wrap;">
       <div style="flex: 1; min-width: 250px;">
         <label>Nombre Completo</label>
-        <input type="text" class="nombrePasajero" placeholder="Ej. Juan Pérez">
+        <input type="text" class="nombrePasajero" placeholder="Ej. Juan Pérez" style="width: 100%;">
       </div>
 
       <div style="flex: 1; min-width: 250px;">
         <label>Cédula o Pasaporte</label>
-        <input type="text" class="documentoPasajero" placeholder="Ej. 123456789">
+        <input type="text" class="documentoPasajero" placeholder="Ej. 123456789" style="width: 100%;">
       </div>
     </div>
 
     <!-- Fila 2 -->
-    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px;">
       <div style="flex: 1; min-width: 200px;">
         <label>Fecha de Nacimiento</label>
-        <input type="date" class="fechaNacimientoPasajero" onchange="calcularEdad(this)">
+        <input type="date" class="fechaNacimientoPasajero" onchange="calcularEdad(this)" style="width: 100%;">
       </div>
 
-      <div style="flex: 1; min-width: 100px; display: flex; flex-direction: column;">
+      <div style="flex: 1; min-width: 100px;">
         <label>Edad</label>
-        <span class="edadPasajero" style="font-weight: bold; padding-top: 6px;">-</span>
+        <input type="text" class="edadPasajero" readonly value="-" style="width: 100%; font-weight: bold;">
       </div>
 
       <div style="flex: 1; min-width: 200px;">
         <label>Fecha de Vencimiento del Pasaporte</label>
-        <input type="date" class="vencimientoPasaportePasajero">
+        <input type="date" class="vencimientoPasaportePasajero" style="width: 100%;">
       </div>
     </div>
 
     <!-- Fila 3 -->
-    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px;">
       <div style="flex: 1; min-width: 200px;">
         <label>Nacionalidad</label>
-        <input type="text" class="nacionalidadPasajero" placeholder="Ej. Costarricense">
+        <input type="text" class="nacionalidadPasajero" placeholder="Ej. Costarricense" style="width: 100%;">
       </div>
 
       <div style="flex: 1; min-width: 200px;">
@@ -340,6 +351,12 @@ function agregarPasajero() {
         </select>
       </div>
     </div>
+
+    <div style="margin-top: 20px; text-align: right;">
+      <button onclick="guardarPasajero(this)" style="background-color: #02535a; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;">
+        ✅ Guardar Pasajero
+      </button>
+    </div>
   `;
 
   container.appendChild(pasajeroDiv);
@@ -347,7 +364,6 @@ function agregarPasajero() {
 }
 
 function calcularEdad(inputFecha) {
-  const spanEdad = inputFecha.parentElement.nextElementSibling.querySelector(".edadPasajero");
   const fechaNacimiento = new Date(inputFecha.value);
   const hoy = new Date();
   let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
@@ -355,22 +371,12 @@ function calcularEdad(inputFecha) {
   if (m < 0 || (m === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
     edad--;
   }
-  spanEdad.textContent = `${edad} años`;
+  const inputEdad = inputFecha.parentElement.nextElementSibling.querySelector('.edadPasajero');
+  inputEdad.value = edad >= 0 ? `${edad} años` : "-";
 }
 
-function mostrarEdadPasajero(index) {
-  const fecha = document.getElementById(`nacimiento_${index}`).value;
-  const span = document.getElementById(`edad_${index}`);
-  if (!fecha) {
-    span.textContent = "Edad: -";
-    return;
-  }
-  span.textContent = "Edad: " + calcularEdad(fecha);
-}
-
-function eliminarPasajero(index) {
-  const div = document.getElementById(`nombre_${index}`).closest("div");
-  div.remove();
+function guardarPasajero(btn) {
+  alert("Pasajero guardado (simulado). Aquí podrías validar o guardar en Firebase.");
   }
 document.getElementById("fechaNacimientoTitular").addEventListener("change", function () {
   const fecha = this.value;
