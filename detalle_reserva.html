@@ -247,26 +247,15 @@
   <textarea id="equipaje" readonly rows="5" placeholder="Aquí aparecerán los tipos de equipaje agregados."></textarea>
 </section>
    <h2>Itinerario de Tours</h2>
-  <label for="destino">Destino</label>
 <select id="destino" onchange="cargarInfoTour(this.value)">
   <option value="">Seleccione un destino</option>
 </select>
-  <label for="duracion">Duración</label>
-<input type="text" id="duracion" readonly>
 
-<label for="itinerario">Itinerario</label>
-<textarea id="itinerario" rows="3" readonly></textarea>
-
-<label for="incluye">Incluye</label>
-<textarea id="incluye" rows="3" readonly></textarea>
-
-<label for="noIncluye">No Incluye</label>
-<textarea id="noIncluye" rows="3" readonly></textarea>
-
-<div id="opcionalesContainer">
-  <strong>Tours Opcionales</strong>
-  <div id="toursOpcionalesLista"></div>
-</div>
+<!-- Campos a completar -->
+<input id="duracion" placeholder="Duración">
+<textarea id="itinerario" placeholder="Itinerario"></textarea>
+<textarea id="incluye" placeholder="Incluye"></textarea>
+<textarea id="noIncluye" placeholder="No Incluye"></textarea>
 </section>
 <!-- Script -->
 <script>
@@ -473,42 +462,62 @@ function calcularEdad(fechaNacimiento) {
   document.getElementById("uso_equipaje").value = "";
 }
   async function cargarDestinos() {
-    const ref = db.collection("tours");
-    const snapshot = await ref.get();
-    const select = document.getElementById("destino");
-    snapshot.forEach(doc => {
-      const opt = document.createElement("option");
-      opt.value = doc.id;
-      opt.textContent = doc.data().destino || doc.id;
-      select.appendChild(opt);
-    });
-  }
+    try {
+      const ref = db.collection("tours");
+      const snapshot = await ref.get();
+      const select = document.getElementById("destino");
 
-  // Cargar info del tour según destino seleccionado
-  async function cargarInfoTour(destinoId) {
-    if (!destinoId) return;
-    const ref = doc(db, "tours", destinoId);
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-      const data = snap.data();
-      document.getElementById("duracion").value = data.duracion || "";
-      document.getElementById("itinerario").value = data.itinerario_tours || "";
-      document.getElementById("incluye").value = data.incluye || "";
-      document.getElementById("noIncluye").value = data.no_incluye || "";
-
-      const lista = document.getElementById("toursOpcionalesLista");
-      lista.innerHTML = "";
-      if (Array.isArray(data.tours_opcionales)) {
-        data.tours_opcionales.forEach((item, i) => {
-          const div = document.createElement("div");
-          div.innerHTML = `<label><input type="checkbox" name="opcionales" value="${item.nombre}"> ${item.nombre} - ${item.precio}$</label>`;
-          lista.appendChild(div);
-        });
-      }
+      snapshot.forEach(doc => {
+        const option = document.createElement("option");
+        option.value = doc.id;
+        option.textContent = doc.id; // Si tenés un campo "nombre", usalo en vez de doc.id
+        select.appendChild(option);
+      });
+    } catch (e) {
+      console.error("Error al cargar destinos:", e);
     }
   }
 
-   document.addEventListener("DOMContentLoaded", cargarDestinos);
+  // Cargar la info completa del tour al seleccionar un destino
+  async function cargarInfoTour(destinoId) {
+    if (!destinoId) return;
+
+    try {
+      const ref = db.collection("tours").doc(destinoId);
+      const snap = await ref.get();
+
+      if (snap.exists) {
+        const data = snap.data();
+        document.getElementById("duracion").value = data.duracion || "";
+        document.getElementById("itinerario").value = data.itinerario_tours || "";
+        document.getElementById("incluye").value = data.incluye || "";
+        document.getElementById("noIncluye").value = data.no_incluye || "";
+
+        // Tours opcionales
+        const lista = document.getElementById("toursOpcionalesLista");
+        lista.innerHTML = "";
+
+        if (Array.isArray(data.tours_opcionales)) {
+          data.tours_opcionales.forEach((item, i) => {
+            const div = document.createElement("div");
+            div.innerHTML = `
+              <label>
+                <input type="checkbox" name="opcionales" value="${item.nombre}">
+                ${item.nombre} - ${item.precio}₡
+              </label>`;
+            lista.appendChild(div);
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Error al cargar información del tour:", e);
+    }
+  }
+
+  // Ejecutar al cargar la página
+  document.addEventListener("DOMContentLoaded", () => {
+    cargarDestinos();
+  });
   window.cargarInfoTour = cargarInfoTour; // Exponer globalmente
   // Activar botón al cargar
   document.addEventListener("DOMContentLoaded", () => {
