@@ -304,6 +304,22 @@ function calcularEdad(fechaNacimiento) {
   }
   return edad;
 }
+  document.getElementById("fechaNacimientoTitular").addEventListener("change", function () {
+  const fecha = this.value;
+  const edad = calcularEdad(fecha);
+  document.getElementById("edadTitular").textContent = `Edad: ${edad} años`;
+});
+
+function calcularEdad(fechaNacimiento) {
+  const hoy = new Date();
+  const nacimiento = new Date(fechaNacimiento);
+  let edad = hoy.getFullYear() - nacimiento.getFullYear();
+  const mes = hoy.getMonth() - nacimiento.getMonth();
+  if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+    edad--;
+  }
+  return edad;
+}
   // Activar botón al cargar
   document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
