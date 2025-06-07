@@ -93,27 +93,33 @@
   </select>
 
 <h3>Vuelo de Ida</h3>
-<div style="display: flex; align-items: center; gap: 10px;">
-  <label for="fechaIda">Fecha:</label>
-  <input type="date" id="fechaIda" style="max-width: 200px;">
+<div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <label for="fechaIda">Fecha:</label>
+    <input type="date" id="fechaIda" style="max-width: 160px;">
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <label for="vueloIda">N° de Vuelo:</label>
+    <input type="text" id="vueloIda" placeholder="Ej. AV637" style="max-width: 150px;">
+  </div>
 </div>
-<label for="vueloIda">N° de Vuelo de Ida</label>
-<input type="text" id="vueloIda" placeholder="Ej. AV637">
 
 <label for="infoVueloIda">Información del Vuelo de Ida</label>
 <textarea id="infoVueloIda" placeholder="Ej. San José → Panamá (1h escala) → Medellín, llegada 9:30 AM" rows="3"></textarea>
 
-  <h3>Vuelo de Regreso</h3>
-<div style="display: flex; align-items: center; gap: 10px;">
-  <label for="fechaRegreso">Fecha:</label>
-  <input type="date" id="fechaRegreso" style="max-width: 200px;">
+<h3>Vuelo de Regreso</h3>
+<div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <label for="fechaIda">Fecha:</label>
+    <input type="date" id="fechaRegreso" style="max-width: 160px;">
+  </div>
+  <div style="display: flex; align-items: center; gap: 8px;">
+    <label for="vueloIda">N° de Vuelo:</label>
+    <input type="text" id="vueloRegreso" placeholder="Ej. AV637" style="max-width: 150px;">
+  </div>
 </div>
-
-<label for="vueloRegreso">N° de Vuelo de Regreso</label>
-<input type="text" id="vueloRegreso" placeholder="Ej. AV640">
-
 <label for="infoVueloIda">Información del Vuelo de Regreso</label>
-<textarea id="infoVueloVuelta" placeholder="Ej. Medellín → Panamá (1h escala) → San José, llegada 9:30 AM" rows="3"></textarea>
+<textarea id="infoVueloRegreso" placeholder="Ej. Medellín → Panamá (1h escala) → San José, llegada 9:30 AM" rows="3"></textarea>
 </section>
 
 <section>
