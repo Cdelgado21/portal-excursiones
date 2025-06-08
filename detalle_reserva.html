@@ -282,9 +282,34 @@
   <!-- Fila 3: Habitaciones -->
   <div style="margin-top: 25px;">
     <label style="font-weight: bold;">Habitaciones</label>
-    <div id="habitacionesContainer" style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;"></div>
-    <button onclick="agregarHabitacionElegante()" style="margin-top: 10px; background-color: #02535a; color: white; border: none; padding: 10px 16px; border-radius: 8px;">➕ Agregar Habitación</button>
+    <button onclick="abrirModalHabitacion()" style="margin-top: 10px; background-color: #02535a; color: white; border: none; padding: 10px 16px; border-radius: 8px;">➕ Agregar Habitación</button>
+<div id="habitacionesContainer" style="margin-top:15px; display:flex; flex-direction:column; gap:12px;"></div>
+
   </div>
+<!-- Modal para agregar habitación -->
+<div id="modalHabitacion" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
+  <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:500px; position:relative;">
+    <h3 style="margin-top:0; color:#02535a;">Agregar Habitación</h3>
+
+    <label>Tipo de habitación</label>
+    <select id="modal_tipoHabitacion" style="width:100%; margin-bottom:10px; padding:8px;">
+      <option value="Doble">Doble</option>
+      <option value="Triple">Triple</option>
+      <option value="Cuádruple">Cuádruple</option>
+    </select>
+
+    <label>Cantidad</label>
+    <input type="number" id="modal_cantidadHabitacion" placeholder="Ej. 2" style="width:100%; margin-bottom:10px; padding:8px;">
+
+    <label>Observaciones</label>
+    <textarea id="modal_observacionesHabitacion" rows="3" placeholder="Ej. Una con cama matrimonial" style="width:100%; padding:8px;"></textarea>
+
+    <div style="margin-top:15px; text-align:right;">
+      <button onclick="cerrarModalHabitacion()" style="margin-right:10px; background:#ccc; border:none; padding:8px 14px; border-radius:6px;">Cancelar</button>
+      <button onclick="guardarHabitacionDesdeModal()" style="background:#02535a; color:white; border:none; padding:8px 16px; border-radius:6px;">Guardar</button>
+    </div>
+  </div>
+</div>
 
   <!-- Fila 4: Itinerario -->
   <div style="margin-top: 20px;">
