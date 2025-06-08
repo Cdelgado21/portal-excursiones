@@ -426,6 +426,67 @@ const firebaseConfig = {
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
+  async function generarCodigoReserva() {
+    const añoActual = new Date().getFullYear();
+    const counterRef = db.collection("counters").doc(`reserva-${añoActual}`);
+    const counterDoc = await counterRef.get();
+
+    let nuevoNumero = 1;
+    if (counterDoc.exists) {
+      nuevoNumero = counterDoc.data().ultimo || 0;
+      nuevoNumero++;
+    }
+
+    const codigo = `ED-${String(nuevoNumero).padStart(3, "0")}-${añoActual}`;
+    await counterRef.set({ ultimo: nuevoNumero }, { merge: true });
+    return { codigo, numero: nuevoNumero, año: añoActual };
+  }
+
+  async function guardarReserva() {
+    try {
+      const { codigo, numero, año } = await generarCodigoReserva();
+
+      // Obtenés datos desde tu formulario (aquí algunos ejemplos)
+      const nombreTitular = document.getElementById("nombreTitular").value || "";
+      const cedula = document.getElementById("cedulaTitular").value || "";
+      const correo = document.getElementById("correoTitular").value || "";
+      const telefono = document.getElementById("telefonoTitular").value || "";
+      const fechaReserva = new Date().toISOString().split("T")[0];
+      const destino = document.getElementById("destino").value || "";
+      const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
+      const pagos = window.listaPagos || []; // asegurate de tener esta lista global
+      const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
+      const saldo = total - abono;
+
+      // Armamos el objeto
+      const datos = {
+        codigo,
+        numero,
+        año,
+        nombreTitular,
+        cedula,
+        correo,
+        telefono,
+        fechaReserva,
+        destino,
+        total,
+        abono,
+        saldo,
+        pagos
+      };
+
+      // Guardamos en Firebase
+      await db.collection("reservas").doc(codigo).set(datos);
+      alert("Reserva guardada correctamente como " + codigo);
+    } catch (e) {
+      console.error("Error al guardar reserva:", e);
+      alert("Ocurrió un error al guardar la reserva.");
+    }
+  }
+
+  // Asociar al botón
+  document.getElementById("btnGuardarReserva").addEventListener("click", guardarReserva);
+
   // Cargar cotización
   function cargarDesdeCotizacion() {
     const codigo = document.getElementById('codigoCotizacion').value.trim();
