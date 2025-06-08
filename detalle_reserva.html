@@ -246,38 +246,35 @@
   <label style="margin-top: 15px;">Resumen de Equipaje</label>
   <textarea id="equipaje" readonly rows="5" placeholder="Aquí aparecerán los tipos de equipaje agregados."></textarea>
 </section>
-<section style="background: white; padding: 15px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); font-family: Arial, sans-serif;">
-  <h2 style="background-color: #02535a; color: white; padding: 10px; border-radius: 8px;">Itinerario de Tours</h2>
-
-  <section style="margin-top: 30px;">
+<section style="margin-top: 30px;">
   <h2 style="background-color: #02535a; color: white; padding: 10px; border-radius: 8px;">Itinerario de Tours</h2>
 
   <!-- Fila 1: Destino y Duración -->
-  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
     <div style="flex: 1; min-width: 250px;">
-      <label for="destino"><strong>Destino</strong></label>
+      <label><strong>Destino</strong></label>
       <select id="destino" onchange="cargarInfoTour(this.value)" style="width: 100%; padding: 8px;">
         <option value="">Seleccione un destino</option>
       </select>
     </div>
     <div style="flex: 1; min-width: 250px;">
-      <label for="duracion"><strong>Duración</strong></label>
-      <input type="text" id="duracion" placeholder="Ej. 5 días y 4 noches" readonly style="width: 100%; padding: 8px;">
+      <label><strong>Duración</strong></label>
+      <input id="duracion" readonly placeholder="Ej. 5 días y 4 noches" style="width: 100%; padding: 8px;">
     </div>
   </div>
 
-  <!-- Fila 2: Hotel, Check-in/out -->
-  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+  <!-- Fila 2: Hotel, Check-in, Check-out -->
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
     <div style="flex: 2; min-width: 250px;">
-      <label for="hotelNombre"><strong>Hotel</strong></label>
-      <input type="text" id="hotelNombre" placeholder="Ej. Hotel Medellín Plaza" readonly style="width: 100%; padding: 8px;">
+      <label><strong>Hotel</strong></label>
+      <input id="hotelNombre" readonly placeholder="Ej. Hotel Medellín Plaza" style="width: 100%; padding: 8px;">
     </div>
     <div style="flex: 1;">
-      <label for="checkIn"><strong>Check-in</strong></label>
+      <label><strong>Check-in</strong></label>
       <input type="date" id="checkIn" style="width: 100%; padding: 8px;">
     </div>
     <div style="flex: 1;">
-      <label for="checkOut"><strong>Check-out</strong></label>
+      <label><strong>Check-out</strong></label>
       <input type="date" id="checkOut" style="width: 100%; padding: 8px;">
     </div>
   </div>
@@ -294,7 +291,20 @@
     <label for="itinerario"><strong>Itinerario</strong></label>
     <textarea id="itinerario" rows="4" placeholder="Ej. Día 1 Llegada..." style="width: 100%; padding: 8px;"></textarea>
   </div>
+
+  <!-- Fila 5: Tours Opcionales -->
+  <div style="margin-top: 30px;">
+    <label style="font-weight: bold;">Tours Opcionales</label>
+    <div id="toursOpcionalesLista" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;"></div>
+  </div>
+
+  <!-- Observaciones -->
+  <div style="margin-top: 15px;">
+    <label><strong>Observaciones sobre Tours Opcionales</strong></label>
+    <textarea id="obs_tours_opcionales" rows="2" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente." style="width: 100%; padding: 8px;"></textarea>
+  </div>
 </section>
+
 
 <script>
 const firebaseConfig = {
