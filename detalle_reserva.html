@@ -632,12 +632,12 @@ function cerrarModalHotel() {
 }
 
 function guardarHotelModal() {
-  const hotel = document.getElementById("modal_nombreHotel").value;
-  const checkIn = document.getElementById("modal_checkIn").value;
-  const checkOut = document.getElementById("modal_checkOut").value;
-  const tipo = document.getElementById("modal_tipoHabitacion").value;
-  const cantidad = document.getElementById("modal_cantidad").value;
-  const obs = document.getElementById("modal_observaciones").value;
+  const hotel = document.getElementById("modal_nombre_hotel").value;
+  const checkIn = document.getElementById("modal_checkin").value;
+  const checkOut = document.getElementById("modal_checkout").value;
+  const tipo = document.getElementById("modal_tipoHabitacion_hotel").value;
+  const cantidad = document.getElementById("modal_cantidadHabitacion_hotel").value;
+  const obs = document.getElementById("modal_observaciones_hotel").value;
 
   const tbody = document.getElementById("tablaHotelesBody");
   const row = document.createElement("tr");
@@ -654,12 +654,17 @@ function guardarHotelModal() {
   tbody.appendChild(row);
   cerrarModalHotel();
 }
+  if (!hotel) {
+  alert("Debes seleccionar un hotel.");
+  return;
+}
 
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
   const tieneFilas = tabla.querySelector("tbody").children.length > 0;
   tabla.style.display = tieneFilas ? "table" : "none";
 }
+  
   // Aplicar a todos los que tengan la clase autoresize
     document.querySelectorAll('.autoresize').forEach(textarea => {
       textarea.addEventListener('input', () => autoResizeTextarea(textarea));
