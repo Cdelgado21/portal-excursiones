@@ -282,12 +282,27 @@
     </div>
   </div>
 
-  <!-- Tours opcionales -->
-  <div style="margin-top: 20px;">
-    <label for="toursOpcionalesLista">Tours Opcionales</label>
-    <div id="toursOpcionalesLista" style="padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9; font-family: Arial, sans-serif;"></div>
+ <div style="margin-top: 25px;">
+  <label style="font-weight: bold; color: #02535a; font-size: 18px;">Tours Opcionales</label>
+
+  <div id="toursOpcionalesLista" style="
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
+    padding: 15px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    font-family: Arial;
+    margin-top: 10px;">
+    <!-- Aquí se insertarán los tours -->
   </div>
-</section>
+
+  <div style="margin-top: 15px;">
+    <label for="observacionesOpcionales" style="font-weight: bold; color: #02535a;">Observaciones sobre Tours Opcionales</label>
+    <textarea id="observacionesOpcionales" rows="3" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente."></textarea>
+  </div>
+</div>
 </section>
 <!-- Script -->
 <script>
@@ -530,17 +545,28 @@ const snapshot = await ref.get();
         const lista = document.getElementById("toursOpcionalesLista");
         lista.innerHTML = "";
 
-        if (Array.isArray(data.tours_opcionales)) {
-          data.tours_opcionales.forEach((item, i) => {
-            const div = document.createElement("div");
-            div.innerHTML = `
-              <label>
-                <input type="checkbox" name="opcionales" value="${item.nombre}">
-                ${item.nombre} - ${item.precio}₡
-              </label>`;
-            lista.appendChild(div);
-          });
-        }
+      if (Array.isArray(data.tours_opcionales)) {
+  const lista = document.getElementById("toursOpcionalesLista");
+  lista.innerHTML = ""; // Limpiar antes de insertar
+
+  data.tours_opcionales.forEach((item, i) => {
+    const div = document.createElement("div");
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.gap = "10px";
+    div.style.border = "1px solid #e0e0e0";
+    div.style.borderRadius = "8px";
+    div.style.padding = "10px";
+    div.style.backgroundColor = "#f8f9f9";
+
+    div.innerHTML = `
+      <input type="checkbox" name="opcionales" value="${item.nombre}">
+      <span style="font-weight: bold; color: #02535a;">${item.nombre}</span>
+      <span style="color: #666;">- ${item.precio}₡</span>
+    `;
+    lista.appendChild(div);
+  });
+          }
       }
     } catch (e) {
       console.error("Error al cargar información del tour:", e);
