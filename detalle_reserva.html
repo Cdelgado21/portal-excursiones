@@ -591,9 +591,10 @@ function cargarInfoTour(destinoId) {
       console.error("Error al cargar información del tour:", e);
     });
 }
-  }
-  window.cargarInfoTour = cargarInfoTour;
-  
+
+// ✅ Exponer después de la función
+window.cargarInfoTour = cargarInfoTour;
+}
   function autoResizeTextarea(textarea) {
     textarea.style.height = 'auto'; // reset
     textarea.style.height = (textarea.scrollHeight + 2) + 'px'; // ajuste real
