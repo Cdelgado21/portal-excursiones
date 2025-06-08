@@ -595,6 +595,11 @@ function calcularEdad(fechaNacimiento) {
   }
   return edad;
 }
+  function mostrarEdadTitular() {
+  const fecha = document.getElementById("fechaNacimientoTitular").value;
+  const edad = calcularEdad(fecha);
+  document.getElementById("edadTitular").textContent = `Edad: ${edad} años`;
+}
  function agregarEquipaje() {
   const tipo = document.getElementById("tipo_equipaje").value;
   const cantidad = document.getElementById("cantidad_equipaje").value;
