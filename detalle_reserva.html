@@ -271,6 +271,9 @@
   </div>
 
   <!-- Tipo de Habitación -->
+<h3 style="margin-top: 20px;">Habitaciones</h3>
+<div id="habitacionesContainer"></div>
+<button onclick="agregarHabitacion()" style="margin-top: 10px;">➕ Agregar Habitación</button>
   <div style="flex: 1; min-width: 200px;">
     <label for="tipoHabitacion"><strong>Tipo de Habitación</strong></label>
     <select id="tipoHabitacion" style="width: 100%;">
@@ -553,7 +556,9 @@ const snapshot = await ref.get();
         document.getElementById("itinerario").value = data.itinerario_tours || "";
         document.getElementById("incluye").value = data.incluye || "";
         document.getElementById("noIncluye").value = data.no_incluye || "";
-
+if (Array.isArray(data.hoteles) && data.hoteles.length > 0) {
+  document.getElementById("hotelSeleccionado").value = data.hoteles[0].nombre || "";
+}
         // Tours opcionales
      const lista = document.getElementById("toursOpcionalesLista");
 lista.innerHTML = "";
@@ -600,7 +605,32 @@ if (Array.isArray(data.tours_opcionales)) {
     textarea.style.height = 'auto'; // reset
     textarea.style.height = (textarea.scrollHeight + 2) + 'px'; // ajuste real
   }
+function agregarHabitacion() {
+  const container = document.getElementById("habitacionesContainer");
 
+  const div = document.createElement("div");
+  div.style = `
+    display: flex; gap: 10px; flex-wrap: wrap; 
+    background: #f9f9f9; padding: 10px; 
+    margin-bottom: 10px; border-radius: 8px; 
+    border: 1px solid #ccc;
+  `;
+
+  div.innerHTML = `
+    <select style="flex: 1; min-width: 160px;">
+      <option value="">Tipo de Habitación</option>
+      <option value="Sencilla">Sencilla</option>
+      <option value="Doble">Doble</option>
+      <option value="Triple">Triple</option>
+      <option value="Cuádruple">Cuádruple</option>
+    </select>
+    <input type="number" placeholder="Cantidad de Personas" style="flex: 1; min-width: 140px;">
+    <input type="text" placeholder="Observaciones" style="flex: 2; min-width: 200px;">
+    <button onclick="this.parentElement.remove()">❌</button>
+  `;
+
+  container.appendChild(div);
+}
   // Aplicar a todos los que tengan la clase autoresize
     document.querySelectorAll('.autoresize').forEach(textarea => {
       textarea.addEventListener('input', () => autoResizeTextarea(textarea));
