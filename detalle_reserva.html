@@ -911,13 +911,6 @@ function calcularTotal() {
     document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
     document.getElementById("saldoPendiente").textContent = saldoPendiente.toFixed(2);
   }
-  async function generarCodigoReserva() {
-  const año = new Date().getFullYear();
-  const snapshot = await db.collection("reservas").where("año", "==", año).get();
-  const consecutivo = snapshot.size + 1;
-  const codigo = `ED-${consecutivo.toString().padStart(3, '0')}-${año}`;
-  return { codigo, año };
-}
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
   const tieneFilas = tabla.querySelector("tbody").children.length > 0;
