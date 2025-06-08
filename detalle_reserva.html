@@ -249,6 +249,8 @@
    <h2>Itinerario de Tours</h2>
 <select id="destino" onchange="cargarInfoTour(this.value)">
   <option value="">Seleccione un destino</option>
+  <label for="toursOpcionalesLista">Tours Opcionales</label>
+<div id="toursOpcionalesLista"></div>
 </select>
 
 <!-- Campos a completar -->
@@ -463,8 +465,8 @@ function calcularEdad(fechaNacimiento) {
 }
 async function cargarDestinos() {
   try {
-    const ref = collection(db, "tours");
-    const snapshot = await getDocs(ref);
+const ref = db.collection("tours");
+const snapshot = await ref.get();
     const select = document.getElementById("destino");
 
     snapshot.forEach(doc => {
@@ -514,16 +516,12 @@ async function cargarDestinos() {
       console.error("Error al cargar información del tour:", e);
     }
   }
-
+ window.cargarInfoTour = cargarInfoTour; // Exponer globalmente
   // Ejecutar al cargar la página
-  document.addEventListener("DOMContentLoaded", () => {
-    cargarDestinos();
-  });
-  window.cargarInfoTour = cargarInfoTour; // Exponer globalmente
-  // Activar botón al cargar
-  document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
-  });
+document.addEventListener("DOMContentLoaded", () => {
+  cargarDestinos();
+  document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
+});
 </script>
 
 </body>
