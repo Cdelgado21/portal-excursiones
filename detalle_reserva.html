@@ -962,7 +962,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // 🔍 Detectar si hay un código en la URL
   const params = new URLSearchParams(window.location.search);
-  const codigoReserva = params.get("codigo");
+const codigo = params.get("codigo") || params.get("id"); // acepta ambos
 
   if (codigoReserva) {
     await cargarReservaExistente(codigoReserva); // Función que definís aparte (ver abajo)
