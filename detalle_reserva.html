@@ -568,9 +568,10 @@ function cargarInfoTour(destinoId) {
       if (doc.exists) {
         const data = doc.data();
         document.getElementById("duracion").value = data.duracion || "";
-        const hotelSelect = document.getElementById("hotelNombre");
-hotelSelect.innerHTML = '<option value="">Seleccione un hotel</option>';
-
+       // Ya no se llena un <select> con ID hotelNombre
+// Si quieres usar los hoteles en el modal después, guárdalos en memoria si ocupás
+window.hotelesDelDestino = data.hoteles || [];
+        
 if (Array.isArray(data.hoteles)) {
   data.hoteles.forEach(hotel => {
     const option = document.createElement("option");
