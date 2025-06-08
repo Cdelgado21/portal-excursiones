@@ -265,15 +265,16 @@
   </div>
 <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
   <!-- Hotel -->
-  <div style="flex: 1; min-width: 200px;">
-    <label for="hotelSeleccionado"><strong>Hotel</strong></label>
-    <input type="text" id="hotelSeleccionado" placeholder="Ej. Hotel Medellín Plaza" style="width: 100%;">
-  </div>
+ <div style="margin-top: 20px;">
+  <label for="hotelNombre" style="font-weight: bold;">Hotel</label>
+  <input type="text" id="hotelNombre" placeholder="Ej. Hotel Medellín Plaza" readonly style="width: 100%; padding: 8px; margin-top: 5px;">
+</div>
 
   <!-- Tipo de Habitación -->
-<h3 style="margin-top: 20px;">Habitaciones</h3>
-<div id="habitacionesContainer"></div>
-<button onclick="agregarHabitacion()" style="margin-top: 10px;">➕ Agregar Habitación</button>
+<h3 style="margin-top: 30px; color: #02535a;">Habitaciones</h3>
+<div id="habitacionesContainer" style="display: flex; flex-direction: column; gap: 12px;"></div>
+<button onclick="agregarHabitacionElegante()" style="margin-top: 10px; background-color: #02535a; color: white; border: none; padding: 10px 16px; border-radius: 8px;">➕ Agregar Habitación</button>
+
   <div style="flex: 1; min-width: 200px;">
     <label for="tipoHabitacion"><strong>Tipo de Habitación</strong></label>
     <select id="tipoHabitacion" style="width: 100%;">
@@ -286,15 +287,14 @@
   </div>
 
   <!-- Check-in -->
-  <div style="flex: 1; min-width: 160px;">
-    <label for="checkin"><strong>Check-in</strong></label>
-    <input type="date" id="checkin" style="width: 100%;">
+  <div style="display: flex; gap: 20px; margin-top: 15px;">
+  <div style="flex: 1;">
+    <label for="checkIn" style="font-weight: bold;">Check-in</label>
+    <input type="date" id="checkIn" style="width: 100%; padding: 8px;">
   </div>
-
-  <!-- Check-out -->
-  <div style="flex: 1; min-width: 160px;">
-    <label for="checkout"><strong>Check-out</strong></label>
-    <input type="date" id="checkout" style="width: 100%;">
+  <div style="flex: 1;">
+    <label for="checkOut" style="font-weight: bold;">Check-out</label>
+    <input type="date" id="checkOut" style="width: 100%; padding: 8px;">
   </div>
 </div>
   <!-- Itinerario -->
