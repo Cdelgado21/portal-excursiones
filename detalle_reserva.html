@@ -552,7 +552,6 @@ const snapshot = await ref.get();
   }
 
   // Aplicar a todos los que tengan la clase autoresize
-  document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.autoresize').forEach(textarea => {
       textarea.addEventListener('input', () => autoResizeTextarea(textarea));
       autoResizeTextarea(textarea); // inicial
