@@ -344,30 +344,30 @@
   <div style="display: flex; flex-wrap: wrap; gap: 15px;">
     <div style="flex: 1;">
       <label>Cantidad de Adultos</label>
-      <input type="number" id="cantidadAdultos" value="0">
+     <input type="number" id="cantidadAdultos" value="0" oninput="calcularTotalGeneral()"
     </div>
     <div style="flex: 1;">
       <label>Cantidad de Niños</label>
-      <input type="number" id="cantidadNinos" value="0">
+      <input type="number" id="cantidadNinos" value="0" oninput="calcularTotalGeneral()">
     </div>
     <div style="flex: 1;">
       <label>Cantidad de Bebés</label>
-      <input type="number" id="cantidadBebes" value="0">
+  <input type="number" id="cantidadBebes" value="0" oninput="calcularTotalGeneral()">
     </div>
   </div>
 
   <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
     <div style="flex: 1;">
       <label>Precio por Adulto</label>
-      <input type="number" id="precioAdulto" value="0">
+    <input type="number" id="precioAdulto" value="0" oninput="calcularTotalGeneral()">
     </div>
     <div style="flex: 1;">
       <label>Precio por Niño</label>
-      <input type="number" id="precioNino" value="0">
+  <input type="number" id="precioNino" value="0" oninput="calcularTotalGeneral()">
     </div>
     <div style="flex: 1;">
       <label>Precio por Bebé</label>
-      <input type="number" id="precioBebe" value="0">
+      <input type="number" id="precioBebe" value="0" oninput="calcularTotalGeneral()">
     </div>
   </div>
 
@@ -486,7 +486,26 @@ const firebaseConfig = {
 
   // Asociar al botón
   document.getElementById("btnGuardarReserva").addEventListener("click", guardarReserva);
+  }
+  function calcularTotalGeneral() {
+    const cantidadAdultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
+    const cantidadNinos = parseInt(document.getElementById("cantidadNinos").value) || 0;
+    const cantidadBebes = parseInt(document.getElementById("cantidadBebes").value) || 0;
 
+    const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) || 0;
+    const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
+    const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
+
+    const total = (cantidadAdultos * precioAdulto) + (cantidadNinos * precioNino) + (cantidadBebes * precioBebe);
+    document.getElementById("totalGeneral").value = total.toFixed(2);
+
+    // Si hay listaPagos ya cargada, actualizamos el saldo también:
+    if (window.listaPagos) {
+      const totalPagado = window.listaPagos.reduce((sum, p) => sum + p.monto, 0);
+      const saldo = total - totalPagado;
+      document.getElementById("saldoPendiente").textContent = saldo.toFixed(2);
+    }
+  }
   // Cargar cotización
   function cargarDesdeCotizacion() {
     const codigo = document.getElementById('codigoCotizacion').value.trim();
