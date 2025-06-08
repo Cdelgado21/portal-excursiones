@@ -407,7 +407,9 @@
     <p><strong>Saldo Pendiente:</strong> $<span id="saldoPendiente">0</span></p>
   </div>
 </section>
-
+<button id="btnGuardarReserva" style="background-color: #02535a; color: white; padding: 12px 20px; border: none; border-radius: 6px; font-weight: bold;">
+  💾 Guardar Reserva
+</button>
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -802,6 +804,46 @@ function actualizarResumenPagos() {
 // Calcular cuando cambie algún campo
 ["cantidadAdultos", "cantidadNinos", "cantidadBebes", "precioAdulto", "precioNino", "precioBebe"].forEach(id => {
   document.getElementById(id).addEventListener("input", calcularTotal);
+});
+  document.getElementById("btnGuardarReserva").addEventListener("click", async () => {
+  const añoActual = new Date().getFullYear();
+  const snapshot = await db.collection('reservas').get();
+
+  // Filtrar reservas del año actual
+  const delAño = snapshot.docs.filter(doc =>
+    doc.id.startsWith('ED-') && doc.id.endsWith(`-${añoActual}`)
+  );
+
+  // Generar nuevo código
+  const nuevoNumero = delAño.length + 1;
+  const numeroFormateado = nuevoNumero.toString().padStart(3, '0');
+  const codigoReserva = `ED-${numeroFormateado}-${añoActual}`;
+
+  // Recoger datos del formulario
+  const nombre = document.getElementById("nombreTitular").value;
+  const correo = document.getElementById("correoTitular").value;
+  const telefono = document.getElementById("telefonoTitular").value;
+  const destino = document.getElementById("destino").value;
+  const total = parseFloat(document.getElementById("totalGeneral").value || 0);
+  const abono = parseFloat(document.getElementById("montoAbono").value || 0);
+  const saldo = total - abono;
+
+  // Otros datos opcionales como vuelos, hotel, etc. también se pueden agregar
+
+  // Guardar en Firebase
+  await db.collection("reservas").doc(codigoReserva).set({
+    codigo: codigoReserva,
+    nombre,
+    correo,
+    telefono,
+    destino,
+    total,
+    abono,
+    saldo,
+    fecha: new Date().toISOString()
+  });
+
+  alert(`Reserva guardada con éxito como ${codigoReserva}`);
 });
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
