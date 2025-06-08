@@ -404,6 +404,7 @@
 
   <div style="margin-top: 10px;">
     <p><strong>Total Pagado:</strong> $<span id="totalPagado">0</span></p>
+    <input type="hidden" id="montoAbono" value="0">
     <p><strong>Saldo Pendiente:</strong> $<span id="saldoPendiente">0</span></p>
   </div>
 </section>
@@ -798,6 +799,7 @@ function actualizarResumenPagos() {
   const saldo = total - totalPagado;
 
   document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
+  document.getElementById("montoAbono").value = totalPagado.toFixed(2);
   document.getElementById("saldoPendiente").textContent = saldo.toFixed(2);
 }
 
@@ -805,46 +807,39 @@ function actualizarResumenPagos() {
 ["cantidadAdultos", "cantidadNinos", "cantidadBebes", "precioAdulto", "precioNino", "precioBebe"].forEach(id => {
   document.getElementById(id).addEventListener("input", calcularTotal);
 });
-  document.getElementById("btnGuardarReserva").addEventListener("click", async () => {
-  const añoActual = new Date().getFullYear();
-  const snapshot = await db.collection('reservas').get();
+  async function generarCodigoReserva() {
+  const año = new Date().getFullYear();
+  const snapshot = await db.collection("reservas").where("año", "==", año).get();
+  const consecutivo = snapshot.size + 1;
+  const codigo = `ED-${consecutivo.toString().padStart(3, '0')}-${año}`;
+  return { codigo, año };
+}
+  document.getElementById("btnGuardarReserva").addEventListener("click", guardarReserva);
+ async function guardarReserva() {
+  const { codigo, año } = await generarCodigoReserva();
 
-  // Filtrar reservas del año actual
-  const delAño = snapshot.docs.filter(doc =>
-    doc.id.startsWith('ED-') && doc.id.endsWith(`-${añoActual}`)
-  );
+  const data = {
+    codigo: codigo,
+    año: año,
+    nombreTitular: document.getElementById("nombreTitular").value,
+    correo: document.getElementById("correoTitular").value,
+    telefono: document.getElementById("telefonoTitular").value,
+    destino: document.getElementById("destino").value,
+    total: parseFloat(document.getElementById("totalGeneral").value || 0),
+    abono: parseFloat(document.getElementById("montoAbono").value || 0),
+    saldo: parseFloat((document.getElementById("totalGeneral").value || 0) - (document.getElementById("montoAbono").value || 0)),
+    fechaReserva: new Date().toISOString().split("T")[0]
+  };
 
-  // Generar nuevo código
-  const nuevoNumero = delAño.length + 1;
-  const numeroFormateado = nuevoNumero.toString().padStart(3, '0');
-  const codigoReserva = `ED-${numeroFormateado}-${añoActual}`;
-
-  // Recoger datos del formulario
-  const nombre = document.getElementById("nombreTitular").value;
-  const correo = document.getElementById("correoTitular").value;
-  const telefono = document.getElementById("telefonoTitular").value;
-  const destino = document.getElementById("destino").value;
-  const total = parseFloat(document.getElementById("totalGeneral").value || 0);
-  const abono = parseFloat(document.getElementById("montoAbono").value || 0);
-  const saldo = total - abono;
-
-  // Otros datos opcionales como vuelos, hotel, etc. también se pueden agregar
-
-  // Guardar en Firebase
-  await db.collection("reservas").doc(codigoReserva).set({
-    codigo: codigoReserva,
-    nombre,
-    correo,
-    telefono,
-    destino,
-    total,
-    abono,
-    saldo,
-    fecha: new Date().toISOString()
-  });
-
-  alert(`Reserva guardada con éxito como ${codigoReserva}`);
-});
+  try {
+    await db.collection("reservas").doc(codigo).set(data);
+    alert("Reserva guardada correctamente con el código: " + codigo);
+    // Aquí puedes llamar la función que genera el PDF y lo envía por correo
+  } catch (e) {
+    console.error("Error al guardar la reserva:", e);
+    alert("Error al guardar la reserva.");
+  }
+}
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
   const tieneFilas = tabla.querySelector("tbody").children.length > 0;
