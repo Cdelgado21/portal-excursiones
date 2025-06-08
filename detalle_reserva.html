@@ -461,22 +461,23 @@ function calcularEdad(fechaNacimiento) {
   document.getElementById("cantidad_equipaje").value = "";
   document.getElementById("uso_equipaje").value = "";
 }
-  async function cargarDestinos() {
-    try {
-      const ref = db.collection("tours");
-      const snapshot = await ref.get();
-      const select = document.getElementById("destino");
+async function cargarDestinos() {
+  try {
+    const ref = collection(db, "tours");
+    const snapshot = await getDocs(ref);
+    const select = document.getElementById("destino");
 
-      snapshot.forEach(doc => {
-        const option = document.createElement("option");
-        option.value = doc.id;
-        option.textContent = doc.id; // Si tenés un campo "nombre", usalo en vez de doc.id
-        select.appendChild(option);
-      });
-    } catch (e) {
-      console.error("Error al cargar destinos:", e);
-    }
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const opt = document.createElement("option");
+      opt.value = doc.id; // El ID del documento sigue como value
+      opt.textContent = data.nombre || doc.id; // Pero el texto que se muestra es el nombre
+      select.appendChild(opt);
+    });
+  } catch (e) {
+    console.error("Error al cargar destinos:", e);
   }
+}
 
   // Cargar la info completa del tour al seleccionar un destino
   async function cargarInfoTour(destinoId) {
