@@ -282,10 +282,10 @@
     </div>
   </div>
 <h3>Tours Opcionales</h3>
-<div id="toursOpcionalesLista"></div>
+<div id="toursOpcionalesLista" style="margin-top: 10px;"></div>
 
-<label for="observacionesOpcionales"><strong>Observaciones sobre Tours Opcionales</strong></label>
-<textarea id="observacionesOpcionales" rows="2" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente." style="width: 100%; font-family: Arial; margin-top: 8px;"></textarea>
+<label for="observacionesOpcionales" style="margin-top: 15px;"><strong>Observaciones sobre Tours Opcionales</strong></label>
+<textarea id="observacionesOpcionales" rows="2" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente." style="width: 100%; font-family: Arial; margin-top: 5px;"></textarea>
 </section>
 <!-- Script -->
 <script>
@@ -527,6 +527,9 @@ const snapshot = await ref.get();
         // Tours opcionales
      const lista = document.getElementById("toursOpcionalesLista");
 lista.innerHTML = "";
+lista.style.display = "flex";
+lista.style.flexWrap = "wrap";
+lista.style.gap = "15px";
 
 if (Array.isArray(data.tours_opcionales)) {
   data.tours_opcionales.forEach((item, i) => {
@@ -535,20 +538,24 @@ if (Array.isArray(data.tours_opcionales)) {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: #f9f9f9;
-      border: 1px solid #ccc;
       padding: 10px 15px;
+      border: 1px solid #ccc;
+      background: white;
       border-radius: 10px;
-      margin-bottom: 8px;
       font-family: Arial;
+      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+      min-width: 320px;
+      flex: 1 1 30%;
     `;
 
     div.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <input type="checkbox" id="opcional-${i}" name="opcionales" value="${item.nombre}">
-        <label for="opcional-${i}" style="font-weight: bold; color: #02535a;">${item.nombre}</label>
+      <div style="display: flex; flex-direction: column;">
+        <label style="font-weight: bold; color: #02535a;">${item.nombre}</label>
       </div>
-      <div style="font-weight: bold;">$${item.precio}</div>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-weight: bold;">$${item.precio}</span>
+        <input type="checkbox" id="opcional-${i}" name="opcionales" value="${item.nombre}">
+      </div>
     `;
 
     lista.appendChild(div);
