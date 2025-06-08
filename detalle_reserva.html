@@ -528,60 +528,42 @@ const snapshot = await ref.get();
 }
 
   // Cargar la info completa del tour al seleccionar un destino
-  async function cargarInfoTour(destinoId) {
-    if (!destinoId) return;
+ function cargarInfoTour(destinoId) {
+  if (!destinoId) return;
 
-    try {
-      const ref = db.collection("tours").doc(destinoId);
-      const snap = await ref.get();
+  const ref = db.collection("tours").doc(destinoId);
+  ref.get().then(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      document.getElementById("duracion").value = data.duracion || "";
+      document.getElementById("hotelNombre").value = data.hoteles?.[0]?.nombre || "";
+      document.getElementById("itinerario").value = data.itinerario_tours || "";
 
-      if (snap.exists) {
-        const data = snap.data();
-        document.getElementById("duracion").value = data.duracion || "";
-        document.getElementById("itinerario").value = data.itinerario_tours || "";
-        document.getElementById("incluye").value = data.incluye || "";
-        document.getElementById("noIncluye").value = data.no_incluye || "";
-if (Array.isArray(data.hoteles) && data.hoteles.length > 0) {
-  document.getElementById("hotelSeleccionado").value = data.hoteles[0].nombre || "";
-}
-        // Tours opcionales
-     const lista = document.getElementById("toursOpcionalesLista");
-lista.innerHTML = "";
-lista.style.display = "flex";
-lista.style.flexWrap = "wrap";
-lista.style.gap = "15px";
-
-if (Array.isArray(data.tours_opcionales)) {
-  data.tours_opcionales.forEach((item, i) => {
-    const div = document.createElement("div");
-    div.style = `
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 15px;
-      border: 1px solid #ccc;
-      background: white;
-      border-radius: 10px;
-      font-family: Arial;
-      box-shadow: 0 0 5px rgba(0,0,0,0.05);
-      min-width: 320px;
-      flex: 1 1 30%;
-    `;
-
-    div.innerHTML = `
-      <div style="display: flex; flex-direction: column;">
-        <label style="font-weight: bold; color: #02535a;">${item.nombre}</label>
-      </div>
-      <div style="display: flex; align-items: center; gap: 10px;">
-        <span style="font-weight: bold;">$${item.precio}</span>
-        <input type="checkbox" id="opcional-${i}" name="opcionales" value="${item.nombre}">
-      </div>
-    `;
-
-    lista.appendChild(div);
-  });
-          }
+      const lista = document.getElementById("toursOpcionalesLista");
+      lista.innerHTML = "";
+      if (Array.isArray(data.tours_opcionales)) {
+        data.tours_opcionales.forEach(item => {
+          const card = document.createElement("div");
+          card.style = `
+            border: 1px solid #ccc;
+            padding: 10px 15px;
+            border-radius: 8px;
+            background: #f9f9f9;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 250px;
+          `;
+          card.innerHTML = `
+            <input type="checkbox" name="opcionales" value="${item.nombre}">
+            <span><strong>${item.nombre}</strong> - $${item.precio}</span>
+          `;
+          lista.appendChild(card);
+        });
       }
+    }
+  });
+}
     } catch (e) {
       console.error("Error al cargar información del tour:", e);
     }
