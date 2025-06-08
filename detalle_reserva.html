@@ -871,7 +871,6 @@ function calcularTotal() {
     document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
     document.getElementById("saldoPendiente").textContent = saldoPendiente.toFixed(2);
   }
-});
   async function generarCodigoReserva() {
   const año = new Date().getFullYear();
   const snapshot = await db.collection("reservas").where("año", "==", año).get();
