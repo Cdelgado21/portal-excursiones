@@ -341,60 +341,70 @@
 <section>
   <h2>Resumen de Inversión</h2>
 
-  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+  <div style="display: flex; flex-wrap: wrap; gap: 15px;">
     <div style="flex: 1;">
-      <label for="cantidad_adultos">Cantidad de Adultos</label>
-      <input type="number" id="cantidad_adultos" placeholder="Ej. 2" onchange="calcularTotales()">
+      <label>Cantidad de Adultos</label>
+      <input type="number" id="cantidadAdultos" value="0">
     </div>
-
     <div style="flex: 1;">
-      <label for="cantidad_ninos">Cantidad de Niños</label>
-      <input type="number" id="cantidad_ninos" placeholder="Ej. 1" onchange="calcularTotales()">
+      <label>Cantidad de Niños</label>
+      <input type="number" id="cantidadNinos" value="0">
     </div>
-
     <div style="flex: 1;">
-      <label for="cantidad_bebes">Cantidad de Bebés</label>
-      <input type="number" id="cantidad_bebes" placeholder="Ej. 0" onchange="calcularTotales()">
+      <label>Cantidad de Bebés</label>
+      <input type="number" id="cantidadBebes" value="0">
     </div>
   </div>
 
-  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+  <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
     <div style="flex: 1;">
-      <label for="precio_adulto">Precio por Adulto</label>
-      <input type="number" id="precio_adulto" placeholder="Ej. 850" onchange="calcularTotales()">
+      <label>Precio por Adulto</label>
+      <input type="number" id="precioAdulto" value="0">
     </div>
-
     <div style="flex: 1;">
-      <label for="precio_nino">Precio por Niño</label>
-      <input type="number" id="precio_nino" placeholder="Ej. 650" onchange="calcularTotales()">
+      <label>Precio por Niño</label>
+      <input type="number" id="precioNino" value="0">
     </div>
-
     <div style="flex: 1;">
-      <label for="precio_bebe">Precio por Bebé</label>
-      <input type="number" id="precio_bebe" placeholder="Ej. 0" onchange="calcularTotales()">
-    </div>
-  </div>
-
-  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
-    <div style="flex: 1;">
-      <label for="total_general">Total General</label>
-      <input type="number" id="total_general" readonly style="background-color: #e6f0f0;">
-    </div>
-
-    <div style="flex: 1;">
-      <label for="abono">Monto de Reserva (Abono)</label>
-      <input type="number" id="abono" onchange="calcularTotales()">
-    </div>
-
-    <div style="flex: 1;">
-      <label for="saldo_pendiente">Saldo Pendiente</label>
-      <input type="number" id="saldo_pendiente" readonly style="background-color: #fff3e0;">
+      <label>Precio por Bebé</label>
+      <input type="number" id="precioBebe" value="0">
     </div>
   </div>
 
   <div style="margin-top: 15px;">
-    <label for="resumen_inversion"><strong>Resumen Detallado</strong></label>
-    <textarea id="resumen_inversion" readonly rows="5" style="width: 100%; background-color: #f4f4f4;"></textarea>
+    <label><strong>Total General</strong></label>
+    <input type="text" id="totalGeneral" readonly>
+  </div>
+
+  <hr>
+
+  <h3>Pagos Realizados</h3>
+  <div style="display: flex; gap: 15px;">
+    <input type="date" id="fechaPago">
+    <input type="number" placeholder="Monto" id="montoPago">
+    <select id="tipoPago">
+      <option value="">Tipo de Pago</option>
+      <option value="Efectivo">Efectivo</option>
+      <option value="SINPE">SINPE</option>
+      <option value="Transferencia">Transferencia</option>
+    </select>
+    <button onclick="agregarPago()">Agregar Pago</button>
+  </div>
+
+  <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
+    <thead style="background: #02535a; color: white;">
+      <tr>
+        <th>Fecha</th>
+        <th>Tipo</th>
+        <th>Monto</th>
+      </tr>
+    </thead>
+    <tbody id="tablaPagos"></tbody>
+  </table>
+
+  <div style="margin-top: 10px;">
+    <p><strong>Total Pagado:</strong> $<span id="totalPagado">0</span></p>
+    <p><strong>Saldo Pendiente:</strong> $<span id="saldoPendiente">0</span></p>
   </div>
 </section>
 
@@ -734,38 +744,65 @@ function guardarHotelModal() {
   tbody.appendChild(row);
   cerrarModalHotel();
 }
-function calcularTotales() {
-  const adultos = parseInt(document.getElementById("cantidad_adultos").value) || 0;
-  const ninos = parseInt(document.getElementById("cantidad_ninos").value) || 0;
-  const bebes = parseInt(document.getElementById("cantidad_bebes").value) || 0;
+let pagos = [];
 
-  const precioAdulto = parseFloat(document.getElementById("precio_adulto").value) || 0;
-  const precioNino = parseFloat(document.getElementById("precio_nino").value) || 0;
-  const precioBebe = parseFloat(document.getElementById("precio_bebe").value) || 0;
+function calcularTotal() {
+  const adultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
+  const ninos = parseInt(document.getElementById("cantidadNinos").value) || 0;
+  const bebes = parseInt(document.getElementById("cantidadBebes").value) || 0;
 
-  const totalAdultos = adultos * precioAdulto;
-  const totalNinos = ninos * precioNino;
-  const totalBebes = bebes * precioBebe;
+  const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) || 0;
+  const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
+  const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
 
-  const totalGeneral = totalAdultos + totalNinos + totalBebes;
-  document.getElementById("total_general").value = totalGeneral.toFixed(2);
+  const total = (adultos * precioAdulto) + (ninos * precioNino) + (bebes * precioBebe);
+  document.getElementById("totalGeneral").value = total.toFixed(2);
 
-  const abono = parseFloat(document.getElementById("abono").value) || 0;
-  const saldo = totalGeneral - abono;
-  document.getElementById("saldo_pendiente").value = saldo.toFixed(2);
-
-  // Desglose en textarea
-  let resumen = "";
-  if (adultos > 0) resumen += `${adultos} Adulto(s) × $${precioAdulto.toFixed(2)} = $${totalAdultos.toFixed(2)}\n`;
-  if (ninos > 0) resumen += `${ninos} Niño(s) × $${precioNino.toFixed(2)} = $${totalNinos.toFixed(2)}\n`;
-  if (bebes > 0) resumen += `${bebes} Bebé(s) × $${precioBebe.toFixed(2)} = $${totalBebes.toFixed(2)}\n`;
-
-  resumen += `\n💰 Total: $${totalGeneral.toFixed(2)}\n`;
-  resumen += `💳 Abono: $${abono.toFixed(2)}\n`;
-  resumen += `📌 Saldo: $${saldo.toFixed(2)}`;
-
-  document.getElementById("resumen_inversion").value = resumen;
+  actualizarResumenPagos();
 }
+
+function agregarPago() {
+  const fecha = document.getElementById("fechaPago").value;
+  const monto = parseFloat(document.getElementById("montoPago").value) || 0;
+  const tipo = document.getElementById("tipoPago").value;
+
+  if (!fecha || !monto || !tipo) {
+    alert("Debe completar todos los campos del pago.");
+    return;
+  }
+
+  pagos.push({ fecha, monto, tipo });
+  actualizarResumenPagos();
+
+  // Limpiar
+  document.getElementById("fechaPago").value = "";
+  document.getElementById("montoPago").value = "";
+  document.getElementById("tipoPago").value = "";
+}
+
+function actualizarResumenPagos() {
+  const tabla = document.getElementById("tablaPagos");
+  tabla.innerHTML = "";
+
+  let totalPagado = 0;
+  pagos.forEach(pago => {
+    totalPagado += pago.monto;
+    const row = document.createElement("tr");
+    row.innerHTML = `<td>${pago.fecha}</td><td>${pago.tipo}</td><td>$${pago.monto.toFixed(2)}</td>`;
+    tabla.appendChild(row);
+  });
+
+  const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
+  const saldo = total - totalPagado;
+
+  document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
+  document.getElementById("saldoPendiente").textContent = saldo.toFixed(2);
+}
+
+// Calcular cuando cambie algún campo
+["cantidadAdultos", "cantidadNinos", "cantidadBebes", "precioAdulto", "precioNino", "precioBebe"].forEach(id => {
+  document.getElementById(id).addEventListener("input", calcularTotal);
+});
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
   const tieneFilas = tabla.querySelector("tbody").children.length > 0;
