@@ -263,7 +263,37 @@
       <input id="duracion" placeholder="Ej. 5 días y 4 noches" style="font-family: Arial, sans-serif;">
     </div>
   </div>
+<div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 10px;">
+  <!-- Hotel -->
+  <div style="flex: 1; min-width: 200px;">
+    <label for="hotelSeleccionado"><strong>Hotel</strong></label>
+    <input type="text" id="hotelSeleccionado" placeholder="Ej. Hotel Medellín Plaza" style="width: 100%;">
+  </div>
 
+  <!-- Tipo de Habitación -->
+  <div style="flex: 1; min-width: 200px;">
+    <label for="tipoHabitacion"><strong>Tipo de Habitación</strong></label>
+    <select id="tipoHabitacion" style="width: 100%;">
+      <option value="">Seleccione una</option>
+      <option value="Sencilla">Sencilla</option>
+      <option value="Doble">Doble</option>
+      <option value="Triple">Triple</option>
+      <option value="Cuádruple">Cuádruple</option>
+    </select>
+  </div>
+
+  <!-- Check-in -->
+  <div style="flex: 1; min-width: 160px;">
+    <label for="checkin"><strong>Check-in</strong></label>
+    <input type="date" id="checkin" style="width: 100%;">
+  </div>
+
+  <!-- Check-out -->
+  <div style="flex: 1; min-width: 160px;">
+    <label for="checkout"><strong>Check-out</strong></label>
+    <input type="date" id="checkout" style="width: 100%;">
+  </div>
+</div>
   <!-- Itinerario -->
   <div style="margin-top: 15px;">
     <label for="itinerario">Itinerario</label>
