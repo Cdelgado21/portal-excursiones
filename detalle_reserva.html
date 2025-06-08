@@ -880,32 +880,6 @@ function actualizarResumenPagos() {
   const codigo = `ED-${consecutivo.toString().padStart(3, '0')}-${año}`;
   return { codigo, año };
 }
-  document.getElementById("btnGuardarReserva").addEventListener("click", guardarReserva);
- async function guardarReserva() {
-  const { codigo, año } = await generarCodigoReserva();
-
-  const data = {
-    codigo: codigo,
-    año: año,
-    nombreTitular: document.getElementById("nombreTitular").value,
-    correo: document.getElementById("correoTitular").value,
-    telefono: document.getElementById("telefonoTitular").value,
-    destino: document.getElementById("destino").value,
-    total: parseFloat(document.getElementById("totalGeneral").value || 0),
-    abono: parseFloat(document.getElementById("montoAbono").value || 0),
-    saldo: parseFloat((document.getElementById("totalGeneral").value || 0) - (document.getElementById("montoAbono").value || 0)),
-    fechaReserva: new Date().toISOString().split("T")[0]
-  };
-
-  try {
-    await db.collection("reservas").doc(codigo).set(data);
-    alert("Reserva guardada correctamente con el código: " + codigo);
-    // Aquí puedes llamar la función que genera el PDF y lo envía por correo
-  } catch (e) {
-    console.error("Error al guardar la reserva:", e);
-    alert("Error al guardar la reserva.");
-  }
-}
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
   const tieneFilas = tabla.querySelector("tbody").children.length > 0;
