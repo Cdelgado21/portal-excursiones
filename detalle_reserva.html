@@ -633,6 +633,11 @@ function cerrarModalHotel() {
 
 function guardarHotelModal() {
   const hotel = document.getElementById("modal_nombre_hotel").value;
+    if (!hotel) {
+  alert("Debes seleccionar un hotel.");
+  return;
+}
+  
   const checkIn = document.getElementById("modal_checkin").value;
   const checkOut = document.getElementById("modal_checkout").value;
   const tipo = document.getElementById("modal_tipoHabitacion_hotel").value;
@@ -654,10 +659,7 @@ function guardarHotelModal() {
   tbody.appendChild(row);
   cerrarModalHotel();
 }
-  if (!hotel) {
-  alert("Debes seleccionar un hotel.");
-  return;
-}
+
 
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
