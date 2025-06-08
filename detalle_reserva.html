@@ -267,7 +267,9 @@
   <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
     <div style="flex: 2; min-width: 250px;">
       <label><strong>Hotel</strong></label>
-      <input id="hotelNombre" readonly placeholder="Ej. Hotel Medellín Plaza" style="width: 100%; padding: 8px;">
+      <select id="hotelNombre" style="width: 100%; padding: 8px;">
+  <option value="">Seleccione un hotel</option>
+</select>
     </div>
     <div style="flex: 1;">
       <label><strong>Check-in</strong></label>
@@ -573,7 +575,17 @@ function cargarInfoTour(destinoId) {
       if (doc.exists) {
         const data = doc.data();
         document.getElementById("duracion").value = data.duracion || "";
-        document.getElementById("hotelNombre").value = data.hoteles?.[0]?.nombre || "";
+        const hotelSelect = document.getElementById("hotelNombre");
+hotelSelect.innerHTML = '<option value="">Seleccione un hotel</option>';
+
+if (Array.isArray(data.hoteles)) {
+  data.hoteles.forEach(hotel => {
+    const option = document.createElement("option");
+    option.value = hotel.nombre || hotel; // por si es solo string
+    option.textContent = hotel.nombre || hotel;
+    hotelSelect.appendChild(option);
+  });
+}
         document.getElementById("itinerario").value = data.itinerario_tours || "";
 
         const lista = document.getElementById("toursOpcionalesLista");
