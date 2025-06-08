@@ -292,6 +292,7 @@
       <th style="padding: 8px;">Tipo de Habitación</th>
       <th style="padding: 8px;">Cantidad</th>
       <th style="padding: 8px;">Observaciones</th>
+         <th style="padding: 8px;">Acción</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -690,15 +691,23 @@ function guardarHabitacionDesdeModal() {
   const tbody = tabla.querySelector("tbody");
   const fila = document.createElement("tr");
   fila.innerHTML = `
-    <td style="padding: 8px; border: 1px solid #ddd;">${tipo}</td>
-    <td style="padding: 8px; border: 1px solid #ddd;">${cantidad}</td>
-    <td style="padding: 8px; border: 1px solid #ddd;">${obs}</td>
-  `;
+  <td style="padding: 8px; border: 1px solid #ddd;">${tipo}</td>
+  <td style="padding: 8px; border: 1px solid #ddd;">${cantidad}</td>
+  <td style="padding: 8px; border: 1px solid #ddd;">${obs}</td>
+  <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+    <button onclick="this.closest('tr').remove(); verificarFilasHabitaciones();" style="background-color: #b00020; color: white; border: none; padding: 4px 8px; border-radius: 4px;">❌</button>
+  </td>
+`;
   tbody.appendChild(fila);
 
   tabla.style.display = "table"; // mostrar si estaba oculto
 
   cerrarModalHabitacion();
+}
+  function verificarFilasHabitaciones() {
+  const tabla = document.getElementById("tablaResumenHabitaciones");
+  const tieneFilas = tabla.querySelector("tbody").children.length > 0;
+  tabla.style.display = tieneFilas ? "table" : "none";
 }
   // Aplicar a todos los que tengan la clase autoresize
     document.querySelectorAll('.autoresize').forEach(textarea => {
