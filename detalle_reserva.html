@@ -286,7 +286,17 @@
     <label style="font-weight: bold;">Habitaciones</label>
     <button onclick="abrirModalHabitacion()" style="margin-top: 10px; background-color: #02535a; color: white; border: none; padding: 10px 16px; border-radius: 8px;">➕ Agregar Habitación</button>
 <div id="habitacionesContainer" style="margin-top:15px; display:flex; flex-direction:column; gap:12px;"></div>
-
+<table id="tablaResumenHabitaciones" style="width: 100%; margin-top: 15px; border-collapse: collapse; display: none;">
+  <thead style="background-color: #02535a; color: white;">
+    <tr>
+      <th style="padding: 8px;">Tipo de Habitación</th>
+      <th style="padding: 8px;">Cantidad</th>
+      <th style="padding: 8px;">Observaciones</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+    
   </div>
 <!-- Modal para agregar habitación -->
 <div id="modalHabitacion" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
@@ -659,10 +669,10 @@ function agregarHabitacionElegante() {
 }
 
 function cerrarModalHabitacion() {
-  document.getElementById("modalHabitacion").style.display = "none";
-  document.getElementById("modal_tipoHabitacion").value = "Doble";
+  document.getElementById("modal_tipoHabitacion").value = "";
   document.getElementById("modal_cantidadHabitacion").value = "";
   document.getElementById("modal_observacionesHabitacion").value = "";
+  document.getElementById("modalHabitacion").style.display = "none";
 }
 
 function guardarHabitacionDesdeModal() {
@@ -671,20 +681,23 @@ function guardarHabitacionDesdeModal() {
   const obs = document.getElementById("modal_observacionesHabitacion").value;
 
   if (!tipo || !cantidad) {
-    alert("Por favor indicá el tipo y cantidad.");
+    alert("Por favor completa tipo y cantidad.");
     return;
   }
 
-  const tabla = document.getElementById("habitacionesTabla");
+  // Insertar fila en la tabla
+  const tabla = document.getElementById("tablaResumenHabitaciones");
+  const tbody = tabla.querySelector("tbody");
   const fila = document.createElement("tr");
-
   fila.innerHTML = `
-    <td style="padding: 8px; border-bottom: 1px solid #ccc;">${tipo}</td>
-    <td style="padding: 8px; border-bottom: 1px solid #ccc;">${cantidad}</td>
-    <td style="padding: 8px; border-bottom: 1px solid #ccc;">${obs || '-'}</td>
+    <td style="padding: 8px; border: 1px solid #ddd;">${tipo}</td>
+    <td style="padding: 8px; border: 1px solid #ddd;">${cantidad}</td>
+    <td style="padding: 8px; border: 1px solid #ddd;">${obs}</td>
   `;
+  tbody.appendChild(fila);
 
-  tabla.appendChild(fila);
+  tabla.style.display = "table"; // mostrar si estaba oculto
+
   cerrarModalHabitacion();
 }
   // Aplicar a todos los que tengan la clase autoresize
