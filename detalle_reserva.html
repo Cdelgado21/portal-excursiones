@@ -253,39 +253,39 @@
   <div style="display: flex; gap: 20px; flex-wrap: wrap;">
     <div style="flex: 1; min-width: 250px;">
       <label for="destino">Destino</label>
-      <select id="destino" onchange="cargarInfoTour(this.value)">
+      <select id="destino" onchange="cargarInfoTour(this.value)" style="font-family: Arial, sans-serif;">
         <option value="">Seleccione un destino</option>
       </select>
     </div>
 
     <div style="flex: 1; min-width: 250px;">
       <label for="duracion">Duración</label>
-      <input id="duracion" placeholder="Ej. 5 días y 4 noches">
+      <input id="duracion" placeholder="Ej. 5 días y 4 noches" style="font-family: Arial, sans-serif;">
     </div>
   </div>
 
   <!-- Itinerario -->
   <div style="margin-top: 15px;">
     <label for="itinerario">Itinerario</label>
-    <textarea id="itinerario" placeholder="Ej. Día 1 llegada, Día 2 City Tour..." rows="3"></textarea>
+    <textarea id="itinerario" rows="4" placeholder="Ej. Día 1 llegada..." style="resize: none; font-family: Arial, sans-serif; height: auto;"></textarea>
   </div>
 
   <!-- Incluye / No incluye -->
   <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
     <div style="flex: 1; min-width: 250px;">
       <label for="incluye">Incluye</label>
-      <textarea id="incluye" placeholder="Servicios incluidos" rows="4"></textarea>
+      <textarea id="incluye" rows="5" placeholder="Servicios incluidos" style="resize: none; font-family: Arial, sans-serif; height: auto;"></textarea>
     </div>
     <div style="flex: 1; min-width: 250px;">
       <label for="noIncluye">No Incluye</label>
-      <textarea id="noIncluye" placeholder="Servicios no incluidos" rows="4"></textarea>
+      <textarea id="noIncluye" rows="5" placeholder="Servicios no incluidos" style="resize: none; font-family: Arial, sans-serif; height: auto;"></textarea>
     </div>
   </div>
 
   <!-- Tours opcionales -->
   <div style="margin-top: 20px;">
     <label for="toursOpcionalesLista">Tours Opcionales</label>
-    <div id="toursOpcionalesLista" style="padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9;"></div>
+    <div id="toursOpcionalesLista" style="padding: 10px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9; font-family: Arial, sans-serif;"></div>
   </div>
 </section>
 </section>
