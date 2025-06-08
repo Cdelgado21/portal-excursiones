@@ -246,10 +246,11 @@
   <label style="margin-top: 15px;">Resumen de Equipaje</label>
   <textarea id="equipaje" readonly rows="5" placeholder="Aquí aparecerán los tipos de equipaje agregados."></textarea>
 </section>
-  <h2>Itinerario de Tours</h2>
+<section style="background: white; padding: 15px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); font-family: Arial, sans-serif;">
+  <h2 style="background-color: #02535a; color: white; padding: 10px; border-radius: 8px;">Itinerario de Tours</h2>
 
-  <!-- Fila destino -->
-  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
+  <!-- Fila destino y duración -->
+  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
     <div style="flex: 1; min-width: 250px;">
       <label for="destino">Destino</label>
       <select id="destino" onchange="cargarInfoTour(this.value)">
@@ -269,13 +270,12 @@
     <textarea id="itinerario" placeholder="Ej. Día 1 llegada, Día 2 City Tour..." rows="3"></textarea>
   </div>
 
-  <!-- Incluye y No Incluye -->
+  <!-- Incluye / No incluye -->
   <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
     <div style="flex: 1; min-width: 250px;">
       <label for="incluye">Incluye</label>
       <textarea id="incluye" placeholder="Servicios incluidos" rows="4"></textarea>
     </div>
-
     <div style="flex: 1; min-width: 250px;">
       <label for="noIncluye">No Incluye</label>
       <textarea id="noIncluye" placeholder="Servicios no incluidos" rows="4"></textarea>
