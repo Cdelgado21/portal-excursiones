@@ -567,21 +567,14 @@ function cargarInfoTour(destinoId) {
     .then(doc => {
       if (doc.exists) {
         const data = doc.data();
+
         document.getElementById("duracion").value = data.duracion || "";
-       // Ya no se llena un <select> con ID hotelNombre
-// Si quieres usar los hoteles en el modal después, guárdalos en memoria si ocupás
-window.hotelesDelDestino = data.hoteles || [];
-        
-if (Array.isArray(data.hoteles)) {
-  data.hoteles.forEach(hotel => {
-    const option = document.createElement("option");
-    option.value = hotel.nombre || hotel; // por si es solo string
-    option.textContent = hotel.nombre || hotel;
-    hotelSelect.appendChild(option);
-  });
-}
         document.getElementById("itinerario").value = data.itinerario_tours || "";
 
+        // Guardamos los hoteles en memoria para usarlos en el modal
+        window.hotelesDelDestino = data.hoteles || [];
+
+        // Cargar tours opcionales
         const lista = document.getElementById("toursOpcionalesLista");
         lista.innerHTML = "";
         if (Array.isArray(data.tours_opcionales)) {
@@ -611,6 +604,7 @@ if (Array.isArray(data.hoteles)) {
     });
 }
 
+
 // ✅ Exponer después de la función
 window.cargarInfoTour = cargarInfoTour;
 }
@@ -619,31 +613,20 @@ window.cargarInfoTour = cargarInfoTour;
     textarea.style.height = (textarea.scrollHeight + 2) + 'px'; // ajuste real
   }
 function abrirModalHotel() {
-  const destinoSeleccionado = document.getElementById("destino").value;
-  const selectHotel = document.getElementById("modal_nombreHotel");
+  const select = document.getElementById("modal_nombre_hotel");
+  select.innerHTML = "";
 
-  // Reset
-  selectHotel.innerHTML = "<option value=''>Cargando hoteles...</option>";
-
-  db.collection("tours").doc(destinoSeleccionado).get().then(doc => {
-    if (doc.exists) {
-      const data = doc.data();
-      selectHotel.innerHTML = ""; // limpiar
-
-      if (Array.isArray(data.hoteles)) {
-        data.hoteles.forEach(hotel => {
-          const opt = document.createElement("option");
-          opt.value = hotel.nombre;
-          opt.textContent = hotel.nombre;
-          selectHotel.appendChild(opt);
-        });
-      }
-    }
-  });
+  if (Array.isArray(window.hotelesDelDestino)) {
+    window.hotelesDelDestino.forEach(hotel => {
+      const opt = document.createElement("option");
+      opt.value = hotel.nombre;
+      opt.textContent = hotel.nombre;
+      select.appendChild(opt);
+    });
+  }
 
   document.getElementById("modalHotel").style.display = "flex";
 }
-
 function cerrarModalHotel() {
   document.getElementById("modalHotel").style.display = "none";
 }
