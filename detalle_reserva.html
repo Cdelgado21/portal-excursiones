@@ -385,7 +385,7 @@
     <select id="tipoPago">
       <option value="">Tipo de Pago</option>
       <option value="Efectivo">Efectivo</option>
-      <option value="SINPE">SINPE</option>
+      <option value="Tarjetas">Tarjeta</option>
       <option value="Transferencia">Transferencia</option>
     </select>
     <button onclick="agregarPago()">Agregar Pago</button>
@@ -830,48 +830,47 @@ function calcularTotal() {
   actualizarResumenPagos();
 }
 
-function agregarPago() {
-  const fecha = document.getElementById("fechaPago").value;
-  const monto = parseFloat(document.getElementById("montoPago").value) || 0;
-  const tipo = document.getElementById("tipoPago").value;
+ window.listaPagos = [];
 
-  if (!fecha || !monto || !tipo) {
-    alert("Debe completar todos los campos del pago.");
-    return;
+  function agregarPago() {
+    const fecha = document.getElementById("fechaPago").value;
+    const monto = parseFloat(document.getElementById("montoPago").value);
+    const tipo = document.getElementById("tipoPago").value;
+
+    if (!fecha || isNaN(monto) || monto <= 0 || !tipo) {
+      alert("Por favor completá todos los campos del pago.");
+      return;
+    }
+
+    // Agregar a la lista global
+    window.listaPagos.push({ fecha, tipo, monto });
+
+    // Actualizar tabla
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+      <td>${fecha}</td>
+      <td>${tipo}</td>
+      <td>$${monto.toFixed(2)}</td>
+    `;
+    document.getElementById("tablaPagos").appendChild(fila);
+
+    // Actualizar totales
+    actualizarTotales();
+
+    // Limpiar campos
+    document.getElementById("fechaPago").value = "";
+    document.getElementById("montoPago").value = "";
+    document.getElementById("tipoPago").value = "";
   }
 
-  pagos.push({ fecha, monto, tipo });
-  actualizarResumenPagos();
+  function actualizarTotales() {
+    const totalPagado = window.listaPagos.reduce((sum, p) => sum + p.monto, 0);
+    const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
+    const saldoPendiente = totalGeneral - totalPagado;
 
-  // Limpiar
-  document.getElementById("fechaPago").value = "";
-  document.getElementById("montoPago").value = "";
-  document.getElementById("tipoPago").value = "";
-}
-
-function actualizarResumenPagos() {
-  const tabla = document.getElementById("tablaPagos");
-  tabla.innerHTML = "";
-
-  let totalPagado = 0;
-  pagos.forEach(pago => {
-    totalPagado += pago.monto;
-    const row = document.createElement("tr");
-    row.innerHTML = `<td>${pago.fecha}</td><td>${pago.tipo}</td><td>$${pago.monto.toFixed(2)}</td>`;
-    tabla.appendChild(row);
-  });
-
-  const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
-  const saldo = total - totalPagado;
-
-  document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
-  document.getElementById("montoAbono").value = totalPagado.toFixed(2);
-  document.getElementById("saldoPendiente").textContent = saldo.toFixed(2);
-}
-
-// Calcular cuando cambie algún campo
-["cantidadAdultos", "cantidadNinos", "cantidadBebes", "precioAdulto", "precioNino", "precioBebe"].forEach(id => {
-  document.getElementById(id).addEventListener("input", calcularTotal);
+    document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
+    document.getElementById("saldoPendiente").textContent = saldoPendiente.toFixed(2);
+  }
 });
   async function generarCodigoReserva() {
   const año = new Date().getFullYear();
