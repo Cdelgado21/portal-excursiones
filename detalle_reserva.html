@@ -281,28 +281,11 @@
      <textarea id="noIncluye" class="autoresize" rows="5" placeholder="Servicios no incluidos" style="resize: none; font-family: Arial, sans-serif;"></textarea>
     </div>
   </div>
+<h3>Tours Opcionales</h3>
+<div id="toursOpcionalesLista"></div>
 
- <div style="margin-top: 25px;">
-  <label style="font-weight: bold; color: #02535a; font-size: 18px;">Tours Opcionales</label>
-
-  <div id="toursOpcionalesLista" style="
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 12px;
-    padding: 15px;
-    background: white;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    font-family: Arial;
-    margin-top: 10px;">
-    <!-- Aquí se insertarán los tours -->
-  </div>
-
-  <div style="margin-top: 15px;">
-    <label for="observacionesOpcionales" style="font-weight: bold; color: #02535a;">Observaciones sobre Tours Opcionales</label>
-    <textarea id="observacionesOpcionales" rows="3" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #ccc;" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente."></textarea>
-  </div>
-</div>
+<label for="observacionesOpcionales"><strong>Observaciones sobre Tours Opcionales</strong></label>
+<textarea id="observacionesOpcionales" rows="2" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente." style="width: 100%; font-family: Arial; margin-top: 8px;"></textarea>
 </section>
 <!-- Script -->
 <script>
@@ -542,30 +525,32 @@ const snapshot = await ref.get();
         document.getElementById("noIncluye").value = data.no_incluye || "";
 
         // Tours opcionales
-        const lista = document.getElementById("toursOpcionalesLista");
-        lista.innerHTML = "";
+     const lista = document.getElementById("toursOpcionalesLista");
+lista.innerHTML = "";
 
-      if (Array.isArray(data.tours_opcionales)) {
-  const lista = document.getElementById("toursOpcionalesLista");
-  lista.innerHTML = ""; // Limpiar antes de insertar
-
+if (Array.isArray(data.tours_opcionales)) {
   data.tours_opcionales.forEach((item, i) => {
     const div = document.createElement("div");
-    div.style.display = "flex";
-    div.style.alignItems = "center";
-    div.style.gap = "10px";
-    div.style.border = "1px solid #e0e0e0";
-    div.style.borderRadius = "8px";
-    div.style.padding = "10px";
-    div.style.backgroundColor = "#f8f9f9";
+    div.style = `
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      padding: 10px 15px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-family: Arial;
+    `;
 
- div.innerHTML = `
-  <label style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-    <span style="font-weight: bold; color: #02535a; flex: 1; white-space: normal;">${item.nombre}</span>
-    <span style="color: #333; margin-left: 15px; white-space: nowrap;">$${item.precio}</span>
-    <input type="checkbox" name="opcionales" value="${item.nombre}" style="margin-left: 15px;">
-  </label>
-`;
+    div.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <input type="checkbox" id="opcional-${i}" name="opcionales" value="${item.nombre}">
+        <label for="opcional-${i}" style="font-weight: bold; color: #02535a;">${item.nombre}</label>
+      </div>
+      <div style="font-weight: bold;">$${item.precio}</div>
+    `;
+
     lista.appendChild(div);
   });
           }
