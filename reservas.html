@@ -104,7 +104,7 @@
   <td>${(data.pasajeros?.length || 0) + 1}</td>
   <td>${data.fechaViaje || '-'}</td>
             <td class="acciones">
-              <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?id=${doc.id}'">✏️</button>
+              <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
               <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
             </td>
           `;
