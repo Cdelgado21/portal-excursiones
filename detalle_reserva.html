@@ -49,6 +49,12 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    .campoInput {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
   </style>
 </head>
 <body>
@@ -338,79 +344,88 @@
     <textarea id="obs_tours_opcionales" rows="2" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente." style="width: 100%; padding: 8px;"></textarea>
   </div>
 </section>
-<section>
-  <h2>Resumen de Inversión</h2>
+<section style="margin-top: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+  <h2 style="background-color: #02535a; color: white; padding: 10px; border-radius: 6px;">Resumen de Inversión</h2>
 
-  <div style="display: flex; flex-wrap: wrap; gap: 15px;">
-    <div style="flex: 1;">
+  <!-- Cantidades -->
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
+    <div style="flex: 1; min-width: 200px;">
       <label>Cantidad de Adultos</label>
-     <input type="number" id="cantidadAdultos" value="0" oninput="calcularTotalGeneral()"
+      <input type="number" id="cantidadAdultos" value="0" oninput="calcularTotalGeneral()" class="campoInput">
     </div>
-    <div style="flex: 1;">
+    <div style="flex: 1; min-width: 200px;">
       <label>Cantidad de Niños</label>
-      <input type="number" id="cantidadNinos" value="0" oninput="calcularTotalGeneral()">
+      <input type="number" id="cantidadNinos" value="0" oninput="calcularTotalGeneral()" class="campoInput">
     </div>
-    <div style="flex: 1;">
+    <div style="flex: 1; min-width: 200px;">
       <label>Cantidad de Bebés</label>
-  <input type="number" id="cantidadBebes" value="0" oninput="calcularTotalGeneral()">
+      <input type="number" id="cantidadBebes" value="0" oninput="calcularTotalGeneral()" class="campoInput">
     </div>
   </div>
 
-  <div style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
-    <div style="flex: 1;">
+  <!-- Precios -->
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
+    <div style="flex: 1; min-width: 200px;">
       <label>Precio por Adulto</label>
-    <input type="number" id="precioAdulto" value="0" oninput="calcularTotalGeneral()">
+      <input type="number" id="precioAdulto" value="0" oninput="calcularTotalGeneral()" class="campoInput">
     </div>
-    <div style="flex: 1;">
+    <div style="flex: 1; min-width: 200px;">
       <label>Precio por Niño</label>
-  <input type="number" id="precioNino" value="0" oninput="calcularTotalGeneral()">
+      <input type="number" id="precioNino" value="0" oninput="calcularTotalGeneral()" class="campoInput">
     </div>
-    <div style="flex: 1;">
+    <div style="flex: 1; min-width: 200px;">
       <label>Precio por Bebé</label>
-      <input type="number" id="precioBebe" value="0" oninput="calcularTotalGeneral()">
+      <input type="number" id="precioBebe" value="0" oninput="calcularTotalGeneral()" class="campoInput">
     </div>
   </div>
 
+  <!-- Total General -->
   <div style="margin-top: 15px;">
     <label><strong>Total General</strong></label>
-    <input type="text" id="totalGeneral" readonly>
+    <input type="text" id="totalGeneral" readonly class="campoInput" style="background: #e0f7fa; font-weight: bold;">
   </div>
 
-  <hr>
+  <hr style="margin: 25px 0;">
 
   <h3>Pagos Realizados</h3>
-  <div style="display: flex; gap: 15px;">
-    <input type="date" id="fechaPago">
-    <input type="number" placeholder="Monto" id="montoPago">
-    <select id="tipoPago">
+  <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+    <input type="date" id="fechaPago" class="campoInput">
+    <input type="number" placeholder="Monto" id="montoPago" class="campoInput">
+    <select id="tipoPago" class="campoInput">
       <option value="">Tipo de Pago</option>
       <option value="Efectivo">Efectivo</option>
-      <option value="Tarjetas">Tarjeta</option>
+      <option value="Tarjeta">Tarjeta</option>
       <option value="Transferencia">Transferencia</option>
     </select>
-    <button onclick="agregarPago()">Agregar Pago</button>
+    <button onclick="agregarPago()" style="padding: 8px 14px; background: #02535a; color: white; border: none; border-radius: 6px;">Agregar Pago</button>
   </div>
 
-  <table style="width: 100%; margin-top: 15px; border-collapse: collapse;">
+  <!-- Tabla de pagos -->
+  <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
     <thead style="background: #02535a; color: white;">
       <tr>
-        <th>Fecha</th>
-        <th>Tipo</th>
-        <th>Monto</th>
+        <th style="padding: 8px;">Fecha</th>
+        <th style="padding: 8px;">Tipo</th>
+        <th style="padding: 8px;">Monto</th>
       </tr>
     </thead>
     <tbody id="tablaPagos"></tbody>
   </table>
 
-  <div style="margin-top: 10px;">
+  <!-- Totales -->
+  <div style="margin-top: 15px;">
     <p><strong>Total Pagado:</strong> $<span id="totalPagado">0</span></p>
     <input type="hidden" id="montoAbono" value="0">
     <p><strong>Saldo Pendiente:</strong> $<span id="saldoPendiente">0</span></p>
   </div>
 </section>
-<button id="btnGuardarReserva" style="background-color: #02535a; color: white; padding: 12px 20px; border: none; border-radius: 6px; font-weight: bold;">
-  💾 Guardar Reserva
-</button>
+
+<!-- Botón final -->
+<div style="margin-top: 20px;">
+  <button id="btnGuardarReserva" style="background-color: #02535a; color: white; padding: 12px 20px; border: none; border-radius: 6px; font-weight: bold;">
+    💾 Guardar Reserva
+  </button>
+</div>
 <script>
 const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
