@@ -262,11 +262,30 @@
       <input id="duracion" readonly placeholder="Ej. 5 días y 4 noches" style="width: 100%; padding: 8px;">
     </div>
   </div>
-  <div id="hotelesContainer"></div>
-  <button onclick="abrirModalHotel()" style="margin-top: 15px; background-color: #02535a; color: white; border: none; padding: 10px 16px; border-radius: 8px;">
-    ➕ Agregar Hotel
-  </button>
-</section>
+<!-- Botón Agregar hotel -->
+<button onclick="abrirModalHotel()" style="margin-top: 15px; background-color: #02535a; color: white; border: none; padding: 10px 16px; border-radius: 8px;">
+  ➕ Agregar Hotel
+</button>
+
+<!-- Tabla fuera del modal, en la página -->
+<div id="hotelesResumenContainer" style="margin-top: 20px;">
+  <h3>Resumen de Hoteles</h3>
+  <table id="tablaHoteles" style="width: 100%; border-collapse: collapse;">
+    <thead style="background: #02535a; color: white;">
+      <tr>
+        <th>Hotel</th>
+        <th>Check-in</th>
+        <th>Check-out</th>
+        <th>Tipo de Habitación</th>
+        <th>Cantidad</th>
+        <th>Observaciones</th>
+      </tr>
+    </thead>
+    <tbody id="tablaHotelesBody">
+      <!-- Aquí se insertarán las filas -->
+    </tbody>
+  </table>
+</div>
 <div id="modalHotel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
   <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; position:relative;">
     <h3 style="margin-top:0; color:#02535a;">Agregar Hotel</h3>
@@ -286,21 +305,7 @@
       <option value="Triple">Triple</option>
       <option value="Cuádruple">Cuádruple</option>
     </select>
-<table style="width: 100%; border-collapse: collapse;" id="tablaHoteles">
-  <thead style="background: #02535a; color: white;">
-    <tr>
-      <th>Hotel</th>
-      <th>Check-in</th>
-      <th>Check-out</th>
-      <th>Tipo de Habitación</th>
-      <th>Cantidad</th>
-      <th>Observaciones</th>
-    </tr>
-  </thead>
-  <tbody id="tablaHotelesBody">
-    <!-- Se insertarán aquí -->
-  </tbody>
-</table>
+
     <label>Cantidad</label>
     <input type="number" id="modal_cantidadHabitacion_hotel" placeholder="Ej. 2" style="width:100%; margin-bottom:10px; padding:8px;">
 
@@ -313,13 +318,7 @@
     </div>
   </div>
 </div>
-</table>
-
-    </div>
-  </div>
-</div>
-
-  <!-- Fila 4: Itinerario -->
+    <!-- Fila 4: Itinerario -->
   <div style="margin-top: 20px;">
     <label for="itinerario"><strong>Itinerario</strong></label>
     <textarea id="itinerario" rows="4" placeholder="Ej. Día 1 Llegada..." style="width: 100%; padding: 8px;"></textarea>
