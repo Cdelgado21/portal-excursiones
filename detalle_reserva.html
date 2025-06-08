@@ -291,7 +291,9 @@
     <h3 style="margin-top:0; color:#02535a;">Agregar Hotel</h3>
 
     <label>Nombre del Hotel</label>
-    <input type="text" id="modal_nombre_hotel" placeholder="Ej. Hotel Estelar Medellín" style="width:100%; margin-bottom:10px; padding:8px;">
+<select id="modal_nombre_hotel" style="width:100%; margin-bottom:10px; padding:8px;">
+  <option value="">Seleccione un hotel</option>
+</select>
 
     <label>Hora Check-in</label>
    <input type="text" id="modal_checkin" placeholder="Ej. 03:00 PM">
@@ -612,17 +614,33 @@ window.cargarInfoTour = cargarInfoTour;
     textarea.style.height = (textarea.scrollHeight + 2) + 'px'; // ajuste real
   }
 function abrirModalHotel() {
-  const select = document.getElementById("modal_nombre_hotel");
-  select.innerHTML = "";
+  const destinoSeleccionado = document.getElementById("destino").value;
+  const selectHotel = document.getElementById("modal_nombre_hotel");
 
-  if (Array.isArray(window.hotelesDelDestino)) {
-    window.hotelesDelDestino.forEach(hotel => {
-      const opt = document.createElement("option");
-      opt.value = hotel.nombre;
-      opt.textContent = hotel.nombre;
-      select.appendChild(opt);
-    });
+  if (!destinoSeleccionado) {
+    alert("Por favor selecciona un destino antes de agregar un hotel.");
+    return;
   }
+
+  selectHotel.innerHTML = "<option value=''>Cargando hoteles...</option>";
+
+  db.collection("tours").doc(destinoSeleccionado).get().then(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      selectHotel.innerHTML = "<option value=''>Seleccione un hotel</option>";
+
+      if (Array.isArray(data.hoteles)) {
+        data.hoteles.forEach(hotel => {
+          const opt = document.createElement("option");
+          opt.value = hotel.nombre || hotel;
+          opt.textContent = hotel.nombre || hotel;
+          selectHotel.appendChild(opt);
+        });
+      }
+    } else {
+      selectHotel.innerHTML = "<option value=''>No se encontraron hoteles</option>";
+    }
+  });
 
   document.getElementById("modalHotel").style.display = "flex";
 }
