@@ -451,6 +451,8 @@ const firebaseConfig = {
       nuevoNumero = counterDoc.data().ultimo || 0;
       nuevoNumero++;
     }
+ console.log(">> NUEVO NUMERO GENERADO:", nuevoNumero);
+    
 
     const codigo = `ED-${String(nuevoNumero).padStart(3, "0")}-${añoActual}`;
     await counterRef.set({ ultimo: nuevoNumero }, { merge: true });
@@ -460,6 +462,10 @@ const firebaseConfig = {
   async function guardarReserva() {
     try {
       const { codigo, numero, año } = await generarCodigoReserva();
+      if (!codigo || !numero || !año) {
+  alert("⚠️ No se pudo generar el código de reserva. Intenta nuevamente.");
+  return;
+}
 
       // Obtenés datos desde tu formulario (aquí algunos ejemplos)
       const nombreTitular = document.getElementById("nombreTitular").value || "";
