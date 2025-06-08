@@ -553,45 +553,45 @@ const snapshot = await ref.get();
 }
 
   // Cargar la info completa del tour al seleccionar un destino
- function cargarInfoTour(destinoId) {
+function cargarInfoTour(destinoId) {
   if (!destinoId) return;
 
-  const ref = db.collection("tours").doc(destinoId);
-  ref.get().then(doc => {
-    if (doc.exists) {
-      const data = doc.data();
-      document.getElementById("duracion").value = data.duracion || "";
-      document.getElementById("hotelNombre").value = data.hoteles?.[0]?.nombre || "";
-      document.getElementById("itinerario").value = data.itinerario_tours || "";
+  db.collection("tours").doc(destinoId).get()
+    .then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
+        document.getElementById("duracion").value = data.duracion || "";
+        document.getElementById("hotelNombre").value = data.hoteles?.[0]?.nombre || "";
+        document.getElementById("itinerario").value = data.itinerario_tours || "";
 
-      const lista = document.getElementById("toursOpcionalesLista");
-      lista.innerHTML = "";
-      if (Array.isArray(data.tours_opcionales)) {
-        data.tours_opcionales.forEach(item => {
-          const card = document.createElement("div");
-          card.style = `
-            border: 1px solid #ccc;
-            padding: 10px 15px;
-            border-radius: 8px;
-            background: #f9f9f9;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 250px;
-          `;
-          card.innerHTML = `
-            <input type="checkbox" name="opcionales" value="${item.nombre}">
-            <span><strong>${item.nombre}</strong> - $${item.precio}</span>
-          `;
-          lista.appendChild(card);
-        });
+        const lista = document.getElementById("toursOpcionalesLista");
+        lista.innerHTML = "";
+        if (Array.isArray(data.tours_opcionales)) {
+          data.tours_opcionales.forEach(item => {
+            const card = document.createElement("div");
+            card.style = `
+              border: 1px solid #ccc;
+              padding: 10px 15px;
+              border-radius: 8px;
+              background: #f9f9f9;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              min-width: 250px;
+            `;
+            card.innerHTML = `
+              <input type="checkbox" name="opcionales" value="${item.nombre}">
+              <span><strong>${item.nombre}</strong> - $${item.precio}</span>
+            `;
+            lista.appendChild(card);
+          });
+        }
       }
-    }
-  });
-}
-    } catch (e) {
+    })
+    .catch(e => {
       console.error("Error al cargar información del tour:", e);
-    }
+    });
+}
   }
   function autoResizeTextarea(textarea) {
     textarea.style.height = 'auto'; // reset
@@ -626,6 +626,39 @@ function agregarHabitacionElegante() {
   `;
 
   container.appendChild(div);
+}
+  function abrirModalHabitacion() {
+  document.getElementById("modalHabitacion").style.display = "flex";
+}
+
+function cerrarModalHabitacion() {
+  document.getElementById("modalHabitacion").style.display = "none";
+  document.getElementById("modal_tipoHabitacion").value = "Doble";
+  document.getElementById("modal_cantidadHabitacion").value = "";
+  document.getElementById("modal_observacionesHabitacion").value = "";
+}
+
+function guardarHabitacionDesdeModal() {
+  const tipo = document.getElementById("modal_tipoHabitacion").value;
+  const cantidad = document.getElementById("modal_cantidadHabitacion").value;
+  const obs = document.getElementById("modal_observacionesHabitacion").value;
+
+  if (!tipo || !cantidad) {
+    alert("Por favor completá todos los campos.");
+    return;
+  }
+
+  const contenedor = document.getElementById("habitacionesContainer");
+  const div = document.createElement("div");
+  div.style = `
+    background:#f0f7f7; padding:10px 15px;
+    border-left: 4px solid #02535a;
+    border-radius: 6px;
+  `;
+  div.innerHTML = `<strong>${cantidad}x ${tipo}</strong><br><small>${obs || ''}</small>`;
+  contenedor.appendChild(div);
+
+  cerrarModalHabitacion();
 }
   // Aplicar a todos los que tengan la clase autoresize
     document.querySelectorAll('.autoresize').forEach(textarea => {
