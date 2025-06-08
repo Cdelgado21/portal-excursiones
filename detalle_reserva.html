@@ -592,6 +592,8 @@ function cargarInfoTour(destinoId) {
     });
 }
   }
+  window.cargarInfoTour = cargarInfoTour;
+  
   function autoResizeTextarea(textarea) {
     textarea.style.height = 'auto'; // reset
     textarea.style.height = (textarea.scrollHeight + 2) + 'px'; // ajuste real
@@ -664,7 +666,6 @@ function guardarHabitacionDesdeModal() {
       textarea.addEventListener('input', () => autoResizeTextarea(textarea));
       autoResizeTextarea(textarea); // inicial
     });
- window.cargarInfoTour = cargarInfoTour; // Exponer globalmente
   // Ejecutar al cargar la página
 document.addEventListener("DOMContentLoaded", () => {
   cargarDestinos();
