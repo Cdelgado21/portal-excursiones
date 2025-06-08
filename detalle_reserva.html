@@ -338,7 +338,65 @@
     <textarea id="obs_tours_opcionales" rows="2" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente." style="width: 100%; padding: 8px;"></textarea>
   </div>
 </section>
+<section>
+  <h2>Resumen de Inversión</h2>
 
+  <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+    <div style="flex: 1;">
+      <label for="cantidad_adultos">Cantidad de Adultos</label>
+      <input type="number" id="cantidad_adultos" placeholder="Ej. 2" onchange="calcularTotales()">
+    </div>
+
+    <div style="flex: 1;">
+      <label for="cantidad_ninos">Cantidad de Niños</label>
+      <input type="number" id="cantidad_ninos" placeholder="Ej. 1" onchange="calcularTotales()">
+    </div>
+
+    <div style="flex: 1;">
+      <label for="cantidad_bebes">Cantidad de Bebés</label>
+      <input type="number" id="cantidad_bebes" placeholder="Ej. 0" onchange="calcularTotales()">
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+    <div style="flex: 1;">
+      <label for="precio_adulto">Precio por Adulto</label>
+      <input type="number" id="precio_adulto" placeholder="Ej. 850" onchange="calcularTotales()">
+    </div>
+
+    <div style="flex: 1;">
+      <label for="precio_nino">Precio por Niño</label>
+      <input type="number" id="precio_nino" placeholder="Ej. 650" onchange="calcularTotales()">
+    </div>
+
+    <div style="flex: 1;">
+      <label for="precio_bebe">Precio por Bebé</label>
+      <input type="number" id="precio_bebe" placeholder="Ej. 0" onchange="calcularTotales()">
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+    <div style="flex: 1;">
+      <label for="total_general">Total General</label>
+      <input type="number" id="total_general" readonly style="background-color: #e6f0f0;">
+    </div>
+
+    <div style="flex: 1;">
+      <label for="abono">Monto de Reserva (Abono)</label>
+      <input type="number" id="abono" onchange="calcularTotales()">
+    </div>
+
+    <div style="flex: 1;">
+      <label for="saldo_pendiente">Saldo Pendiente</label>
+      <input type="number" id="saldo_pendiente" readonly style="background-color: #fff3e0;">
+    </div>
+  </div>
+
+  <div style="margin-top: 15px;">
+    <label for="resumen_inversion"><strong>Resumen Detallado</strong></label>
+    <textarea id="resumen_inversion" readonly rows="5" style="width: 100%; background-color: #f4f4f4;"></textarea>
+  </div>
+</section>
 
 <script>
 const firebaseConfig = {
@@ -676,8 +734,38 @@ function guardarHotelModal() {
   tbody.appendChild(row);
   cerrarModalHotel();
 }
+function calcularTotales() {
+  const adultos = parseInt(document.getElementById("cantidad_adultos").value) || 0;
+  const ninos = parseInt(document.getElementById("cantidad_ninos").value) || 0;
+  const bebes = parseInt(document.getElementById("cantidad_bebes").value) || 0;
 
+  const precioAdulto = parseFloat(document.getElementById("precio_adulto").value) || 0;
+  const precioNino = parseFloat(document.getElementById("precio_nino").value) || 0;
+  const precioBebe = parseFloat(document.getElementById("precio_bebe").value) || 0;
 
+  const totalAdultos = adultos * precioAdulto;
+  const totalNinos = ninos * precioNino;
+  const totalBebes = bebes * precioBebe;
+
+  const totalGeneral = totalAdultos + totalNinos + totalBebes;
+  document.getElementById("total_general").value = totalGeneral.toFixed(2);
+
+  const abono = parseFloat(document.getElementById("abono").value) || 0;
+  const saldo = totalGeneral - abono;
+  document.getElementById("saldo_pendiente").value = saldo.toFixed(2);
+
+  // Desglose en textarea
+  let resumen = "";
+  if (adultos > 0) resumen += `${adultos} Adulto(s) × $${precioAdulto.toFixed(2)} = $${totalAdultos.toFixed(2)}\n`;
+  if (ninos > 0) resumen += `${ninos} Niño(s) × $${precioNino.toFixed(2)} = $${totalNinos.toFixed(2)}\n`;
+  if (bebes > 0) resumen += `${bebes} Bebé(s) × $${precioBebe.toFixed(2)} = $${totalBebes.toFixed(2)}\n`;
+
+  resumen += `\n💰 Total: $${totalGeneral.toFixed(2)}\n`;
+  resumen += `💳 Abono: $${abono.toFixed(2)}\n`;
+  resumen += `📌 Saldo: $${saldo.toFixed(2)}`;
+
+  document.getElementById("resumen_inversion").value = resumen;
+}
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
   const tieneFilas = tabla.querySelector("tbody").children.length > 0;
