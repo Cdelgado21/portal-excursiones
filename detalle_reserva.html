@@ -459,54 +459,84 @@ const firebaseConfig = {
     return { codigo, numero: nuevoNumero, año: añoActual };
   }
 
-  async function guardarReserva() {
-    try {
-      const { codigo, numero, año } = await generarCodigoReserva();
-      if (!codigo || !numero || !año) {
-  alert("⚠️ No se pudo generar el código de reserva. Intenta nuevamente.");
-  return;
+async function guardarReserva() {
+  try {
+    const { codigo, numero, año } = await generarCodigoReserva();
+    if (!codigo || !numero || !año) {
+      alert("⚠️ No se pudo generar el código de reserva. Intenta nuevamente.");
+      return;
+    }
+
+    // Obtener datos básicos
+    const nombreTitular = document.getElementById("nombreTitular").value || "";
+    const cedula = document.getElementById("cedulaTitular").value || "";
+    const correo = document.getElementById("correoTitular").value || "";
+    const telefono = document.getElementById("telefonoTitular").value || "";
+    const fechaReserva = new Date().toISOString().split("T")[0];
+    const destino = document.getElementById("destino").value || "";
+    const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
+    const pagos = window.listaPagos || [];
+    const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
+    const saldo = total - abono;
+
+    // Crear estructura inicial
+    const datos = {
+      codigo,
+      numero,
+      año,
+      nombreTitular,
+      cedula,
+      correo,
+      telefono,
+      fechaReserva,
+      destino,
+      total,
+      abono,
+      saldo,
+      pagos,
+      vuelosIda: document.getElementById("vuelosIdaResumen")?.value || "", 
+      vuelosRegreso: document.getElementById("vuelosRegresoResumen")?.value || "",
+      vuelosIntermedios: [],
+      pasajeros: [],
+      equipaje: document.getElementById("equipaje")?.value || "",
+      toursOpcionales: Array.from(document.querySelectorAll("input[name='opcionales']:checked")).map(e => e.value)
+    };
+
+    // Agregar pasajeros
+    document.querySelectorAll(".tarjeta-pasajero").forEach(p => {
+      datos.pasajeros.push({
+        nombre: p.querySelector(".nombrePasajero")?.value || "",
+        documento: p.querySelector(".documentoPasajero")?.value || "",
+        vencimiento: p.querySelector(".vencimientoPasaportePasajero")?.value || "",
+        nacimiento: p.querySelector(".fechaNacimientoPasajero")?.value || "",
+        nacionalidad: p.querySelector(".nacionalidadPasajero")?.value || "",
+        genero: p.querySelector(".generoPasajero")?.value || ""
+      });
+    });
+
+    // Agregar vuelos intermedios
+    document.querySelectorAll("#vuelosIntermediosContainer > div").forEach(vuelo => {
+      datos.vuelosIntermedios.push({
+        aerolinea: vuelo.querySelector("#aerolineaIda")?.value || "",
+        fecha: vuelo.querySelector("#fechaIda")?.value || "",
+        vuelo: vuelo.querySelector("#vueloIda")?.value || "",
+        codigo: vuelo.querySelector("input[placeholder^='Ej. AUC']")?.value || "",
+        descripcion: vuelo.nextElementSibling?.value || ""
+      });
+    });
+
+    // Guardar en Firebase solo después de armar todo el objeto
+    await db.collection("reservas").doc(codigo).set(datos);
+
+    alert("✅ Reserva guardada correctamente como " + codigo);
+  } catch (e) {
+    console.error("Error al guardar reserva:", e);
+    alert("❌ Ocurrió un error al guardar la reserva.");
+  }
 }
 
-      // Obtenés datos desde tu formulario (aquí algunos ejemplos)
-      const nombreTitular = document.getElementById("nombreTitular").value || "";
-      const cedula = document.getElementById("cedulaTitular").value || "";
-      const correo = document.getElementById("correoTitular").value || "";
-      const telefono = document.getElementById("telefonoTitular").value || "";
-      const fechaReserva = new Date().toISOString().split("T")[0];
-      const destino = document.getElementById("destino").value || "";
-      const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
-      const pagos = window.listaPagos || []; // asegurate de tener esta lista global
-      const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
-      const saldo = total - abono;
-
-      // Armamos el objeto
-      const datos = {
-        codigo,
-        numero,
-        año,
-        nombreTitular,
-        cedula,
-        correo,
-        telefono,
-        fechaReserva,
-        destino,
-        total,
-        abono,
-        saldo,
-        pagos
-      };
-
-      // Guardamos en Firebase
-      await db.collection("reservas").doc(codigo).set(datos);
-      alert("Reserva guardada correctamente como " + codigo);
-    } catch (e) {
-      console.error("Error al guardar reserva:", e);
-      alert("Ocurrió un error al guardar la reserva.");
-    }
-  }
-
-  // Asociar al botón
-  document.getElementById("btnGuardarReserva").addEventListener("click", guardarReserva);
+// Asociar al botón
+document.getElementById("btnGuardarReserva").addEventListener("click", guardarReserva);
   
   function calcularTotalGeneral() {
     const cantidadAdultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
