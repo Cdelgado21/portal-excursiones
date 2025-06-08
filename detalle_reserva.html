@@ -953,13 +953,101 @@ function calcularTotal() {
       autoResizeTextarea(textarea); // inicial
     });
   // Ejecutar al cargar la página
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   cargarDestinos();
   document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
   window.abrirModalHotel = abrirModalHotel;
-window.cerrarModalHotel = cerrarModalHotel;
-window.guardarHotelModal = guardarHotelModal;
+  window.cerrarModalHotel = cerrarModalHotel;
+  window.guardarHotelModal = guardarHotelModal;
+
+  // 🔍 Detectar si hay un código en la URL
+  const params = new URLSearchParams(window.location.search);
+  const codigoReserva = params.get("codigo");
+
+  if (codigoReserva) {
+    await cargarReservaExistente(codigoReserva); // Función que definís aparte (ver abajo)
+  }
 });
+  async function cargarReservaExistente(codigo) {
+  try {
+    const doc = await db.collection("reservas").doc(codigo).get();
+    if (!doc.exists) {
+      alert("❌ No se encontró la reserva.");
+      return;
+    }
+
+    const data = doc.data();
+
+    // Rellenar campos principales
+    document.getElementById("nombreTitular").value = data.nombreTitular || "";
+    document.getElementById("cedulaTitular").value = data.cedula || "";
+    document.getElementById("correoTitular").value = data.correo || "";
+    document.getElementById("telefonoTitular").value = data.telefono || "";
+    document.getElementById("totalGeneral").value = data.total || "";
+    document.getElementById("equipaje").value = data.equipaje || "";
+    document.getElementById("destino").value = data.destino || "";
+    document.getElementById("vuelosIdaResumen").value = data.vuelosIda || "";
+    document.getElementById("vuelosRegresoResumen").value = data.vuelosRegreso || "";
+
+    // ✅ Tours opcionales
+    if (Array.isArray(data.toursOpcionales)) {
+      data.toursOpcionales.forEach(nombre => {
+        const checkbox = document.querySelector(`input[name="opcionales"][value="${nombre}"]`);
+        if (checkbox) checkbox.checked = true;
+      });
+    }
+
+    // ✅ Pagos
+    if (Array.isArray(data.pagos)) {
+      window.listaPagos = data.pagos;
+      const tabla = document.getElementById("tablaPagos");
+      data.pagos.forEach(p => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${p.fecha}</td>
+          <td>${p.tipo}</td>
+          <td>$${p.monto.toFixed(2)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+      actualizarTotales();
+    }
+
+    // ✅ Pasajeros
+    if (Array.isArray(data.pasajeros)) {
+      data.pasajeros.forEach(p => {
+        agregarPasajero();
+        const cont = document.querySelectorAll(".tarjeta-pasajero");
+        const ult = cont[cont.length - 1];
+        ult.querySelector(".nombrePasajero").value = p.nombre || "";
+        ult.querySelector(".documentoPasajero").value = p.documento || "";
+        ult.querySelector(".vencimientoPasaportePasajero").value = p.vencimiento || "";
+        ult.querySelector(".fechaNacimientoPasajero").value = p.nacimiento || "";
+        ult.querySelector(".nacionalidadPasajero").value = p.nacionalidad || "";
+        ult.querySelector(".generoPasajero").value = p.genero || "";
+      });
+    }
+
+    // ✅ Vuelos intermedios
+    if (Array.isArray(data.vuelosIntermedios)) {
+      data.vuelosIntermedios.forEach(v => {
+        agregarVueloIntermedio();
+        const vuelos = document.querySelectorAll("#vuelosIntermediosContainer > div");
+        const ult = vuelos[vuelos.length - 1];
+        ult.querySelector("#aerolineaIda").value = v.aerolinea || "";
+        ult.querySelector("#fechaIda").value = v.fecha || "";
+        ult.querySelector("#vueloIda").value = v.vuelo || "";
+        ult.querySelector("input[placeholder^='Ej. AUC']").value = v.codigo || "";
+        ult.nextElementSibling.value = v.descripcion || "";
+      });
+    }
+
+    calcularTotalGeneral(); // para actualizar saldo
+  } catch (e) {
+    console.error("❌ Error al cargar reserva:", e);
+    alert("Error al cargar la reserva.");
+  }
+}
 </script>
 
 </body>
