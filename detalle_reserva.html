@@ -968,7 +968,7 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
   await cargarReservaExistente(codigo); // ✅ usa directamente la variable que sí está definida
 }
 });
-  async function cargarReservaExistente(codigo) {
+ async function cargarReservaExistente(codigo) {
   try {
     const doc = await db.collection("reservas").doc(codigo).get();
     if (!doc.exists) {
@@ -978,16 +978,27 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
 
     const data = doc.data();
 
-    // Rellenar campos principales
-    document.getElementById("nombreTitular").value = data.nombreTitular || "";
-    document.getElementById("cedulaTitular").value = data.cedula || "";
-    document.getElementById("correoTitular").value = data.correo || "";
-    document.getElementById("telefonoTitular").value = data.telefono || "";
-    document.getElementById("totalGeneral").value = data.total || "";
-    document.getElementById("equipaje").value = data.equipaje || "";
-    document.getElementById("destino").value = data.destino || "";
-    document.getElementById("vuelosIdaResumen").value = data.vuelosIda || "";
-    document.getElementById("vuelosRegresoResumen").value = data.vuelosRegreso || "";
+    // 🧾 Campos principales (con validación)
+    const mapFields = {
+      nombreTitular: data.nombreTitular,
+      cedulaTitular: data.cedula,
+      correoTitular: data.correo,
+      telefonoTitular: data.telefono,
+      totalGeneral: data.total,
+      equipaje: data.equipaje,
+      destino: data.destino,
+    };
+
+    for (const [id, value] of Object.entries(mapFields)) {
+      const el = document.getElementById(id);
+      if (el) el.value = value || "";
+    }
+
+    const ida = document.getElementById("vuelosIdaResumen");
+    if (ida) ida.value = data.vuelosIda || "";
+
+    const regreso = document.getElementById("vuelosRegresoResumen");
+    if (regreso) regreso.value = data.vuelosRegreso || "";
 
     // ✅ Tours opcionales
     if (Array.isArray(data.toursOpcionales)) {
@@ -1019,12 +1030,14 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
         agregarPasajero();
         const cont = document.querySelectorAll(".tarjeta-pasajero");
         const ult = cont[cont.length - 1];
-        ult.querySelector(".nombrePasajero").value = p.nombre || "";
-        ult.querySelector(".documentoPasajero").value = p.documento || "";
-        ult.querySelector(".vencimientoPasaportePasajero").value = p.vencimiento || "";
-        ult.querySelector(".fechaNacimientoPasajero").value = p.nacimiento || "";
-        ult.querySelector(".nacionalidadPasajero").value = p.nacionalidad || "";
-        ult.querySelector(".generoPasajero").value = p.genero || "";
+        if (ult) {
+          ult.querySelector(".nombrePasajero")?.value = p.nombre || "";
+          ult.querySelector(".documentoPasajero")?.value = p.documento || "";
+          ult.querySelector(".vencimientoPasaportePasajero")?.value = p.vencimiento || "";
+          ult.querySelector(".fechaNacimientoPasajero")?.value = p.nacimiento || "";
+          ult.querySelector(".nacionalidadPasajero")?.value = p.nacionalidad || "";
+          ult.querySelector(".generoPasajero")?.value = p.genero || "";
+        }
       });
     }
 
@@ -1034,15 +1047,19 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
         agregarVueloIntermedio();
         const vuelos = document.querySelectorAll("#vuelosIntermediosContainer > div");
         const ult = vuelos[vuelos.length - 1];
-        ult.querySelector("#aerolineaIda").value = v.aerolinea || "";
-        ult.querySelector("#fechaIda").value = v.fecha || "";
-        ult.querySelector("#vueloIda").value = v.vuelo || "";
-        ult.querySelector("input[placeholder^='Ej. AUC']").value = v.codigo || "";
-        ult.nextElementSibling.value = v.descripcion || "";
+        if (ult) {
+          ult.querySelector("#aerolineaIda")?.value = v.aerolinea || "";
+          ult.querySelector("#fechaIda")?.value = v.fecha || "";
+          ult.querySelector("#vueloIda")?.value = v.vuelo || "";
+          ult.querySelector("input[placeholder^='Ej. AUC']")?.value = v.codigo || "";
+          const textarea = ult.nextElementSibling;
+          if (textarea && textarea.tagName === "TEXTAREA") textarea.value = v.descripcion || "";
+        }
       });
     }
 
-    calcularTotalGeneral(); // para actualizar saldo
+    calcularTotalGeneral();
+
   } catch (e) {
     console.error("❌ Error al cargar reserva:", e);
     alert("Error al cargar la reserva.");
