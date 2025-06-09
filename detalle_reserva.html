@@ -954,7 +954,7 @@ function calcularTotal() {
     });
   // Ejecutar al cargar la página
 document.addEventListener("DOMContentLoaded", async () => {
-  cargarDestinos();
+  await cargarDestinos(); // 👈 importante el await
   document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
   window.abrirModalHotel = abrirModalHotel;
   window.cerrarModalHotel = cerrarModalHotel;
