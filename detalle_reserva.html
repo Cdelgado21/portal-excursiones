@@ -220,15 +220,6 @@
 <label for="infoVueloRegreso">Información del Vuelo de Regreso</label>
 <textarea id="infoVueloRegreso" rows="3" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM"></textarea>
 </div>
-  <div style="margin-top: 15px;">
-  <label for="vuelosIdaResumen"><strong>Resumen Vuelo de Ida</strong></label>
-  <textarea id="vuelosIdaResumen" rows="2" placeholder="Ej. SJO → PTY → MDE, llegada 9:30 AM" class="campoInput autoresize"></textarea>
-</div>
-
-<div style="margin-top: 15px;">
-  <label for="vuelosRegresoResumen"><strong>Resumen Vuelo de Regreso</strong></label>
-  <textarea id="vuelosRegresoResumen" rows="2" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM" class="campoInput autoresize"></textarea>
-</div>
      <h3>Equipaje</h3>
        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
  <div style="flex: 1; min-width: 200px;">
@@ -503,8 +494,6 @@ async function guardarReserva() {
       abono,
       saldo,
       pagos,
-      vuelosIda: document.getElementById("vuelosIdaResumen")?.value || "", 
-      vuelosRegreso: document.getElementById("vuelosRegresoResumen")?.value || "",
       vuelosIntermedios: [],
       pasajeros: [],
       equipaje: document.getElementById("equipaje")?.value || "",
@@ -1002,12 +991,6 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
       const el = document.getElementById(id);
       if (el) el.value = value || "";
     }
-
-    const ida = document.getElementById("vuelosIdaResumen");
-    if (ida) ida.value = data.vuelosIda || "";
-
-    const regreso = document.getElementById("vuelosRegresoResumen");
-    if (regreso) regreso.value = data.vuelosRegreso || "";
 
     // ✅ Tours opcionales
     if (Array.isArray(data.toursOpcionales)) {
