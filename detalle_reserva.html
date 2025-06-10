@@ -1038,7 +1038,7 @@ function agregarPago() {
 
   function actualizarTotales() {
   const totalPagado = window.listaPagos?.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
-  const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
+ const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
   const saldoPendiente = totalGeneral - totalPagado;
 
   document.getElementById("totalPagado").textContent = `$${totalPagado.toFixed(2)}`;
