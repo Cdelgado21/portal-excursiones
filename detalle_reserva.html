@@ -729,23 +729,48 @@ function agregarPasajero() {
 function calcularEdadPasajero(inputFecha) {
   const fecha = new Date(inputFecha.value);
   const hoy = new Date();
+
+  // Validación: no permitir fechas futuras
+  if (fecha > hoy) {
+    alert("⚠️ La fecha de nacimiento no puede ser futura.");
+    inputFecha.value = "";
+    const edadSpan = inputFecha.parentElement.querySelector('.edadPasajero');
+    if (edadSpan) edadSpan.textContent = "Edad: -";
+    return;
+  }
+
+  // Cálculo de edad
   let edad = hoy.getFullYear() - fecha.getFullYear();
-  const m = hoy.getMonth() - fecha.getMonth();
-  if (m < 0 || (m === 0 && hoy.getDate() < fecha.getDate())) {
+  const mes = hoy.getMonth() - fecha.getMonth();
+  if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) {
     edad--;
   }
 
+  // Mostrar edad
   const edadSpan = inputFecha.parentElement.querySelector('.edadPasajero');
-  edadSpan.textContent = isNaN(edad) ? "Edad: -" : `Edad: ${edad}`;
+  if (edadSpan) {
+    edadSpan.textContent = isNaN(edad) ? "Edad: -" : `Edad: ${edad} años`;
+  }
+
+  return edad;
 }
 
+// Titular
 document.getElementById("fechaNacimientoTitular").addEventListener("change", function () {
   const fecha = this.value;
-  const edad = calcularEdad(fecha);
-  document.getElementById("edadTitular").textContent = `Edad: ${edad} años`;
+  const edad = calcularEdadGeneral(fecha);
+  document.getElementById("edadTitular").textContent = isNaN(edad) ? "Edad: -" : `Edad: ${edad} años`;
+
+  // Validación: fecha no puede ser futura
+  if (new Date(fecha) > new Date()) {
+    alert("⚠️ La fecha de nacimiento del titular no puede ser futura.");
+    this.value = "";
+    document.getElementById("edadTitular").textContent = "Edad: -";
+  }
 });
 
-function calcularEdad(fechaNacimiento) {
+// Función base para otros usos si se necesita
+function calcularEdadGeneral(fechaNacimiento) {
   const hoy = new Date();
   const nacimiento = new Date(fechaNacimiento);
   let edad = hoy.getFullYear() - nacimiento.getFullYear();
