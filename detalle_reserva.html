@@ -1071,8 +1071,10 @@ document.getElementById("generoTitular").value = data.generoTitular || "";
   if (vencimiento) vencimiento.value = p.vencimiento || "";
 
   const nacimiento = ult.querySelector(".fechaNacimientoPasajero");
-  if (nacimiento) nacimiento.value = p.nacimiento || "";
-
+if (nacimiento) {
+  nacimiento.value = p.nacimiento || "";
+  calcularEdadPasajero(nacimiento); // <- Esta es la nueva línea
+}
   const nacionalidad = ult.querySelector(".nacionalidadPasajero");
   if (nacionalidad) nacionalidad.value = p.nacionalidad || "";
 
