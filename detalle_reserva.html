@@ -1002,9 +1002,6 @@ function calcularTotal() {
 
   actualizarResumenPagos();
 }
-
- window.listaPagos = [];
-
 function agregarPago() {
   const fecha = document.getElementById("fechaPago").value;
   const monto = parseFloat(document.getElementById("montoPago").value);
@@ -1248,8 +1245,11 @@ if (Array.isArray(data.hoteles)) {
 }
       });
     }
+console.log("Total cargado:", document.getElementById("totalGeneral").value);
+console.log("Pagos:", window.listaPagos);
 
     calcularTotalGeneral();
+    actualizarTotales();
 
   } catch (e) {
     console.error("❌ Error al cargar reserva:", e);
