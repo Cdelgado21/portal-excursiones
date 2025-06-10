@@ -1082,14 +1082,14 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
 
     const data = doc.data();
 
-    // 🧾 Campos principales (con validación)
-document.getElementById("nombreTitular").value = data.nombreTitular || "";
-document.getElementById("cedulaTitular").value = data.cedula || "";
-document.getElementById("correoTitular").value = data.correo || "";
-document.getElementById("telefonoTitular").value = data.telefono || "";
-document.getElementById("equipaje").value = data.equipaje || "";
-document.getElementById("destino").value = data.destino || "";
-document.getElementById("totalGeneral").value = data.total?.toFixed(2) || "0.00";
+    // Campos principales
+    document.getElementById("nombreTitular").value = data.nombreTitular || "";
+    document.getElementById("cedulaTitular").value = data.cedula || "";
+    document.getElementById("correoTitular").value = data.correo || "";
+    document.getElementById("telefonoTitular").value = data.telefono || "";
+    document.getElementById("equipaje").value = data.equipaje || "";
+    document.getElementById("destino").value = data.destino || "";
+    document.getElementById("totalGeneral").value = data.total?.toFixed(2) || "0.00";
  // ✅ Vuelo de Ida
 if (data.vueloIda) {
   document.getElementById("aerolineaIda").value = data.vueloIda.aerolinea || "";
@@ -1129,31 +1129,23 @@ if (Array.isArray(data.toursOpcionales)) {
   });
 }
 
-   // ✅ Pagos
-if (Array.isArray(data.pagos)) {
-  console.log("🔄 Pagos cargados desde Firebase:", data.pagos); // Verificación
+  if (Array.isArray(data.pagos)) {
+      window.listaPagos = data.pagos || [];
 
-  window.listaPagos = data.pagos || [];
+      const tabla = document.getElementById("tablaPagos");
+      tabla.innerHTML = "";
 
-  const tabla = document.getElementById("tablaPagos");
-  if (tabla) {
-    tabla.innerHTML = "";
-    window.listaPagos.forEach(p => {
-      const fila = document.createElement("tr");
-      fila.innerHTML = `
-        <td>${p.fecha}</td>
-        <td>${p.tipo}</td>
-        <td>$${parseFloat(p.monto).toFixed(2)}</td>
-      `;
-      tabla.appendChild(fila);
-    });
-  }
-
-  // 🔁 Ejecutar también el total general antes si se necesita
-  calcularTotalGeneral();  
-  actualizarTotales();
-}
-    // ✅ Pasajeros
+      data.pagos.forEach(p => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${p.fecha}</td>
+          <td>${p.tipo}</td>
+          <td>$${parseFloat(p.monto).toFixed(2)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+     // ✅ Pasajeros
     if (Array.isArray(data.pasajeros)) {
       data.pasajeros.forEach(p => {
         agregarPasajero();
@@ -1239,9 +1231,7 @@ if (Array.isArray(data.hoteles)) {
 console.log("Total cargado:", document.getElementById("totalGeneral").value);
 console.log("Pagos:", window.listaPagos);
 
-    calcularTotalGeneral();
-    actualizarTotales();
-
+   actualizarTotales(); // 👉 Actualiza total pagado y saldo correctamente
   } catch (e) {
     console.error("❌ Error al cargar reserva:", e);
     alert("Error al cargar la reserva.");
