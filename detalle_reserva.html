@@ -474,10 +474,11 @@ if (!codigo) {
   numero = generado.numero;
   año = generado.año;
 }
-    if (!codigo || !numero || !año) {
-      alert("⚠️ No se pudo generar el código de reserva. Intenta nuevamente.");
-      return;
-    }
+
+if (!codigo || !año) {
+  alert("⚠️ No se pudo generar el código de reserva. Intenta nuevamente.");
+  return;
+}
 
     // Obtener datos básicos
     const nombreTitular = document.getElementById("nombreTitular").value || "";
