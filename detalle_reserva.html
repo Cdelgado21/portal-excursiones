@@ -1090,6 +1090,14 @@ if (data.vueloIda) {
   document.getElementById("infoVueloIda").value = data.vueloIda.descripcion || "";
 }
 
+    // ✅ Vuelo de Regreso
+if (data.vueloRegreso) {
+  document.getElementById("aerolineaRegreso").value = data.vueloRegreso.aerolinea || "";
+  document.getElementById("fechaRegreso").value = data.vueloRegreso.fecha || "";
+  document.getElementById("vueloRegreso").value = data.vueloRegreso.vuelo || "";
+  document.getElementById("codigoBoletoRegreso").value = data.vueloRegreso.codigo || "";
+  document.getElementById("infoVueloRegreso").value = data.vueloRegreso.descripcion || "";
+}
     for (const [id, value] of Object.entries(mapFields)) {
       const el = document.getElementById(id);
       if (el) el.value = value || "";
