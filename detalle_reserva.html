@@ -609,6 +609,7 @@ for (const tarjeta of tarjetasPasajero) {
     return;
   }
 }
+    console.log("Pagos enviados a Firebase:", datos.pagos);
     await db.collection("reservas").doc(codigo).set(datos);
     alert("✅ Reserva guardada correctamente como " + codigo);
   } catch (e) {
@@ -984,8 +985,8 @@ function guardarHotelModal() {
 
   tbody.appendChild(row);
   cerrarModalHotel();
-}
-let pagos = [];
+}// 👇 Asegurate de mantener la global como está:
+window.listaPagos = window.listaPagos || [];
 
 function calcularTotal() {
   const adultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
@@ -1004,36 +1005,39 @@ function calcularTotal() {
 
  window.listaPagos = [];
 
-  function agregarPago() {
-    const fecha = document.getElementById("fechaPago").value;
-    const monto = parseFloat(document.getElementById("montoPago").value);
-    const tipo = document.getElementById("tipoPago").value;
+function agregarPago() {
+  const fecha = document.getElementById("fechaPago").value;
+  const monto = parseFloat(document.getElementById("montoPago").value);
+  const tipo = document.getElementById("tipoPago").value;
 
-    if (!fecha || isNaN(monto) || monto <= 0 || !tipo) {
-      alert("Por favor completá todos los campos del pago.");
-      return;
-    }
-
-    // Agregar a la lista global
-    window.listaPagos.push({ fecha, tipo, monto });
-
-    // Actualizar tabla
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td>${fecha}</td>
-      <td>${tipo}</td>
-      <td>$${monto.toFixed(2)}</td>
-    `;
-    document.getElementById("tablaPagos").appendChild(fila);
-
-    // Actualizar totales
-    actualizarTotales();
-
-    // Limpiar campos
-    document.getElementById("fechaPago").value = "";
-    document.getElementById("montoPago").value = "";
-    document.getElementById("tipoPago").value = "";
+  if (!fecha || isNaN(monto) || monto <= 0 || !tipo) {
+    alert("Por favor completá todos los campos del pago.");
+    return;
   }
+
+  // Agregar a la lista global
+  window.listaPagos.push({ fecha, tipo, monto });
+
+  // Actualizar tabla
+  const fila = document.createElement("tr");
+  fila.innerHTML = `
+    <td>${fecha}</td>
+    <td>${tipo}</td>
+    <td>$${monto.toFixed(2)}</td>
+  `;
+  document.getElementById("tablaPagos").appendChild(fila);
+
+  // ✅ Aquí estaba el error:
+  console.log("Pagos guardados:", window.listaPagos);
+
+  // Actualizar totales
+  actualizarTotales();
+
+  // Limpiar campos
+  document.getElementById("fechaPago").value = "";
+  document.getElementById("montoPago").value = "";
+  document.getElementById("tipoPago").value = "";
+}
 
   function actualizarTotales() {
     const totalPagado = window.listaPagos.reduce((sum, p) => sum + p.monto, 0);
