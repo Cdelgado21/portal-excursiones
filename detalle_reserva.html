@@ -1050,14 +1050,22 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
         agregarVueloIntermedio();
         const vuelos = document.querySelectorAll("#vuelosIntermediosContainer > div");
         const ult = vuelos[vuelos.length - 1];
-        if (ult) {
-          ult.querySelector("#aerolineaIda")?.value = v.aerolinea || "";
-          ult.querySelector("#fechaIda")?.value = v.fecha || "";
-          ult.querySelector("#vueloIda")?.value = v.vuelo || "";
-          ult.querySelector("input[placeholder^='Ej. AUC']")?.value = v.codigo || "";
-          const textarea = ult.nextElementSibling;
-          if (textarea && textarea.tagName === "TEXTAREA") textarea.value = v.descripcion || "";
-        }
+      if (ult) {
+  const campoAerolinea = ult.querySelector("#aerolineaIda");
+  if (campoAerolinea) campoAerolinea.value = v.aerolinea || "";
+
+  const campoFecha = ult.querySelector("#fechaIda");
+  if (campoFecha) campoFecha.value = v.fecha || "";
+
+  const campoVuelo = ult.querySelector("#vueloIda");
+  if (campoVuelo) campoVuelo.value = v.vuelo || "";
+
+  const campoCodigo = ult.querySelector("input[placeholder^='Ej. AUC']");
+  if (campoCodigo) campoCodigo.value = v.codigo || "";
+
+  const textarea = ult.nextElementSibling;
+  if (textarea && textarea.tagName === "TEXTAREA") textarea.value = v.descripcion || "";
+}
       });
     }
 
