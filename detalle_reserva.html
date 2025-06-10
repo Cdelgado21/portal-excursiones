@@ -555,7 +555,6 @@ async function guardarReserva() {
       });
     });
 // Validación: Fecha de nacimiento del titular debe ser pasada
-fechaNacimientoTitular = document.getElementById("fechaNacimientoTitular").value;
 if (!fechaNacimientoTitular || new Date(fechaNacimientoTitular) > new Date()) {
   alert("⚠️ La fecha de nacimiento del titular debe ser válida y estar en el pasado.");
   return;
