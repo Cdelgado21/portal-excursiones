@@ -1124,6 +1124,9 @@ document.getElementById("vencimientoPasaporteTitular").value = data.vencimientoP
 document.getElementById("nacionalidadTitular").value = data.nacionalidadTitular || "";
 document.getElementById("generoTitular").value = data.generoTitular || "";
     
+    document.getElementById("destino").value = data.destino || "";
+    console.log("Tours seleccionados:", datos.toursOpcionales);
+await cargarInfoTour(data.destino); // 🔄 Asegura que los tours se rendericen
     // ✅ Tours opcionales
     if (Array.isArray(data.toursOpcionales)) {
       data.toursOpcionales.forEach(nombre => {
