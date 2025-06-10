@@ -1061,6 +1061,7 @@ function agregarPago() {
   // Ejecutar al cargar la página
 document.addEventListener("DOMContentLoaded", async () => {
   await cargarDestinos(); // 👈 importante el await
+   window.listaPagos = window.listaPagos || []; // ✅ BONUS aquí
   document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
   window.abrirModalHotel = abrirModalHotel;
   window.cerrarModalHotel = cerrarModalHotel;
@@ -1137,21 +1138,27 @@ if (Array.isArray(data.toursOpcionales)) {
   });
 }
 
-    // ✅ Pagos
-    if (Array.isArray(data.pagos)) {
-      window.listaPagos = data.pagos;
-      const tabla = document.getElementById("tablaPagos");
-      data.pagos.forEach(p => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${p.fecha}</td>
-          <td>${p.tipo}</td>
-          <td>$${p.monto.toFixed(2)}</td>
-        `;
-        tabla.appendChild(fila);
-      });
-      actualizarTotales();
-    }
+   // ✅ Pagos
+if (Array.isArray(data.pagos)) {
+  window.listaPagos = data.pagos;
+
+  const tabla = document.getElementById("tablaPagos");
+
+  // 💡 Limpiar tabla antes de insertar
+  tabla.innerHTML = "";
+
+  data.pagos.forEach(p => {
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+      <td>${p.fecha}</td>
+      <td>${p.tipo}</td>
+      <td>$${p.monto.toFixed(2)}</td>
+    `;
+    tabla.appendChild(fila);
+  });
+
+  actualizarTotales();
+}
 
     // ✅ Pasajeros
     if (Array.isArray(data.pasajeros)) {
