@@ -1083,15 +1083,13 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
     const data = doc.data();
 
     // 🧾 Campos principales (con validación)
-    const mapFields = {
-      nombreTitular: data.nombreTitular,
-      cedulaTitular: data.cedula,
-      correoTitular: data.correo,
-      telefonoTitular: data.telefono,
-      totalGeneral: data.total,
-      equipaje: data.equipaje,
-      destino: data.destino,
-    };
+document.getElementById("nombreTitular").value = data.nombreTitular || "";
+document.getElementById("cedulaTitular").value = data.cedula || "";
+document.getElementById("correoTitular").value = data.correo || "";
+document.getElementById("telefonoTitular").value = data.telefono || "";
+document.getElementById("equipaje").value = data.equipaje || "";
+document.getElementById("destino").value = data.destino || "";
+document.getElementById("totalGeneral").value = data.total?.toFixed(2) || "0.00";
  // ✅ Vuelo de Ida
 if (data.vueloIda) {
   document.getElementById("aerolineaIda").value = data.vueloIda.aerolinea || "";
@@ -1109,10 +1107,6 @@ if (data.vueloRegreso) {
   document.getElementById("codigoBoletoRegreso").value = data.vueloRegreso.codigo || "";
   document.getElementById("infoVueloRegreso").value = data.vueloRegreso.descripcion || "";
 }
-    for (const [id, value] of Object.entries(mapFields)) {
-      const el = document.getElementById(id);
-      if (el) el.value = value || "";
-    }
 document.getElementById("fechaNacimientoTitular").value = data.fechaNacimientoTitular || "";
     if (data.fechaNacimientoTitular) {
   mostrarEdadTitular(); // ⬅️ Esto usa la función que ya tenés
