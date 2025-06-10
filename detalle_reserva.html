@@ -1163,6 +1163,36 @@ if (nacimiento) {
 }
       });
     }
+    // ✅ Duración e itinerario del tour
+if (data.duracion) {
+  const duracionInput = document.getElementById("duracion");
+  if (duracionInput) duracionInput.value = data.duracion || "";
+}
+
+if (data.itinerario) {
+  const itinerarioInput = document.getElementById("itinerario");
+  if (itinerarioInput) itinerarioInput.value = data.itinerario || "";
+}
+
+// ✅ Hoteles seleccionados
+if (Array.isArray(data.hoteles)) {
+  const tbody = document.getElementById("tablaHotelesBody");
+  if (tbody) {
+    tbody.innerHTML = ""; // limpia si ya hay algo cargado
+    data.hoteles.forEach(h => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${h.nombre || ""}</td>
+        <td>${h.checkin || ""}</td>
+        <td>${h.checkout || ""}</td>
+        <td>${h.tipo || ""}</td>
+        <td>${h.cantidad || ""}</td>
+        <td>${h.observaciones || "Sin observaciones"}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+}
     // ✅ Vuelos intermedios
     if (Array.isArray(data.vuelosIntermedios)) {
       data.vuelosIntermedios.forEach(v => {
