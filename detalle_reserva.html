@@ -548,6 +548,20 @@ const vueloRegreso = {
   pasajeros: [],
   equipaje: document.getElementById("equipaje")?.value || "",
   toursOpcionales: Array.from(document.querySelectorAll("input[name='opcionales']:checked")).map(e => e.value)
+   ,
+duracion: document.getElementById("duracion")?.value || "",
+itinerario: document.getElementById("itinerario")?.value || "",
+hoteles: Array.from(document.querySelectorAll("#tablaHotelesBody tr")).map(tr => {
+  const celdas = tr.querySelectorAll("td");
+  return {
+    nombre: celdas[0]?.innerText || "",
+    checkin: celdas[1]?.innerText || "",
+    checkout: celdas[2]?.innerText || "",
+    tipo: celdas[3]?.innerText || "",
+    cantidad: celdas[4]?.innerText || "",
+    observaciones: celdas[5]?.innerText || ""
+  };
+})
 };
 
     // Pasajeros
