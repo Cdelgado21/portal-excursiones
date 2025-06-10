@@ -1022,14 +1022,25 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
         agregarPasajero();
         const cont = document.querySelectorAll(".tarjeta-pasajero");
         const ult = cont[cont.length - 1];
-        if (ult) {
-          ult.querySelector(".nombrePasajero")?.value = p.nombre || "";
-          ult.querySelector(".documentoPasajero")?.value = p.documento || "";
-          ult.querySelector(".vencimientoPasaportePasajero")?.value = p.vencimiento || "";
-          ult.querySelector(".fechaNacimientoPasajero")?.value = p.nacimiento || "";
-          ult.querySelector(".nacionalidadPasajero")?.value = p.nacionalidad || "";
-          ult.querySelector(".generoPasajero")?.value = p.genero || "";
-        }
+      if (ult) {
+  const nombre = ult.querySelector(".nombrePasajero");
+  if (nombre) nombre.value = p.nombre || "";
+
+  const documento = ult.querySelector(".documentoPasajero");
+  if (documento) documento.value = p.documento || "";
+
+  const vencimiento = ult.querySelector(".vencimientoPasaportePasajero");
+  if (vencimiento) vencimiento.value = p.vencimiento || "";
+
+  const nacimiento = ult.querySelector(".fechaNacimientoPasajero");
+  if (nacimiento) nacimiento.value = p.nacimiento || "";
+
+  const nacionalidad = ult.querySelector(".nacionalidadPasajero");
+  if (nacionalidad) nacionalidad.value = p.nacionalidad || "";
+
+  const genero = ult.querySelector(".generoPasajero");
+  if (genero) genero.value = p.genero || "";
+}
       });
     }
 
