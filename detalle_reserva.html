@@ -554,7 +554,7 @@ async function guardarReserva() {
         descripcion: vuelo.nextElementSibling?.value || ""
       });
     });
-
+console.log("✅ DATOS A GUARDAR:", datos);
     // Guardar en Firebase
     await db.collection("reservas").doc(codigo).set(datos);
     alert("✅ Reserva guardada correctamente como " + codigo);
