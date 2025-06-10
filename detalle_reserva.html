@@ -520,6 +520,8 @@ async function guardarReserva() {
       vencimientoPasaporteTitular,
       nacionalidadTitular,
       generoTitular,
+      vueloIda,
+vueloRegreso,
       fechaReserva,
       destino,
       total,
@@ -543,22 +545,23 @@ async function guardarReserva() {
         genero: p.querySelector(".generoPasajero")?.value || ""
       });
     });
-// Vuelo de Ida
-datos.vueloIda = {
+
+    // Vuelo de Ida
+const vueloIda = {
   aerolinea: document.getElementById("aerolineaIda")?.value || "",
   fecha: document.getElementById("fechaIda")?.value || "",
   vuelo: document.getElementById("vueloIda")?.value || "",
-  codigo: document.getElementById("codigoAerolineaIda")?.value || "",
-  descripcion: document.getElementById("descripcionVueloIda")?.value || ""
+  codigo: document.getElementById("codigoBoletoIda")?.value || "",
+  descripcion: document.getElementById("infoVueloIda")?.value || ""
 };
 
 // Vuelo de Regreso
-datos.vueloRegreso = {
+const vueloRegreso = {
   aerolinea: document.getElementById("aerolineaRegreso")?.value || "",
   fecha: document.getElementById("fechaRegreso")?.value || "",
   vuelo: document.getElementById("vueloRegreso")?.value || "",
-  codigo: document.getElementById("codigoAerolineaRegreso")?.value || "",
-  descripcion: document.getElementById("descripcionVueloRegreso")?.value || ""
+  codigo: document.getElementById("codigoBoletoRegreso")?.value || "",
+  descripcion: document.getElementById("infoVueloRegreso")?.value || ""
 };
     // Vuelos intermedios
     document.querySelectorAll("#vuelosIntermediosContainer > div").forEach(vuelo => {
@@ -1078,6 +1081,22 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
       equipaje: data.equipaje,
       destino: data.destino,
     };
+    if (data.vueloIda) {
+  document.getElementById("aerolineaIda")?.value = data.vueloIda.aerolinea || "";
+  document.getElementById("fechaIda")?.value = data.vueloIda.fecha || "";
+  document.getElementById("vueloIda")?.value = data.vueloIda.vuelo || "";
+  document.getElementById("codigoBoletoIda")?.value = data.vueloIda.codigo || "";
+  document.getElementById("infoVueloIda")?.value = data.vueloIda.descripcion || "";
+}
+
+// ✅ Vuelo de Regreso
+if (data.vueloRegreso) {
+  document.getElementById("aerolineaRegreso")?.value = data.vueloRegreso.aerolinea || "";
+  document.getElementById("fechaRegreso")?.value = data.vueloRegreso.fecha || "";
+  document.getElementById("vueloRegreso")?.value = data.vueloRegreso.vuelo || "";
+  document.getElementById("codigoBoletoRegreso")?.value = data.vueloRegreso.codigo || "";
+  document.getElementById("infoVueloRegreso")?.value = data.vueloRegreso.descripcion || "";
+}
 
     for (const [id, value] of Object.entries(mapFields)) {
       const el = document.getElementById(id);
