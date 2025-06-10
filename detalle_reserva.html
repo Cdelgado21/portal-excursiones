@@ -490,6 +490,21 @@ async function guardarReserva() {
     const nacionalidadTitular = document.getElementById("nacionalidadTitular").value || "";
     const generoTitular = document.getElementById("generoTitular").value || "";
     const fechaReserva = new Date().toISOString().split("T")[0];
+    const vueloIda = {
+  aerolinea: document.getElementById("aerolineaIda")?.value || "",
+  fecha: document.getElementById("fechaIda")?.value || "",
+  vuelo: document.getElementById("vueloIda")?.value || "",
+  codigo: document.getElementById("codigoBoletoIda")?.value || "",
+  descripcion: document.getElementById("infoVueloIda")?.value || ""
+};
+
+const vueloRegreso = {
+  aerolinea: document.getElementById("aerolineaRegreso")?.value || "",
+  fecha: document.getElementById("fechaRegreso")?.value || "",
+  vuelo: document.getElementById("vueloRegreso")?.value || "",
+  codigo: document.getElementById("codigoBoletoRegreso")?.value || "",
+  descripcion: document.getElementById("infoVueloRegreso")?.value || ""
+};
     const destino = document.getElementById("destino").value || "";
     const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
     const pagos = window.listaPagos || [];
@@ -508,31 +523,31 @@ async function guardarReserva() {
     }
 
     // Crear objeto a guardar
-    const datos = {
-      codigo,
-      numero,
-      año,
-      nombreTitular,
-      cedula,
-      correo,
-      telefono,
-      fechaNacimientoTitular,
-      vencimientoPasaporteTitular,
-      nacionalidadTitular,
-      generoTitular,
-      vueloIda,
-vueloRegreso,
-      fechaReserva,
-      destino,
-      total,
-      abono,
-      saldo,
-      pagos,
-      vuelosIntermedios: [],
-      pasajeros: [],
-      equipaje: document.getElementById("equipaje")?.value || "",
-      toursOpcionales: Array.from(document.querySelectorAll("input[name='opcionales']:checked")).map(e => e.value)
-    };
+ onst datos = {
+  codigo,
+  numero,
+  año,
+  nombreTitular,
+  cedula,
+  correo,
+  telefono,
+  fechaNacimientoTitular,
+  vencimientoPasaporteTitular,
+  nacionalidadTitular,
+  generoTitular,
+  vueloIda,
+  vueloRegreso,
+  fechaReserva,
+  destino,
+  total,
+  abono,
+  saldo,
+  pagos,
+  vuelosIntermedios: [],
+  pasajeros: [],
+  equipaje: document.getElementById("equipaje")?.value || "",
+  toursOpcionales: Array.from(document.querySelectorAll("input[name='opcionales']:checked")).map(e => e.value)
+};
 
     // Pasajeros
     document.querySelectorAll(".tarjeta-pasajero").forEach(p => {
