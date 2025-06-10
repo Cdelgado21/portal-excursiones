@@ -485,6 +485,18 @@ if (!codigo || !año) {
     const cedula = document.getElementById("cedulaTitular").value || "";
     const correo = document.getElementById("correoTitular").value || "";
     const telefono = document.getElementById("telefonoTitular").value || "";
+    const fechaNacimientoTitular = document.getElementById("fechaNacimientoTitular").value || "";
+const vencimientoPasaporteTitular = document.getElementById("vencimientoPasaporteTitular").value || "";
+    if (vencimientoPasaporteTitular && new Date(vencimientoPasaporteTitular) < new Date()) {
+  alert("⚠️ El pasaporte ya venció. Por favor verificar o dejar en blanco si no se tiene.");
+  return;
+}
+const nacionalidadTitular = document.getElementById("nacionalidadTitular").value || "";
+const generoTitular = document.getElementById("generoTitular").value || "";
+    if (fechaNacimientoTitular && new Date(fechaNacimientoTitular) > new Date()) {
+  alert("⚠️ La fecha de nacimiento debe ser anterior a hoy.");
+  return;
+}
     const fechaReserva = new Date().toISOString().split("T")[0];
     const destino = document.getElementById("destino").value || "";
     const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
@@ -501,6 +513,10 @@ if (!codigo || !año) {
       cedula,
       correo,
       telefono,
+    fechaNacimientoTitular,
+  vencimientoPasaporteTitular,
+  nacionalidadTitular,
+  generoTitular,
       fechaReserva,
       destino,
       total,
@@ -511,6 +527,7 @@ if (!codigo || !año) {
       pasajeros: [],
       equipaje: document.getElementById("equipaje")?.value || "",
       toursOpcionales: Array.from(document.querySelectorAll("input[name='opcionales']:checked")).map(e => e.value)
+      
     };
 
     // Agregar pasajeros
