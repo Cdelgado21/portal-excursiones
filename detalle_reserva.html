@@ -1136,6 +1136,15 @@ document.getElementById("generoTitular").value = data.generoTitular || "";
     document.getElementById("destino").value = data.destino || "";
 console.log("Tours seleccionados:", data.toursOpcionales);
 
+    // 🎯 Mostrar desglose de inversión
+document.getElementById("cantidadAdultos").value = data.cantidadAdultos || 0;
+document.getElementById("cantidadNinos").value = data.cantidadNinos || 0;
+document.getElementById("cantidadBebes").value = data.cantidadBebes || 0;
+
+document.getElementById("precioAdulto").value = data.precioAdulto || 0;
+document.getElementById("precioNino").value = data.precioNino || 0;
+document.getElementById("precioBebe").value = data.precioBebe || 0;
+
 await cargarInfoTour(data.destino); // 🔄 Cargar visualmente las tarjetas
 console.log("Tours seleccionados:", data.toursOpcionales); // ✅ Mostrar los que se cargaron
 
