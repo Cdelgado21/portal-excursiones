@@ -1155,11 +1155,17 @@ if (data.vueloIda) {
 
 // ✅ Vuelo de Regreso
 if (data.vueloRegreso) {
-  document.getElementById("aerolineaRegreso").value = data.vueloRegreso.aerolinea || "";
-  document.getElementById("fechaRegreso").value = data.vueloRegreso.fecha || "";
-  document.getElementById("vueloRegreso").value = data.vueloRegreso.vuelo || "";
-  document.getElementById("codigoAerolineaRegreso").value = data.vueloRegreso.codigo || "";
-  document.getElementById("descripcionVueloRegreso").value = data.vueloRegreso.descripcion || "";
+  const aerolinea = document.getElementById("aerolineaRegreso");
+  const fecha = document.getElementById("fechaRegreso");
+  const vuelo = document.getElementById("vueloRegreso");
+  const codigo = document.getElementById("codigoAerolineaRegreso");
+  const descripcion = document.getElementById("descripcionVueloRegreso");
+
+  if (aerolinea) aerolinea.value = data.vueloRegreso.aerolinea || "";
+  if (fecha) fecha.value = data.vueloRegreso.fecha || "";
+  if (vuelo) vuelo.value = data.vueloRegreso.vuelo || "";
+  if (codigo) codigo.value = data.vueloRegreso.codigo || "";
+  if (descripcion) descripcion.value = data.vueloRegreso.descripcion || "";
 }
     // ✅ Vuelos intermedios
     if (Array.isArray(data.vuelosIntermedios)) {
