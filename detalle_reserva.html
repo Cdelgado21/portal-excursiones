@@ -506,7 +506,23 @@ async function guardarReserva() {
       alert("⚠️ El pasaporte ya venció. Por favor verificar o dejar en blanco si no se tiene.");
       return;
     }
+    // Vuelo de Ida
+const vueloIda = {
+  aerolinea: document.getElementById("aerolineaIda")?.value || "",
+  fecha: document.getElementById("fechaIda")?.value || "",
+  vuelo: document.getElementById("vueloIda")?.value || "",
+  codigo: document.getElementById("codigoBoletoIda")?.value || "",
+  descripcion: document.getElementById("infoVueloIda")?.value || ""
+};
 
+// Vuelo de Regreso
+const vueloRegreso = {
+  aerolinea: document.getElementById("aerolineaRegreso")?.value || "",
+  fecha: document.getElementById("fechaRegreso")?.value || "",
+  vuelo: document.getElementById("vueloRegreso")?.value || "",
+  codigo: document.getElementById("codigoBoletoRegreso")?.value || "",
+  descripcion: document.getElementById("infoVueloRegreso")?.value || ""
+};
     // Crear objeto a guardar
  const datos = {
   codigo,
@@ -546,23 +562,7 @@ async function guardarReserva() {
       });
     });
 
-    // Vuelo de Ida
-const vueloIda = {
-  aerolinea: document.getElementById("aerolineaIda")?.value || "",
-  fecha: document.getElementById("fechaIda")?.value || "",
-  vuelo: document.getElementById("vueloIda")?.value || "",
-  codigo: document.getElementById("codigoBoletoIda")?.value || "",
-  descripcion: document.getElementById("infoVueloIda")?.value || ""
-};
 
-// Vuelo de Regreso
-const vueloRegreso = {
-  aerolinea: document.getElementById("aerolineaRegreso")?.value || "",
-  fecha: document.getElementById("fechaRegreso")?.value || "",
-  vuelo: document.getElementById("vueloRegreso")?.value || "",
-  codigo: document.getElementById("codigoBoletoRegreso")?.value || "",
-  descripcion: document.getElementById("infoVueloRegreso")?.value || ""
-};
     // Vuelos intermedios
     document.querySelectorAll("#vuelosIntermediosContainer > div").forEach(vuelo => {
       datos.vuelosIntermedios.push({
