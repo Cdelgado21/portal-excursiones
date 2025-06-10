@@ -915,13 +915,7 @@ const snapshot = await ref.get();
     console.error("Error al cargar información del tour:", e);
   }
 }
-    .catch(e => {
-      console.error("Error al cargar información del tour:", e);
-    });
-}
-
-
-// ✅ Exponer después de la función
+    // ✅ Exponer después de la función
 window.cargarInfoTour = cargarInfoTour;
 }
   function autoResizeTextarea(textarea) {
