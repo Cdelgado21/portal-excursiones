@@ -1040,13 +1040,13 @@ function agregarPago() {
 }
 
   function actualizarTotales() {
-    const totalPagado = window.listaPagos.reduce((sum, p) => sum + p.monto, 0);
-    const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
-    const saldoPendiente = totalGeneral - totalPagado;
+  const totalPagado = window.listaPagos?.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
+  const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
+  const saldoPendiente = totalGeneral - totalPagado;
 
-    document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
-    document.getElementById("saldoPendiente").textContent = saldoPendiente.toFixed(2);
-  }
+  document.getElementById("totalPagado").textContent = `$${totalPagado.toFixed(2)}`;
+  document.getElementById("saldoPendiente").textContent = `$${saldoPendiente.toFixed(2)}`;
+}
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
   const tieneFilas = tabla.querySelector("tbody").children.length > 0;
@@ -1140,23 +1140,28 @@ if (Array.isArray(data.toursOpcionales)) {
 
    // ✅ Pagos
 if (Array.isArray(data.pagos)) {
+  // 🟢 Guardar en memoria
   window.listaPagos = data.pagos;
 
   const tabla = document.getElementById("tablaPagos");
 
-  // 💡 Limpiar tabla antes de insertar
-  tabla.innerHTML = "";
+  // 🔁 Asegurar que exista la tabla
+  if (tabla) {
+    tabla.innerHTML = ""; // limpiar la tabla antes de cargar
 
-  data.pagos.forEach(p => {
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td>${p.fecha}</td>
-      <td>${p.tipo}</td>
-      <td>$${p.monto.toFixed(2)}</td>
-    `;
-    tabla.appendChild(fila);
-  });
+    // 🧾 Cargar cada fila
+    data.pagos.forEach(p => {
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td>${p.fecha}</td>
+        <td>${p.tipo}</td>
+        <td>$${parseFloat(p.monto).toFixed(2)}</td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
 
+  // 🧮 Actualizar el total pagado y saldo
   actualizarTotales();
 }
 
