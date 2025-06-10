@@ -543,7 +543,23 @@ async function guardarReserva() {
         genero: p.querySelector(".generoPasajero")?.value || ""
       });
     });
+// Vuelo de Ida
+datos.vueloIda = {
+  aerolinea: document.getElementById("aerolineaIda")?.value || "",
+  fecha: document.getElementById("fechaIda")?.value || "",
+  vuelo: document.getElementById("vueloIda")?.value || "",
+  codigo: document.getElementById("codigoAerolineaIda")?.value || "",
+  descripcion: document.getElementById("descripcionVueloIda")?.value || ""
+};
 
+// Vuelo de Regreso
+datos.vueloRegreso = {
+  aerolinea: document.getElementById("aerolineaRegreso")?.value || "",
+  fecha: document.getElementById("fechaRegreso")?.value || "",
+  vuelo: document.getElementById("vueloRegreso")?.value || "",
+  codigo: document.getElementById("codigoAerolineaRegreso")?.value || "",
+  descripcion: document.getElementById("descripcionVueloRegreso")?.value || ""
+};
     // Vuelos intermedios
     document.querySelectorAll("#vuelosIntermediosContainer > div").forEach(vuelo => {
       datos.vuelosIntermedios.push({
