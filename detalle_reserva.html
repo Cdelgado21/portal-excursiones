@@ -1125,15 +1125,18 @@ document.getElementById("nacionalidadTitular").value = data.nacionalidadTitular 
 document.getElementById("generoTitular").value = data.generoTitular || "";
     
     document.getElementById("destino").value = data.destino || "";
-    console.log("Tours seleccionados:", datos.toursOpcionales);
-await cargarInfoTour(data.destino); // 🔄 Asegura que los tours se rendericen
-    // ✅ Tours opcionales
-    if (Array.isArray(data.toursOpcionales)) {
-      data.toursOpcionales.forEach(nombre => {
-        const checkbox = document.querySelector(`input[name="opcionales"][value="${nombre}"]`);
-        if (checkbox) checkbox.checked = true;
-      });
-    }
+console.log("Tours seleccionados:", data.toursOpcionales);
+
+await cargarInfoTour(data.destino); // 🔄 Cargar visualmente las tarjetas
+console.log("Tours seleccionados:", data.toursOpcionales); // ✅ Mostrar los que se cargaron
+
+// Luego marcar los checkboxes
+if (Array.isArray(data.toursOpcionales)) {
+  data.toursOpcionales.forEach(nombre => {
+    const checkbox = document.querySelector(`input[name="opcionales"][value="${nombre}"]`);
+    if (checkbox) checkbox.checked = true;
+  });
+}
 
     // ✅ Pagos
     if (Array.isArray(data.pagos)) {
