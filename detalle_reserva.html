@@ -1081,13 +1081,13 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
       equipaje: data.equipaje,
       destino: data.destino,
     };
-    if (data.vueloIda) {
-  document.getElementById("aerolineaIda")?.value = data.vueloIda.aerolinea || "";
-  document.getElementById("fechaIda")?.value = data.vueloIda.fecha || "";
-  document.getElementById("vueloIda")?.value = data.vueloIda.vuelo || "";
-  document.getElementById("codigoBoletoIda")?.value = data.vueloIda.codigo || "";
-  document.getElementById("infoVueloIda")?.value = data.vueloIda.descripcion || "";
-}
+ const vueloIda = {
+  aerolinea: document.getElementById("aerolineaIda")?.value || "",
+  fecha: document.getElementById("fechaIda")?.value || "",
+  vuelo: document.getElementById("vueloIda")?.value || "",
+  codigo: document.getElementById("codigoBoletoIda")?.value || "",
+  descripcion: document.getElementById("infoVueloIda")?.value || ""
+};
 
 // ✅ Vuelo de Regreso
 if (data.vueloRegreso) {
@@ -1163,29 +1163,6 @@ if (nacimiento) {
 }
       });
     }
-// ✅ Vuelo de Ida
-if (data.vueloIda) {
-  document.getElementById("aerolineaIda").value = data.vueloIda.aerolinea || "";
-  document.getElementById("fechaIda").value = data.vueloIda.fecha || "";
-  document.getElementById("vueloIda").value = data.vueloIda.vuelo || "";
-  document.getElementById("codigoAerolineaIda").value = data.vueloIda.codigo || "";
-  document.getElementById("descripcionVueloIda").value = data.vueloIda.descripcion || "";
-}
-
-// ✅ Vuelo de Regreso
-if (data.vueloRegreso) {
-  const aerolinea = document.getElementById("aerolineaRegreso");
-  const fecha = document.getElementById("fechaRegreso");
-  const vuelo = document.getElementById("vueloRegreso");
-  const codigo = document.getElementById("codigoAerolineaRegreso");
-  const descripcion = document.getElementById("descripcionVueloRegreso");
-
-  if (aerolinea) aerolinea.value = data.vueloRegreso.aerolinea || "";
-  if (fecha) fecha.value = data.vueloRegreso.fecha || "";
-  if (vuelo) vuelo.value = data.vueloRegreso.vuelo || "";
-  if (codigo) codigo.value = data.vueloRegreso.codigo || "";
-  if (descripcion) descripcion.value = data.vueloRegreso.descripcion || "";
-}
     // ✅ Vuelos intermedios
     if (Array.isArray(data.vuelosIntermedios)) {
       data.vuelosIntermedios.forEach(v => {
