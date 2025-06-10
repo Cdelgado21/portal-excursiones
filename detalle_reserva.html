@@ -554,8 +554,29 @@ async function guardarReserva() {
         descripcion: vuelo.nextElementSibling?.value || ""
       });
     });
-console.log("✅ DATOS A GUARDAR:", datos);
-    // Guardar en Firebase
+// Validación: Fecha de nacimiento del titular debe ser pasada
+const fechaNacimientoTitular = document.getElementById("fechaNacimientoTitular").value;
+if (!fechaNacimientoTitular || new Date(fechaNacimientoTitular) > new Date()) {
+  alert("⚠️ La fecha de nacimiento del titular debe ser válida y estar en el pasado.");
+  return;
+}
+
+// Validación: Fecha de vencimiento del pasaporte debe ser futura
+const vencimientoTitular = document.getElementById("vencimientoPasaporteTitular").value;
+if (!vencimientoTitular || new Date(vencimientoTitular) < new Date()) {
+  alert("⚠️ La fecha de vencimiento del pasaporte del titular debe ser futura.");
+  return;
+}
+
+// Validación: Pasajeros con fecha de nacimiento válida
+const tarjetasPasajero = document.querySelectorAll(".tarjeta-pasajero");
+for (const tarjeta of tarjetasPasajero) {
+  const nacimiento = tarjeta.querySelector(".fechaNacimientoPasajero");
+  if (!nacimiento || new Date(nacimiento.value) > new Date()) {
+    alert("⚠️ Todos los pasajeros deben tener una fecha de nacimiento válida y en el pasado.");
+    return;
+  }
+}
     await db.collection("reservas").doc(codigo).set(datos);
     alert("✅ Reserva guardada correctamente como " + codigo);
   } catch (e) {
