@@ -1036,13 +1036,16 @@ function agregarPago() {
   document.getElementById("tipoPago").value = "";
 }
 
-  function actualizarTotales() {
+ function actualizarTotales() {
   const totalPagado = window.listaPagos?.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
- const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
+  const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
   const saldoPendiente = totalGeneral - totalPagado;
 
-  document.getElementById("totalPagado").textContent = `$${totalPagado.toFixed(2)}`;
-  document.getElementById("saldoPendiente").textContent = `$${saldoPendiente.toFixed(2)}`;
+  document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
+  document.getElementById("saldoPendiente").textContent = saldoPendiente.toFixed(2);
+
+  // Si tenés un input oculto con id="montoAbono", actualizalo también:
+  document.getElementById("montoAbono").value = totalPagado.toFixed(2);
 }
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
