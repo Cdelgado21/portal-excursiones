@@ -1137,17 +1137,14 @@ if (Array.isArray(data.toursOpcionales)) {
 
    // ✅ Pagos
 if (Array.isArray(data.pagos)) {
-  // 🟢 Guardar en memoria
-  window.listaPagos = data.pagos;
+  console.log("🔄 Pagos cargados desde Firebase:", data.pagos); // Verificación
+
+  window.listaPagos = data.pagos || [];
 
   const tabla = document.getElementById("tablaPagos");
-
-  // 🔁 Asegurar que exista la tabla
   if (tabla) {
-    tabla.innerHTML = ""; // limpiar la tabla antes de cargar
-
-    // 🧾 Cargar cada fila
-    data.pagos.forEach(p => {
+    tabla.innerHTML = "";
+    window.listaPagos.forEach(p => {
       const fila = document.createElement("tr");
       fila.innerHTML = `
         <td>${p.fecha}</td>
@@ -1158,10 +1155,10 @@ if (Array.isArray(data.pagos)) {
     });
   }
 
-  // 🧮 Actualizar el total pagado y saldo
+  // 🔁 Ejecutar también el total general antes si se necesita
+  calcularTotalGeneral();  
   actualizarTotales();
 }
-
     // ✅ Pasajeros
     if (Array.isArray(data.pasajeros)) {
       data.pasajeros.forEach(p => {
