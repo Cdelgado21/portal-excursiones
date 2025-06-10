@@ -800,9 +800,9 @@ function calcularEdadGeneral(fechaNacimiento) {
   }
   return edad;
 }
-  function mostrarEdadTitular() {
+function mostrarEdadTitular() {
   const fecha = document.getElementById("fechaNacimientoTitular").value;
-  const edad = calcularEdad(fecha);
+  const edad = calcularEdadGeneral(fecha);  // ← nombre corregido
   document.getElementById("edadTitular").textContent = `Edad: ${edad} años`;
 }
  function agregarEquipaje() {
