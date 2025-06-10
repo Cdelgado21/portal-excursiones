@@ -490,13 +490,6 @@ async function guardarReserva() {
     const nacionalidadTitular = document.getElementById("nacionalidadTitular").value || "";
     const generoTitular = document.getElementById("generoTitular").value || "";
     const fechaReserva = new Date().toISOString().split("T")[0];
-    const vueloRegreso = {
-  aerolinea: document.getElementById("aerolineaRegreso")?.value || "",
-  fecha: document.getElementById("fechaRegreso")?.value || "",
-  vuelo: document.getElementById("vueloRegreso")?.value || "",
-  codigo: document.getElementById("codigoBoletoRegreso")?.value || "",
-  descripcion: document.getElementById("infoVueloRegreso")?.value || ""
-};
     const destino = document.getElementById("destino").value || "";
     const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
     const pagos = window.listaPagos || [];
