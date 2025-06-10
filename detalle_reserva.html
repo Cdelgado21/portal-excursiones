@@ -385,22 +385,7 @@
     <input type="text" id="totalGeneral" readonly class="campoInput" style="background: #e0f7fa; font-weight: bold;">
   </div>
 
-  <hr style="margin: 25px 0;">
-
-  <h3>Registrar Pagos</h3>
-  <div style="display: flex; flex-wrap: wrap; gap: 15px;">
-    <input type="date" id="fechaPago" class="campoInput">
-    <input type="number" placeholder="Monto" id="montoPago" class="campoInput">
-    <select id="tipoPago" class="campoInput">
-      <option value="">Tipo de Pago</option>
-      <option value="Efectivo">Efectivo</option>
-      <option value="Tarjeta">Tarjeta</option>
-      <option value="Transferencia">Transferencia</option>
-    </select>
-    <button onclick="agregarPago()" style="padding: 8px 14px; background: #02535a; color: white; border: none; border-radius: 6px;">Agregar Pago</button>
-  </div>
-
-  <h3>Pagos Realizados</h3>
+<h3>Pagos Realizados</h3>
      <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
     <thead style="background: #02535a; color: white;">
       <tr>
@@ -417,6 +402,21 @@
     <p><strong>Total Pagado:</strong> $<span id="totalPagado">0</span></p>
     <input type="hidden" id="montoAbono" value="0">
     <p><strong>Saldo Pendiente:</strong> $<span id="saldoPendiente">0</span></p>
+  </div>
+
+    <hr style="margin: 25px 0;">
+  
+  <h3>Registrar Pagos</h3>
+  <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+    <input type="date" id="fechaPago" class="campoInput">
+    <input type="number" placeholder="Monto" id="montoPago" class="campoInput">
+    <select id="tipoPago" class="campoInput">
+      <option value="">Tipo de Pago</option>
+      <option value="Efectivo">Efectivo</option>
+      <option value="Tarjeta">Tarjeta</option>
+      <option value="Transferencia">Transferencia</option>
+    </select>
+    <button onclick="agregarPago()" style="padding: 8px 14px; background: #02535a; color: white; border: none; border-radius: 6px;">Agregar Pago</button>
   </div>
 </section>
 
