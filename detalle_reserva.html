@@ -1022,7 +1022,11 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
       const el = document.getElementById(id);
       if (el) el.value = value || "";
     }
-
+document.getElementById("fechaNacimientoTitular").value = data.fechaNacimientoTitular || "";
+document.getElementById("vencimientoPasaporteTitular").value = data.vencimientoPasaporteTitular || "";
+document.getElementById("nacionalidadTitular").value = data.nacionalidadTitular || "";
+document.getElementById("generoTitular").value = data.generoTitular || "";
+    
     // ✅ Tours opcionales
     if (Array.isArray(data.toursOpcionales)) {
       data.toursOpcionales.forEach(nombre => {
