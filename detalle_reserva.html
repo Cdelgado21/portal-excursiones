@@ -1023,6 +1023,9 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
       if (el) el.value = value || "";
     }
 document.getElementById("fechaNacimientoTitular").value = data.fechaNacimientoTitular || "";
+    if (data.fechaNacimientoTitular) {
+  mostrarEdadTitular(); // ⬅️ Esto usa la función que ya tenés
+}
 document.getElementById("vencimientoPasaporteTitular").value = data.vencimientoPasaporteTitular || "";
 document.getElementById("nacionalidadTitular").value = data.nacionalidadTitular || "";
 document.getElementById("generoTitular").value = data.generoTitular || "";
