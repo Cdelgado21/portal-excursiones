@@ -495,7 +495,15 @@ async function guardarReserva() {
     const pagos = window.listaPagos || [];
     const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
     const saldo = total - abono;
+// 🧮 Guardar desglose de inversión
+const cantidadAdultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
+const cantidadNinos = parseInt(document.getElementById("cantidadNinos").value) || 0;
+const cantidadBebes = parseInt(document.getElementById("cantidadBebes").value) || 0;
 
+const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) || 0;
+const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
+const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
+    
     // Validaciones
     if (fechaNacimientoTitular && new Date(fechaNacimientoTitular) > new Date()) {
       alert("⚠️ La fecha de nacimiento debe ser anterior a hoy.");
@@ -546,8 +554,15 @@ const vueloRegreso = {
   pagos,
   vuelosIntermedios: [],
   pasajeros: [],
+   cantidadAdultos,
+cantidadNinos,
+cantidadBebes,
+precioAdulto,
+precioNino,
+precioBebe,
   equipaje: document.getElementById("equipaje")?.value || "",
   toursOpcionales: Array.from(document.querySelectorAll("input[name='opcionales']:checked")).map(e => e.value)
+   
    ,
 duracion: document.getElementById("duracion")?.value || "",
 itinerario: document.getElementById("itinerario")?.value || "",
