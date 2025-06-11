@@ -419,7 +419,25 @@
     <button onclick="agregarPago()" style="padding: 8px 14px; background: #02535a; color: white; border: none; border-radius: 6px;">Agregar Pago</button>
   </div>
 </section>
+<div style="display: flex; gap: 20px; margin-top: 20px;">
+  <div style="flex: 1;">
+    <label>Embajadora Responsable</label>
+    <select id="embajadora" class="campoInput">
+      <option value="">Seleccione</option>
+      <option value="Yare">Yare</option>
+      <option value="Yuliana">Yuliana</option>
+      <option value="Tatiana">Tatiana</option>
+      <option value="Geansury">Geansury</option>
+      <option value="Marcela">Marcela</option>
+      <option value="Cristopher">Cristopher</option>
+    </select>
+  </div>
 
+  <div style="flex: 1;">
+    <label>% Comisión</label>
+    <input type="number" id="porcentajeComision" value="5" class="campoInput">
+  </div>
+</div>
 <!-- Botón final -->
 <div style="margin-top: 20px;">
   <button id="btnGuardarReserva" style="background-color: #02535a; color: white; padding: 12px 20px; border: none; border-radius: 6px; font-weight: bold;">
@@ -503,6 +521,9 @@ const cantidadBebes = parseInt(document.getElementById("cantidadBebes").value) |
 const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) || 0;
 const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
 const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
+    const embajadora = document.getElementById("embajadora").value || "";
+const porcentajeComision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
+const fechaComision = new Date().toISOString().split("T")[0];
     
     // Validaciones
     if (fechaNacimientoTitular && new Date(fechaNacimientoTitular) > new Date()) {
@@ -552,6 +573,16 @@ const vueloRegreso = {
   abono,
   saldo,
   pagos,
+   embajadora,
+porcentajeComision,
+comisionCalculada,
+fechaComision,
+cantidadAdultos,
+cantidadNinos,
+cantidadBebes,
+precioAdulto,
+precioNino,
+precioBebe,
   vuelosIntermedios: [],
   pasajeros: [],
    cantidadAdultos,
@@ -644,7 +675,16 @@ document.getElementById("btnGuardarReserva").addEventListener("click", guardarRe
     const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) || 0;
     const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
     const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
+const cantidadAdultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
+const cantidadNinos = parseInt(document.getElementById("cantidadNinos").value) || 0;
+const cantidadBebes = parseInt(document.getElementById("cantidadBebes").value) || 0;
 
+const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) || 0;
+const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
+const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
+
+const montoBase = (cantidadAdultos * precioAdulto) + (cantidadNinos * precioNino) + (cantidadBebes * precioBebe);
+const comisionCalculada = (montoBase * porcentajeComision) / 100;
     const total = (cantidadAdultos * precioAdulto) + (cantidadNinos * precioNino) + (cantidadBebes * precioBebe);
     document.getElementById("totalGeneral").value = total.toFixed(2);
 
@@ -653,6 +693,8 @@ document.getElementById("btnGuardarReserva").addEventListener("click", guardarRe
       const totalPagado = window.listaPagos.reduce((sum, p) => sum + p.monto, 0);
       const saldo = total - totalPagado;
       document.getElementById("saldoPendiente").textContent = saldo.toFixed(2);
+
+      
     }
   }
   // Cargar cotización
@@ -1145,6 +1187,17 @@ document.getElementById("precioAdulto").value = data.precioAdulto || 0;
 document.getElementById("precioNino").value = data.precioNino || 0;
 document.getElementById("precioBebe").value = data.precioBebe || 0;
 
+document.getElementById("embajadora").value = data.embajadora || "";
+document.getElementById("porcentajeComision").value = data.porcentajeComision || 0;
+
+document.getElementById("cantidadAdultos").value = data.cantidadAdultos || 0;
+document.getElementById("cantidadNinos").value = data.cantidadNinos || 0;
+document.getElementById("cantidadBebes").value = data.cantidadBebes || 0;
+
+document.getElementById("precioAdulto").value = data.precioAdulto || 0;
+document.getElementById("precioNino").value = data.precioNino || 0;
+document.getElementById("precioBebe").value = data.precioBebe || 0;
+    
 await cargarInfoTour(data.destino); // 🔄 Cargar visualmente las tarjetas
 console.log("Tours seleccionados:", data.toursOpcionales); // ✅ Mostrar los que se cargaron
 
