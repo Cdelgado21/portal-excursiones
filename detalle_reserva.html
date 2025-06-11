@@ -524,6 +524,8 @@ const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
     const embajadora = document.getElementById("embajadora").value || "";
 const porcentajeComision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
 const fechaComision = new Date().toISOString().split("T")[0];
+    const montoBase = (cantidadAdultos * precioAdulto) + (cantidadNinos * precioNino) + (cantidadBebes * precioBebe);
+const comisionCalculada = (montoBase * porcentajeComision) / 100;
     
     // Validaciones
     if (fechaNacimientoTitular && new Date(fechaNacimientoTitular) > new Date()) {
@@ -577,12 +579,6 @@ const vueloRegreso = {
 porcentajeComision,
 comisionCalculada,
 fechaComision,
-cantidadAdultos,
-cantidadNinos,
-cantidadBebes,
-precioAdulto,
-precioNino,
-precioBebe,
   vuelosIntermedios: [],
   pasajeros: [],
    cantidadAdultos,
@@ -675,14 +671,10 @@ document.getElementById("btnGuardarReserva").addEventListener("click", guardarRe
     const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) || 0;
     const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
     const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
-const cantidadAdultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
-const cantidadNinos = parseInt(document.getElementById("cantidadNinos").value) || 0;
-const cantidadBebes = parseInt(document.getElementById("cantidadBebes").value) || 0;
-
-const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) || 0;
-const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
-const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
-
+const embajadora = document.getElementById("embajadora").value || "";
+const porcentajeComision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
+const fechaComision = new Date().toISOString().split("T")[0];
+    
 const montoBase = (cantidadAdultos * precioAdulto) + (cantidadNinos * precioNino) + (cantidadBebes * precioBebe);
 const comisionCalculada = (montoBase * porcentajeComision) / 100;
     const total = (cantidadAdultos * precioAdulto) + (cantidadNinos * precioNino) + (cantidadBebes * precioBebe);
