@@ -433,12 +433,7 @@
     </select>
   </div>
 
-  <div style="flex: 1;">
-    <label>% Comisión</label>
-    <input type="number" id="porcentajeComision" value="5" class="campoInput">
-  </div>
-</div>
-<!-- Botón final -->
+  <!-- Botón final -->
 <div style="margin-top: 20px;">
   <button id="btnGuardarReserva" style="background-color: #02535a; color: white; padding: 12px 20px; border: none; border-radius: 6px; font-weight: bold;">
     💾 Guardar Reserva
@@ -522,10 +517,6 @@ const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) |
 const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
 const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
     const embajadora = document.getElementById("embajadora").value || "";
-const porcentajeComision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
-const fechaComision = new Date().toISOString().split("T")[0];
-    const montoBase = (cantidadAdultos * precioAdulto) + (cantidadNinos * precioNino) + (cantidadBebes * precioBebe);
-const comisionCalculada = (montoBase * porcentajeComision) / 100;
     
     // Validaciones
     if (fechaNacimientoTitular && new Date(fechaNacimientoTitular) > new Date()) {
@@ -576,9 +567,6 @@ const vueloRegreso = {
   saldo,
   pagos,
    embajadora,
-porcentajeComision,
-comisionCalculada,
-fechaComision,
   vuelosIntermedios: [],
   pasajeros: [],
    cantidadAdultos,
@@ -672,11 +660,6 @@ document.getElementById("btnGuardarReserva").addEventListener("click", guardarRe
     const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
     const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
 const embajadora = document.getElementById("embajadora").value || "";
-const porcentajeComision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
-const fechaComision = new Date().toISOString().split("T")[0];
-    
-const montoBase = (cantidadAdultos * precioAdulto) + (cantidadNinos * precioNino) + (cantidadBebes * precioBebe);
-const comisionCalculada = (montoBase * porcentajeComision) / 100;
     const total = (cantidadAdultos * precioAdulto) + (cantidadNinos * precioNino) + (cantidadBebes * precioBebe);
     document.getElementById("totalGeneral").value = total.toFixed(2);
 
