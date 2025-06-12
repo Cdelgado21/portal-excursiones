@@ -262,53 +262,7 @@ table {
       </thead>
       <tbody id="tabla-body"><tr><td colspan="13">Cargando tours...</td></tr></tbody>
     </table>
-  </div>
-<div class="modal" id="modalComision">
-    <div class="modal-content">
-      <h3>Comisión del Tour</h3>
-      <label>Precio base por persona</label>
-      <input type="number" id="precioBasePp" />
-      <label>% Comisión</label>
-      <input type="number" id="porcentajeComision" />
-      <label>Comisión P/P</label>
-      <input type="number" id="comisionPp" readonly />
-      <div class="btn-row">
-        <button onclick="guardarComisionTour()">Guardar</button>
-        <button class="btn-cancelar" onclick="cerrarModalComision()">Cancelar</button>
-      </div>
-    </div>
-  </div>
-
-    <div id="hotelesContainer">
-      <label><b>Hoteles</b></label>
-      <div class="hotel-entry">
-        <input placeholder="Nombre del hotel" class="hotel-nombre" type="text" />
-        <textarea placeholder="Información del hotel" class="hotel-info"></textarea>
-      </div>
-    </div>
-    <button onclick="agregarHotel()">+ Agregar hotel</button>
-
-    <textarea id="no_incluye" placeholder="Lo que no incluye"></textarea>
-    <textarea id="itinerario_tours" placeholder="Itinerario de tours (Día 1:...)"></textarea>
-    <textarea id="tours_opcionales" placeholder="Tours opcionales"></textarea>
-    <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
-
-    <h4>Precios y comisiones</h4>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px;">
-<input id="precioAdulto" placeholder="Precio Adulto ($)" type="number" />
-<input id="comisionAdulto" placeholder="Comisión Adulto (%)" type="number" />
-<input id="precioNino" placeholder="Precio Niño ($)" type="number" />
-<input id="comisionNino" placeholder="Comisión Niño (%)" type="number" />
-<input id="precioBebe" placeholder="Precio Bebé ($)" type="number" />
-<input id="comisionBebe" placeholder="Comisión Bebé (%)" type="number" />
-</div>
-    <div class="btn-row">
-      <button onclick="guardarTour()">Guardar</button>
-      <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
-    </div>
-  </div>
-</div>
-  
+  </div>  
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -384,7 +338,6 @@ table {
   cargarTours();
   cerrarModal();  // Asegúrate de que esto esté aquí
   });
-}
      function cargarTours() {
       db.collection("tours").get().then(snapshot => {
         const tbody = document.getElementById("tabla-body");
