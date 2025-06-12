@@ -123,14 +123,17 @@
   border: 3px solid #02535a;
   padding: 30px;
   border-radius: 12px;
-  width: 800px;
-  max-width: 95vw;
+  width: 90%;
+  max-width: 900px;
   max-height: 90vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  scrollbar-width: thin;
+  scrollbar-color: #02535a #f0f7f7;
 }
+
 
   .modal-content h3 {
     color: #02535a;
@@ -281,13 +284,14 @@ table {
     <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
 
     <h4>Precios y comisiones</h4>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
 <input id="precioAdulto" placeholder="Precio Adulto ($)" type="number" />
 <input id="comisionAdulto" placeholder="Comisión Adulto (%)" type="number" />
 <input id="precioNino" placeholder="Precio Niño ($)" type="number" />
 <input id="comisionNino" placeholder="Comisión Niño (%)" type="number" />
 <input id="precioBebe" placeholder="Precio Bebé ($)" type="number" />
 <input id="comisionBebe" placeholder="Comisión Bebé (%)" type="number" />
-
+</div>
     <div class="btn-row">
       <button onclick="guardarTour()">Guardar</button>
       <button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button>
