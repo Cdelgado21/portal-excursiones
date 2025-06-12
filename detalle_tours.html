@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Detalle del Tour</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f7f7; padding: 30px; }
+    h2 { color: #02535a; }
+    .section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input, textarea, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
+    .btn { background: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-top: 20px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Detalle del Tour</h2>
+
+  <div class="section">
+    <label>Nombre del Tour</label>
+    <input id="nombre" type="text">
+
+    <label>Duración</label>
+    <input id="duracion" type="text">
+
+    <div class="grid-2">
+      <div>
+        <label>Precio Adulto ($)</label>
+        <input id="precioAdulto" type="number">
+      </div>
+      <div>
+        <label>Comisión Adulto (%)</label>
+        <input id="comisionAdulto" type="number">
+      </div>
+      <div>
+        <label>Precio Niño ($)</label>
+        <input id="precioNino" type="number">
+      </div>
+      <div>
+        <label>Comisión Niño (%)</label>
+        <input id="comisionNino" type="number">
+      </div>
+      <div>
+        <label>Precio Bebé ($)</label>
+        <input id="precioBebe" type="number">
+      </div>
+      <div>
+        <label>Comisión Bebé (%)</label>
+        <input id="comisionBebe" type="number">
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <label>Incluye</label>
+    <textarea id="incluye"></textarea>
+
+    <label>No Incluye</label>
+    <textarea id="noIncluye"></textarea>
+
+    <label>Itinerario</label>
+    <textarea id="itinerario"></textarea>
+
+    <label>Tours Opcionales</label>
+    <textarea id="toursOpcionales"></textarea>
+
+    <label>Políticas</label>
+    <textarea id="politicas"></textarea>
+  </div>
+
+  <div class="section">
+    <label>Hoteles (uno por línea)</label>
+    <textarea id="hoteles"></textarea>
+
+    <label>Información del Hotel (uno por línea, en el mismo orden)</label>
+    <textarea id="infoHotel"></textarea>
+  </div>
+
+  <button class="btn" onclick="guardarTour()">Guardar Tour</button>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function guardarTour() {
+      const hotelesArray = document.getElementById("hoteles").value.split('\n');
+      const infoArray = document.getElementById("infoHotel").value.split('\n');
+      const hoteles = hotelesArray.map((nombre, i) => ({ nombre, info: infoArray[i] || "" }));
+
+      const data = {
+        nombre: document.getElementById("nombre").value,
+        duracion: document.getElementById("duracion").value,
+        precio_adulto: parseFloat(document.getElementById("precioAdulto").value),
+        comision_adulto: parseFloat(document.getElementById("comisionAdulto").value),
+        precio_nino: parseFloat(document.getElementById("precioNino").value),
+        comision_nino: parseFloat(document.getElementById("comisionNino").value),
+        precio_bebe: parseFloat(document.getElementById("precioBebe").value),
+        comision_bebe: parseFloat(document.getElementById("comisionBebe").value),
+        incluye: document.getElementById("incluye").value,
+        no_incluye: document.getElementById("noIncluye").value,
+        itinerario_tours: document.getElementById("itinerario").value,
+        tours_opcionales: document.getElementById("toursOpcionales").value,
+        politicas: document.getElementById("politicas").value,
+        hoteles,
+        estado: "ACTIVO"
+      };
+
+      db.collection("tours").add(data).then(() => {
+        alert("Tour guardado correctamente");
+        window.location.href = "tours.html";
+      });
+    }
+  </script>
+</body>
+</html>
