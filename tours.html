@@ -283,61 +283,7 @@ table {
   `;
   container.appendChild(div);
 }
-      let idComision = null;
-     function abrirModalComision(tourId, nombreTour) {
-      idComision = tourId;
-      document.getElementById("modalComision").style.display = "flex";
-      db.collection("comisiones").doc(tourId).get().then(doc => {
-        const data = doc.data();
-        document.getElementById("precioBasePp").value = data?.precioBase || 0;
-        document.getElementById("porcentajeComision").value = data?.porcentaje || 0;
-        document.getElementById("comisionPp").value = data?.comisionPp || 0;
-      });
-    }
 
-    function cerrarModalComision() {
-      document.getElementById("modalComision").style.display = "none";
-      idComision = null;
-    }
-
-    function guardarComisionTour() {
-      const precio = parseFloat(document.getElementById("precioBasePp").value) || 0;
-      const porcentaje = parseFloat(document.getElementById("porcentajeComision").value) || 0;
-      const comision = parseFloat((precio * porcentaje / 100).toFixed(2));
-      db.collection("comisiones").doc(idComision).set({
-        precioBase: precio,
-        porcentaje,
-        comisionPp: comision
-      }).then(() => cerrarModalComision());
-    }
-
-  const datos = {
-    nombre: document.getElementById("nombre").value,
-    precio: document.getElementById("precio").value,
-    duracion: document.getElementById("duracion").value,
-    incluye: document.getElementById("incluye").value,
-    no_incluye: document.getElementById("no_incluye").value,
-    itinerario_tours: document.getElementById("itinerario_tours").value,
-    tours_opcionales: document.getElementById("tours_opcionales").value,
-    politicas: document.getElementById("politicas").value,
-    precio_adulto: parseFloat(document.getElementById("precioAdulto").value),
-  comision_adulto: parseFloat(document.getElementById("comisionAdulto").value),
-  precio_nino: parseFloat(document.getElementById("precioNino").value),
-  comision_nino: parseFloat(document.getElementById("comisionNino").value),
-  precio_bebe: parseFloat(document.getElementById("precioBebe").value),
-  comision_bebe: parseFloat(document.getElementById("comisionBebe").value),
-    hoteles,
-    estado: "ACTIVO"
-  };
-
-  const ref = tourActualId
-    ? db.collection("tours").doc(tourActualId).update(datos)
-    : db.collection("tours").add(datos);
-
-  ref.then(() => {
-  cargarTours();
-  cerrarModal();  // Asegúrate de que esto esté aquí
-  });
      function cargarTours() {
       db.collection("tours").get().then(snapshot => {
         const tbody = document.getElementById("tabla-body");
