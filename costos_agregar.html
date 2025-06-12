@@ -157,46 +157,48 @@
       document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
     }
 
-    async function guardarCostos() {
-      const fechaViaje = document.getElementById("fechaViaje").value;
-      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
-      const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
-      const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
-      const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-      const comision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
-      const ganancia = parseFloat(document.getElementById("gananciaProyectada").textContent) || 0;
+  async function guardarCostos() {
+  const fechaViaje = document.getElementById("fechaViaje").value;
+  const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+  const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+  const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
+  const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
+  const tours = parseFloat(document.getElementById("costoTours").value) || 0;
+  const comision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
+  const ganancia = parseFloat(document.getElementById("gananciaProyectada").textContent) || 0;
 
-      if (!fechaViaje || !codigo) {
-        alert("Debe ingresar la fecha de viaje y un código válido.");
-        return;
-      }
+  if (!fechaViaje || !codigo) {
+    alert("Debe ingresar la fecha de viaje y un código válido.");
+    return;
+  }
 
-      try {
-        await db.collection("costos_reservas").doc(codigo).set({
-          codigo,
-          fecha_viaje: fechaViaje,
-          venta_total: venta,
-          estado: "Proyectado",
-          creado_el: new Date(),
-          actualizado_el: new Date(),
-          desglose_proyectado: {
-            boletos,
-            hospedaje,
-            operador,
-            tours,
-            comision,
-            ganancia
-          },
-          desglose_real: {}
-        });
-        alert("✅ Costos guardados correctamente.");
-      } catch (error) {
-        console.error("❌ Error al guardar:", error);
-        alert("Ocurrió un error al guardar los datos.");
-      }
-    }
-
+  try {
+    await db.collection("costos_reservas").doc(codigo).set({
+      codigo,
+      fecha_viaje: fechaViaje,
+      venta_total: venta,
+      estado: "Proyectado",
+      creado_el: new Date(),
+      actualizado_el: new Date(),
+      desglose_proyectado: {
+        boletos,
+        hospedaje,
+        operador,
+        tours,
+        comision,
+        ganancia
+      },
+      desglose_real: {}
+    });
+    alert("✅ Costos guardados correctamente.");
+    // 👉 Redirigir al panel de costos
+    window.location.href = "panel_costos.html";
+  } catch (error) {
+    console.error("❌ Error al guardar:", error);
+    alert("Ocurrió un error al guardar los datos.");
+  }
+}
+window.location.href = "panel_costos.html";
     window.addEventListener("DOMContentLoaded", precargarDatosReserva);
   </script>
 </body>
