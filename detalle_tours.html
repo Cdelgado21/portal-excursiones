@@ -104,12 +104,21 @@
   <label for="itinerario_tours">Itinerario</label>
   <textarea id="itinerario_tours"></textarea>
 
+  <label for="tours_opcionales">Tours Opcionales</label>
+  <textarea id="tours_opcionales"></textarea>
+
+  <label>Hoteles</label>
+  <div id="hotelesContainer">
+    <!-- Hoteles se insertan aquí -->
+  </div>
+  <button onclick="agregarHotel()" class="boton-guardar" style="background:#5f9296;margin-bottom:20px;">+ Agregar hotel</button>
+
   <label for="politicas">Políticas y Condiciones</label>
   <textarea id="politicas"></textarea>
 
   <button class="boton-guardar" onclick="guardarTour()">Guardar Tour</button>
 </div>
-
+  
   <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -121,6 +130,17 @@
 
   const params = new URLSearchParams(window.location.search);
   const tourId = params.get("id");
+
+  function agregarHotel(nombre = "", info = "") {
+    const contenedor = document.getElementById("hotelesContainer");
+    const div = document.createElement("div");
+    div.className = "hotel-entry";
+    div.innerHTML = `
+      <input type="text" placeholder="Nombre del hotel" value="${nombre}" style="margin-bottom:5px;" />
+      <textarea placeholder="Información del hotel">${info}</textarea>
+    `;
+    contenedor.appendChild(div);
+  }
 
   if (tourId) {
     db.collection("tours").doc(tourId).get().then(doc => {
@@ -135,11 +155,21 @@
         document.getElementById("no_incluye").value = t.no_incluye || "";
         document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
         document.getElementById("politicas").value = t.politicas || "";
+        document.getElementById("tours_opcionales").value = t.tours_opcionales || "";
+
+        (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
       }
     });
   }
 
   function guardarTour() {
+    const hoteles = [];
+    document.querySelectorAll("#hotelesContainer .hotel-entry").forEach(div => {
+      const nombre = div.querySelector("input").value.trim();
+      const info = div.querySelector("textarea").value.trim();
+      if (nombre) hoteles.push({ nombre, info });
+    });
+
     const tour = {
       nombre: document.getElementById("nombre").value,
       duracion: document.getElementById("duracion").value,
@@ -150,6 +180,8 @@
       no_incluye: document.getElementById("no_incluye").value,
       itinerario_tours: document.getElementById("itinerario_tours").value,
       politicas: document.getElementById("politicas").value,
+      tours_opcionales: document.getElementById("tours_opcionales").value,
+      hoteles,
       estado: "ACTIVO"
     };
 
