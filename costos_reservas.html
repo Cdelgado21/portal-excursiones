@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Costos por Reserva</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f7f7;
+      padding: 30px;
+      color: #02535a;
+    }
+    h2 {
+      color: #02535a;
+      margin-top: 40px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    th {
+      background-color: #02535a;
+      color: white;
+    }
+    .btn {
+      background: #f49859;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .seccion {
+      margin-bottom: 50px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Costos por Reserva</h1>
+
+  <div class="seccion">
+    <h2>✨ Proyecciones</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Fecha Viaje</th>
+          <th>Precio Venta</th>
+          <th>Vuelos</th>
+          <th>Hospedaje</th>
+          <th>Tours</th>
+          <th>Comisión</th>
+          <th>Total Costos</th>
+          <th>Ganancia Estimada</th>
+          <th>Pagar en...</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tablaProyecciones">
+        <!-- Filas desde script -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="seccion">
+    <h2>📅 Históricos</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Fecha Viaje</th>
+          <th>Precio Venta</th>
+          <th>Costos Reales</th>
+          <th>Comisión</th>
+          <th>Ganancia Real</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody id="tablaHistorico">
+        <!-- Filas desde script -->
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>
