@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -76,6 +75,20 @@
     </thead>
     <tbody id="tablaProyecciones">
       <!-- Se cargan dinámicamente desde Firestore -->
+    <tr>
+  <td>ED-001-2025</td>
+  <td>2025-06-13</td>
+  <td>$639</td>
+  <td>$505</td>
+  <td>5%</td>
+  <td>$104</td>
+  <td>$405</td>
+  <td class="pendiente">Proyección</td>
+  <td>
+    <button class="btn btn-pagar" onclick="abrirCostos('ED-001-2025')">Agregar Costos</button>
+    <button class="btn btn-mover" onclick="moverAHistorico('ED-001-2025')">Mover a Histórico</button>
+  </td>
+</tr>
     </tbody>
   </table>
 
@@ -96,5 +109,72 @@
       <!-- Se cargan dinámicamente desde Firestore -->
     </tbody>
   </table>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function cargarReservas() {
+    const hoy = new Date().toISOString().split("T")[0];
+    db.collection("costos_reservas").get().then(snapshot => {
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const tr = document.createElement("tr");
+        const esHistorico = data.fecha_viaje < hoy;
+
+        if (!esHistorico) {
+          tr.innerHTML = `
+            <td>${data.codigo}</td>
+            <td>${data.fecha_viaje}</td>
+            <td>$${data.venta_total}</td>
+            <td>$${data.costo_total}</td>
+            <td>${data.comision}%</td>
+            <td>$${data.ganancia}</td>
+            <td>$${data.pago_proveedor}</td>
+            <td class="pendiente">Proyección</td>
+            <td>
+              <button class="btn btn-pagar" onclick="abrirCostos('${doc.id}')">Agregar Costos</button>
+              <button class="btn btn-mover" onclick="moverAHistorico('${doc.id}')">Mover a Histórico</button>
+            </td>
+          `;
+          document.getElementById("tablaProyecciones").appendChild(tr);
+        } else {
+          const th = document.createElement("tr");
+          th.innerHTML = `
+            <td>${data.codigo}</td>
+            <td>${data.fecha_viaje}</td>
+            <td>$${data.venta_total}</td>
+            <td>$${data.costo_total}</td>
+            <td>${data.comision}%</td>
+            <td>$${data.ganancia}</td>
+            <td>${data.fecha_cierre}</td>
+          `;
+          document.getElementById("tablaHistoricos").appendChild(th);
+        }
+      });
+    });
+  }
+  function abrirCostos(id) {
+    window.location.href = `costos_agregar.html?id=${id}`;
+  }
+
+  function moverAHistorico(id) {
+    const hoy = new Date().toISOString().split("T")[0];
+    db.collection("costos_reservas").doc(id).update({
+      estado: "HISTORICO",
+      fecha_cierre: hoy
+    }).then(() => {
+      alert("Reserva movida al historial.");
+      location.reload();
+    });
+  }
+  window.onload = cargarReservas;
+  </script>
 </body>
 </html>
