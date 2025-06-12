@@ -148,6 +148,7 @@ th {
     <tr><th>Nombre</th><th>Descripción</th><th>Precio ($)</th><th>Acción</th></tr>
   </thead>
  <tbody id="opcionalesContainer"></tbody>
+  <button onclick="agregarTourOpcional()" class="boton-guardar" style="background:#5f9296;margin-top:10px;">+ Agregar Tour Opcional</button>
     <!-- Campos dinámicos -->
   </tbody>
 </table>
@@ -182,15 +183,15 @@ th {
   const tourId = params.get("id");
 
   function agregarHotel(nombre = "", info = "") {
-    const contenedor = document.getElementById("hotelesContainer");
-    const div = document.createElement("div");
-    div.className = "hotel-entry";
-    div.innerHTML = `
-      <input type="text" placeholder="Nombre del hotel" value="${nombre}" style="margin-bottom:5px;" />
-      <textarea placeholder="Información del hotel">${info}</textarea>
-    `;
-    contenedor.appendChild(div);
-  }
+  const tabla = document.getElementById("hotelesContainer");
+  const fila = document.createElement("tr");
+  fila.innerHTML = `
+    <td><input type="text" value="${nombre}" /></td>
+    <td><textarea>${info}</textarea></td>
+    <td><button onclick="this.parentNode.parentNode.remove()">🗑️</button></td>
+  `;
+  tabla.appendChild(fila);
+}
 
   if (tourId) {
     db.collection("tours").doc(tourId).get().then(doc => {
@@ -212,51 +213,57 @@ th {
     });
   }
 
-  function guardarTour() {
-    const hoteles = [];
-    document.querySelectorAll("#hotelesContainer .hotel-entry").forEach(div => {
-      const nombre = div.querySelector("input").value.trim();
-      const info = div.querySelector("textarea").value.trim();
-      if (nombre) hoteles.push({ nombre, info });
-    });
+ function guardarTour() {
+  const hoteles = [];
+  document.querySelectorAll("#hotelesContainer tr").forEach(tr => {
+    const nombre = tr.querySelector("input")?.value.trim();
+    const info = tr.querySelector("textarea")?.value.trim();
+    if (nombre) hoteles.push({ nombre, info });
+  });
 
-    const tour = {
-      nombre: document.getElementById("nombre").value,
-      duracion: document.getElementById("duracion").value,
-      precio_adulto: parseFloat(document.getElementById("precio_adulto").value),
-      precio_nino: parseFloat(document.getElementById("precio_nino").value),
-      precio_bebe: parseFloat(document.getElementById("precio_bebe").value),
-      incluye: document.getElementById("incluye").value,
-      no_incluye: document.getElementById("no_incluye").value,
-      itinerario_tours: document.getElementById("itinerario_tours").value,
-      politicas: document.getElementById("politicas").value,
-      tours_opcionales: document.getElementById("tours_opcionales").value,
-      hoteles,
-      estado: "ACTIVO"
-    };
+  const tours_opcionales = [];
+  document.querySelectorAll("#opcionalesContainer tr").forEach(tr => {
+    const nombre = tr.querySelector(".opcional-nombre")?.value.trim();
+    const descripcion = tr.querySelector(".opcional-desc")?.value.trim();
+    const precio = parseFloat(tr.querySelector(".opcional-precio")?.value);
+    if (nombre) tours_opcionales.push({ nombre, descripcion, precio });
+  });
 
-    if (tourId) {
-      db.collection("tours").doc(tourId).update(tour).then(() => {
-        alert("Tour actualizado exitosamente");
-        window.location.href = "tours.html";
-      });
-    } else {
-      db.collection("tours").add(tour).then(() => {
-        alert("Tour guardado exitosamente");
-        window.location.href = "tours.html";
-      });
-    }
-  }
-    function agregarTourOpcional({ nombre, descripcion, precio }) {
+  const tour = {
+    nombre: document.getElementById("nombre").value,
+    duracion: document.getElementById("duracion").value,
+    precio_adulto: parseFloat(document.getElementById("precio_adulto").value),
+    precio_nino: parseFloat(document.getElementById("precio_nino").value),
+    precio_bebe: parseFloat(document.getElementById("precio_bebe").value),
+    incluye: document.getElementById("incluye").value,
+    no_incluye: document.getElementById("no_incluye").value,
+    itinerario_tours: document.getElementById("itinerario_tours").value,
+    politicas: document.getElementById("politicas").value,
+    hoteles,
+    tours_opcionales,
+    estado: "ACTIVO"
+  };
+
+  const ref = tourId
+    ? db.collection("tours").doc(tourId).update(tour)
+    : db.collection("tours").add(tour);
+
+  ref.then(() => {
+    alert("Tour guardado correctamente");
+    window.location.href = "tours.html";
+  });
+}
+    function agregarTourOpcional(nombre = "", descripcion = "", precio = "") {
   const tabla = document.getElementById("opcionalesContainer");
   const fila = document.createElement("tr");
   fila.innerHTML = `
-    <td><input value="${nombre}" /></td>
-    <td><input value="${descripcion}" /></td>
-    <td><input type="number" value="${precio}" /></td>
-    <td><button onclick="eliminarFila(this)">🗑️</button></td>
+    <td><input type="text" value="${nombre}" class="opcional-nombre"/></td>
+    <td><input type="text" value="${descripcion}" class="opcional-desc"/></td>
+    <td><input type="number" value="${precio}" class="opcional-precio"/></td>
+    <td><button onclick="this.parentNode.parentNode.remove()">🗑️</button></td>
   `;
   tabla.appendChild(fila);
+      
 }
 </script>
 
