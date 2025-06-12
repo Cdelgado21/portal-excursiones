@@ -267,10 +267,9 @@
           (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
           (t.tours_opcionales || []).forEach(t => agregarTourOpcional(t.nombre, t.descripcion, t.precio));
         }
-        function abrirModal(id) {
+       function abrirModal(id) {
   document.getElementById(id).style.display = 'block';
 }
-
 function cerrarModal(id) {
   document.getElementById(id).style.display = 'none';
 }
@@ -298,8 +297,6 @@ function guardarTourOpcionalModal() {
     document.getElementById('opcionalPrecio').value = '';
   }
 }
-      });
-    }
   </script>
 </body>
 </html>
