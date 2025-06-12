@@ -157,16 +157,21 @@
   </div>
 </div>
     <!-- Modal Hotel -->
-<div id="modalHotel" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="cerrarModal('modalHotel')">&times;</span>
-    <h3>Agregar Hotel</h3>
-    <label>Nombre del hotel</label>
-    <input type="text" id="hotelNombre" />
-    <label>Información del hotel</label>
-    <textarea id="hotelInfo"></textarea>
-    <button onclick="abrirModal('modalHotel')" class="boton-guardar" style="background:#5f9296;margin-bottom:20px;">+ Agregar hotel</button>
-  </div>
+<h3>Hoteles</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Información</th>
+      <th>Eliminar</th>
+    </tr>
+  </thead>
+  <tbody id="hotelesContainer">
+    <!-- Aquí se insertan los hoteles -->
+  </tbody>
+</table>
+
+<button onclick="abrirModal('modalHotel')" class="boton-guardar" style="background:#5f9296;margin-bottom:20px;">+ Agregar hotel</button>
 </div>
     <label for="politicas">Políticas y Condiciones</label>
     <textarea id="politicas"></textarea>
