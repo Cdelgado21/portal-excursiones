@@ -47,11 +47,13 @@
       margin-top: 5px;
     }
 
-    textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-
+ textarea {
+  height: auto;
+  min-height: 150px;
+  line-height: 1.6;
+  font-size: 15px;
+  padding: 12px;
+}
     .boton-guardar {
       background-color: #f49859;
       color: white;
@@ -86,6 +88,30 @@
       background-color: #02535a;
       color: white;
     }
+    .modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+  background-color: white;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+}
+
+.close {
+  float: right;
+  font-size: 24px;
+  cursor: pointer;
+}
   </style>
 </head>
 <body>
@@ -116,24 +142,32 @@
     <label for="itinerario_tours">Itinerario</label>
     <textarea id="itinerario_tours"></textarea>
 
-    <label>Tours Opcionales</label>
-    <table>
-      <thead>
-        <tr><th>Nombre</th><th>Descripción</th><th>Precio ($)</th><th>Acción</th></tr>
-      </thead>
-      <tbody id="opcionalesContainer"></tbody>
-    </table>
-    <button onclick="agregarTourOpcional()" class="boton-guardar" style="background:#5f9296;">+ Agregar Tour Opcional</button>
-
-    <label>Hoteles</label>
-    <table>
-      <thead>
-        <tr><th>Nombre del hotel</th><th>Información</th><th>Eliminar</th></tr>
-      </thead>
-      <tbody id="hotelesContainer"></tbody>
-    </table>
-    <button onclick="agregarHotel()" class="boton-guardar" style="background:#5f9296;">+ Agregar Hotel</button>
-
+   <!-- Modal Tour Opcional -->
+<div id="modalOpcional" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="cerrarModal('modalOpcional')">&times;</span>
+    <h3>Agregar Tour Opcional</h3>
+    <label>Nombre</label>
+    <input type="text" id="opcionalNombre" />
+    <label>Descripción</label>
+    <input type="text" id="opcionalDescripcion" />
+    <label>Precio</label>
+    <input type="number" id="opcionalPrecio" />
+    <button onclick="abrirModal('modalOpcional')" class="boton-guardar" style="background:#5f9296;margin-bottom:20px;">+ Agregar tour opcional</button>
+  </div>
+</div>
+    <!-- Modal Hotel -->
+<div id="modalHotel" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="cerrarModal('modalHotel')">&times;</span>
+    <h3>Agregar Hotel</h3>
+    <label>Nombre del hotel</label>
+    <input type="text" id="hotelNombre" />
+    <label>Información del hotel</label>
+    <textarea id="hotelInfo"></textarea>
+    <button onclick="abrirModal('modalHotel')" class="boton-guardar" style="background:#5f9296;margin-bottom:20px;">+ Agregar hotel</button>
+  </div>
+</div>
     <label for="politicas">Políticas y Condiciones</label>
     <textarea id="politicas"></textarea>
 
@@ -233,6 +267,37 @@
           (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
           (t.tours_opcionales || []).forEach(t => agregarTourOpcional(t.nombre, t.descripcion, t.precio));
         }
+        function abrirModal(id) {
+  document.getElementById(id).style.display = 'block';
+}
+
+function cerrarModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+function guardarHotelModal() {
+  const nombre = document.getElementById('hotelNombre').value.trim();
+  const info = document.getElementById('hotelInfo').value.trim();
+  if (nombre) {
+    agregarHotel(nombre, info);
+    cerrarModal('modalHotel');
+    document.getElementById('hotelNombre').value = '';
+    document.getElementById('hotelInfo').value = '';
+  }
+}
+
+function guardarTourOpcionalModal() {
+  const nombre = document.getElementById('opcionalNombre').value.trim();
+  const descripcion = document.getElementById('opcionalDescripcion').value.trim();
+  const precio = parseFloat(document.getElementById('opcionalPrecio').value.trim());
+  if (nombre && !isNaN(precio)) {
+    agregarTourOpcional({ nombre, descripcion, precio });
+    cerrarModal('modalOpcional');
+    document.getElementById('opcionalNombre').value = '';
+    document.getElementById('opcionalDescripcion').value = '';
+    document.getElementById('opcionalPrecio').value = '';
+  }
+}
       });
     }
   </script>
