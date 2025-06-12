@@ -59,10 +59,12 @@
 
   <label>Venta Total</label>
   <input type="number" id="ventaTotal" oninput="calcularGanancia()" />
-<div id="desgloseVenta" style="margin-top: 15px; font-size: 15px; background: #f9f9f9; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
-  <strong>Desglose de la Venta:</strong>
-  <div id="detalleVenta"></div>
-</div>
+
+  <div id="desgloseVenta" style="margin-top: 15px; font-size: 15px; background: #f9f9f9; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+    <strong>Desglose de la Venta:</strong>
+    <div id="detalleVenta"></div>
+  </div>
+
   <label>Boletos Aéreos</label>
   <input type="number" id="costoBoletos" oninput="calcularGanancia()" />
 
@@ -83,125 +85,119 @@
   <button class="btn" onclick="guardarCostos()">Guardar Costos</button>
 
   <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
-    authDomain: "tours-460717.firebaseapp.com",
-    projectId: "tours-460717"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-  const params = new URLSearchParams(window.location.search);
-  const codigo = params.get("reserva");
-  document.getElementById("codigoReserva").value = codigo;
-precargarDatosReserva();
-  // 🚀 Precargar datos desde "reservas"
-async function precargarDatosReserva() {
-  if (!codigo) return;
-  try {
-    const doc = await db.collection("reservas").doc(codigo).get();
-    if (!doc.exists) {
-      console.warn("No se encontró la reserva.");
-      return;
+    const params = new URLSearchParams(window.location.search);
+    const codigo = params.get("reserva");
+    document.getElementById("codigoReserva").value = codigo;
+
+    async function precargarDatosReserva() {
+      if (!codigo) return;
+      try {
+        const doc = await db.collection("reservas").doc(codigo).get();
+        if (!doc.exists) return;
+
+        const data = doc.data();
+        const venta = parseFloat(data.total || 0); // ✅ Se define aquí
+        document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
+        document.getElementById("ventaTotal").value = venta;
+
+        const adultos = data.cantidadAdultos || 0;
+        const ninos = data.cantidadNinos || 0;
+        const bebes = data.cantidadBebes || 0;
+        const precioAdulto = data.precioAdulto || 0;
+        const precioNino = data.precioNino || 0;
+        const precioBebe = data.precioBebe || 0;
+
+        const totalAdultos = adultos * precioAdulto;
+        const totalNinos = ninos * precioNino;
+        const totalBebes = bebes * precioBebe;
+        const totalCalculado = totalAdultos + totalNinos + totalBebes;
+
+        const diferencia = Math.abs(venta - totalCalculado);
+        let advertencia = "";
+
+        if (diferencia > 1) {
+          advertencia = `<div style="color: #c0392b; font-weight: bold; margin-top: 10px;">
+            ⚠️ Atención: El total calculado ($${totalCalculado.toFixed(2)}) difiere del total registrado ($${venta.toFixed(2)}). Verifica los precios o cantidades.
+          </div>`;
+        }
+
+        document.getElementById("detalleVenta").innerHTML = `
+          👤 Adultos: ${adultos} × $${precioAdulto} = <strong>$${totalAdultos.toFixed(2)}</strong><br>
+          🧒 Niños: ${ninos} × $${precioNino} = <strong>$${totalNinos.toFixed(2)}</strong><br>
+          👶 Bebés: ${bebes} × $${precioBebe} = <strong>$${totalBebes.toFixed(2)}</strong><br>
+          <hr>
+          💵 <strong>Total Calculado:</strong> $${totalCalculado.toFixed(2)}<br>
+          ${advertencia}
+        `;
+
+        calcularGanancia();
+      } catch (e) {
+        console.error("Error al obtener reserva:", e);
+      }
     }
 
-    const data = doc.data();
-    document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
-    document.getElementById("ventaTotal").value = data.total || 0;
+    function calcularGanancia() {
+      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+      const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
+      const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
+      const tours = parseFloat(document.getElementById("costoTours").value) || 0;
+      const comision = (parseFloat(document.getElementById("porcentajeComision").value) || 0) / 100;
 
-    // Mostrar desglose
-    const adultos = data.cantidadAdultos || 0;
-    const ninos = data.cantidadNinos || 0;
-    const bebes = data.cantidadBebes || 0;
-    const precioAdulto = data.precioAdulto || 0;
-    const precioNino = data.precioNino || 0;
-    const precioBebe = data.precioBebe || 0;
-
-    const totalAdultos = adultos * precioAdulto;
-    const totalNinos = ninos * precioNino;
-    const totalBebes = bebes * precioBebe;
-
- const venta = parseFloat(data.total || 0);
-document.getElementById("ventaTotal").value = venta;
-
-const totalCalculado = totalAdultos + totalNinos + totalBebes;
-const diferencia = Math.abs(venta - totalCalculado);
-let advertencia = "";
-
-if (diferencia > 1) {
-  advertencia = `<div style="color: #c0392b; font-weight: bold; margin-top: 10px;">
-    ⚠️ Atención: El total calculado ($${totalCalculado.toFixed(2)}) difiere del total registrado ($${venta.toFixed(2)}). Verifica los precios o cantidades.
-  </div>`;
-}
-
-document.getElementById("detalleVenta").innerHTML = `
-  👤 Adultos: ${adultos} × $${precioAdulto} = <strong>$${totalAdultos.toFixed(2)}</strong><br>
-  🧒 Niños: ${ninos} × $${precioNino} = <strong>$${totalNinos.toFixed(2)}</strong><br>
-  👶 Bebés: ${bebes} × $${precioBebe} = <strong>$${totalBebes.toFixed(2)}</strong><br>
-  <hr>
-  💵 <strong>Total Calculado:</strong> $${totalCalculado.toFixed(2)}<br>
-  ${advertencia}
-`;
-
-    calcularGanancia();
-  } catch (e) {
-    console.error("Error al obtener reserva:", e);
-  }
-}
-
-  function calcularGanancia() {
-    const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-    const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
-    const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
-    const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
-    const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-    const comision = (parseFloat(document.getElementById("porcentajeComision").value) || 0) / 100;
-
-    const totalCostos = boletos + hospedaje + operador + tours + (venta * comision);
-    const ganancia = venta - totalCostos;
-    document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
-  }
-
-  async function guardarCostos() {
-    const fechaViaje = document.getElementById("fechaViaje").value;
-    const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-    const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
-    const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
-    const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
-    const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-    const comision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
-    const ganancia = parseFloat(document.getElementById("gananciaProyectada").textContent) || 0;
-
-    if (!fechaViaje || !codigo) {
-      alert("Debe ingresar la fecha de viaje y un código válido.");
-      return;
+      const totalCostos = boletos + hospedaje + operador + tours + (venta * comision);
+      const ganancia = venta - totalCostos;
+      document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
     }
 
-    try {
-      await db.collection("costos_reservas").doc(codigo).set({
-        codigo,
-        fecha_viaje: fechaViaje,
-        venta_total: venta,
-        estado: "Proyectado",
-        creado_el: new Date(),
-        actualizado_el: new Date(),
-        desglose_proyectado: {
-          boletos,
-          hospedaje,
-          operador,
-          tours,
-          comision,
-          ganancia
-        },
-        desglose_real: {}
-      });
-      alert("✅ Costos guardados correctamente.");
-    } catch (error) {
-      console.error("❌ Error al guardar:", error);
-      alert("Ocurrió un error al guardar los datos.");
+    async function guardarCostos() {
+      const fechaViaje = document.getElementById("fechaViaje").value;
+      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+      const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
+      const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
+      const tours = parseFloat(document.getElementById("costoTours").value) || 0;
+      const comision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
+      const ganancia = parseFloat(document.getElementById("gananciaProyectada").textContent) || 0;
+
+      if (!fechaViaje || !codigo) {
+        alert("Debe ingresar la fecha de viaje y un código válido.");
+        return;
+      }
+
+      try {
+        await db.collection("costos_reservas").doc(codigo).set({
+          codigo,
+          fecha_viaje: fechaViaje,
+          venta_total: venta,
+          estado: "Proyectado",
+          creado_el: new Date(),
+          actualizado_el: new Date(),
+          desglose_proyectado: {
+            boletos,
+            hospedaje,
+            operador,
+            tours,
+            comision,
+            ganancia
+          },
+          desglose_real: {}
+        });
+        alert("✅ Costos guardados correctamente.");
+      } catch (error) {
+        console.error("❌ Error al guardar:", error);
+        alert("Ocurrió un error al guardar los datos.");
+      }
     }
+
     window.addEventListener("DOMContentLoaded", precargarDatosReserva);
-
-</script>
+  </script>
 </body>
 </html>
