@@ -24,207 +24,40 @@
     border-radius: 8px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
-    .btn-editar, .btn-eliminar {
-  background-color: #02535a;
-  color: white;
+   th, td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: center; /* Centramos el contenido de las celdas */
+  vertical-align: middle;
+}
+
+.btn-estado {
+  padding: 6px 12px;
   border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
-  font-size: 0.9em;
   font-weight: bold;
-}
-.btn-editar:hover, .btn-eliminar:hover {
-  background-color: #038c88;
-}
-
-
-  .menu-bar img {
-    height: 50px;
-    margin-right: 20px;
-    cursor: pointer;
-  }
-
-  .menu-bar button {
-    margin-right: 10px;
-    padding: 10px 15px;
-    border: none;
-    background-color: #02535a;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  h2 {
-    text-align: center;
-    color: #02535a;
-  }
-
-  .tabla-container {
-    max-width: 1100px;
-    margin: auto;
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  }
-
-  .acciones {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 10px;
-  }
-
-  .btn-agregar, .btn-descarga {
-    background: #02535a;
-    color: white;
-    border: none;
-    padding: 10px 15px;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 18px;
-  }
-
-  th, td {
-    border: 1px solid #ccc;
-    padding: 10px;
-    text-align: left;
-  }
-
-  th {
-    background: #02535a;
-    color: white;
-  }
-
-  .btn-estado {
-    padding: 5px 10px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    color: white;
-  }
-
-  .activo { background: #28a745; }
-  .inactivo { background: #dc3545; }
-
-  .icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 1.1em;
-  }
-
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    justify-content: center;
-    align-items: center;
-  }
-
-.modal-content {
-  background: #ffffff;
-  border: 3px solid #02535a;
-  padding: 30px;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 900px;
-  height: auto;
-  max-height: calc(100vh - 60px); /* permite más espacio */
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 0 20px rgba(0,0,0,0.2);
-  scrollbar-width: thin;
-  scrollbar-color: #02535a #f0f7f7;
-}
-
-
-  .modal-content h3 {
-    color: #02535a;
-    font-size: 22px;
-    margin-bottom: 20px;
-  }
-
-  .modal-content input,
-  .modal-content textarea {
-    margin-bottom: 10px;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-family: 'Segoe UI', sans-serif;
-  }
-
-  .btn-row {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 15px;
-  }
-
-  .btn-row button {
-    padding: 10px 20px;
-    border-radius: 6px;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-    font-family: 'Segoe UI', sans-serif;
-  }
-
-  .btn-row button:first-child {
-    background-color: #02535a;
-    color: white;
-  }
-
-  .btn-row .btn-cancelar {
-    background-color: #999;
-    color: white;
-  }
-
-  .hotel-entry {
-    margin-bottom: 10px;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 10px;
-  }
-
-  button[onclick^="agregarHotel"] {
-    background-color: #02535a;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-weight: bold;
-    margin-top: 10px;
-  }
-    .tabla-container {
-  max-width: 100%;
-  overflow-x: auto;
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
-}
-
-table {
-  width: 100%;
-  min-width: 1100px; /* evita que las celdas se colapsen */
-  border-collapse: collapse;
-}
-    .boton-opcional:hover {
-  background-color: #f5e2b8;
   color: white;
-      
+  background-color: #28a745; /* Verde por defecto */
+}
+
+.btn-estado.inactivo {
+  background-color: #dc3545; /* Rojo para inactivo */
+}
+
+.btn-editar, .btn-eliminar {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  color: white;
+  background-color: #f49859; /* Anaranjado */
+  margin: 0 4px;
+}
+
+.btn-editar:hover, .btn-eliminar:hover {
+  background-color: #dd7e37;
 }
     @media (max-width: 768px) {
   .modal-content {
@@ -255,11 +88,14 @@ table {
       <button class="btn-descarga" onclick="descargarCSV()">📥 Exportar CSV</button>
     </div>
     <table id="tablaTours">
-      <thead>
-        <tr>
-         <th>Nombre</th><th>Estado</th><th>Editar</th><th>Eliminar</th>
-        </tr>
-      </thead>
+     <thead>
+  <tr>
+    <th>Nombre</th>
+    <th>Estado</th>
+    <th>Editar</th>
+    <th>Eliminar</th>
+  </tr>
+</thead>
       <tbody id="tabla-body"><tr><td colspan="13">Cargando tours...</td></tr></tbody>
     </table>
   </div>  
@@ -294,10 +130,10 @@ table {
           const hotelNombres = (t.hoteles || []).map(h => `<b>${h.nombre}</b>`).join('<hr>');
           const hotelInfo = (t.hoteles || []).map(h => h.info).join('<hr>');
 
-         fila.innerHTML = `
+        fila.innerHTML = `
   <td>${t.nombre || '-'}</td>
   <td>
-    <button class="btn-estado ${t.estado === 'ACTIVO' ? 'activo' : 'inactivo'}"
+    <button class="btn-estado ${t.estado === 'ACTIVO' ? '' : 'inactivo'}"
       onclick="toggleEstado('${doc.id}', '${t.estado}')">${t.estado}</button>
   </td>
   <td>
