@@ -109,7 +109,7 @@
   <thead>
     <tr><th>Nombre</th><th>Descripción</th><th>Precio ($)</th><th>Acción</th></tr>
   </thead>
-  <tbody id="opcionalesContainer">
+ <tbody id="opcionalesContainer"></tbody>
     <!-- Campos dinámicos -->
   </tbody>
 </table>
@@ -167,7 +167,7 @@
         document.getElementById("no_incluye").value = t.no_incluye || "";
         document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
         document.getElementById("politicas").value = t.politicas || "";
-        document.getElementById("tours_opcionales").value = t.tours_opcionales || "";
+(t.tours_opcionales || []).forEach(tour => agregarTourOpcional(tour));
 
         (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
       }
@@ -209,6 +209,17 @@
       });
     }
   }
+    function agregarTourOpcional({ nombre, descripcion, precio }) {
+  const tabla = document.getElementById("opcionalesContainer");
+  const fila = document.createElement("tr");
+  fila.innerHTML = `
+    <td><input value="${nombre}" /></td>
+    <td><input value="${descripcion}" /></td>
+    <td><input type="number" value="${precio}" /></td>
+    <td><button onclick="eliminarFila(this)">🗑️</button></td>
+  `;
+  tabla.appendChild(fila);
+}
 </script>
 
 </body>
