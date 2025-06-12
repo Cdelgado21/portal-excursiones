@@ -121,13 +121,24 @@ async function precargarDatosReserva() {
     const totalNinos = ninos * precioNino;
     const totalBebes = bebes * precioBebe;
 
-    document.getElementById("detalleVenta").innerHTML = `
-      👤 Adultos: ${adultos} × $${precioAdulto} = <strong>$${totalAdultos.toFixed(2)}</strong><br>
-      🧒 Niños: ${ninos} × $${precioNino} = <strong>$${totalNinos.toFixed(2)}</strong><br>
-      👶 Bebés: ${bebes} × $${precioBebe} = <strong>$${totalBebes.toFixed(2)}</strong><br>
-      <hr>
-      💵 <strong>Total Calculado:</strong> $${(totalAdultos + totalNinos + totalBebes).toFixed(2)}
-    `;
+ const totalCalculado = totalAdultos + totalNinos + totalBebes;
+const diferencia = Math.abs(venta - totalCalculado);
+let advertencia = "";
+
+if (diferencia > 1) {
+  advertencia = `<div style="color: #c0392b; font-weight: bold; margin-top: 10px;">
+    ⚠️ Atención: El total calculado ($${totalCalculado.toFixed(2)}) difiere del total registrado ($${venta.toFixed(2)}). Verifica los precios o cantidades.
+  </div>`;
+}
+
+document.getElementById("detalleVenta").innerHTML = `
+  👤 Adultos: ${adultos} × $${precioAdulto} = <strong>$${totalAdultos.toFixed(2)}</strong><br>
+  🧒 Niños: ${ninos} × $${precioNino} = <strong>$${totalNinos.toFixed(2)}</strong><br>
+  👶 Bebés: ${bebes} × $${precioBebe} = <strong>$${totalBebes.toFixed(2)}</strong><br>
+  <hr>
+  💵 <strong>Total Calculado:</strong> $${totalCalculado.toFixed(2)}<br>
+  ${advertencia}
+`;
 
     calcularGanancia();
   } catch (e) {
