@@ -118,15 +118,15 @@
     align-items: center;
   }
 
-  .modal-content {
+.modal-content {
   background: #ffffff;
   border: 3px solid #02535a;
   padding: 30px;
   border-radius: 12px;
   width: 800px;
-      max-width: 90vw;
-  max-height: 90vh;               /* 👈 limita la altura al 90% de la ventana */
-  overflow-y: auto;               /* 👈 activa scroll vertical interno */
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   box-shadow: 0 0 20px rgba(0,0,0,0.2);
@@ -211,6 +211,7 @@ table {
     @media (max-width: 768px) {
   .modal-content {
     width: 95vw;
+     max-height: 90vh;
     padding: 20px;
   }
 }
