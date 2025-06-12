@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Agregar Costos a Reserva</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      color: #02535a;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+      background-color: #02535a;
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+    }
+    form {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 4px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .readonly {
+      background-color: #e9ecef;
+    }
+    button {
+      background-color: #02535a;
+      color: white;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h2>Agregar Costos a la Reserva</h2>
+  <form onsubmit="guardarCostos(); return false;">
+    <label>Código de Reserva</label>
+    <input type="text" id="codigo" readonly class="readonly">
+
+    <label>Fecha del Viaje</label>
+    <input type="date" id="fecha_viaje" readonly class="readonly">
+
+    <label>Costo Boletos de Avión</label>
+    <input type="number" id="costo_boletos" min="0" step="0.01">
+
+    <label>Costo Hospedaje</label>
+    <input type="number" id="costo_hotel" min="0" step="0.01">
+
+    <label>Costo Tours</label>
+    <input type="number" id="costo_tours" min="0" step="0.01">
+
+    <label>Otros Costos</label>
+    <input type="number" id="otros_costos" min="0" step="0.01">
+
+    <label>Comisión (%)</label>
+    <input type="number" id="comision" min="0" step="1" max="100">
+
+    <label>Venta Total (cliente)</label>
+    <input type="number" id="venta_total" min="0" step="0.01">
+
+    <label>Total Costos</label>
+    <input type="number" id="total_costos" readonly class="readonly">
+
+    <label>Ganancia Estimada</label>
+    <input type="number" id="ganancia" readonly class="readonly">
+
+    <label>Pago Proveedor</label>
+    <input type="number" id="pago_proveedor" readonly class="readonly">
+
+    <button type="submit">💾 Guardar Costos</button>
+  </form>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("id");
+
+    function cargarDatos() {
+      if (!id) return;
+      db.collection("costos_reservas").doc(id).get().then(doc => {
+        if (doc.exists) {
+          const d = doc.data();
+          document.getElementById("codigo").value = d.codigo || "";
+          document.getElementById("fecha_viaje").value = d.fecha_viaje || "";
+          document.getElementById("venta_total").value = d.venta_total || "";
+        }
+      });
+    }
+
+    function guardarCostos() {
+      const costo_boletos = parseFloat(document.getElementById("costo_boletos").value) || 0;
+      const costo_hotel = parseFloat(document.getElementById("costo_hotel").value) || 0;
+      const costo_tours = parseFloat(document.getElementById("costo_tours").value) || 0;
+      const otros_costos = parseFloat(document.getElementById("otros_costos").value) || 0;
+      const comision = parseFloat(document.getElementById("comision").value) || 0;
+      const venta_total = parseFloat(document.getElementById("venta_total").value) || 0;
+
+      const total_costos = costo_boletos + costo_hotel + costo_tours + otros_costos;
+      const pago_proveedor = total_costos - ((comision / 100) * venta_total);
+      const ganancia = venta_total - total_costos;
+
+      document.getElementById("total_costos").value = total_costos.toFixed(2);
+      document.getElementById("pago_proveedor").value = pago_proveedor.toFixed(2);
+      document.getElementById("ganancia").value = ganancia.toFixed(2);
+
+      db.collection("costos_reservas").doc(id).update({
+        costo_boletos,
+        costo_hotel,
+        costo_tours,
+        otros_costos,
+        comision,
+        venta_total,
+        costo_total: total_costos,
+        pago_proveedor,
+        ganancia
+      }).then(() => {
+        alert("Costos guardados correctamente.");
+        window.location.href = "costos_reservas.html";
+      });
+    }
+
+    window.onload = cargarDatos;
+  </script>
+</body>
+</html>
