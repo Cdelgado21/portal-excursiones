@@ -14,6 +14,20 @@
     background: #f0f7f7;
     padding: 30px;
   }
+    .menu-bar button {
+  background-color: #02535a;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin-right: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.menu-bar button:hover {
+  background-color: #013f45;
+}
 
   .menu-bar {
     display: flex;
@@ -73,22 +87,24 @@
 }
 
 /* Cambios al pasar el mouse por encima */
+.btn-editar,
+.btn-eliminar,
+.btn-estado {
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
 .btn-editar:hover,
 .btn-eliminar:hover,
 .btn-estado:hover {
   transform: scale(1.05);
   opacity: 0.95;
 }
-      .btn-estado:hover {
+
+.btn-estado:hover {
   background-color: #218838; /* Verde oscuro */
 }
-
 .btn-estado.inactivo:hover {
   background-color: #c82333; /* Rojo oscuro */
-}
-}
-    html {
-  scroll-behavior: smooth;
 }
 </style>
 </head>
