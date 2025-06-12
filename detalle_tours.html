@@ -243,6 +243,8 @@ if (tourId) {
   db.collection("tours").doc(tourId).get().then(doc => {
     if (doc.exists) {
       const t = doc.data();
+      document.getElementById("hotelesContainer").innerHTML = "";
+document.getElementById("opcionalesContainer").innerHTML = "";
       document.getElementById("nombre").value = t.nombre || "";
       document.getElementById("duracion").value = t.duracion || "";
       document.getElementById("precio_adulto").value = t.precio_adulto || "";
