@@ -125,7 +125,8 @@
   border-radius: 12px;
   width: 90%;
   max-width: 900px;
-  max-height: 90vh;
+  height: auto;
+  max-height: calc(100vh - 60px); /* permite más espacio */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -218,6 +219,9 @@ table {
     padding: 20px;
   }
 }
+    html {
+  scroll-behavior: smooth;
+}
 </style>
 </head>
 <body>
@@ -284,7 +288,7 @@ table {
     <textarea id="politicas" placeholder="Políticas y condiciones"></textarea>
 
     <h4>Precios y comisiones</h4>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px;">
 <input id="precioAdulto" placeholder="Precio Adulto ($)" type="number" />
 <input id="comisionAdulto" placeholder="Comisión Adulto (%)" type="number" />
 <input id="precioNino" placeholder="Precio Niño ($)" type="number" />
