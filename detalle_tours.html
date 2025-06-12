@@ -7,265 +7,234 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #f0f7f7; padding: 30px; }
-    h2 { color: #02535a; }
-    .section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); }
-    label { font-weight: bold; display: block; margin-top: 10px; }
-    input, textarea, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 6px; border: 1px solid #ccc; }
-    .btn { background: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-top: 20px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  <style>
-  body {
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: #f0f7f7;
-    padding: 30px;
-    color: #02535a;
-  }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f7f7;
+      padding: 30px;
+      color: #02535a;
+    }
 
-  .container {
-    background: white;
-    border-radius: 10px;
-    padding: 30px;
-    max-width: 900px;
-    margin: auto;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  }
+    .container {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      max-width: 900px;
+      margin: auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
 
-  h2 {
-    text-align: center;
-    color: #02535a;
-  }
+    h2 {
+      text-align: center;
+      color: #02535a;
+    }
 
-label {
-  display: block;
-  margin-top: 25px;
-  font-weight: bold;
-  color: #02535a;
-  font-size: 15px;
-}
+    label {
+      display: block;
+      margin-top: 25px;
+      font-weight: bold;
+      color: #02535a;
+      font-size: 15px;
+    }
 
-  iinput, textarea, select {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-  font-family: 'Segoe UI', sans-serif;
-  box-sizing: border-box;
-}
- textarea {
-  resize: vertical;
-  min-height: 100px;
-}
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      font-family: 'Segoe UI', sans-serif;
+      box-sizing: border-box;
+      margin-top: 5px;
+    }
 
-  .boton-guardar {
-    background-color: #f49859;
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 30px;
-    display: block;
-    width: 100%;
-  }
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
 
-  .boton-guardar:hover {
-    background-color: #e27c34;
-  }
-    .section {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-}
-    button {
-  background-color: #f49859;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
+    .boton-guardar {
+      background-color: #f49859;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 30px;
+      display: block;
+      width: 100%;
+    }
 
-button:hover {
-  background-color: #e27c34;
-}
+    .boton-guardar:hover {
+      background-color: #e27c34;
+    }
+
     table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
 
-th, td {
-  border: 1px solid #ccc;
-  padding: 10px;
-  text-align: left;
-  font-size: 15px;
-}
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+      font-size: 15px;
+    }
 
-th {
-  background-color: #02535a;
-  color: white;
-}
-</style>
+    th {
+      background-color: #02535a;
+      color: white;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-  <h2>Detalle del Tour</h2>
+    <h2>Detalle del Tour</h2>
 
-  <label for="nombre">Nombre del tour</label>
-  <input type="text" id="nombre" />
+    <label for="nombre">Nombre del tour</label>
+    <input type="text" id="nombre" />
 
-  <label for="duracion">Duración</label>
-  <input type="text" id="duracion" />
+    <label for="duracion">Duración</label>
+    <input type="text" id="duracion" />
 
-  <label for="precio_adulto">Precio Adulto</label>
-  <input type="number" id="precio_adulto" />
+    <label for="precio_adulto">Precio Adulto</label>
+    <input type="number" id="precio_adulto" />
 
-  <label for="precio_nino">Precio Niño</label>
-  <input type="number" id="precio_nino" />
+    <label for="precio_nino">Precio Niño</label>
+    <input type="number" id="precio_nino" />
 
-  <label for="precio_bebe">Precio Bebé</label>
-  <input type="number" id="precio_bebe" />
+    <label for="precio_bebe">Precio Bebé</label>
+    <input type="number" id="precio_bebe" />
 
-  <label for="incluye">Incluye</label>
-  <textarea id="incluye"></textarea>
+    <label for="incluye">Incluye</label>
+    <textarea id="incluye"></textarea>
 
-  <label for="no_incluye">No Incluye</label>
-  <textarea id="no_incluye"></textarea>
+    <label for="no_incluye">No Incluye</label>
+    <textarea id="no_incluye"></textarea>
 
-  <label for="itinerario_tours">Itinerario</label>
-  <textarea id="itinerario_tours"></textarea>
+    <label for="itinerario_tours">Itinerario</label>
+    <textarea id="itinerario_tours"></textarea>
 
- <label>Tours Opcionales</label>
-<table id="tablaOpcionales">
-  <thead>
-    <tr><th>Nombre</th><th>Descripción</th><th>Precio ($)</th><th>Acción</th></tr>
-  </thead>
- <tbody id="opcionalesContainer"></tbody>
-  <button onclick="agregarTourOpcional()" class="boton-guardar" style="background:#5f9296;margin-top:10px;">+ Agregar Tour Opcional</button>
-    <!-- Campos dinámicos -->
-  </tbody>
-</table>
+    <label>Tours Opcionales</label>
+    <table>
+      <thead>
+        <tr><th>Nombre</th><th>Descripción</th><th>Precio ($)</th><th>Acción</th></tr>
+      </thead>
+      <tbody id="opcionalesContainer"></tbody>
+    </table>
+    <button onclick="agregarTourOpcional()" class="boton-guardar" style="background:#5f9296;">+ Agregar Tour Opcional</button>
 
-  <table id="tablaHoteles">
-  <thead>
-    <tr><th>Nombre del hotel</th><th>Información</th><th>Eliminar</th></tr>
-  </thead>
-  <tbody id="hotelesContainer">
-    <!-- Se cargan aquí -->
-  </tbody>
-</table>
+    <label>Hoteles</label>
+    <table>
+      <thead>
+        <tr><th>Nombre del hotel</th><th>Información</th><th>Eliminar</th></tr>
+      </thead>
+      <tbody id="hotelesContainer"></tbody>
+    </table>
+    <button onclick="agregarHotel()" class="boton-guardar" style="background:#5f9296;">+ Agregar Hotel</button>
+
+    <label for="politicas">Políticas y Condiciones</label>
+    <textarea id="politicas"></textarea>
+
+    <button class="boton-guardar" onclick="guardarTour()">Guardar Tour</button>
   </div>
-  <button onclick="agregarHotel()" class="boton-guardar" style="background:#5f9296;margin-bottom:20px;">+ Agregar hotel</button>
 
-  <label for="politicas">Políticas y Condiciones</label>
-  <textarea id="politicas"></textarea>
-
-  <button class="boton-guardar" onclick="guardarTour()">Guardar Tour</button>
-</div>
-  
   <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-    authDomain: "tours-460717.firebaseapp.com",
-    projectId: "tours-460717"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-  const params = new URLSearchParams(window.location.search);
-  const tourId = params.get("id");
+    const params = new URLSearchParams(window.location.search);
+    const tourId = params.get("id");
 
-  function agregarHotel(nombre = "", info = "") {
-  const tabla = document.getElementById("hotelesContainer");
-  const fila = document.createElement("tr");
-  fila.innerHTML = `
-    <td><input type="text" value="${nombre}" /></td>
-    <td><textarea>${info}</textarea></td>
-    <td><button onclick="this.parentNode.parentNode.remove()">🗑️</button></td>
-  `;
-  tabla.appendChild(fila);
-}
+    function agregarHotel(nombre = "", info = "") {
+      const tabla = document.getElementById("hotelesContainer");
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td><input type="text" value="${nombre}" /></td>
+        <td><textarea>${info}</textarea></td>
+        <td><button onclick="this.parentNode.parentNode.remove()">🗑️</button></td>
+      `;
+      tabla.appendChild(fila);
+    }
 
-  if (tourId) {
-    db.collection("tours").doc(tourId).get().then(doc => {
-      if (doc.exists) {
-        const t = doc.data();
-        document.getElementById("nombre").value = t.nombre || "";
-        document.getElementById("duracion").value = t.duracion || "";
-        document.getElementById("precio_adulto").value = t.precio_adulto || "";
-        document.getElementById("precio_nino").value = t.precio_nino || "";
-        document.getElementById("precio_bebe").value = t.precio_bebe || "";
-        document.getElementById("incluye").value = t.incluye || "";
-        document.getElementById("no_incluye").value = t.no_incluye || "";
-        document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
-        document.getElementById("politicas").value = t.politicas || "";
-(t.tours_opcionales || []).forEach(tour => agregarTourOpcional(tour));
-
-        (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
-      }
-    });
-  }
-
- function guardarTour() {
-  const hoteles = [];
-  document.querySelectorAll("#hotelesContainer tr").forEach(tr => {
-    const nombre = tr.querySelector("input")?.value.trim();
-    const info = tr.querySelector("textarea")?.value.trim();
-    if (nombre) hoteles.push({ nombre, info });
-  });
-
-  const tours_opcionales = [];
-  document.querySelectorAll("#opcionalesContainer tr").forEach(tr => {
-    const nombre = tr.querySelector(".opcional-nombre")?.value.trim();
-    const descripcion = tr.querySelector(".opcional-desc")?.value.trim();
-    const precio = parseFloat(tr.querySelector(".opcional-precio")?.value);
-    if (nombre) tours_opcionales.push({ nombre, descripcion, precio });
-  });
-
-  const tour = {
-    nombre: document.getElementById("nombre").value,
-    duracion: document.getElementById("duracion").value,
-    precio_adulto: parseFloat(document.getElementById("precio_adulto").value),
-    precio_nino: parseFloat(document.getElementById("precio_nino").value),
-    precio_bebe: parseFloat(document.getElementById("precio_bebe").value),
-    incluye: document.getElementById("incluye").value,
-    no_incluye: document.getElementById("no_incluye").value,
-    itinerario_tours: document.getElementById("itinerario_tours").value,
-    politicas: document.getElementById("politicas").value,
-    hoteles,
-    tours_opcionales,
-    estado: "ACTIVO"
-  };
-
-  const ref = tourId
-    ? db.collection("tours").doc(tourId).update(tour)
-    : db.collection("tours").add(tour);
-
-  ref.then(() => {
-    alert("Tour guardado correctamente");
-    window.location.href = "tours.html";
-  });
-}
     function agregarTourOpcional(nombre = "", descripcion = "", precio = "") {
-  const tabla = document.getElementById("opcionalesContainer");
-  const fila = document.createElement("tr");
-  fila.innerHTML = `
-    <td><input type="text" value="${nombre}" class="opcional-nombre"/></td>
-    <td><input type="text" value="${descripcion}" class="opcional-desc"/></td>
-    <td><input type="number" value="${precio}" class="opcional-precio"/></td>
-    <td><button onclick="this.parentNode.parentNode.remove()">🗑️</button></td>
-  `;
-  tabla.appendChild(fila);
-      
-}
-</script>
+      const tabla = document.getElementById("opcionalesContainer");
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td><input type="text" value="${nombre}" class="opcional-nombre"/></td>
+        <td><input type="text" value="${descripcion}" class="opcional-desc"/></td>
+        <td><input type="number" value="${precio}" class="opcional-precio"/></td>
+        <td><button onclick="this.parentNode.parentNode.remove()">🗑️</button></td>
+      `;
+      tabla.appendChild(fila);
+    }
 
+    function guardarTour() {
+      const hoteles = [];
+      document.querySelectorAll("#hotelesContainer tr").forEach(tr => {
+        const nombre = tr.querySelector("input")?.value.trim();
+        const info = tr.querySelector("textarea")?.value.trim();
+        if (nombre) hoteles.push({ nombre, info });
+      });
+
+      const tours_opcionales = [];
+      document.querySelectorAll("#opcionalesContainer tr").forEach(tr => {
+        const nombre = tr.querySelector(".opcional-nombre")?.value.trim();
+        const descripcion = tr.querySelector(".opcional-desc")?.value.trim();
+        const precio = parseFloat(tr.querySelector(".opcional-precio")?.value);
+        if (nombre) tours_opcionales.push({ nombre, descripcion, precio });
+      });
+
+      const tour = {
+        nombre: document.getElementById("nombre").value,
+        duracion: document.getElementById("duracion").value,
+        precio_adulto: parseFloat(document.getElementById("precio_adulto").value),
+        precio_nino: parseFloat(document.getElementById("precio_nino").value),
+        precio_bebe: parseFloat(document.getElementById("precio_bebe").value),
+        incluye: document.getElementById("incluye").value,
+        no_incluye: document.getElementById("no_incluye").value,
+        itinerario_tours: document.getElementById("itinerario_tours").value,
+        politicas: document.getElementById("politicas").value,
+        hoteles,
+        tours_opcionales,
+        estado: "ACTIVO"
+      };
+
+      const ref = tourId
+        ? db.collection("tours").doc(tourId).update(tour)
+        : db.collection("tours").add(tour);
+
+      ref.then(() => {
+        alert("Tour guardado correctamente");
+        window.location.href = "tours.html";
+      });
+    }
+
+    if (tourId) {
+      db.collection("tours").doc(tourId).get().then(doc => {
+        if (doc.exists) {
+          const t = doc.data();
+          document.getElementById("nombre").value = t.nombre || "";
+          document.getElementById("duracion").value = t.duracion || "";
+          document.getElementById("precio_adulto").value = t.precio_adulto || "";
+          document.getElementById("precio_nino").value = t.precio_nino || "";
+          document.getElementById("precio_bebe").value = t.precio_bebe || "";
+          document.getElementById("incluye").value = t.incluye || "";
+          document.getElementById("no_incluye").value = t.no_incluye || "";
+          document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
+          document.getElementById("politicas").value = t.politicas || "";
+
+          (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
+          (t.tours_opcionales || []).forEach(t => agregarTourOpcional(t.nombre, t.descripcion, t.precio));
+        }
+      });
+    }
+  </script>
 </body>
 </html>
