@@ -545,6 +545,19 @@ const vueloRegreso = {
   codigo: document.getElementById("codigoBoletoRegreso")?.value || "",
   descripcion: document.getElementById("infoVueloRegreso")?.value || ""
 };
+    const costosRef = db.collection("costos_reservas").doc(codigoReserva);
+costosRef.set({
+  codigo: codigoReserva,
+  fecha_viaje: fechaViaje,
+  venta_total: parseFloat(document.getElementById("precio_total").value || 0),
+  estado: "Proyectado",
+  creado_el: new Date(),
+  actualizado_el: new Date()
+}).then(() => {
+  console.log("Documento de costos creado para la reserva:", codigoReserva);
+}).catch(error => {
+  console.error("Error al crear el documento de costos:", error);
+});
     // Crear objeto a guardar
  const datos = {
   codigo,
