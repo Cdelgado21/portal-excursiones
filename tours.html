@@ -119,15 +119,17 @@
   }
 
   .modal-content {
-    background: #ffffff;
-    border: 3px solid #02535a;
-    padding: 30px;
-    border-radius: 12px;
-    width: 500px;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 0 20px rgba(0,0,0,0.2);
-  }
+  background: #ffffff;
+  border: 3px solid #02535a;
+  padding: 30px;
+  border-radius: 12px;
+  width: 500px;
+  max-height: 90vh;               /* 👈 limita la altura al 90% de la ventana */
+  overflow-y: auto;               /* 👈 activa scroll vertical interno */
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
 
   .modal-content h3 {
     color: #02535a;
