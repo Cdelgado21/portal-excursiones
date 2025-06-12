@@ -59,7 +59,10 @@
 
   <label>Venta Total</label>
   <input type="number" id="ventaTotal" oninput="calcularGanancia()" />
-
+<div id="desgloseVenta" style="margin-top: 15px; font-size: 15px; background: #f9f9f9; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+  <strong>Desglose de la Venta:</strong>
+  <div id="detalleVenta"></div>
+</div>
   <label>Boletos Aéreos</label>
   <input type="number" id="costoBoletos" oninput="calcularGanancia()" />
 
@@ -93,24 +96,44 @@
   document.getElementById("codigoReserva").value = codigo;
 
   // 🚀 Precargar datos desde "reservas"
-  async function precargarDatosReserva() {
-    if (!codigo) return;
-    try {
-      const doc = await db.collection("reservas").doc(codigo).get();
-      if (doc.exists) {
-        const data = doc.data();
-        document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
-        document.getElementById("ventaTotal").value = data.total || 0;
-        calcularGanancia();
-      } else {
-        console.warn("No se encontró la reserva");
-      }
-    } catch (e) {
-      console.error("Error al obtener reserva:", e);
+async function precargarDatosReserva() {
+  if (!codigo) return;
+  try {
+    const doc = await db.collection("reservas").doc(codigo).get();
+    if (!doc.exists) {
+      console.warn("No se encontró la reserva.");
+      return;
     }
-  }
 
-  precargarDatosReserva();
+    const data = doc.data();
+    document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
+    document.getElementById("ventaTotal").value = data.total || 0;
+
+    // Mostrar desglose
+    const adultos = data.cantidadAdultos || 0;
+    const ninos = data.cantidadNinos || 0;
+    const bebes = data.cantidadBebes || 0;
+    const precioAdulto = data.precioAdulto || 0;
+    const precioNino = data.precioNino || 0;
+    const precioBebe = data.precioBebe || 0;
+
+    const totalAdultos = adultos * precioAdulto;
+    const totalNinos = ninos * precioNino;
+    const totalBebes = bebes * precioBebe;
+
+    document.getElementById("detalleVenta").innerHTML = `
+      👤 Adultos: ${adultos} × $${precioAdulto} = <strong>$${totalAdultos.toFixed(2)}</strong><br>
+      🧒 Niños: ${ninos} × $${precioNino} = <strong>$${totalNinos.toFixed(2)}</strong><br>
+      👶 Bebés: ${bebes} × $${precioBebe} = <strong>$${totalBebes.toFixed(2)}</strong><br>
+      <hr>
+      💵 <strong>Total Calculado:</strong> $${(totalAdultos + totalNinos + totalBebes).toFixed(2)}
+    `;
+
+    calcularGanancia();
+  } catch (e) {
+    console.error("Error al obtener reserva:", e);
+  }
+}
 
   function calcularGanancia() {
     const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
