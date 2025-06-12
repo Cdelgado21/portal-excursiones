@@ -65,6 +65,27 @@
      max-height: 90vh;
     padding: 20px;
   }
+      /* Efecto hover suave para todos los botones */
+.btn-editar,
+.btn-eliminar,
+.btn-estado {
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+/* Cambios al pasar el mouse por encima */
+.btn-editar:hover,
+.btn-eliminar:hover,
+.btn-estado:hover {
+  transform: scale(1.05);
+  opacity: 0.95;
+}
+      .btn-estado:hover {
+  background-color: #218838; /* Verde oscuro */
+}
+
+.btn-estado.inactivo:hover {
+  background-color: #c82333; /* Rojo oscuro */
+}
 }
     html {
   scroll-behavior: smooth;
