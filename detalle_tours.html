@@ -36,27 +36,27 @@
     color: #02535a;
   }
 
-  label {
-  margin-bottom: 5px;
-  font-weight: bold;
+label {
   display: block;
+  margin-top: 25px;
+  font-weight: bold;
   color: #02535a;
+  font-size: 15px;
 }
 
-  input, textarea, select {
-    width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-    f  font-family: 'Segoe UI', sans-serif;
-    margin-bottom: 15px;
+  iinput, textarea, select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  font-family: 'Segoe UI', sans-serif;
+  box-sizing: border-box;
 }
-  textarea {
-    resize: vertical;
-    min-height: 80px;
-  }
+ textarea {
+  resize: vertical;
+  min-height: 100px;
+}
 
   .boton-guardar {
     background-color: #f49859;
@@ -74,6 +74,44 @@
   .boton-guardar:hover {
     background-color: #e27c34;
   }
+    .section {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+    button {
+  background-color: #f49859;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background-color: #e27c34;
+}
+    table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 10px;
+  text-align: left;
+  font-size: 15px;
+}
+
+th {
+  background-color: #02535a;
+  color: white;
+}
 </style>
 </head>
 <body>
@@ -95,8 +133,10 @@
   <label for="precio_bebe">Precio Bebé</label>
   <input type="number" id="precio_bebe" />
 
-  <h4 style="margin-top: 20px; color: #02535a;">Incluye</h4>
-<textarea id="incluye"></textarea>
+  <div class="section">
+  <label for="incluye">Incluye</label>
+  <textarea id="incluye"></textarea>
+</div>
 
   <label for="no_incluye">No Incluye</label>
   <textarea id="no_incluye"></textarea>
