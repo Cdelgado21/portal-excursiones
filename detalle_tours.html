@@ -250,24 +250,7 @@
       });
     }
 
-    if (tourId) {
-      db.collection("tours").doc(tourId).get().then(doc => {
-        if (doc.exists) {
-          const t = doc.data();
-          document.getElementById("nombre").value = t.nombre || "";
-          document.getElementById("duracion").value = t.duracion || "";
-          document.getElementById("precio_adulto").value = t.precio_adulto || "";
-          document.getElementById("precio_nino").value = t.precio_nino || "";
-          document.getElementById("precio_bebe").value = t.precio_bebe || "";
-          document.getElementById("incluye").value = t.incluye || "";
-          document.getElementById("no_incluye").value = t.no_incluye || "";
-          document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
-          document.getElementById("politicas").value = t.politicas || "";
-
-          (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
-          (t.tours_opcionales || []).forEach(t => agregarTourOpcional(t.nombre, t.descripcion, t.precio));
-        }
-       function abrirModal(id) {
+function abrirModal(id) {
   document.getElementById(id).style.display = 'block';
 }
 function cerrarModal(id) {
@@ -285,17 +268,38 @@ function guardarHotelModal() {
   }
 }
 
-function guardarTourOpcionalModal() {
+ffunction guardarTourOpcionalModal() {
   const nombre = document.getElementById('opcionalNombre').value.trim();
   const descripcion = document.getElementById('opcionalDescripcion').value.trim();
   const precio = parseFloat(document.getElementById('opcionalPrecio').value.trim());
+
   if (nombre && !isNaN(precio)) {
-    agregarTourOpcional({ nombre, descripcion, precio });
+    agregarTourOpcional(nombre, descripcion, precio);
     cerrarModal('modalOpcional');
     document.getElementById('opcionalNombre').value = '';
     document.getElementById('opcionalDescripcion').value = '';
     document.getElementById('opcionalPrecio').value = '';
-  
+  }
+}
+
+if (tourId) {
+  db.collection("tours").doc(tourId).get().then(doc => {
+    if (doc.exists) {
+      const t = doc.data();
+      document.getElementById("nombre").value = t.nombre || "";
+      document.getElementById("duracion").value = t.duracion || "";
+      document.getElementById("precio_adulto").value = t.precio_adulto || "";
+      document.getElementById("precio_nino").value = t.precio_nino || "";
+      document.getElementById("precio_bebe").value = t.precio_bebe || "";
+      document.getElementById("incluye").value = t.incluye || "";
+      document.getElementById("no_incluye").value = t.no_incluye || "";
+      document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
+      document.getElementById("politicas").value = t.politicas || "";
+
+      (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
+      (t.tours_opcionales || []).forEach(op => agregarTourOpcional(op.nombre, op.descripcion, op.precio));
+    }
+  });
 }
   </script>
 </body>
