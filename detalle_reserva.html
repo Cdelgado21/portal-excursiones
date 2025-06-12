@@ -55,6 +55,20 @@
   border: 1px solid #ccc;
   border-radius: 6px;
 }
+    a.boton-igual {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  background-color: #02535a;
+  color: white;
+  font-weight: bold;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 16px;
+  height: 44px; /* igual a la altura del botón */
+  box-sizing: border-box;
+}
   </style>
 </head>
 <body>
@@ -433,16 +447,13 @@
     </select>
   </div>
 
-<div style="margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-  <button id="btnGuardarReserva"
-    style="background-color: #02535a; color: white; padding: 12px 20px; border: none; border-radius: 6px; font-weight: bold; display: inline-flex; align-items: center; gap: 6px;">
-    💾 Guardar Reserva
-  </button>
+<button id="btnGuardarReserva" class="boton-igual">
+  💾 Guardar Reserva
+</button>
 
-  <a id="btnCostos" target="_blank"
-    style="display: none; background-color: #02535a; color: white; padding: 12px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-flex; align-items: center; gap: 6px;">
-    💼 Agregar Costos
-  </a>
+ <a id="btnCostos" target="_blank" class="boton-igual">
+  💼 Agregar Costos
+</a>
 </div>
 <script>
 const firebaseConfig = {
