@@ -197,7 +197,67 @@
 
     const params = new URLSearchParams(window.location.search);
   const tourId = params.get("id");
+    
+function guardarTour() {
+  const hoteles = [];
+  document.querySelectorAll("#hotelesContainer tr").forEach(tr => {
+    const nombre = tr.cells[0].innerText.trim();
+    const info = tr.cells[1].innerText.trim();
+    if (nombre) hoteles.push({ nombre, info });
+  });
 
+  const opcionales = [];
+  document.querySelectorAll("#opcionalesContainer tr").forEach(tr => {
+    const nombre = tr.cells[0].innerText.trim();
+    const descripcion = tr.cells[1].innerText.trim();
+    const precio = parseFloat(tr.cells[2].innerText.trim());
+    if (nombre) opcionales.push({ nombre, descripcion, precio });
+  });
+
+  const data = {
+    nombre: document.getElementById("nombre").value,
+    duracion: document.getElementById("duracion").value,
+    precio_adulto: parseFloat(document.getElementById("precio_adulto").value),
+    precio_nino: parseFloat(document.getElementById("precio_nino").value),
+    precio_bebe: parseFloat(document.getElementById("precio_bebe").value),
+    incluye: document.getElementById("incluye").value,
+    no_incluye: document.getElementById("no_incluye").value,
+    itinerario_tours: document.getElementById("itinerario_tours").value,
+    politicas: document.getElementById("politicas").value,
+    hoteles,
+    tours_opcionales: opcionales,
+    estado: "ACTIVO"
+  };
+
+  const ref = tourId
+    ? db.collection("tours").doc(tourId).update(data)
+    : db.collection("tours").add(data);
+
+  ref.then(() => {
+    alert("Tour guardado correctamente");
+    window.location.href = "tours.html";
+  });
+}
+
+if (tourId) {
+  db.collection("tours").doc(tourId).get().then(doc => {
+    if (doc.exists) {
+      const t = doc.data();
+      document.getElementById("nombre").value = t.nombre || "";
+      document.getElementById("duracion").value = t.duracion || "";
+      document.getElementById("precio_adulto").value = t.precio_adulto || "";
+      document.getElementById("precio_nino").value = t.precio_nino || "";
+      document.getElementById("precio_bebe").value = t.precio_bebe || "";
+      document.getElementById("incluye").value = t.incluye || "";
+      document.getElementById("no_incluye").value = t.no_incluye || "";
+      document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
+      document.getElementById("politicas").value = t.politicas || "";
+
+      (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
+      (t.tours_opcionales || []).forEach(op => agregarTourOpcional(op.nombre, op.descripcion, op.precio));
+    }
+  });
+}
   function agregarHotel(nombre, info) {
     const fila = document.createElement("tr");
     fila.innerHTML = `
@@ -311,6 +371,33 @@
       }
       cerrarModal("modalOpcional");
     }
+    function agregarHotel(nombre = "", info = "") {
+  const tabla = document.getElementById("hotelesContainer");
+  const fila = document.createElement("tr");
+  fila.innerHTML = `
+    <td>${nombre}</td>
+    <td>${info}</td>
+    <td>
+      <button class="btn" onclick="editarHotel(this)">✏️</button>
+      <button class="btn" onclick="this.closest('tr').remove()">🗑️</button>
+    </td>
+  `;
+  tabla.appendChild(fila);
+}
+    function agregarTourOpcional(nombre = "", descripcion = "", precio = "") {
+  const tabla = document.getElementById("opcionalesContainer");
+  const fila = document.createElement("tr");
+  fila.innerHTML = `
+    <td>${nombre}</td>
+    <td>${descripcion}</td>
+    <td>${precio}</td>
+    <td>
+      <button class="btn" onclick="editarOpcional(this)">✏️</button>
+      <button class="btn" onclick="this.closest('tr').remove()">🗑️</button>
+    </td>
+  `;
+  tabla.appendChild(fila);
+}
   </script>
 </body>
 </html>
