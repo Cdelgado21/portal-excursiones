@@ -80,70 +80,90 @@
   <button class="btn" onclick="guardarCostos()">Guardar Costos</button>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    const params = new URLSearchParams(window.location.search);
-    const codigo = params.get("reserva");
-    document.getElementById("codigoReserva").value = codigo;
+  const params = new URLSearchParams(window.location.search);
+  const codigo = params.get("reserva");
+  document.getElementById("codigoReserva").value = codigo;
 
-    function calcularGanancia() {
-      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
-      const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
-      const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
-      const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-      const comision = (parseFloat(document.getElementById("porcentajeComision").value) || 0) / 100;
+  // 🚀 Precargar datos desde "reservas"
+  async function precargarDatosReserva() {
+    if (!codigo) return;
+    try {
+      const doc = await db.collection("reservas").doc(codigo).get();
+      if (doc.exists) {
+        const data = doc.data();
+        document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
+        document.getElementById("ventaTotal").value = data.total || 0;
+        calcularGanancia();
+      } else {
+        console.warn("No se encontró la reserva");
+      }
+    } catch (e) {
+      console.error("Error al obtener reserva:", e);
+    }
+  }
 
-      const totalCostos = boletos + hospedaje + operador + tours + (venta * comision);
-      const ganancia = venta - totalCostos;
-      document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
+  precargarDatosReserva();
+
+  function calcularGanancia() {
+    const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+    const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+    const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
+    const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
+    const tours = parseFloat(document.getElementById("costoTours").value) || 0;
+    const comision = (parseFloat(document.getElementById("porcentajeComision").value) || 0) / 100;
+
+    const totalCostos = boletos + hospedaje + operador + tours + (venta * comision);
+    const ganancia = venta - totalCostos;
+    document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
+  }
+
+  async function guardarCostos() {
+    const fechaViaje = document.getElementById("fechaViaje").value;
+    const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+    const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+    const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
+    const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
+    const tours = parseFloat(document.getElementById("costoTours").value) || 0;
+    const comision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
+    const ganancia = parseFloat(document.getElementById("gananciaProyectada").textContent) || 0;
+
+    if (!fechaViaje || !codigo) {
+      alert("Debe ingresar la fecha de viaje y un código válido.");
+      return;
     }
 
-    async function guardarCostos() {
-      const fechaViaje = document.getElementById("fechaViaje").value;
-      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
-      const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
-      const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
-      const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-      const comision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
-      const ganancia = parseFloat(document.getElementById("gananciaProyectada").textContent) || 0;
-
-      if (!fechaViaje || !codigo) {
-        alert("Debe ingresar la fecha de viaje y un código válido.");
-        return;
-      }
-
-      try {
-        await db.collection("costos_reservas").doc(codigo).set({
-          codigo,
-          fecha_viaje: fechaViaje,
-          venta_total: venta,
-          estado: "Proyectado",
-          creado_el: new Date(),
-          actualizado_el: new Date(),
-          desglose_proyectado: {
-            boletos,
-            hospedaje,
-            operador,
-            tours,
-            comision,
-            ganancia
-          },
-          desglose_real: {} // en blanco al inicio
-        });
-        alert("✅ Costos guardados correctamente.");
-      } catch (error) {
-        console.error("❌ Error al guardar:", error);
-        alert("Ocurrió un error al guardar los datos.");
-      }
+    try {
+      await db.collection("costos_reservas").doc(codigo).set({
+        codigo,
+        fecha_viaje: fechaViaje,
+        venta_total: venta,
+        estado: "Proyectado",
+        creado_el: new Date(),
+        actualizado_el: new Date(),
+        desglose_proyectado: {
+          boletos,
+          hospedaje,
+          operador,
+          tours,
+          comision,
+          ganancia
+        },
+        desglose_real: {}
+      });
+      alert("✅ Costos guardados correctamente.");
+    } catch (error) {
+      console.error("❌ Error al guardar:", error);
+      alert("Ocurrió un error al guardar los datos.");
     }
-  </script>
+  }
+</script>
 </body>
 </html>
