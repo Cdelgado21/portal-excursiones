@@ -37,11 +37,11 @@
   }
 
   label {
-    font-weight: bold;
-    display: block;
-    margin-top: 20px;
-    color: #02535a;
-  }
+  margin-bottom: 5px;
+  font-weight: bold;
+  display: block;
+  color: #02535a;
+}
 
   input, textarea, select {
     width: 100%;
@@ -50,9 +50,9 @@
     border-radius: 8px;
     border: 1px solid #ccc;
     box-sizing: border-box;
-    font-size: 16px;
-  }
-
+    f  font-family: 'Segoe UI', sans-serif;
+    margin-bottom: 15px;
+}
   textarea {
     resize: vertical;
     min-height: 80px;
@@ -95,8 +95,8 @@
   <label for="precio_bebe">Precio Bebé</label>
   <input type="number" id="precio_bebe" />
 
-  <label for="incluye">Incluye</label>
-  <textarea id="incluye"></textarea>
+  <h4 style="margin-top: 20px; color: #02535a;">Incluye</h4>
+<textarea id="incluye"></textarea>
 
   <label for="no_incluye">No Incluye</label>
   <textarea id="no_incluye"></textarea>
@@ -104,12 +104,24 @@
   <label for="itinerario_tours">Itinerario</label>
   <textarea id="itinerario_tours"></textarea>
 
-  <label for="tours_opcionales">Tours Opcionales</label>
-  <textarea id="tours_opcionales"></textarea>
+  <h4>Tours Opcionales</h4>
+<table id="tablaOpcionales">
+  <thead>
+    <tr><th>Nombre</th><th>Descripción</th><th>Precio ($)</th><th>Acción</th></tr>
+  </thead>
+  <tbody id="opcionalesContainer">
+    <!-- Campos dinámicos -->
+  </tbody>
+</table>
 
-  <label>Hoteles</label>
-  <div id="hotelesContainer">
-    <!-- Hoteles se insertan aquí -->
+  <table id="tablaHoteles">
+  <thead>
+    <tr><th>Nombre del hotel</th><th>Información</th><th>Eliminar</th></tr>
+  </thead>
+  <tbody id="hotelesContainer">
+    <!-- Se cargan aquí -->
+  </tbody>
+</table>
   </div>
   <button onclick="agregarHotel()" class="boton-guardar" style="background:#5f9296;margin-bottom:20px;">+ Agregar hotel</button>
 
