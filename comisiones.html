@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Comisiones por Tour</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f7f7; padding: 30px; }
+    h2 { text-align: center; color: #02535a; }
+    .tabla-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
+    th { background-color: #02535a; color: white; }
+  </style>
+</head>
+<body>
+  <h2>Tabla de Comisiones por Tour</h2>
+  <div class="tabla-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Destino</th>
+          <th>Precio Adulto</th>
+          <th>% Comisión Adulto</th>
+          <th>Comisión Adulto</th>
+          <th>Precio Niño</th>
+          <th>% Comisión Niño</th>
+          <th>Comisión Niño</th>
+          <th>Precio Bebé</th>
+          <th>% Comisión Bebé</th>
+          <th>Comisión Bebé</th>
+        </tr>
+      </thead>
+      <tbody id="tablaComisiones"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function cargarComisiones() {
+      db.collection("tours").get().then(snapshot => {
+        const tabla = document.getElementById("tablaComisiones");
+        tabla.innerHTML = "";
+
+        snapshot.forEach(doc => {
+          const t = doc.data();
+
+          const precioAdulto = parseFloat(t.precio_adulto || 0);
+          const comisionA = parseFloat(t.comision_adulto || 0);
+          const montoA = (precioAdulto * comisionA / 100).toFixed(2);
+
+          const precioNino = parseFloat(t.precio_nino || 0);
+          const comisionN = parseFloat(t.comision_nino || 0);
+          const montoN = (precioNino * comisionN / 100).toFixed(2);
+
+          const precioBebe = parseFloat(t.precio_bebe || 0);
+          const comisionB = parseFloat(t.comision_bebe || 0);
+          const montoB = (precioBebe * comisionB / 100).toFixed(2);
+
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${t.nombre || '-'}</td>
+            <td>$${precioAdulto}</td>
+            <td>${comisionA}%</td>
+            <td>$${montoA}</td>
+            <td>$${precioNino}</td>
+            <td>${comisionN}%</td>
+            <td>$${montoN}</td>
+            <td>$${precioBebe}</td>
+            <td>${comisionB}%</td>
+            <td>$${montoB}</td>
+          `;
+          tabla.appendChild(fila);
+        });
+      });
+    }
+
+    window.onload = cargarComisiones;
+  </script>
+</body>
+</html>
