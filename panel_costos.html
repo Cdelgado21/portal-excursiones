@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Costos</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f7f7;
+      padding: 20px;
+      color: #02535a;
+    }
+    h2 {
+      background-color: #02535a;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 40px;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    th {
+      background-color: #f5e2b8;
+    }
+    .pendiente {
+      background-color: #fff3cd;
+      color: #856404;
+      font-weight: bold;
+    }
+    .alerta {
+      background-color: #f8d7da;
+      color: #721c24;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>📊 Proyecciones de Reservas</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Reserva</th>
+        <th>Fecha viaje</th>
+        <th>Venta total</th>
+        <th>Costos</th>
+        <th>Comisión</th>
+        <th>Ganancia Estimada</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody id="tablaProyecciones">
+      <!-- Se carga por JS -->
+    </tbody>
+  </table>
+
+  <h2>📁 Historial de Reservas</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Reserva</th>
+        <th>Fecha viaje</th>
+        <th>Venta</th>
+        <th>Costos reales</th>
+        <th>Comisión final</th>
+        <th>Ganancia real</th>
+        <th>Fecha cierre</th>
+      </tr>
+    </thead>
+    <tbody id="tablaHistoricos">
+      <!-- Se carga por JS -->
+    </tbody>
+  </table>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    async function cargarCostos() {
+      const snapshot = await db.collection("costos_reservas").get();
+      const proyecciones = document.getElementById("tablaProyecciones");
+      const historicos = document.getElementById("tablaHistoricos");
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const fila = document.createElement("tr");
+        const desglose = data.desglose_proyectado || {}; // o desglose_real
+
+        if (data.estado === "Proyectado") {
+          fila.innerHTML = `
+            <td>${data.codigo}</td>
+            <td>${data.fecha_viaje || '-'}</td>
+            <td>$${data.venta_total.toFixed(2)}</td>
+            <td>$${(desglose.boletos + desglose.hospedaje + desglose.operador + desglose.tours).toFixed(2)}</td>
+            <td>${desglose.comision || 0}%</td>
+            <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
+            <td>${data.estado}</td>
+          `;
+          proyecciones.appendChild(fila);
+        } else {
+          const real = data.desglose_real || {};
+          fila.innerHTML = `
+            <td>${data.codigo}</td>
+            <td>${data.fecha_viaje || '-'}</td>
+            <td>$${data.venta_total.toFixed(2)}</td>
+            <td>$${(real.boletos + real.hospedaje + real.operador + real.tours).toFixed(2)}</td>
+            <td>${real.comision || 0}%</td>
+            <td><strong>$${(real.ganancia || 0).toFixed(2)}</strong></td>
+            <td>${data.fecha_cierre || '-'}</td>
+          `;
+          historicos.appendChild(fila);
+        }
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", cargarCostos);
+  </script>
+</body>
+</html>
