@@ -480,11 +480,14 @@ const codigoReservaExistente = params.get("codigo");
     await counterRef.set({ ultimo: nuevoNumero }, { merge: true });
     return { codigo, numero: nuevoNumero, año: añoActual };
   }
-  if (codigoReserva) {
-  const btnCostos = document.getElementById("btnCostos");
-  btnCostos.href = `costos_agregar.html?reserva=${codigoReserva}`;
-  btnCostos.style.display = "inline-block";
-}
+ document.addEventListener("DOMContentLoaded", () => {
+  const codigo = codigoReservaExistente;
+  if (codigo) {
+    const btnCostos = document.getElementById("btnCostos");
+    btnCostos.href = `costos_agregar.html?reserva=${codigo}`;
+    btnCostos.style.display = "inline-block";
+  }
+});
 
 async function guardarReserva() {
   try {
@@ -666,6 +669,8 @@ for (const tarjeta of tarjetasPasajero) {
     console.log("Pagos enviados a Firebase:", datos.pagos);
     await db.collection("reservas").doc(codigo).set(datos);
     alert("✅ Reserva guardada correctamente como " + codigo);
+    document.getElementById("btnCostos").href = `costos_agregar.html?reserva=${codigo}`;
+document.getElementById("btnCostos").style.display = "inline-block";
   } catch (e) {
     console.error("Error al guardar reserva:", e);
     alert("❌ Ocurrió un error al guardar la reserva.");
