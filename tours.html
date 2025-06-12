@@ -225,7 +225,7 @@ table {
     <table id="tablaTours">
       <thead>
         <tr>
-          <th>Nombre</th><th>Precio</th><th>Duración</th><th>Incluye</th><th>Hotel</th><th>Info Hotel</th><th>No Incluye</th><th>Itinerario</th><th>Opcionales</th><th>Políticas</th><th>Estado</th><th>Editar</th><th>Eliminar</th>
+          <th>Nombre</th><th>Precio</th><th>Duración</th><th>Incluye</th><th>Hotel</th><th>Info Hotel</th><th>No Incluye</th><th>Itinerario</th><th>Opcionales</th><th>Ver Comisión</th><th>Políticas</th><th>Estado</th><th>Editar</th><th>Eliminar</th>
         </tr>
       </thead>
       <tbody id="tabla-body"><tr><td colspan="13">Cargando tours...</td></tr></tbody>
@@ -396,7 +396,7 @@ function guardarTour() {
             <td>${t.no_incluye || '-'}</td>
             <td>${t.itinerario_tours || '-'}</td>
             <td><button onclick="abrirOpcionales('${doc.id}')">Ver Tours Opcionales</button></td>
-            <td><button onclick="abrirModalComision('${doc.id}', '${t.nombre}')">Ver Comisión</button></td>
+                  <td><button onclick="window.location.href='comisiones.html?id=${doc.id}'">Ver Comisión</button></td>
             <td>${t.politicas || '-'}</td>
             <td>
               <button class="btn-estado ${t.estado === 'ACTIVO' ? 'activo' : 'inactivo'}"
