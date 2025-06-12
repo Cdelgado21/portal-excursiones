@@ -9,34 +9,31 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-  body {
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background: #f0f7f7;
-    padding: 30px;
-  }
-    .menu-bar button {
-  background-color: #02535a;
-  color: white;
-  font-weight: bold;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 16px;
-  margin-right: 10px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 16px; /* antes 14px aprox */
+  background: #f0f7f7;
+  padding: 30px;
 }
-.menu-bar button:hover {
-  background-color: #013f45;
+    .menu-bar {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background-color: white;
+  padding: 15px 25px;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
 }
 
-  .menu-bar {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-    background-color: white;
-    padding: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+.menu-bar button {
+  font-size: 16px;
+  padding: 10px 20px;
+  border: none;
+  background-color: #02535a;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
   }
    th, td {
   border: 1px solid #ccc;
@@ -69,23 +66,6 @@
   background-color: #f49859; /* Anaranjado */
   margin: 0 4px;
 }
-
-.btn-editar:hover, .btn-eliminar:hover {
-  background-color: #dd7e37;
-}
-    @media (max-width: 768px) {
-  .modal-content {
-    width: 95vw;
-     max-height: 90vh;
-    padding: 20px;
-  }
-      /* Efecto hover suave para todos los botones */
-.btn-editar,
-.btn-eliminar,
-.btn-estado {
-  transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
 /* Cambios al pasar el mouse por encima */
 .btn-editar,
 .btn-eliminar,
