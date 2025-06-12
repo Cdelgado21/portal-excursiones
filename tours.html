@@ -24,6 +24,20 @@
     border-radius: 8px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
   }
+    .btn-editar, .btn-eliminar {
+  background-color: #02535a;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+.btn-editar:hover, .btn-eliminar:hover {
+  background-color: #038c88;
+}
+
 
   .menu-bar img {
     height: 50px;
@@ -236,7 +250,7 @@ table {
   <h2>Catálogo de Tours</h2>
   <div class="tabla-container">
     <div class="acciones">
-      <button class="btn-agregar" onclick="mostrarModal()">+ Nuevo Tour</button>
+    <button class="btn-agregar" onclick="window.location.href='detalle_tour.html'">+ Nuevo Tour</button>
       <button class="btn-descarga" onclick="exportarTabla()">📄 Exportar PDF</button>
       <button class="btn-descarga" onclick="descargarCSV()">📥 Exportar CSV</button>
     </div>
@@ -265,14 +279,6 @@ table {
     </div>
   </div>
 
-  <div class="modal" id="modalTour">
-  <div class="modal-content">
-    <h3 id="modalTitulo">Nuevo Tour</h3>
-    <input id="nombre" placeholder="Nombre del destino" type="text" />
-    <input id="precio" placeholder="Precio" type="text" />
-    <input id="duracion" placeholder="Duración" type="text" />
-    <textarea id="incluye" placeholder="Incluye"></textarea>
-    
     <div id="hotelesContainer">
       <label><b>Hoteles</b></label>
       <div class="hotel-entry">
@@ -350,36 +356,6 @@ table {
         comisionPp: comision
       }).then(() => cerrarModalComision());
     }
-
-
-function mostrarModal(data = null, id = null) {
-  document.getElementById("modalTour").style.display = "flex";
-  document.getElementById("nombre").value = data?.nombre || "";
-  document.getElementById("precio").value = data?.precio || "";
-  document.getElementById("duracion").value = data?.duracion || "";
-  document.getElementById("incluye").value = data?.incluye || "";
-  document.getElementById("no_incluye").value = data?.no_incluye || "";
-  document.getElementById("itinerario_tours").value = data?.itinerario_tours || "";
-  document.getElementById("tours_opcionales").value = data?.tours_opcionales || "";
-  document.getElementById("politicas").value = data?.politicas || "";
-  document.getElementById("hotelesContainer").innerHTML = "";
-
-  (data?.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
-  if (!data?.hoteles?.length) agregarHotel();
-
-  tourActualId = id;
-}
-function cerrarModal() {
-  document.getElementById("modalTour").style.display = "none";
-  tourActualId = null;
-}
-function guardarTour() {
-  const hoteles = [];
-  document.querySelectorAll(".hotel-entry").forEach(div => {
-    const nombre = div.querySelector(".hotel-nombre").value.trim();
-    const info = div.querySelector(".hotel-info").value.trim();
-    if (nombre) hoteles.push({ nombre, info });
-  });
 
   const datos = {
     nombre: document.getElementById("nombre").value,
