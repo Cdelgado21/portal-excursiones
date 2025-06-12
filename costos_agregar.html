@@ -94,7 +94,7 @@
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("reserva");
   document.getElementById("codigoReserva").value = codigo;
-
+precargarDatosReserva();
   // 🚀 Precargar datos desde "reservas"
 async function precargarDatosReserva() {
   if (!codigo) return;
