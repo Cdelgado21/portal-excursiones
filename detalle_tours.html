@@ -13,7 +13,6 @@
       padding: 30px;
       color: #02535a;
     }
-
     .container {
       background: white;
       border-radius: 10px;
@@ -22,12 +21,10 @@
       margin: auto;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-
     h2 {
       text-align: center;
       color: #02535a;
     }
-
     label {
       display: block;
       margin-top: 25px;
@@ -35,7 +32,6 @@
       color: #02535a;
       font-size: 15px;
     }
-
     input, textarea, select {
       width: 100%;
       padding: 12px;
@@ -46,14 +42,9 @@
       box-sizing: border-box;
       margin-top: 5px;
     }
-
- textarea {
-  height: auto;
-  min-height: 150px;
-  line-height: 1.6;
-  font-size: 15px;
-  padding: 12px;
-}
+    textarea {
+      min-height: 150px;
+    }
     .boton-guardar {
       background-color: #f49859;
       color: white;
@@ -66,114 +57,80 @@
       display: block;
       width: 100%;
     }
-
     .boton-guardar:hover {
       background-color: #e27c34;
     }
-
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
     }
-
     th, td {
       border: 1px solid #ccc;
       padding: 10px;
       text-align: left;
       font-size: 15px;
     }
-
     th {
       background-color: #02535a;
       color: white;
     }
-    .modal {
-  display: none;
-  position: fixed;
-  z-index: 1000;
-  left: 0; top: 0;
-  width: 100%; height: 100%;
-  background-color: rgba(0,0,0,0.5);
-}
-
-.modal-content {
-  background-color: white;
-  margin: 10% auto;
-  padding: 20px;
-  border-radius: 10px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 0 15px rgba(0,0,0,0.2);
-}
-
-.close {
-  float: right;
-  font-size: 24px;
-  cursor: pointer;
-}
+    .btn {
+      background-color: #f49859;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn:hover {
+      background-color: #e27c34;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>Detalle del Tour</h2>
 
-    <label for="nombre">Nombre del tour</label>
+    <label>Nombre del tour</label>
     <input type="text" id="nombre" />
 
-    <label for="duracion">Duración</label>
+    <label>Duración</label>
     <input type="text" id="duracion" />
 
-    <label for="precio_adulto">Precio Adulto</label>
+    <label>Precio Adulto</label>
     <input type="number" id="precio_adulto" />
 
-    <label for="precio_nino">Precio Niño</label>
+    <label>Precio Niño</label>
     <input type="number" id="precio_nino" />
 
-    <label for="precio_bebe">Precio Bebé</label>
+    <label>Precio Bebé</label>
     <input type="number" id="precio_bebe" />
 
-    <label for="incluye">Incluye</label>
+    <label>Incluye</label>
     <textarea id="incluye"></textarea>
 
-    <label for="no_incluye">No Incluye</label>
+    <label>No Incluye</label>
     <textarea id="no_incluye"></textarea>
 
-    <label for="itinerario_tours">Itinerario</label>
+    <label>Itinerario</label>
     <textarea id="itinerario_tours"></textarea>
 
-   <!-- Modal Tour Opcional -->
-<div id="modalOpcional" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="cerrarModal('modalOpcional')">&times;</span>
-    <h3>Agregar Tour Opcional</h3>
-    <label>Nombre</label>
-    <input type="text" id="opcionalNombre" />
-    <label>Descripción</label>
-    <input type="text" id="opcionalDescripcion" />
-    <label>Precio</label>
-    <input type="number" id="opcionalPrecio" />
-    <button onclick="abrirModal('modalOpcional')" class="boton-guardar" style="background:#5f9296;margin-bottom:20px;">+ Agregar tour opcional</button>
-  </div>
-</div>
-    <!-- Modal Hotel -->
-<h3>Hoteles</h3>
-<table>
-  <thead>
-    <tr>
-      <th>Nombre</th>
-      <th>Información</th>
-      <th>Eliminar</th>
-    </tr>
-  </thead>
-  <tbody id="hotelesContainer">
-    <!-- Aquí se insertan los hoteles -->
-  </tbody>
-</table>
+    <label>Hoteles</label>
+    <table>
+      <thead><tr><th>Nombre</th><th>Información</th><th>Acciones</th></tr></thead>
+      <tbody id="hotelesContainer"></tbody>
+    </table>
+    <button class="btn" onclick="abrirModalHotel()">+ Agregar hotel</button>
 
-<button onclick="abrirModal('modalHotel')" class="boton-guardar" style="background:#5f9296;margin-bottom:20px;">+ Agregar hotel</button>
-</div>
-    <label for="politicas">Políticas y Condiciones</label>
+    <label>Tours Opcionales</label>
+    <table>
+      <thead><tr><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Acciones</th></tr></thead>
+      <tbody id="opcionalesContainer"></tbody>
+    </table>
+    <button class="btn" onclick="abrirModalOpcional()">+ Agregar tour opcional</button>
+
+    <label>Políticas y Condiciones</label>
     <textarea id="politicas"></textarea>
 
     <button class="boton-guardar" onclick="guardarTour()">Guardar Tour</button>
@@ -191,46 +148,50 @@
     const params = new URLSearchParams(window.location.search);
     const tourId = params.get("id");
 
-    function agregarHotel(nombre = "", info = "") {
-      const tabla = document.getElementById("hotelesContainer");
-      const fila = document.createElement("tr");
-      fila.innerHTML = `
-        <td><input type="text" value="${nombre}" /></td>
-        <td><textarea>${info}</textarea></td>
-        <td><button onclick="this.parentNode.parentNode.remove()">🗑️</button></td>
-      `;
-      tabla.appendChild(fila);
+    function agregarHotel(nombre = '', info = '') {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${nombre}</td>
+        <td>${info}</td>
+        <td>
+          <button class='btn' onclick='editarHotel(this)'>✏️</button>
+          <button class='btn' onclick='this.closest("tr").remove()'>🗑️</button>
+        </td>`;
+      document.getElementById('hotelesContainer').appendChild(tr);
     }
 
-    function agregarTourOpcional(nombre = "", descripcion = "", precio = "") {
-      const tabla = document.getElementById("opcionalesContainer");
-      const fila = document.createElement("tr");
-      fila.innerHTML = `
-        <td><input type="text" value="${nombre}" class="opcional-nombre"/></td>
-        <td><input type="text" value="${descripcion}" class="opcional-desc"/></td>
-        <td><input type="number" value="${precio}" class="opcional-precio"/></td>
-        <td><button onclick="this.parentNode.parentNode.remove()">🗑️</button></td>
-      `;
-      tabla.appendChild(fila);
+    function agregarTourOpcional(nombre = '', descripcion = '', precio = 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${nombre}</td>
+        <td>${descripcion}</td>
+        <td>${precio}</td>
+        <td>
+          <button class='btn' onclick='editarOpcional(this)'>✏️</button>
+          <button class='btn' onclick='this.closest("tr").remove()'>🗑️</button>
+        </td>`;
+      document.getElementById('opcionalesContainer').appendChild(tr);
     }
 
     function guardarTour() {
       const hoteles = [];
-      document.querySelectorAll("#hotelesContainer tr").forEach(tr => {
-        const nombre = tr.querySelector("input")?.value.trim();
-        const info = tr.querySelector("textarea")?.value.trim();
-        if (nombre) hoteles.push({ nombre, info });
+      document.querySelectorAll("#hotelesContainer tr").forEach(row => {
+        hoteles.push({
+          nombre: row.cells[0].innerText,
+          info: row.cells[1].innerText
+        });
       });
 
       const tours_opcionales = [];
-      document.querySelectorAll("#opcionalesContainer tr").forEach(tr => {
-        const nombre = tr.querySelector(".opcional-nombre")?.value.trim();
-        const descripcion = tr.querySelector(".opcional-desc")?.value.trim();
-        const precio = parseFloat(tr.querySelector(".opcional-precio")?.value);
-        if (nombre) tours_opcionales.push({ nombre, descripcion, precio });
+      document.querySelectorAll("#opcionalesContainer tr").forEach(row => {
+        tours_opcionales.push({
+          nombre: row.cells[0].innerText,
+          descripcion: row.cells[1].innerText,
+          precio: parseFloat(row.cells[2].innerText)
+        });
       });
 
-      const tour = {
+      const data = {
         nombre: document.getElementById("nombre").value,
         duracion: document.getElementById("duracion").value,
         precio_adulto: parseFloat(document.getElementById("precio_adulto").value),
@@ -245,67 +206,30 @@
         estado: "ACTIVO"
       };
 
-      const ref = tourId
-        ? db.collection("tours").doc(tourId).update(tour)
-        : db.collection("tours").add(tour);
+      const ref = tourId ? db.collection("tours").doc(tourId).update(data) : db.collection("tours").add(data);
+      ref.then(() => window.location.href = "tours.html");
+    }
 
-      ref.then(() => {
-        alert("Tour guardado correctamente");
-        window.location.href = "tours.html";
+    if (tourId) {
+      db.collection("tours").doc(tourId).get().then(doc => {
+        if (doc.exists) {
+          const t = doc.data();
+          document.getElementById("nombre").value = t.nombre || "";
+          document.getElementById("duracion").value = t.duracion || "";
+          document.getElementById("precio_adulto").value = t.precio_adulto || "";
+          document.getElementById("precio_nino").value = t.precio_nino || "";
+          document.getElementById("precio_bebe").value = t.precio_bebe || "";
+          document.getElementById("incluye").value = t.incluye || "";
+          document.getElementById("no_incluye").value = t.no_incluye || "";
+          document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
+          document.getElementById("politicas").value = t.politicas || "";
+
+          (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
+          (t.tours_opcionales || []).forEach(o => agregarTourOpcional(o.nombre, o.descripcion, o.precio));
+        }
       });
     }
-
-function abrirModal(id) {
-  document.getElementById(id).style.display = 'block';
-}
-function cerrarModal(id) {
-  document.getElementById(id).style.display = 'none';
-}
-
-function guardarHotelModal() {
-  const nombre = document.getElementById('hotelNombre').value.trim();
-  const info = document.getElementById('hotelInfo').value.trim();
-  if (nombre) {
-    agregarHotel(nombre, info);
-    cerrarModal('modalHotel');
-    document.getElementById('hotelNombre').value = '';
-    document.getElementById('hotelInfo').value = '';
-  }
-}
-
-function guardarTourOpcionalModal() {
-  const nombre = document.getElementById('opcionalNombre').value.trim();
-  const descripcion = document.getElementById('opcionalDescripcion').value.trim();
-  const precio = parseFloat(document.getElementById('opcionalPrecio').value.trim());
-
-  if (nombre && !isNaN(precio)) {
-    agregarTourOpcional(nombre, descripcion, precio);
-    cerrarModal('modalOpcional');
-    document.getElementById('opcionalNombre').value = '';
-    document.getElementById('opcionalDescripcion').value = '';
-    document.getElementById('opcionalPrecio').value = '';
-  }
-}
-
-if (tourId) {
-  db.collection("tours").doc(tourId).get().then(doc => {
-    if (doc.exists) {
-      const t = doc.data();
-      document.getElementById("nombre").value = t.nombre || "";
-      document.getElementById("duracion").value = t.duracion || "";
-      document.getElementById("precio_adulto").value = t.precio_adulto || "";
-      document.getElementById("precio_nino").value = t.precio_nino || "";
-      document.getElementById("precio_bebe").value = t.precio_bebe || "";
-      document.getElementById("incluye").value = t.incluye || "";
-      document.getElementById("no_incluye").value = t.no_incluye || "";
-      document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
-      document.getElementById("politicas").value = t.politicas || "";
-
-      (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
-      (t.tours_opcionales || []).forEach(op => agregarTourOpcional(op.nombre, op.descripcion, op.precio));
-    }
-  });
-}
   </script>
 </body>
 </html>
+
