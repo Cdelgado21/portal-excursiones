@@ -86,6 +86,28 @@
     .btn:hover {
       background-color: #e27c34;
     }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background-color: white;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    }
+    .close {
+      float: right;
+      font-size: 24px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -136,100 +158,99 @@
     <button class="boton-guardar" onclick="guardarTour()">Guardar Tour</button>
   </div>
 
+  <!-- Modal para hotel -->
+  <div id="modalHotel" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModal('modalHotel')">&times;</span>
+      <h3>Editar Hotel</h3>
+      <label>Nombre</label>
+      <input type="text" id="hotelNombre" />
+      <label>Información</label>
+      <textarea id="hotelInfo"></textarea>
+      <button class="btn" onclick="guardarEdicionHotel()">Guardar</button>
+    </div>
+  </div>
+
+  <!-- Modal para tour opcional -->
+  <div id="modalOpcional" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="cerrarModal('modalOpcional')">&times;</span>
+      <h3>Editar Tour Opcional</h3>
+      <label>Nombre</label>
+      <input type="text" id="opcionalNombre" />
+      <label>Descripción</label>
+      <input type="text" id="opcionalDescripcion" />
+      <label>Precio</label>
+      <input type="number" id="opcionalPrecio" />
+      <button class="btn" onclick="guardarEdicionOpcional()">Guardar</button>
+    </div>
+  </div>
+
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    let filaActualHotel = null;
+    let filaActualOpcional = null;
 
-    const params = new URLSearchParams(window.location.search);
-    const tourId = params.get("id");
-
-    function agregarHotel(nombre = '', info = '') {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${nombre}</td>
-        <td>${info}</td>
-        <td>
-          <button class='btn' onclick='editarHotel(this)'>✏️</button>
-          <button class='btn' onclick='this.closest("tr").remove()'>🗑️</button>
-        </td>`;
-      document.getElementById('hotelesContainer').appendChild(tr);
+    function abrirModalHotel() {
+      document.getElementById("hotelNombre").value = "";
+      document.getElementById("hotelInfo").value = "";
+      filaActualHotel = null;
+      document.getElementById("modalHotel").style.display = "block";
     }
 
-    function agregarTourOpcional(nombre = '', descripcion = '', precio = 0) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${nombre}</td>
-        <td>${descripcion}</td>
-        <td>${precio}</td>
-        <td>
-          <button class='btn' onclick='editarOpcional(this)'>✏️</button>
-          <button class='btn' onclick='this.closest("tr").remove()'>🗑️</button>
-        </td>`;
-      document.getElementById('opcionalesContainer').appendChild(tr);
+    function abrirModalOpcional() {
+      document.getElementById("opcionalNombre").value = "";
+      document.getElementById("opcionalDescripcion").value = "";
+      document.getElementById("opcionalPrecio").value = "";
+      filaActualOpcional = null;
+      document.getElementById("modalOpcional").style.display = "block";
     }
 
-    function guardarTour() {
-      const hoteles = [];
-      document.querySelectorAll("#hotelesContainer tr").forEach(row => {
-        hoteles.push({
-          nombre: row.cells[0].innerText,
-          info: row.cells[1].innerText
-        });
-      });
-
-      const tours_opcionales = [];
-      document.querySelectorAll("#opcionalesContainer tr").forEach(row => {
-        tours_opcionales.push({
-          nombre: row.cells[0].innerText,
-          descripcion: row.cells[1].innerText,
-          precio: parseFloat(row.cells[2].innerText)
-        });
-      });
-
-      const data = {
-        nombre: document.getElementById("nombre").value,
-        duracion: document.getElementById("duracion").value,
-        precio_adulto: parseFloat(document.getElementById("precio_adulto").value),
-        precio_nino: parseFloat(document.getElementById("precio_nino").value),
-        precio_bebe: parseFloat(document.getElementById("precio_bebe").value),
-        incluye: document.getElementById("incluye").value,
-        no_incluye: document.getElementById("no_incluye").value,
-        itinerario_tours: document.getElementById("itinerario_tours").value,
-        politicas: document.getElementById("politicas").value,
-        hoteles,
-        tours_opcionales,
-        estado: "ACTIVO"
-      };
-
-      const ref = tourId ? db.collection("tours").doc(tourId).update(data) : db.collection("tours").add(data);
-      ref.then(() => window.location.href = "tours.html");
+    function cerrarModal(id) {
+      document.getElementById(id).style.display = "none";
     }
 
-    if (tourId) {
-      db.collection("tours").doc(tourId).get().then(doc => {
-        if (doc.exists) {
-          const t = doc.data();
-          document.getElementById("nombre").value = t.nombre || "";
-          document.getElementById("duracion").value = t.duracion || "";
-          document.getElementById("precio_adulto").value = t.precio_adulto || "";
-          document.getElementById("precio_nino").value = t.precio_nino || "";
-          document.getElementById("precio_bebe").value = t.precio_bebe || "";
-          document.getElementById("incluye").value = t.incluye || "";
-          document.getElementById("no_incluye").value = t.no_incluye || "";
-          document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
-          document.getElementById("politicas").value = t.politicas || "";
+    function editarHotel(btn) {
+      filaActualHotel = btn.closest("tr");
+      document.getElementById("hotelNombre").value = filaActualHotel.cells[0].innerText;
+      document.getElementById("hotelInfo").value = filaActualHotel.cells[1].innerText;
+      document.getElementById("modalHotel").style.display = "block";
+    }
 
-          (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
-          (t.tours_opcionales || []).forEach(o => agregarTourOpcional(o.nombre, o.descripcion, o.precio));
-        }
-      });
+    function guardarEdicionHotel() {
+      const nombre = document.getElementById("hotelNombre").value;
+      const info = document.getElementById("hotelInfo").value;
+      if (filaActualHotel) {
+        filaActualHotel.cells[0].innerText = nombre;
+        filaActualHotel.cells[1].innerText = info;
+      } else {
+        agregarHotel(nombre, info);
+      }
+      cerrarModal("modalHotel");
+    }
+
+    function editarOpcional(btn) {
+      filaActualOpcional = btn.closest("tr");
+      document.getElementById("opcionalNombre").value = filaActualOpcional.cells[0].innerText;
+      document.getElementById("opcionalDescripcion").value = filaActualOpcional.cells[1].innerText;
+      document.getElementById("opcionalPrecio").value = filaActualOpcional.cells[2].innerText;
+      document.getElementById("modalOpcional").style.display = "block";
+    }
+
+    function guardarEdicionOpcional() {
+      const nombre = document.getElementById("opcionalNombre").value;
+      const descripcion = document.getElementById("opcionalDescripcion").value;
+      const precio = document.getElementById("opcionalPrecio").value;
+      if (filaActualOpcional) {
+        filaActualOpcional.cells[0].innerText = nombre;
+        filaActualOpcional.cells[1].innerText = descripcion;
+        filaActualOpcional.cells[2].innerText = precio;
+      } else {
+        agregarTourOpcional(nombre, descripcion, precio);
+      }
+      cerrarModal("modalOpcional");
     }
   </script>
 </body>
 </html>
+
 
