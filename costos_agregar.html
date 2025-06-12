@@ -121,7 +121,10 @@ async function precargarDatosReserva() {
     const totalNinos = ninos * precioNino;
     const totalBebes = bebes * precioBebe;
 
- const totalCalculado = totalAdultos + totalNinos + totalBebes;
+ const venta = parseFloat(data.total || 0);
+document.getElementById("ventaTotal").value = venta;
+
+const totalCalculado = totalAdultos + totalNinos + totalBebes;
 const diferencia = Math.abs(venta - totalCalculado);
 let advertencia = "";
 
@@ -197,7 +200,8 @@ document.getElementById("detalleVenta").innerHTML = `
       console.error("❌ Error al guardar:", error);
       alert("Ocurrió un error al guardar los datos.");
     }
-    
+    window.addEventListener("DOMContentLoaded", precargarDatosReserva);
+
 </script>
 </body>
 </html>
