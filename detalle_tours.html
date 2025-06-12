@@ -257,9 +257,14 @@ document.getElementById("opcionalesContainer").innerHTML = "";
 
       (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
       (t.tours_opcionales || []).forEach(op => agregarTourOpcional(op.nombre, op.descripcion, op.precio));
-    }
-  });
-}
+  } else {
+        alert("El tour no existe.");
+      }
+    }).catch(err => {
+      console.error("Error al cargar tour:", err);
+    });
+  }
+
   function agregarHotel(nombre, info) {
     const fila = document.createElement("tr");
     fila.innerHTML = `
@@ -287,14 +292,7 @@ document.getElementById("opcionalesContainer").innerHTML = "";
     document.getElementById("opcionalesContainer").appendChild(fila);
   }
 
-      } else {
-        alert("El tour no existe.");
-      }
-    }).catch(err => {
-      console.error("Error al cargar tour:", err);
-    });
-  }
-
+     
     let filaActualHotel = null;
     let filaActualOpcional = null;
 
