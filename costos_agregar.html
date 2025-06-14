@@ -77,8 +77,8 @@
   <label>Tours y Actividades</label>
   <input type="number" id="costoTours" oninput="calcularGanancia()" />
 
-  <label>Comisión (%)</label>
-  <input type="number" id="porcentajeComision" oninput="calcularGanancia()" />
+ <label>Comisión</label>
+<input type="number" id="montoComision" oninput="calcularGanancia()" />
 
   <div class="resultado">Ganancia Estimada: $<span id="gananciaProyectada">0.00</span></div>
 
@@ -150,7 +150,11 @@
       const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
       const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
       const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-      const comision = (parseFloat(document.getElementById("porcentajeComision").value) || 0) / 100;
+    const comision = parseFloat(document.getElementById("montoComision").value) || 0;
+
+const totalCostos = boletos + hospedaje + operador + tours + comision;
+const ganancia = venta - totalCostos;
+document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
 
       const costosDirectos = boletos + hospedaje + operador + tours;
 const baseGanancia = venta - costosDirectos;
@@ -166,7 +170,7 @@ document.getElementById("gananciaProyectada").textContent = gananciaNeta.toFixed
   const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
   const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
   const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-  const comision = parseFloat(document.getElementById("porcentajeComision").value) || 0;
+const comision = parseFloat(document.getElementById("montoComision").value) || 0;
   const ganancia = parseFloat(document.getElementById("gananciaProyectada").textContent) || 0;
 
   if (!fechaViaje || !codigo) {
