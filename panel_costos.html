@@ -176,10 +176,10 @@ fila.innerHTML = `
     ${cerrarBtn}
   </td>
 `;
-          proyecciones.appendChild(fila);
-        } else {
-          const totalCostos = [boletos, hospedaje, operador, tours].reduce((s, x) => s + (x?.monto || x || 0), 0);
-          fila.innerHTML = `
+           proyecciones.appendChild(fila);
+} else {
+  const totalCostos = [boletos, hospedaje, operador, tours].reduce((s, x) => s + (x?.monto || x || 0), 0);
+  fila.innerHTML = 
             <td>${reservaId}</td>
             <td>${titular}</td>
             <td>${formatoFecha(data.fecha_viaje)}</td>
@@ -191,9 +191,7 @@ fila.innerHTML = `
           `;
           historicos.appendChild(fila);
         }
-      });
-    }
-
+  
     async function cerrarReserva(codigo) {
   const confirmacion = confirm("¿Estás seguro de cerrar esta reserva? Esta acción no se podrá deshacer.");
   if (!confirmacion) return;
