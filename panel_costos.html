@@ -156,24 +156,23 @@
       `;
       proyecciones.appendChild(fila);
     }
-        if (data.estado === "Cerrado") {
-          const real = data.desglose_real || {};
-          const totalCostosReales = (real.boletos || 0) + (real.hospedaje || 0) + (real.operador || 0) + (real.tours || 0);
-
-          fila.innerHTML = `
-            <td>${data.codigo}</td>
-            <td>${data.titular || "-"}</td>
-            <td>${fechaFormateada}</td>
-            <td>$${data.venta_total?.toFixed(2) || '0.00'}</td>
-            <td>$${totalCostosReales.toFixed(2)}</td>
-            <td>$${(real.comision || 0).toFixed(2)}</td>
-            <td><strong>$${(real.ganancia || 0).toFixed(2)}</strong></td>
-            <td>${data.fecha_cierre ? formatoFecha(data.fecha_cierre) : '-'}</td>
-          `;
-          historicos.appendChild(fila);
-       }
-  }
-}
+       if (data.estado === "Cerrado") {
+      const real = data.desglose_real || {};
+      const totalCostosReales = (real.boletos || 0) + (real.hospedaje || 0) + (real.operador || 0) + (real.tours || 0);
+      fila.innerHTML = `
+        <td>${data.codigo}</td>
+        <td>${nombreTitular}</td>
+        <td>${fechaFormateada}</td>
+        <td>$${data.venta_total?.toFixed(2) || '0.00'}</td>
+        <td>$${totalCostosReales.toFixed(2)}</td>
+        <td>$${(real.comision || 0).toFixed(2)}</td>
+        <td><strong>$${(real.ganancia || 0).toFixed(2)}</strong></td>
+        <td>${data.fecha_cierre ? formatoFecha(data.fecha_cierre) : '-'}</td>
+      `;
+      historicos.appendChild(fila);
+    }
+  } // ← aquí cierra el for...of
+} // ← aquí cierra la función cargarCostos
 
     window.addEventListener("DOMContentLoaded", cargarCostos);
   </script>
