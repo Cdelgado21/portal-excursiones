@@ -179,19 +179,20 @@ fila.innerHTML = `
            proyecciones.appendChild(fila);
 } else {
   const totalCostos = [boletos, hospedaje, operador, tours].reduce((s, x) => s + (x?.monto || x || 0), 0);
-  fila.innerHTML = 
-            <td>${reservaId}</td>
-            <td>${titular}</td>
-            <td>${formatoFecha(data.fecha_viaje)}</td>
-            <td>$${venta.toFixed(2)}</td>
-            <td>$${totalCostos.toFixed(2)}</td>
-            <td>$${(comision?.monto || comision || 0).toFixed(2)}</td>
-            <td><strong>$${ganancia.toFixed(2)}</strong></td>
-            <td>${formatoFecha(data.fecha_cierre)}</td>
-          `;
+          fila.innerHTML = `
+  <td>${reservaId}</td>
+  <td>${titular}</td>
+  <td>${formatoFecha(data.fecha_viaje)}</td>
+  <td>$${venta.toFixed(2)}</td>
+  <td>$${totalCostos.toFixed(2)}</td>
+  <td>$${(comision?.monto || comision || 0).toFixed(2)}</td>
+  <td><strong>$${ganancia.toFixed(2)}</strong></td>
+  <td>${formatoFecha(data.fecha_cierre)}</td>
+`;
           historicos.appendChild(fila);
-        }
-  
+      } // <- esta cierra el else
+}); // <- esta cierra el snapshot.forEach
+} 
     async function cerrarReserva(codigo) {
   const confirmacion = confirm("¿Estás seguro de cerrar esta reserva? Esta acción no se podrá deshacer.");
   if (!confirmacion) return;
