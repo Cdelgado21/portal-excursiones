@@ -83,53 +83,74 @@
     </tbody>
   </table>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+ <script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    async function cargarCostos() {
-      const snapshot = await db.collection("costos_reservas").get();
-      const proyecciones = document.getElementById("tablaProyecciones");
-      const historicos = document.getElementById("tablaHistoricos");
+  function formatoFecha(fechaISO) {
+    const fecha = new Date(fechaISO);
+    return fecha.toLocaleDateString("es-CR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+  }
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const fila = document.createElement("tr");
-        const desglose = data.desglose_proyectado || {}; // o desglose_real
+  async function cargarCostos() {
+    const snapshot = await db.collection("costos_reservas").get();
+    const proyecciones = document.getElementById("tablaProyecciones");
+    const historicos = document.getElementById("tablaHistoricos");
+    const hoy = new Date();
 
-        if (data.estado === "Proyectado") {
-          fila.innerHTML = `
-            <td>${data.codigo}</td>
-            <td>${data.fecha_viaje || '-'}</td>
-            <td>$${data.venta_total.toFixed(2)}</td>
-            <td>$${(desglose.boletos + desglose.hospedaje + desglose.operador + desglose.tours).toFixed(2)}</td>
-            <td>${desglose.comision || 0}%</td>
-            <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
-            <td>${data.estado}</td>
-          `;
-          proyecciones.appendChild(fila);
-        } else {
-          const real = data.desglose_real || {};
-          fila.innerHTML = `
-            <td>${data.codigo}</td>
-            <td>${data.fecha_viaje || '-'}</td>
-            <td>$${data.venta_total.toFixed(2)}</td>
-            <td>$${(real.boletos + real.hospedaje + real.operador + real.tours).toFixed(2)}</td>
-            <td>${real.comision || 0}%</td>
-            <td><strong>$${(real.ganancia || 0).toFixed(2)}</strong></td>
-            <td>${data.fecha_cierre || '-'}</td>
-          `;
-          historicos.appendChild(fila);
-        }
-      });
-    }
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const fechaViaje = new Date(data.fecha_viaje);
+      const fechaFormateada = formatoFecha(data.fecha_viaje || '');
+      const esHistorico = fechaViaje < hoy;
+      const fila = document.createElement("tr");
 
-    window.addEventListener("DOMContentLoaded", cargarCostos);
-  </script>
+      // Alerta si faltan exactamente 3 días
+      const diferenciaDias = Math.ceil((fechaViaje - hoy) / (1000 * 60 * 60 * 24));
+      if (diferenciaDias === 3) {
+        alert(`🔔 Atención: El tour ${data.codigo} se realizará en 3 días.`);
+      }
+
+      if (!esHistorico) {
+        const desglose = data.desglose_proyectado || {};
+        const totalCostos = (desglose.boletos || 0) + (desglose.hospedaje || 0) + (desglose.operador || 0) + (desglose.tours || 0);
+        fila.innerHTML = `
+          <td>${data.codigo}</td>
+          <td>${fechaFormateada}</td>
+          <td>$${data.venta_total?.toFixed(2) || '0.00'}</td>
+          <td>$${totalCostos.toFixed(2)}</td>
+          <td>$${(desglose.comision || 0).toFixed(2)}</td>
+          <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
+          <td>${data.estado}</td>
+        `;
+        proyecciones.appendChild(fila);
+      } else {
+        const real = data.desglose_real || {};
+        const totalCostosReales = (real.boletos || 0) + (real.hospedaje || 0) + (real.operador || 0) + (real.tours || 0);
+        fila.innerHTML = `
+          <td>${data.codigo}</td>
+          <td>${fechaFormateada}</td>
+          <td>$${data.venta_total?.toFixed(2) || '0.00'}</td>
+          <td>$${totalCostosReales.toFixed(2)}</td>
+          <td>$${(real.comision || 0).toFixed(2)}</td>
+          <td><strong>$${(real.ganancia || 0).toFixed(2)}</strong></td>
+          <td>${data.fecha_cierre ? formatoFecha(data.fecha_cierre) : '-'}</td>
+        `;
+        historicos.appendChild(fila);
+      }
+    });
+  }
+
+  window.addEventListener("DOMContentLoaded", cargarCostos);
+</script>
 </body>
 </html>
