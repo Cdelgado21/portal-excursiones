@@ -98,48 +98,64 @@
     }
 
     async function cargarCostos() {
-      const snapshot = await db.collection("costos_reservas").get();
-      const proyecciones = document.getElementById("tablaProyecciones");
-      const historicos = document.getElementById("tablaHistoricos");
-      const hoy = new Date();
+  const snapshot = await db.collection("costos_reservas").get();
+  const proyecciones = document.getElementById("tablaProyecciones");
+  const historicos = document.getElementById("tablaHistoricos");
+  const hoy = new Date();
 
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const fechaViaje = new Date(data.fecha_viaje);
-        const fechaFormateada = formatoFecha(data.fecha_viaje || '');
-        const esHistorico = fechaViaje < hoy;
-        const diferenciaDias = Math.ceil((fechaViaje - hoy) / (1000 * 60 * 60 * 24));
-        const fila = document.createElement("tr");
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    const codigo = data.codigo;
+    const fechaViaje = new Date(data.fecha_viaje);
+    const fechaFormateada = formatoFecha(data.fecha_viaje || '');
+    const esHistorico = fechaViaje < hoy;
+    const diferenciaDias = Math.ceil((fechaViaje - hoy) / (1000 * 60 * 60 * 24));
 
-        const desglose = data.desglose_proyectado || {};
-        const totalCostos = (desglose.boletos || 0) + (desglose.hospedaje || 0) + (desglose.operador || 0) + (desglose.tours || 0);
+    // ⚠️ Alerta una semana antes
+    if (diferenciaDias === 7) {
+      alert(`🔔 Recordatorio: El tour ${codigo} se realiza en una semana.`);
+    }
 
-        // ALERTA si faltan 7 días
-        if (diferenciaDias === 7 && data.estado === "Proyectado") {
-          fila.classList.add("alerta");
-        }
+    // 🧾 Cargar información del titular desde "reservas"
+    let nombreTitular = "-";
+    let adultos = 0, ninos = 0, bebes = 0;
+    try {
+      const docReserva = await db.collection("reservas").doc(codigo).get();
+      const datosReserva = docReserva.data() || {};
+      nombreTitular = datosReserva.nombreTitular || "-";
+      adultos = datosReserva.cantidadAdultos || 0;
+      ninos = datosReserva.cantidadNinos || 0;
+      bebes = datosReserva.cantidadBebes || 0;
+    } catch (e) {
+      console.warn(`No se pudo obtener info de reserva ${codigo}`, e);
+    }
 
-        if (data.estado === "Proyectado") {
-          fila.innerHTML = `
-            <td>${data.codigo}</td>
-            <td>${data.titular || "-"}</td>
-            <td>${fechaFormateada}</td>
-            <td>${data.adultos || 0}</td>
-            <td>${data.ninos || 0}</td>
-            <td>${data.bebes || 0}</td>
-            <td>$${data.venta_total?.toFixed(2) || '0.00'}</td>
-            <td>$${totalCostos.toFixed(2)}</td>
-            <td>$${(desglose.comision || 0).toFixed(2)}</td>
-            <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
-            <td>
-              <a href="costos_reales.html?reserva=${data.codigo}" style="padding:6px 12px; background:#02535a; color:white; text-decoration:none; border-radius:6px;">
-                ✏️ Editar
-              </a>
-            </td>
-          `;
-          proyecciones.appendChild(fila);
-        }
+    const desglose = data.desglose_proyectado || {};
+    const totalCostos = (desglose.boletos || 0) + (desglose.hospedaje || 0) + (desglose.operador || 0) + (desglose.tours || 0);
+    
+    const fila = document.createElement("tr");
 
+    if (data.estado === "Proyectado") {
+      const acciones = `
+        <a href="costos_reales.html?reserva=${codigo}" style="background:#f49859; color:white; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold;">
+          ✏️ Editar
+        </a>
+      `;
+      fila.innerHTML = `
+        <td>${codigo}</td>
+        <td>${nombreTitular}</td>
+        <td>${fechaFormateada}</td>
+        <td>${adultos}</td>
+        <td>${ninos}</td>
+        <td>${bebes}</td>
+        <td>$${data.venta_total?.toFixed(2) || '0.00'}</td>
+        <td>$${totalCostos.toFixed(2)}</td>
+        <td>$${(desglose.comision || 0).toFixed(2)}</td>
+        <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
+        <td>${acciones}</td>
+      `;
+      proyecciones.appendChild(fila);
+    }
         if (data.estado === "Cerrado") {
           const real = data.desglose_real || {};
           const totalCostosReales = (real.boletos || 0) + (real.hospedaje || 0) + (real.operador || 0) + (real.tours || 0);
