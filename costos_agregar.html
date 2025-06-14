@@ -152,9 +152,11 @@
       const tours = parseFloat(document.getElementById("costoTours").value) || 0;
       const comision = (parseFloat(document.getElementById("porcentajeComision").value) || 0) / 100;
 
-      const totalCostos = boletos + hospedaje + operador + tours + (venta * comision);
-      const ganancia = venta - totalCostos;
-      document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
+      const costosDirectos = boletos + hospedaje + operador + tours;
+const baseGanancia = venta - costosDirectos;
+const gananciaNeta = baseGanancia * (1 - comision); // resta la parte de comisión
+
+document.getElementById("gananciaProyectada").textContent = gananciaNeta.toFixed(2);
     }
 
   async function guardarCostos() {
