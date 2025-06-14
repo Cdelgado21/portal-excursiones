@@ -453,8 +453,8 @@
     <button onclick="agregarPago()" style="padding: 8px 14px; background: #02535a; color: white; border: none; border-radius: 6px;">Agregar Pago</button>
   </div>
 </section>
-<div style="display: flex; gap: 20px; margin-top: 20px;">
-  <div style="flex: 1;">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; margin-top: 20px;">
+  <div style="flex: 1; min-width: 250px;">
     <label>Embajadora Responsable</label>
     <select id="embajadora" class="campoInput">
       <option value="">Seleccione</option>
@@ -467,14 +467,10 @@
     </select>
   </div>
 
-<div style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin-top: 20px;">
-  <button id="btnGuardarReserva" class="boton-principal">
-    💾 Guardar Reserva
-  </button>
-
- <a id="btnCostos" target="_blank" href="javascript:void(0);" class="boton-principal" style="display: none;">
-  💼 Agregar Costos
-</a>
+  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <button id="btnGuardarReserva" class="boton-principal">💾 Guardar Reserva</button>
+    <a id="btnCostos" target="_blank" href="#" class="boton-principal" style="display: none;">💼 Agregar Costos</a>
+  </div>
 </div>
 <script>
 const firebaseConfig = {
