@@ -38,8 +38,12 @@
       background-color: #fff3cd;
       font-weight: bold;
       color: #856404;
-    }
+   }
+    .pagado { color: green; font-weight: bold; }
+    .pendiente { color: orange; font-weight: bold; }
+    .no-definido { color: red; font-weight: bold; }
   </style>
+
 </head>
 <body>
   <h2>📊 Proyecciones de Reservas</h2>
@@ -52,9 +56,11 @@
         <th>Adultos</th>
         <th>Niños</th>
         <th>Bebés</th>
-        <th>Venta</th>
-        <th>Costos</th>
-        <th>Comisión ($)</th>
+        <th>Boletos</th>
+        <th>Hospedaje</th>
+        <th>Operador</th>
+        <th>Tours</th>
+        <th>Comisión</th>
         <th>Ganancia</th>
         <th>Acción</th>
       </tr>
@@ -66,7 +72,7 @@
   <table>
     <thead>
       <tr>
-        <th>Código</th>
+         <th>Código</th>
         <th>Titular</th>
         <th>Viaje</th>
         <th>Venta</th>
@@ -79,8 +85,8 @@
     <tbody id="tablaHistoricos"></tbody>
   </table>
 
-  <script>
-    const firebaseConfig = {
+    <script>
+ const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
       projectId: "tours-460717"
@@ -89,90 +95,84 @@
     const db = firebase.firestore();
 
     function formatoFecha(fechaISO) {
+      if (!fechaISO) return '-';
       const fecha = new Date(fechaISO);
-      return fecha.toLocaleDateString("es-CR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric"
-      });
+      return fecha.toLocaleDateString("es-CR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+
+    function estadoCosto(valor) {
+      if (valor?.pagado) return `<span class="pagado">$${valor.monto?.toFixed(2) || '0.00'} ✅</span>`;
+      if (valor?.monto !== undefined) return `<span class="pendiente">$${valor.monto?.toFixed(2)} ⚠️</span>`;
+      return `<span class="no-definido">❌</span>`;
     }
 
     async function cargarCostos() {
-  const snapshot = await db.collection("costos_reservas").get();
-  const proyecciones = document.getElementById("tablaProyecciones");
-  const historicos = document.getElementById("tablaHistoricos");
-  const hoy = new Date();
+      const snapshot = await db.collection("costos_reservas").get();
+      const proyecciones = document.getElementById("tablaProyecciones");
+      const historicos = document.getElementById("tablaHistoricos");
+      const hoy = new Date();
 
-  for (const doc of snapshot.docs) {
-    const data = doc.data();
-    const codigo = data.codigo;
-    const fechaViaje = new Date(data.fecha_viaje);
-    const fechaFormateada = formatoFecha(data.fecha_viaje || '');
-    const esHistorico = fechaViaje < hoy;
-    const diferenciaDias = Math.ceil((fechaViaje - hoy) / (1000 * 60 * 60 * 24));
+      snapshot.forEach(async doc => {
+        const data = doc.data();
+        const reservaId = data.codigo;
+        const fechaViaje = new Date(data.fecha_viaje);
+        const esHistorico = data.estado === "Cerrado";
+        const fila = document.createElement("tr");
 
-    // ⚠️ Alerta una semana antes
-    if (diferenciaDias === 7) {
-      alert(`🔔 Recordatorio: El tour ${codigo} se realiza en una semana.`);
+        const reservaDoc = await db.collection("reservas").doc(reservaId).get();
+        const info = reservaDoc.data() || {};
+
+        const titular = info.nombreTitular || "-";
+        const adultos = info.cantidadAdultos || 0;
+        const ninos = info.cantidadNinos || 0;
+        const bebes = info.cantidadBebes || 0;
+        const venta = data.venta_total || 0;
+        const desglose = data.desglose_real || data.desglose_proyectado || {};
+
+        if (!esHistorico) {
+          fila.innerHTML = `
+            <td>${reservaId}</td>
+            <td>${titular}</td>
+            <td>${formatoFecha(data.fecha_viaje)}</td>
+            <td>${adultos}</td>
+            <td>${ninos}</td>
+            <td>${bebes}</td>
+            <td>${estadoCosto(desglose.boletos)}</td>
+            <td>${estadoCosto(desglose.hospedaje)}</td>
+            <td>${estadoCosto(desglose.operador)}</td>
+            <td>${estadoCosto(desglose.tours)}</td>
+            <td>${estadoCosto(desglose.comision)}</td>
+            <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
+            <td>
+              <a href="costos_reales.html?reserva=${reservaId}" style="background:#f49859; color:white; padding:6px 12px; border-radius:6px; text-decoration:none;">
+                ✏️ Editar
+              </a>
+            </td>
+          `;
+          proyecciones.appendChild(fila);
+        } else {
+          const totalCostos = ["boletos", "hospedaje", "operador", "tours"].reduce((s, k) => s + (desglose[k]?.monto || 0), 0);
+          fila.innerHTML = `
+            <td>${reservaId}</td>
+            <td>${titular}</td>
+            <td>${formatoFecha(data.fecha_viaje)}</td>
+            <td>$${venta.toFixed(2)}</td>
+            <td>$${totalCostos.toFixed(2)}</td>
+            <td>$${(desglose.comision?.monto || 0).toFixed(2)}</td>
+            <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
+            <td>${formatoFecha(data.fecha_cierre)}</td>
+          `;
+          historicos.appendChild(fila);
+        }
+
+        // Notificación semanal
+        const diasFaltantes = Math.floor((fechaViaje - hoy) / (1000 * 60 * 60 * 24));
+        if (diasFaltantes === 7) {
+          console.log(`🔔 Recordatorio: En 7 días sale la reserva ${reservaId}.`);
+          // Aquí puedes integrar un envío por correo
+        }
+      });
     }
-
-    // 🧾 Cargar información del titular desde "reservas"
-    let nombreTitular = "-";
-    let adultos = 0, ninos = 0, bebes = 0;
-    try {
-      const docReserva = await db.collection("reservas").doc(codigo).get();
-      const datosReserva = docReserva.data() || {};
-      nombreTitular = datosReserva.nombreTitular || "-";
-      adultos = datosReserva.cantidadAdultos || 0;
-      ninos = datosReserva.cantidadNinos || 0;
-      bebes = datosReserva.cantidadBebes || 0;
-    } catch (e) {
-      console.warn(`No se pudo obtener info de reserva ${codigo}`, e);
-    }
-
-    const desglose = data.desglose_proyectado || {};
-    const totalCostos = (desglose.boletos || 0) + (desglose.hospedaje || 0) + (desglose.operador || 0) + (desglose.tours || 0);
-    
-    const fila = document.createElement("tr");
-
-    if (data.estado === "Proyectado") {
-      const acciones = `
-        <a href="costos_reales.html?reserva=${codigo}" style="background:#f49859; color:white; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold;">
-          ✏️ Editar
-        </a>
-      `;
-      fila.innerHTML = `
-        <td>${codigo}</td>
-        <td>${nombreTitular}</td>
-        <td>${fechaFormateada}</td>
-        <td>${adultos}</td>
-        <td>${ninos}</td>
-        <td>${bebes}</td>
-        <td>$${data.venta_total?.toFixed(2) || '0.00'}</td>
-        <td>$${totalCostos.toFixed(2)}</td>
-        <td>$${(desglose.comision || 0).toFixed(2)}</td>
-        <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
-        <td>${acciones}</td>
-      `;
-      proyecciones.appendChild(fila);
-    }
-       if (data.estado === "Cerrado") {
-      const real = data.desglose_real || {};
-      const totalCostosReales = (real.boletos || 0) + (real.hospedaje || 0) + (real.operador || 0) + (real.tours || 0);
-      fila.innerHTML = `
-        <td>${data.codigo}</td>
-        <td>${nombreTitular}</td>
-        <td>${fechaFormateada}</td>
-        <td>$${data.venta_total?.toFixed(2) || '0.00'}</td>
-        <td>$${totalCostosReales.toFixed(2)}</td>
-        <td>$${(real.comision || 0).toFixed(2)}</td>
-        <td><strong>$${(real.ganancia || 0).toFixed(2)}</strong></td>
-        <td>${data.fecha_cierre ? formatoFecha(data.fecha_cierre) : '-'}</td>
-      `;
-      historicos.appendChild(fila);
-    }
-  } // ← aquí cierra el for...of
-} // ← aquí cierra la función cargarCostos
 
     window.addEventListener("DOMContentLoaded", cargarCostos);
   </script>
