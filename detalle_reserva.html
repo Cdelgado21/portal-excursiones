@@ -507,15 +507,6 @@ const codigoReservaExistente = params.get("codigo");
     await counterRef.set({ ultimo: nuevoNumero }, { merge: true });
     return { codigo, numero: nuevoNumero, año: añoActual };
   }
- document.addEventListener("DOMContentLoaded", () => {
-  const codigo = codigoReservaExistente;
-  if (codigo) {
-    const btnCostos = document.getElementById("btnCostos");
-    btnCostos.href = `costos_agregar.html?reserva=${codigo}`;
-    btnCostos.style.display = "inline-block";
-  }
-});
-
 async function guardarReserva() {
   try {
     let codigo = codigoReservaExistente;
@@ -1161,6 +1152,10 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
 
  if (codigo) {
   await cargarReservaExistente(codigo); // ✅ usa directamente la variable que sí está definida
+
+   // ✅ Mostrar el botón solo si se cargó correctamente la reserva
+    document.getElementById("btnCostos").href = `costos_agregar.html?reserva=${codigo}`;
+    document.getElementById("btnCostos").style.display = "inline-block";
 }
 });
  async function cargarReservaExistente(codigo) {
