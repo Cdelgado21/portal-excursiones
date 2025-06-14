@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel de Costos</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f7f7;
+      background-color: #f0f7f7;
       padding: 20px;
       color: #02535a;
     }
@@ -22,8 +22,8 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 40px;
-      background: white;
+      margin-bottom: 30px;
+      background-color: white;
       box-shadow: 0 0 10px rgba(0,0,0,0.05);
     }
     th, td {
@@ -34,18 +34,12 @@
     th {
       background-color: #f5e2b8;
     }
-    .alerta {
-      background-color: #fff3cd;
-      font-weight: bold;
-      color: #856404;
-   }
-    .pagado { color: green; font-weight: bold; }
-    .pendiente { color: orange; font-weight: bold; }
-    .no-definido { color: red; font-weight: bold; }
+    .proyectado { color: #f39c12; font-weight: bold; }
+    .real { color: green; font-weight: bold; }
   </style>
-
 </head>
 <body>
+
   <h2>📊 Proyecciones de Reservas</h2>
   <table>
     <thead>
@@ -56,11 +50,13 @@
         <th>Adultos</th>
         <th>Niños</th>
         <th>Bebés</th>
+        <th>Venta</th>
         <th>Boletos</th>
         <th>Hospedaje</th>
         <th>Operador</th>
         <th>Tours</th>
         <th>Comisión</th>
+        <th>Costo Total</th>
         <th>Ganancia</th>
         <th>Acción</th>
       </tr>
@@ -72,7 +68,7 @@
   <table>
     <thead>
       <tr>
-         <th>Código</th>
+        <th>Código</th>
         <th>Titular</th>
         <th>Viaje</th>
         <th>Venta</th>
@@ -85,8 +81,8 @@
     <tbody id="tablaHistoricos"></tbody>
   </table>
 
-    <script>
- const firebaseConfig = {
+  <script>
+    const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
       projectId: "tours-460717"
@@ -100,10 +96,11 @@
       return fecha.toLocaleDateString("es-CR", { day: "2-digit", month: "2-digit", year: "numeric" });
     }
 
-    function estadoCosto(valor) {
-      if (valor?.pagado) return `<span class="pagado">$${valor.monto?.toFixed(2) || '0.00'} ✅</span>`;
-      if (valor?.monto !== undefined) return `<span class="pendiente">$${valor.monto?.toFixed(2)} ⚠️</span>`;
-      return `<span class="no-definido">❌</span>`;
+    function mostrarValor(valor, esReal = false) {
+      const monto = typeof valor === "number" ? valor : valor?.monto || 0;
+      const icono = esReal ? '✅' : '⚠️';
+      const clase = esReal ? 'real' : 'proyectado';
+      return `<span class="${clase}">$${monto.toFixed(2)} ${icono}</span>`;
     }
 
     async function cargarCostos() {
@@ -127,7 +124,28 @@
         const ninos = info.cantidadNinos || 0;
         const bebes = info.cantidadBebes || 0;
         const venta = data.venta_total || 0;
-        const desglose = data.desglose_real || data.desglose_proyectado || {};
+
+        const desglose = data.desglose_real && Object.keys(data.desglose_real).length > 0
+          ? data.desglose_real
+          : data.desglose_proyectado;
+
+        const esReal = !!data.desglose_real && Object.keys(data.desglose_real).length > 0;
+
+        const boletos = desglose.boletos || 0;
+        const hospedaje = desglose.hospedaje || 0;
+        const operador = desglose.operador || 0;
+        const tours = desglose.tours || 0;
+        const comision = desglose.comision || 0;
+
+        const costoTotal = (
+          (boletos?.monto || boletos || 0) +
+          (hospedaje?.monto || hospedaje || 0) +
+          (operador?.monto || operador || 0) +
+          (tours?.monto || tours || 0) +
+          (comision?.monto || comision || 0)
+        );
+
+        const ganancia = venta - costoTotal;
 
         if (!esHistorico) {
           fila.innerHTML = `
@@ -137,12 +155,14 @@
             <td>${adultos}</td>
             <td>${ninos}</td>
             <td>${bebes}</td>
-            <td>${estadoCosto(desglose.boletos)}</td>
-            <td>${estadoCosto(desglose.hospedaje)}</td>
-            <td>${estadoCosto(desglose.operador)}</td>
-            <td>${estadoCosto(desglose.tours)}</td>
-            <td>${estadoCosto(desglose.comision)}</td>
-            <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
+            <td>$${venta.toFixed(2)}</td>
+            <td>${mostrarValor(boletos, esReal)}</td>
+            <td>${mostrarValor(hospedaje, esReal)}</td>
+            <td>${mostrarValor(operador, esReal)}</td>
+            <td>${mostrarValor(tours, esReal)}</td>
+            <td>${mostrarValor(comision, esReal)}</td>
+            <td><strong>$${costoTotal.toFixed(2)}</strong></td>
+            <td><strong>$${ganancia.toFixed(2)}</strong></td>
             <td>
               <a href="costos_reales.html?reserva=${reservaId}" style="background:#f49859; color:white; padding:6px 12px; border-radius:6px; text-decoration:none;">
                 ✏️ Editar
@@ -151,31 +171,24 @@
           `;
           proyecciones.appendChild(fila);
         } else {
-          const totalCostos = ["boletos", "hospedaje", "operador", "tours"].reduce((s, k) => s + (desglose[k]?.monto || 0), 0);
+          const totalCostos = [boletos, hospedaje, operador, tours].reduce((s, x) => s + (x?.monto || x || 0), 0);
           fila.innerHTML = `
             <td>${reservaId}</td>
             <td>${titular}</td>
             <td>${formatoFecha(data.fecha_viaje)}</td>
             <td>$${venta.toFixed(2)}</td>
             <td>$${totalCostos.toFixed(2)}</td>
-            <td>$${(desglose.comision?.monto || 0).toFixed(2)}</td>
-            <td><strong>$${(desglose.ganancia || 0).toFixed(2)}</strong></td>
+            <td>$${(comision?.monto || comision || 0).toFixed(2)}</td>
+            <td><strong>$${ganancia.toFixed(2)}</strong></td>
             <td>${formatoFecha(data.fecha_cierre)}</td>
           `;
           historicos.appendChild(fila);
-        }
-
-        // Notificación semanal
-        const diasFaltantes = Math.floor((fechaViaje - hoy) / (1000 * 60 * 60 * 24));
-        if (diasFaltantes === 7) {
-          console.log(`🔔 Recordatorio: En 7 días sale la reserva ${reservaId}.`);
-          // Aquí puedes integrar un envío por correo
         }
       });
     }
 
     window.addEventListener("DOMContentLoaded", cargarCostos);
   </script>
+
 </body>
 </html>
-
