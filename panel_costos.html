@@ -197,8 +197,7 @@ const desgloseReal = data.desglose_real || {};
   (desgloseReal.operador?.monto || desgloseReal.operador || desgloseProy.operador?.monto || desgloseProy.operador || 0) +
   (desgloseReal.tours?.monto || desgloseReal.tours || desgloseProy.tours?.monto || desgloseProy.tours || 0) +
   (desgloseReal.comision?.monto || desgloseReal.comision || desgloseProy.comision?.monto || desgloseProy.comision || 0);
-      );
-
+  
       const ganancia = venta - costoTotal;
 
       const puedeCerrar = esReal;
