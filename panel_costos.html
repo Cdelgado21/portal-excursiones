@@ -169,8 +169,11 @@
       const bebes = info.cantidadBebes || 0;
       const venta = data.venta_total || 0;
 
-const desgloseProy = data.desglose_proyectado || {};
-const desgloseReal = data.desglose_real || {};
+const boletos = desgloseReal.boletos ?? desgloseProy.boletos ?? 0;
+const hospedaje = desgloseReal.hospedaje ?? desgloseProy.hospedaje ?? 0;
+const operador = desgloseReal.operador ?? desgloseProy.operador ?? 0;
+const tours = desgloseReal.tours ?? desgloseProy.tours ?? 0;
+const comision = desgloseReal.comision ?? desgloseProy.comision ?? 0;
       
       function mostrarValorCampo(proyectado = 0, real = null) {
   const montoReal = typeof real === "number" ? real : real?.monto;
