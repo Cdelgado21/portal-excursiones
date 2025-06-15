@@ -80,28 +80,47 @@
     </thead>
     <tbody id="tablaHistoricos"></tbody>
   </table>
-<div id="modalCostos" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#00000088; z-index:1000; align-items:center; justify-content:center;">
-  <div style="background:white; padding:20px; border-radius:10px; width:90%; max-width:500px;">
-    <h3 style="margin-top:0;">✏️ Editar Costos Reales</h3>
+<div id="modalCostos" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#00000099; z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:white; padding:30px; border-radius:12px; width:95%; max-width:500px; box-shadow:0 0 20px rgba(0,0,0,0.2); position:relative;">
+    
+    <h3 style="margin-top:0; color:#02535a;">✏️ Editar Costos Reales</h3>
+    
     <input type="hidden" id="modalCodigo" />
 
-    <label>Boletos</label>
-    <input type="number" id="modalBoletos" class="campoModal" /><br>
+    <div style="margin-bottom:12px;">
+      <label for="modalBoletos">🎫 Boletos Aéreos</label>
+      <input type="number" id="modalBoletos" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    </div>
 
-    <label>Hospedaje</label>
-    <input type="number" id="modalHospedaje" class="campoModal" /><br>
+    <div style="margin-bottom:12px;">
+      <label for="modalHospedaje">🏨 Hospedaje</label>
+      <input type="number" id="modalHospedaje" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    </div>
 
-    <label>Operador</label>
-    <input type="number" id="modalOperador" class="campoModal" /><br>
+    <div style="margin-bottom:12px;">
+      <label for="modalOperador">🚐 Operador / Traslados</label>
+      <input type="number" id="modalOperador" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    </div>
 
-    <label>Tours</label>
-    <input type="number" id="modalTours" class="campoModal" /><br>
+    <div style="margin-bottom:12px;">
+      <label for="modalTours">🎟️ Tours</label>
+      <input type="number" id="modalTours" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    </div>
 
-    <label>Comisión</label>
-    <input type="number" id="modalComision" class="campoModal" /><br><br>
+    <div style="margin-bottom:20px;">
+      <label for="modalComision">💼 Comisión</label>
+      <input type="number" id="modalComision" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    </div>
 
-    <button onclick="guardarCostosReales()" style="background:#02535a; color:white; padding:8px 16px; border:none; border-radius:6px;">💾 Guardar</button>
-    <button onclick="cerrarModal()" style="margin-left:10px;">Cancelar</button>
+    <div style="text-align:right;">
+      <button onclick="cerrarModal()" style="background:#ccc; color:#333; padding:8px 14px; border:none; border-radius:6px; margin-right:8px; cursor:pointer;">
+        ✖️ Cancelar
+      </button>
+      <button onclick="guardarCostosReales()" style="background:#02535a; color:white; padding:8px 16px; border:none; border-radius:6px; cursor:pointer;">
+        💾 Guardar
+      </button>
+    </div>
+
   </div>
 </div>
  <script>
