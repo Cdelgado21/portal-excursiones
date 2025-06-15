@@ -248,6 +248,31 @@
       alert("Ocurrió un error al cerrar la reserva.");
     }
   }
+  function abrirModal(codigo) {
+  // Guardar código actual
+  document.getElementById("modalCodigo").value = codigo;
+
+  // Obtener desglose actual desde Firestore
+  db.collection("costos_reservas").doc(codigo).get().then(doc => {
+    const data = doc.data();
+    const desglose = data.desglose_real && Object.keys(data.desglose_real).length > 0
+      ? data.desglose_real
+      : data.desglose_proyectado || {};
+
+    // Cargar valores al formulario
+    document.getElementById("modalBoletos").value   = desglose.boletos   ?? '';
+    document.getElementById("modalHospedaje").value = desglose.hospedaje ?? '';
+    document.getElementById("modalOperador").value  = desglose.operador  ?? '';
+    document.getElementById("modalTours").value     = desglose.tours     ?? '';
+    document.getElementById("modalComision").value  = desglose.comision  ?? '';
+    
+    // Mostrar modal
+    document.getElementById("modalCostos").style.display = "flex";
+  });
+}
+function cerrarModal() {
+  document.getElementById("modalCostos").style.display = "none";
+}
 
   window.addEventListener("DOMContentLoaded", cargarCostos);
 </script>
