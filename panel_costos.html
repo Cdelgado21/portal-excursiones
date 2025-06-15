@@ -203,7 +203,6 @@
           <td>${mostrarValorCampo(desgloseProy.hospedaje, desgloseReal.hospedaje)}</td>
           <td>${mostrarValorCampo(desgloseProy.operador, desgloseReal.operador)}</td>
           <td>${mostrarValorCampo(desgloseProy.tours, desgloseReal.tours)}</td>
-          <td>${mostrarValorCampo(desgloseProy.comision, desgloseReal.comision)}</td>
           <td><strong>$${costoTotal.toFixed(2)}</strong></td>
           <td><strong>$${ganancia.toFixed(2)}</strong></td>
             <td>${formatoFecha(data.fecha_cierre)}</td>
@@ -217,6 +216,9 @@
         proyecciones.appendChild(fila);
       } else {
         const totalCostos = boletos + hospedaje + operador + tours + comision;
+        const fechaCierre = data.fecha_cierre?.toDate
+  ? data.fecha_cierre.toDate()
+  : new Date(data.fecha_cierre);
         fila.innerHTML = `
           <td>${reservaId}</td>
           <td>${titular}</td>
@@ -225,7 +227,7 @@
           <td>$${totalCostos.toFixed(2)}</td>
           <td>$${comision.toFixed(2)}</td>
           <td><strong>$${ganancia.toFixed(2)}</strong></td>
-          <td>${formatoFecha(data.fecha_cierre)}</td>
+<td>${formatoFecha(fechaCierre)}</td>
         `;
         historicos.appendChild(fila);
       }
