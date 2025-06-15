@@ -122,8 +122,7 @@
     </div>
 
   </div>
-</div>
- <script>
+</div><script>
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
     authDomain: "tours-460717.firebaseapp.com",
@@ -136,17 +135,19 @@
     if (!fechaISO) return '-';
     const fecha = new Date(fechaISO);
     return fecha.toLocaleDateString("es-CR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric"
+      day: "2-digit", month: "2-digit", year: "numeric"
     });
   }
 
-  function mostrarValor(valor, esReal = false) {
-    const monto = typeof valor === "number" ? valor : valor?.monto || 0;
-    const icono = esReal ? '✅' : '⚠️';
-    const clase = esReal ? 'real' : 'proyectado';
-    return `<span class="${clase}">$${monto.toFixed(2)} ${icono}</span>`;
+  function mostrarValorCampo(proyectado = 0, real = null) {
+    const montoReal = typeof real === "number" ? real : real?.monto;
+    const esReal = typeof montoReal === "number";
+    const valor = esReal
+      ? montoReal
+      : (typeof proyectado === "number" ? proyectado : proyectado?.monto || 0);
+    const icono = esReal ? "✅" : "⚠️";
+    const clase = esReal ? "real" : "proyectado";
+    return `<span class="${clase}">$${valor.toFixed(2)} ${icono}</span>`;
   }
 
   async function cargarCostos() {
@@ -169,40 +170,21 @@
       const bebes = info.cantidadBebes || 0;
       const venta = data.venta_total || 0;
 
-const boletos = desgloseReal.boletos ?? desgloseProy.boletos ?? 0;
-const hospedaje = desgloseReal.hospedaje ?? desgloseProy.hospedaje ?? 0;
-const operador = desgloseReal.operador ?? desgloseProy.operador ?? 0;
-const tours = desgloseReal.tours ?? desgloseProy.tours ?? 0;
-const comision = desgloseReal.comision ?? desgloseProy.comision ?? 0;
-      
-      function mostrarValorCampo(proyectado = 0, real = null) {
-  const montoReal = typeof real === "number" ? real : real?.monto;
-  const esReal = typeof montoReal === "number";
+      const desgloseProy = data.desglose_proyectado || {};
+      const desgloseReal = data.desglose_real || {};
 
-  const valor = esReal
-    ? montoReal
-    : (typeof proyectado === "number" ? proyectado : proyectado?.monto || 0);
+      const boletos    = typeof desgloseReal.boletos    === 'number' ? desgloseReal.boletos    : desgloseProy.boletos    || 0;
+      const hospedaje  = typeof desgloseReal.hospedaje  === 'number' ? desgloseReal.hospedaje  : desgloseProy.hospedaje  || 0;
+      const operador   = typeof desgloseReal.operador   === 'number' ? desgloseReal.operador   : desgloseProy.operador   || 0;
+      const tours      = typeof desgloseReal.tours      === 'number' ? desgloseReal.tours      : desgloseProy.tours      || 0;
+      const comision   = typeof desgloseReal.comision   === 'number' ? desgloseReal.comision   : desgloseProy.comision   || 0;
 
-  const icono = esReal ? "✅" : "⚠️";
-  const clase = esReal ? "real" : "proyectado";
-
-  return `<span class="${clase}">$${valor.toFixed(2)} ${icono}</span>`;
-}
-      const boletos = desglose.boletos || 0;
-      const hospedaje = desglose.hospedaje || 0;
-      const operador = desglose.operador || 0;
-      const tours = desglose.tours || 0;
-      const comision = desglose.comision || 0;
-
-     const costoTotal =
-  (desgloseReal.boletos?.monto || desgloseReal.boletos || desgloseProy.boletos?.monto || desgloseProy.boletos || 0) +
-  (desgloseReal.hospedaje?.monto || desgloseReal.hospedaje || desgloseProy.hospedaje?.monto || desgloseProy.hospedaje || 0) +
-  (desgloseReal.operador?.monto || desgloseReal.operador || desgloseProy.operador?.monto || desgloseProy.operador || 0) +
-  (desgloseReal.tours?.monto || desgloseReal.tours || desgloseProy.tours?.monto || desgloseProy.tours || 0) +
-  (desgloseReal.comision?.monto || desgloseReal.comision || desgloseProy.comision?.monto || desgloseProy.comision || 0);
+      const costoTotal = boletos + hospedaje + operador + tours + comision;
       const ganancia = venta - costoTotal;
 
+      const esReal = Object.keys(desgloseReal).length > 0;
       const puedeCerrar = esReal;
+
       const cerrarBtn = puedeCerrar
         ? `<button onclick="cerrarReserva('${reservaId}')" style="margin-left:6px; background:#02535a; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;">
              ✅ Cerrar
@@ -219,32 +201,29 @@ const comision = desgloseReal.comision ?? desgloseProy.comision ?? 0;
           <td>${bebes}</td>
           <td>$${venta.toFixed(2)}</td>
           <td>${mostrarValorCampo(desgloseProy.boletos, desgloseReal.boletos)}</td>
-<td>${mostrarValorCampo(desgloseProy.hospedaje, desgloseReal.hospedaje)}</td>
-<td>${mostrarValorCampo(desgloseProy.operador, desgloseReal.operador)}</td>
-<td>${mostrarValorCampo(desgloseProy.tours, desgloseReal.tours)}</td>
-<td>${mostrarValorCampo(desgloseProy.comision, desgloseReal.comision)}</td>
+          <td>${mostrarValorCampo(desgloseProy.hospedaje, desgloseReal.hospedaje)}</td>
+          <td>${mostrarValorCampo(desgloseProy.operador, desgloseReal.operador)}</td>
+          <td>${mostrarValorCampo(desgloseProy.tours, desgloseReal.tours)}</td>
+          <td>${mostrarValorCampo(desgloseProy.comision, desgloseReal.comision)}</td>
           <td><strong>$${costoTotal.toFixed(2)}</strong></td>
           <td><strong>$${ganancia.toFixed(2)}</strong></td>
           <td>
             <button onclick="abrirModal('${reservaId}')" style="background:#f49859; color:white; padding:6px 12px; border-radius:6px; border:none; cursor:pointer;">
-  ✏️ Editar
-</button>
+              ✏️ Editar
+            </button>
             ${cerrarBtn}
           </td>
         `;
         proyecciones.appendChild(fila);
       } else {
-        const totalCostos = [boletos, hospedaje, operador, tours, comision].reduce(
-          (s, x) => s + (x?.monto || x || 0),
-          0
-        );
+        const totalCostos = boletos + hospedaje + operador + tours + comision;
         fila.innerHTML = `
           <td>${reservaId}</td>
           <td>${titular}</td>
           <td>${formatoFecha(data.fecha_viaje)}</td>
           <td>$${venta.toFixed(2)}</td>
           <td>$${totalCostos.toFixed(2)}</td>
-          <td>$${(comision?.monto || comision || 0).toFixed(2)}</td>
+          <td>$${comision.toFixed(2)}</td>
           <td><strong>$${ganancia.toFixed(2)}</strong></td>
           <td>${formatoFecha(data.fecha_cierre)}</td>
         `;
@@ -269,42 +248,10 @@ const comision = desgloseReal.comision ?? desgloseProy.comision ?? 0;
       alert("Ocurrió un error al cerrar la reserva.");
     }
   }
-function abrirModal(codigo) {
-  document.getElementById("modalCodigo").value = codigo;
-  document.getElementById("modalBoletos").value = "";
-  document.getElementById("modalHospedaje").value = "";
-  document.getElementById("modalOperador").value = "";
-  document.getElementById("modalTours").value = "";
-  document.getElementById("modalComision").value = "";
-  document.getElementById("modalCostos").style.display = "flex";
-}
 
-function cerrarModal() {
-  document.getElementById("modalCostos").style.display = "none";
-}
-
-async function guardarCostosReales() {
-  const codigo = document.getElementById("modalCodigo").value;
-  const boletos = parseFloat(document.getElementById("modalBoletos").value) || 0;
-  const hospedaje = parseFloat(document.getElementById("modalHospedaje").value) || 0;
-  const operador = parseFloat(document.getElementById("modalOperador").value) || 0;
-  const tours = parseFloat(document.getElementById("modalTours").value) || 0;
-  const comision = parseFloat(document.getElementById("modalComision").value) || 0;
-
-  try {
-    await db.collection("costos_reservas").doc(codigo).update({
-      desglose_real: { boletos, hospedaje, operador, tours, comision }
-    });
-    alert("✅ Costos reales actualizados.");
-    cerrarModal();
-    location.reload();
-  } catch (e) {
-    console.error("❌ Error al guardar costos reales:", e);
-    alert("Ocurrió un error al guardar.");
-  }
-}
   window.addEventListener("DOMContentLoaded", cargarCostos);
 </script>
+
 
 
 </body>
