@@ -169,12 +169,22 @@
       const bebes = info.cantidadBebes || 0;
       const venta = data.venta_total || 0;
 
-      const desglose = data.desglose_real && Object.keys(data.desglose_real).length > 0
-        ? data.desglose_real
-        : data.desglose_proyectado;
+const desgloseProy = data.desglose_proyectado || {};
+const desgloseReal = data.desglose_real || {};
+      
+      function mostrarValorCampo(proyectado = 0, real = null) {
+  const montoReal = typeof real === "number" ? real : real?.monto;
+  const esReal = typeof montoReal === "number";
 
-      const esReal = !!data.desglose_real && Object.keys(data.desglose_real).length > 0;
+  const valor = esReal
+    ? montoReal
+    : (typeof proyectado === "number" ? proyectado : proyectado?.monto || 0);
 
+  const icono = esReal ? "✅" : "⚠️";
+  const clase = esReal ? "real" : "proyectado";
+
+  return `<span class="${clase}">$${valor.toFixed(2)} ${icono}</span>`;
+}
       const boletos = desglose.boletos || 0;
       const hospedaje = desglose.hospedaje || 0;
       const operador = desglose.operador || 0;
@@ -182,11 +192,11 @@
       const comision = desglose.comision || 0;
 
       const costoTotal = (
-        (boletos?.monto || boletos || 0) +
-        (hospedaje?.monto || hospedaje || 0) +
-        (operador?.monto || operador || 0) +
-        (tours?.monto || tours || 0) +
-        (comision?.monto || comision || 0)
+(desgloseReal.boletos?.monto || desgloseReal.boletos || desgloseProy.boletos?.monto || desgloseProy.boletos || 0) +
+  (desgloseReal.hospedaje?.monto || desgloseReal.hospedaje || desgloseProy.hospedaje?.monto || desgloseProy.hospedaje || 0) +
+  (desgloseReal.operador?.monto || desgloseReal.operador || desgloseProy.operador?.monto || desgloseProy.operador || 0) +
+  (desgloseReal.tours?.monto || desgloseReal.tours || desgloseProy.tours?.monto || desgloseProy.tours || 0) +
+  (desgloseReal.comision?.monto || desgloseReal.comision || desgloseProy.comision?.monto || desgloseProy.comision || 0);
       );
 
       const ganancia = venta - costoTotal;
@@ -207,11 +217,11 @@
           <td>${ninos}</td>
           <td>${bebes}</td>
           <td>$${venta.toFixed(2)}</td>
-          <td>${mostrarValor(boletos, esReal)}</td>
-          <td>${mostrarValor(hospedaje, esReal)}</td>
-          <td>${mostrarValor(operador, esReal)}</td>
-          <td>${mostrarValor(tours, esReal)}</td>
-          <td>${mostrarValor(comision, esReal)}</td>
+          <td>${mostrarValorCampo(desgloseProy.boletos, desgloseReal.boletos)}</td>
+<td>${mostrarValorCampo(desgloseProy.hospedaje, desgloseReal.hospedaje)}</td>
+<td>${mostrarValorCampo(desgloseProy.operador, desgloseReal.operador)}</td>
+<td>${mostrarValorCampo(desgloseProy.tours, desgloseReal.tours)}</td>
+<td>${mostrarValorCampo(desgloseProy.comision, desgloseReal.comision)}</td>
           <td><strong>$${costoTotal.toFixed(2)}</strong></td>
           <td><strong>$${ganancia.toFixed(2)}</strong></td>
           <td>
