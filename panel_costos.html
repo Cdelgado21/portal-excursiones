@@ -191,13 +191,12 @@ const desgloseReal = data.desglose_real || {};
       const tours = desglose.tours || 0;
       const comision = desglose.comision || 0;
 
-      const costoTotal = (
-(desgloseReal.boletos?.monto || desgloseReal.boletos || desgloseProy.boletos?.monto || desgloseProy.boletos || 0) +
+     const costoTotal =
+  (desgloseReal.boletos?.monto || desgloseReal.boletos || desgloseProy.boletos?.monto || desgloseProy.boletos || 0) +
   (desgloseReal.hospedaje?.monto || desgloseReal.hospedaje || desgloseProy.hospedaje?.monto || desgloseProy.hospedaje || 0) +
   (desgloseReal.operador?.monto || desgloseReal.operador || desgloseProy.operador?.monto || desgloseProy.operador || 0) +
   (desgloseReal.tours?.monto || desgloseReal.tours || desgloseProy.tours?.monto || desgloseProy.tours || 0) +
   (desgloseReal.comision?.monto || desgloseReal.comision || desgloseProy.comision?.monto || desgloseProy.comision || 0);
-  
       const ganancia = venta - costoTotal;
 
       const puedeCerrar = esReal;
