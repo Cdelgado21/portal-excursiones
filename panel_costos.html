@@ -273,6 +273,28 @@
 function cerrarModal() {
   document.getElementById("modalCostos").style.display = "none";
 }
+  function guardarCostosReales() {
+  const codigo = document.getElementById("modalCodigo").value;
+  const boletos = parseFloat(document.getElementById("modalBoletos").value) || 0;
+  const hospedaje = parseFloat(document.getElementById("modalHospedaje").value) || 0;
+  const operador = parseFloat(document.getElementById("modalOperador").value) || 0;
+  const tours = parseFloat(document.getElementById("modalTours").value) || 0;
+  const comision = parseFloat(document.getElementById("modalComision").value) || 0;
+
+  try {
+    db.collection("costos_reservas").doc(codigo).update({
+      desglose_real: { boletos, hospedaje, operador, tours, comision }
+    }).then(() => {
+      alert("✅ Costos reales actualizados.");
+      cerrarModal();
+      location.reload();
+    });
+  } catch (e) {
+    console.error("❌ Error al guardar costos reales:", e);
+    alert("Ocurrió un error al guardar.");
+  }
+}
+
 
   window.addEventListener("DOMContentLoaded", cargarCostos);
 </script>
