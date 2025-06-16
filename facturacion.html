@@ -302,6 +302,29 @@
     document.getElementById("mensaje").textContent = "❌ Error al guardar la factura.";
   }
 }
+  await fetch("https://script.google.com/macros/s/AKfycbxwFQU1yrJBe46jeQ6QYmKT7BO80Ea_ffsFjjMRZRYVbmmRhUYCH9N3LMmFARbLv8PK/exec", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    cliente,
+    correo,
+    fecha,
+    codigo: document.getElementById("codigoReserva").value.trim(),
+    total: parseFloat(total),
+    nota,
+    articulos
+  })
+})
+.then(res => res.text())
+.then(msg => {
+  console.log("Respuesta del servidor:", msg);
+  document.getElementById("mensaje").innerText += "\n📩 Correo enviado.";
+})
+.catch(error => {
+  console.error("Error al enviar correo:", error);
+  document.getElementById("mensaje").innerText += "\n❌ No se pudo enviar el correo.";
+});
+
 
 
 </script>
