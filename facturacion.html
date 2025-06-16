@@ -251,6 +251,58 @@
     alert("❌ Ocurrió un error al cargar la reserva.");
   }
 }
+  async function guardarFactura() {
+  const codigoReserva = document.getElementById("codigoReserva").value.trim();
+  const cliente = document.getElementById("cliente").value.trim();
+  const correo = document.getElementById("correo").value.trim();
+  const telefono = document.getElementById("telefono").value.trim();
+  const fecha = document.getElementById("fecha").value;
+  const nota = document.getElementById("nota").value;
+  const total = document.getElementById("totalFactura").textContent.replace('$', '');
+
+  if (!codigoReserva || !cliente || !correo || !fecha) {
+    alert("Por favor completa todos los campos obligatorios.");
+    return;
+  }
+
+  const articulos = [];
+  document.querySelectorAll("#tablaArticulos tbody tr").forEach(fila => {
+    const descripcion = fila.children[0].children[0].value;
+    const cantidad = parseFloat(fila.children[1].children[0].value) || 0;
+    const precio = parseFloat(fila.children[2].children[0].value) || 0;
+    const importe = cantidad * precio;
+    if (descripcion && cantidad && precio) {
+      articulos.push({ descripcion, cantidad, precio, importe });
+    }
+  });
+
+  if (articulos.length === 0) {
+    alert("Debes agregar al menos un artículo.");
+    return;
+  }
+
+  const factura = {
+    codigoReserva,
+    cliente,
+    correo,
+    telefono,
+    fecha,
+    nota,
+    total: parseFloat(total),
+    estado: "Pendiente",
+    articulos,
+    creada: new Date()
+  };
+
+  try {
+    await db.collection("facturas").add(factura);
+    document.getElementById("mensaje").textContent = "✅ Factura guardada correctamente.";
+  } catch (e) {
+    console.error("Error al guardar:", e);
+    document.getElementById("mensaje").textContent = "❌ Error al guardar la factura.";
+  }
+}
+
 
 </script>
 </body>
