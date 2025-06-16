@@ -1,137 +1,207 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Facturación Excursiones Delgado</title>
+  <meta charset="UTF-8">
+  <title>Facturación estilo Bookipi</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f0f7f7;
-      padding: 20px;
+      background: #f7fafa;
+      padding: 30px;
       color: #02535a;
     }
     h2 {
-      background-color: #02535a;
-      color: white;
-      padding: 10px;
-      border-radius: 8px;
+      text-align: center;
+      color: #02535a;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     label {
       font-weight: bold;
       margin-top: 10px;
       display: block;
     }
-    input, select {
+    input, textarea {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
+      margin-top: 4px;
       border-radius: 6px;
       border: 1px solid #ccc;
-      margin-bottom: 12px;
+      margin-bottom: 15px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+    }
+    th {
+      background: #02535a;
+      color: white;
+    }
+    tfoot td {
+      font-weight: bold;
     }
     button {
       background: #02535a;
       color: white;
-      padding: 10px 20px;
+      padding: 12px 24px;
       border: none;
       border-radius: 6px;
       cursor: pointer;
-      font-weight: bold;
     }
-    .success {
-      color: green;
-      font-weight: bold;
-      margin-top: 10px;
+    .total {
+      text-align: right;
     }
   </style>
 </head>
 <body>
 
-  <h2>Registro de Factura</h2>
+<div class="container">
+  <h2>Factura Excursiones Delgado</h2>
 
-  <label>Nombre del Cliente</label>
-  <input type="text" id="nombreCliente" placeholder="Ej. Juan Pérez" />
+  <label>Cliente</label>
+  <input type="text" id="cliente" placeholder="Ej: Juan Pérez" />
 
-  <label>Correo Electrónico</label>
-  <input type="email" id="correoCliente" placeholder="ejemplo@email.com" />
+  <label>Correo</label>
+  <input type="email" id="correo" placeholder="cliente@email.com" />
 
-  <label>Nombre del Tour</label>
-  <input type="text" id="tour" placeholder="Ej. Medellín Julio 2025" />
+  <label>Fecha</label>
+  <input type="date" id="fecha" />
 
-  <label>Cantidad de Pasajeros</label>
-  <input type="number" id="cantidad" placeholder="Ej. 2" value="1" />
+  <h3>Artículos</h3>
+  <table id="tablaArticulos">
+    <thead>
+      <tr>
+        <th>Descripción</th>
+        <th>Cantidad</th>
+        <th>Precio ($)</th>
+        <th>Importe</th>
+        <th>Acción</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+    <tfoot>
+      <tr>
+        <td colspan="3" class="total">Total:</td>
+        <td id="totalFactura">$0.00</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
 
-  <label>Precio por Persona ($)</label>
-  <input type="number" id="precio" placeholder="Ej. 639" value="0" />
+  <button onclick="agregarArticulo()">➕ Agregar Artículo</button>
 
-  <label>Total ($)</label>
-  <input type="number" id="total" readonly style="background:#e0f7fa; font-weight: bold;" />
+  <label>Nota</label>
+  <textarea id="nota" rows="3" placeholder="Gracias por su compra. Para consultas +506 6132 8183"></textarea>
 
   <button onclick="guardarFactura()">💾 Guardar Factura</button>
+  <p id="mensaje" style="margin-top: 15px; font-weight: bold;"></p>
+</div>
 
-  <div id="mensajeExito" class="success"></div>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-  <script>
-    // Firebase config (ya pegado por vos antes)
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717",
-      storageBucket: "tours-460717.appspot.com",
-      messagingSenderId: "1000749333444"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+  let articulos = [];
 
-    // Recalcular total automáticamente
-    document.getElementById("cantidad").addEventListener("input", calcularTotal);
-    document.getElementById("precio").addEventListener("input", calcularTotal);
-
-    function calcularTotal() {
-      const cantidad = parseInt(document.getElementById("cantidad").value) || 0;
-      const precio = parseFloat(document.getElementById("precio").value) || 0;
-      document.getElementById("total").value = (cantidad * precio).toFixed(2);
-    }
-
-    async function guardarFactura() {
-      const nombre = document.getElementById("nombreCliente").value;
-      const correo = document.getElementById("correoCliente").value;
-      const tour = document.getElementById("tour").value;
-      const cantidad = parseInt(document.getElementById("cantidad").value);
-      const precio = parseFloat(document.getElementById("precio").value);
-      const total = parseFloat(document.getElementById("total").value);
-      const fecha = new Date().toISOString().split("T")[0];
-
-      if (!nombre || !correo || !tour || !cantidad || !precio || isNaN(total)) {
-        alert("Por favor completá todos los campos correctamente.");
-        return;
-      }
-
-      const factura = {
-        nombre,
-        correo,
-        tour,
-        cantidad,
-        precio,
-        total,
-        fecha,
-        estado: "Pendiente" // Puedes cambiarlo luego
-      };
-
-      try {
-        await db.collection("facturas").add(factura);
-        document.getElementById("mensajeExito").textContent = "✅ Factura guardada correctamente.";
-      } catch (e) {
-        console.error("Error al guardar:", e);
-        alert("❌ Hubo un error al guardar la factura.");
-      }
-    }
-
-    // Inicializar con total
+  function agregarArticulo() {
+    const fila = document.createElement('tr');
+    fila.innerHTML = `
+      <td><input type="text" placeholder="Ej. Tour Medellín" onchange="actualizarImporte(this)"></td>
+      <td><input type="number" min="1" value="1" onchange="actualizarImporte(this)"></td>
+      <td><input type="number" min="0" step="0.01" value="0" onchange="actualizarImporte(this)"></td>
+      <td class="importe">$0.00</td>
+      <td><button onclick="this.closest('tr').remove(); calcularTotal()">❌</button></td>
+    `;
+    document.querySelector("#tablaArticulos tbody").appendChild(fila);
     calcularTotal();
-  </script>
+  }
+
+  function actualizarImporte(elemento) {
+    const fila = elemento.closest('tr');
+    const cantidad = parseFloat(fila.children[1].children[0].value) || 0;
+    const precio = parseFloat(fila.children[2].children[0].value) || 0;
+    const importe = cantidad * precio;
+    fila.children[3].textContent = `$${importe.toFixed(2)}`;
+    calcularTotal();
+  }
+
+  function calcularTotal() {
+    let total = 0;
+    document.querySelectorAll("#tablaArticulos tbody tr").forEach(fila => {
+      const cantidad = parseFloat(fila.children[1].children[0].value) || 0;
+      const precio = parseFloat(fila.children[2].children[0].value) || 0;
+      total += cantidad * precio;
+    });
+    document.getElementById("totalFactura").textContent = `$${total.toFixed(2)}`;
+  }
+
+  async function guardarFactura() {
+    const cliente = document.getElementById("cliente").value.trim();
+    const correo = document.getElementById("correo").value.trim();
+    const fecha = document.getElementById("fecha").value;
+    const nota = document.getElementById("nota").value;
+    const total = document.getElementById("totalFactura").textContent.replace('$', '');
+
+    if (!cliente || !correo || !fecha) {
+      alert("Por favor completa todos los campos obligatorios.");
+      return;
+    }
+
+    const articulos = [];
+    document.querySelectorAll("#tablaArticulos tbody tr").forEach(fila => {
+      const descripcion = fila.children[0].children[0].value;
+      const cantidad = parseFloat(fila.children[1].children[0].value) || 0;
+      const precio = parseFloat(fila.children[2].children[0].value) || 0;
+      const importe = cantidad * precio;
+      if (descripcion && cantidad && precio) {
+        articulos.push({ descripcion, cantidad, precio, importe });
+      }
+    });
+
+    if (articulos.length === 0) {
+      alert("Debes agregar al menos un artículo.");
+      return;
+    }
+
+    const factura = {
+      cliente,
+      correo,
+      fecha,
+      nota,
+      total: parseFloat(total),
+      estado: "Pendiente",
+      articulos,
+      creada: new Date()
+    };
+
+    try {
+      await db.collection("facturas").add(factura);
+      document.getElementById("mensaje").textContent = "✅ Factura guardada correctamente.";
+    } catch (e) {
+      console.error("Error al guardar:", e);
+      document.getElementById("mensaje").textContent = "❌ Error al guardar la factura.";
+    }
+  }
+</script>
 </body>
 </html>
 
