@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facturación</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      color: #02535a;
+      margin: 0;
+      padding: 20px;
+    }
+    h2 {
+      background-color: #02535a;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    section {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-top: 5px;
+    }
+    button {
+      background-color: #02535a;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      margin-top: 15px;
+      cursor: pointer;
+    }
+    .flex-row {
+      display: flex;
+      gap: 10px;
+    }
+    .flex-row > div {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <h2>🧾 Generar Factura</h2>
+
+  <section>
+    <label for="reserva">Código de Reserva</label>
+    <input type="text" id="reserva" placeholder="Ej. ED-007-2025" />
+
+    <label for="cliente_nombre">Nombre del Cliente</label>
+    <input type="text" id="cliente_nombre" />
+
+    <label for="cliente_correo">Correo Electrónico</label>
+    <input type="email" id="cliente_correo" />
+
+    <label for="cliente_telefono">Teléfono</label>
+    <input type="text" id="cliente_telefono" />
+  </section>
+
+  <section>
+    <h3>Servicios</h3>
+    <div id="servicios_container"></div>
+    <button onclick="agregarServicio()">+ Agregar Servicio</button>
+  </section>
+
+  <section>
+    <div class="flex-row">
+      <div>
+        <label for="subtotal">Subtotal</label>
+        <input type="number" id="subtotal" readonly />
+      </div>
+      <div>
+        <label for="iva">IVA</label>
+        <input type="number" id="iva" value="0" oninput="actualizarTotal()" />
+      </div>
+      <div>
+        <label for="total">Total</label>
+        <input type="number" id="total" readonly />
+      </div>
+    </div>
+  </section>
+
+  <button onclick="guardarFactura()">💾 Guardar Factura</button>
+
+  <script>
+    const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.appspot.com",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:xxxxxx" // Reemplazar si tenés el valor exacto
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+    
+    let serviciosContainer = document.getElementById('servicios_container');
+
+    function agregarServicio() {
+      const div = document.createElement('div');
+      div.classList.add('flex-row');
+      div.innerHTML = `
+        <div><input type="text" placeholder="Nombre del servicio" class="servicio_nombre"></div>
+        <div><input type="number" placeholder="Cantidad" class="servicio_cantidad" oninput="actualizarTotal()"></div>
+        <div><input type="number" placeholder="Precio" class="servicio_precio" oninput="actualizarTotal()"></div>
+      `;
+      serviciosContainer.appendChild(div);
+    }
+
+    function actualizarTotal() {
+      let subtotal = 0;
+      const cantidades = document.querySelectorAll('.servicio_cantidad');
+      const precios = document.querySelectorAll('.servicio_precio');
+      for (let i = 0; i < cantidades.length; i++) {
+        const cant = parseFloat(cantidades[i].value) || 0;
+        const precio = parseFloat(precios[i].value) || 0;
+        subtotal += cant * precio;
+      }
+      document.getElementById('subtotal').value = subtotal.toFixed(2);
+      const iva = parseFloat(document.getElementById('iva').value) || 0;
+      document.getElementById('total').value = (subtotal + iva).toFixed(2);
+    }
+    function guardarFactura() {
+    const cliente = document.getElementById("cliente").value.trim();
+    const telefono = document.getElementById("telefono").value.trim();
+    const correo = document.getElementById("correo").value.trim();
+    const codigoReserva = document.getElementById("codigoReserva").value.trim();
+    const total = parseFloat(document.getElementById("total").textContent);
+
+    const servicios = [];
+    document.querySelectorAll("#tablaServicios tbody tr").forEach(row => {
+      const servicio = row.cells[0].querySelector("input").value;
+      const cantidad = parseFloat(row.cells[1].querySelector("input").value);
+      const precio = parseFloat(row.cells[2].querySelector("input").value);
+      servicios.push({ servicio, cantidad, precio });
+    });
+
+    const factura = {
+      cliente,
+      telefono,
+      correo,
+      codigoReserva,
+      servicios,
+      total,
+      estado: "pendiente",
+      creado_el: new Date().toISOString()
+    };
+
+    db.collection("facturas").add(factura)
+      .then(docRef => {
+        alert("✅ Factura guardada con ID: " + docRef.id);
+        location.reload(); // o redirigir a otra pantalla
+      })
+      .catch(error => {
+        console.error("❌ Error al guardar factura:", error);
+        alert("Error al guardar la factura.");
+      });
+  }
+  </script>
+</body>
+</html>
