@@ -79,8 +79,11 @@
 <label>Cliente</label>
 <input type="text" id="cliente" placeholder="Ej: Juan Pérez" />
 
-  <label>Correo</label>
-  <input type="email" id="correo" placeholder="cliente@email.com" />
+<label>Correo</label>
+<input type="email" id="correo" placeholder="cliente@email.com" />
+
+<label>Teléfono</label>
+<input type="tel" id="telefono" placeholder="Ej. +506 6132 8183" />
 
   <label>Fecha</label>
   <input type="date" id="fecha" />
@@ -206,7 +209,7 @@
     }
   }
 
-  async function cargarDesdeReserva() {
+ async function cargarDesdeReserva() {
   const codigo = document.getElementById("codigoReserva").value.trim();
   if (!codigo) {
     alert("Por favor ingresa un código de reserva.");
@@ -223,51 +226,9 @@
     const data = doc.data();
     document.getElementById("cliente").value = data.nombreTitular || "";
     document.getElementById("correo").value = data.correo || "";
+    document.getElementById("telefono").value = data.telefono || "";
     document.getElementById("fecha").value = new Date().toISOString().split("T")[0];
 
-    // Agregar destino como línea de artículo
-    const tbody = document.querySelector("#tablaArticulos tbody");
-    tbody.innerHTML = ""; // limpiar
-
-    const cantidad = (parseInt(data.cantidadAdultos || 0) + parseInt(data.cantidadNinos || 0)) || 1;
-    const precioUnitario = parseFloat(data.total || 0) / cantidad;
-
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td><input type="text" value="${data.destino || 'Paquete Turístico'}"></td>
-      <td><input type="number" value="${cantidad}"></td>
-      <td><input type="number" value="${precioUnitario.toFixed(2)}"></td>
-      <td class="importe">$${data.total?.toFixed(2) || "0.00"}</td>
-      <td><button onclick="this.closest('tr').remove(); calcularTotal()">❌</button></td>
-    `;
-    tbody.appendChild(fila);
-    calcularTotal();
-
-  } catch (e) {
-    console.error("Error al buscar reserva:", e);
-    alert("❌ Ocurrió un error al cargar la reserva.");
-  }
-}
-  async function cargarDesdeReserva() {
-  const codigo = document.getElementById("codigoReserva").value.trim();
-  if (!codigo) {
-    alert("Por favor ingresa un código de reserva.");
-    return;
-  }
-
-  try {
-    const doc = await db.collection("reservas").doc(codigo).get();
-    if (!doc.exists) {
-      alert("❌ No se encontró la reserva.");
-      return;
-    }
-
-    const data = doc.data();
-    document.getElementById("cliente").value = data.nombreTitular || "";
-    document.getElementById("correo").value = data.correo || "";
-    document.getElementById("fecha").value = new Date().toISOString().split("T")[0];
-
-    // Agregar destino como línea de artículo
     const tbody = document.querySelector("#tablaArticulos tbody");
     tbody.innerHTML = ""; // limpiar
 
