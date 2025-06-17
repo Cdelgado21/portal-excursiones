@@ -243,6 +243,7 @@ if (tourId) {
   db.collection("tours").doc(tourId).get().then(doc => {
     if (doc.exists) {
       const t = doc.data();
+      document.querySelector("h2").innerText = "Tour: " + (t.nombre || "Sin nombre");
       document.getElementById("hotelesContainer").innerHTML = "";
 document.getElementById("opcionalesContainer").innerHTML = "";
       document.getElementById("nombre").value = t.nombre || "";
