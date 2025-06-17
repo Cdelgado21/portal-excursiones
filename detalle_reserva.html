@@ -577,7 +577,7 @@ const vueloRegreso = {
   codigo: document.getElementById("codigoBoletoRegreso")?.value || "",
   descripcion: document.getElementById("infoVueloRegreso")?.value || ""
 };
-    const costosRef = db.collection("costos_reservas").doc(codigoReserva);
+    const costosRef = db.collection("costos_reservas").doc(codigo);
 costosRef.set({
   codigo: codigoReserva,
   fecha_viaje: fechaViaje,
