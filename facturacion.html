@@ -117,19 +117,39 @@
     </div>
   </div>
 
-  <div class="modal" id="modalAbono">
-    <div class="modal-content">
-      <h3>Registrar Abono</h3>
-      <label>Monto:</label>
-      <input type="number" id="montoAbono" /><br><br>
-      <label>Método de Pago:</label>
-      <input type="text" id="metodoAbono" /><br><br>
-      <label>Fecha:</label>
-      <input type="date" id="fechaAbono" /><br><br>
-      <button onclick="registrarAbono()">Guardar</button>
-      <button onclick="cerrarModal()">Cancelar</button>
+ <div class="modal" id="modalAbono">
+  <div class="modal-content" style="max-width: 450px;">
+    <h3 style="margin-top: 0; color: #02535a;">Registrar Abono</h3>
+
+    <label style="font-weight: bold;">💲 Monto pagado:</label>
+    <input type="number" id="montoAbono" placeholder="Ej. 500" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
+
+    <label style="font-weight: bold;">📅 Fecha:</label>
+    <input type="date" id="fechaAbono" style="width: 100%; padding: 8px; margin-bottom: 10px;" />
+
+    <label style="font-weight: bold;">💳 Método de pago:</label>
+    <select id="metodoAbono" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+      <option value="">Seleccionar</option>
+      <option value="Efectivo">Efectivo</option>
+      <option value="SINPE">SINPE</option>
+      <option value="Tarjeta">Tarjeta</option>
+      <option value="Transferencia">Transferencia</option>
+    </select>
+
+    <label style="font-weight: bold;">📝 Nota:</label>
+    <textarea id="notaAbono" rows="3" maxlength="2000" style="width: 100%; padding: 8px; margin-bottom: 10px;" placeholder="Ej. Pagó en 2 partes, confirmar saldo con SINPE..."></textarea>
+
+    <div style="margin-bottom: 15px;">
+      <label><input type="checkbox" id="totalPagado" /> Totalmente pagado</label>
+    </div>
+
+    <div style="text-align: right;">
+      <button onclick="registrarAbono()" style="background-color: #02535a; color: white; padding: 10px 15px; border: none; border-radius: 5px; margin-right: 10px;">Guardar</button>
+      <button onclick="cerrarModal()" style="background-color: #ccc; padding: 10px 15px; border: none; border-radius: 5px;">Cancelar</button>
     </div>
   </div>
+</div>
+
 
   <script>
     // 🔧 Configuración de Firebase
@@ -184,29 +204,35 @@
       }
     }
 
-    async function registrarAbono() {
-      const monto = parseFloat(document.getElementById("montoAbono").value);
-      const metodo = document.getElementById("metodoAbono").value;
-      const fecha = document.getElementById("fechaAbono").value;
+   async function registrarAbono() {
+  const monto = parseFloat(document.getElementById("montoAbono").value);
+  const metodo = document.getElementById("metodoAbono").value;
+  const fecha = document.getElementById("fechaAbono").value;
+  const nota = document.getElementById("notaAbono").value;
+  const totalPagado = document.getElementById("totalPagado").checked;
 
-      if (!monto || !metodo || !fecha) return alert("Completa todos los campos");
+  if (!monto || !metodo || !fecha) {
+    alert("Por favor completá todos los campos obligatorios.");
+    return;
+  }
 
-      const abono = {
-        monto,
-        metodo,
-        fecha,
-        creado: new Date().toISOString()
-      };
+  const abono = {
+    monto,
+    metodo,
+    fecha,
+    nota,
+    totalmentePagado: totalPagado,
+    creado: new Date().toISOString()
+  };
 
-      try {
-        await db.collection("facturas").doc(codigoReserva).collection("pagos").add(abono);
-        alert("💲 Abono registrado correctamente");
-        cerrarModal();
-      } catch (error) {
-        console.error("❌ Error al registrar abono:", error);
-      }
-    }
-
+  try {
+    await db.collection("facturas").doc(codigoReserva).collection("pagos").add(abono);
+    alert("💲 Abono registrado correctamente");
+    cerrarModal();
+  } catch (error) {
+    console.error("❌ Error al registrar abono:", error);
+  }
+}
     function mostrarModal() {
       document.getElementById("modalAbono").style.display = "flex";
     }
