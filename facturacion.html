@@ -105,6 +105,7 @@
         <td colspan="3" class="total">Total:</td>
         <td id="totalFactura">$0.00</td>
         <td></td>
+        <div id="abonos" style="margin-top: 20px; background: #f5f5f5; padding: 10px; border-radius: 8px;"></div>
       </tr>
     </tfoot>
   </table>
@@ -124,174 +125,82 @@
     authDomain: "tours-460717.firebaseapp.com",
     projectId: "tours-460717",
   };
+
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  function agregarArticulo() {
-    const fila = document.createElement('tr');
-    fila.innerHTML = `
-      <td><input type="text" placeholder="Ej. Tour Medellín" onchange="actualizarImporte(this)"></td>
-      <td><input type="number" min="1" value="1" onchange="actualizarImporte(this)"></td>
-      <td><input type="number" min="0" step="0.01" value="0" onchange="actualizarImporte(this)"></td>
-      <td class="importe">$0.00</td>
-      <td><button onclick="this.closest('tr').remove(); calcularTotal()">❌</button></td>
-    `;
-    document.querySelector("#tablaArticulos tbody").appendChild(fila);
-    calcularTotal();
-  }
-
-  function actualizarImporte(elemento) {
-    const fila = elemento.closest('tr');
-    const cantidad = parseFloat(fila.children[1].children[0].value) || 0;
-    const precio = parseFloat(fila.children[2].children[0].value) || 0;
-    const importe = cantidad * precio;
-    fila.children[3].textContent = `$${importe.toFixed(2)}`;
-    calcularTotal();
-  }
-
-  function calcularTotal() {
-    let total = 0;
-    document.querySelectorAll("#tablaArticulos tbody tr").forEach(fila => {
-      const cantidad = parseFloat(fila.children[1].children[0].value) || 0;
-      const precio = parseFloat(fila.children[2].children[0].value) || 0;
-      total += cantidad * precio;
-    });
-    document.getElementById("totalFactura").textContent = `$${total.toFixed(2)}`;
-  }
-
   async function cargarDesdeReserva() {
     const codigo = document.getElementById("codigoReserva").value.trim();
-    if (!codigo) return alert("Por favor ingresa un código de reserva.");
+    if (!codigo) return alert("Escribe un código de reserva");
 
     try {
       const doc = await db.collection("reservas").doc(codigo).get();
-      if (!doc.exists) return alert("❌ No se encontró la reserva.");
+      if (!doc.exists) return alert("No se encontró la reserva");
 
       const data = doc.data();
       document.getElementById("cliente").value = data.nombreTitular || "";
       document.getElementById("correo").value = data.correo || "";
       document.getElementById("telefono").value = data.telefono || "";
-      document.getElementById("fecha").value = new Date().toISOString().split("T")[0];
+      document.getElementById("fecha").value = data.fechaReserva || "";
 
-      const tbody = document.querySelector("#tablaArticulos tbody");
-      tbody.innerHTML = "";
+      const total = parseFloat(data.total || 0);
+      const pagos = data.pagos || [];
 
-      const cantidad = (parseInt(data.cantidadAdultos || 0) + parseInt(data.cantidadNinos || 0)) || 1;
-      const precioUnitario = parseFloat(data.total || 0) / cantidad;
+      // Mostrar artículo principal
+      agregarFilaArticulo(data.destino || "Tour", 1, total.toFixed(2));
 
-      const fila = document.createElement("tr");
-      fila.innerHTML = `
-        <td><input type="text" value="${data.destino || 'Paquete Turístico'}"></td>
-        <td><input type="number" value="${cantidad}"></td>
-        <td><input type="number" value="${precioUnitario.toFixed(2)}"></td>
-        <td class="importe">$${data.total?.toFixed(2) || "0.00"}</td>
-        <td><button onclick="this.closest('tr').remove(); calcularTotal()">❌</button></td>
-      `;
-      tbody.appendChild(fila);
-      calcularTotal();
+      // Mostrar abonos
+      mostrarAbonos(pagos, total);
 
     } catch (e) {
-      console.error("Error al buscar reserva:", e);
-      alert("❌ Ocurrió un error al cargar la reserva.");
+      console.error("Error cargando reserva:", e);
+      alert("Error al cargar la reserva");
     }
   }
-  async function cargarNombreBonitoDelTour(destinoId) {
-  if (!destinoId) return "Descripción no disponible";
-  try {
-    const doc = await db.collection("tours").doc(destinoId).get();
-    if (doc.exists) {
-      return doc.data().nombre || destinoId;
-    }
-    return destinoId;
-  } catch (error) {
-    console.error("Error al cargar nombre del tour:", error);
-    return destinoId;
+
+  function agregarFilaArticulo(descripcion, cantidad, precio) {
+    const tabla = document.getElementById("tablaArticulos").getElementsByTagName("tbody")[0];
+    const fila = tabla.insertRow();
+
+    fila.innerHTML = `
+      <td>${formatearTexto(descripcion)}</td>
+      <td>${cantidad}</td>
+      <td>$${parseFloat(precio).toFixed(2)}</td>
+      <td>$${(cantidad * parseFloat(precio)).toFixed(2)}</td>
+      <td><button onclick="this.closest('tr').remove()">❌</button></td>
+    `;
+    actualizarTotalFactura();
   }
-}
 
-const descripcion = await cargarNombreBonitoDelTour(reserva.destino);
+  function mostrarAbonos(pagos, total) {
+    const abonosDiv = document.getElementById("abonos");
+    let abonado = pagos.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
 
-// Crear fila con el nombre formateado
-agregarFilaArticulo({
-  descripcion: descripcion, // <- "Super Promoción Medellín"
-  cantidad: reserva.cantidadAdultos,
-  precio: reserva.precioAdulto
-});
-  async function guardarFactura() {
-    const codigoReserva = document.getElementById("codigoReserva").value.trim();
-    const cliente = document.getElementById("cliente").value.trim();
-    const correo = document.getElementById("correo").value.trim();
-    const telefono = document.getElementById("telefono").value.trim();
-    const fecha = document.getElementById("fecha").value;
-    const nota = document.getElementById("nota").value;
-    const total = document.getElementById("totalFactura").textContent.replace('$', '');
+    abonosDiv.innerHTML = `
+      <p><strong>Total del Tour:</strong> $${total.toFixed(2)}</p>
+      <p><strong>Total Abonado:</strong> $${abonado.toFixed(2)}</p>
+      <p><strong>Saldo Pendiente:</strong> $${(total - abonado).toFixed(2)}</p>
+    `;
+  }
 
-    if (!codigoReserva || !cliente || !correo || !fecha) {
-      alert("Por favor completa todos los campos obligatorios.");
-      return;
-    }
-
-    const articulos = [];
-    document.querySelectorAll("#tablaArticulos tbody tr").forEach(fila => {
-      const descripcion = fila.children[0].children[0].value;
-      const cantidad = parseFloat(fila.children[1].children[0].value) || 0;
-      const precio = parseFloat(fila.children[2].children[0].value) || 0;
-      const importe = cantidad * precio;
-      if (descripcion && cantidad && precio) {
-        articulos.push({ descripcion, cantidad, precio, importe });
-      }
+  function actualizarTotalFactura() {
+    let total = 0;
+    const filas = document.querySelectorAll("#tablaArticulos tbody tr");
+    filas.forEach(row => {
+      const importe = row.children[3]?.textContent.replace("$", "") || "0";
+      total += parseFloat(importe);
     });
-
-    if (articulos.length === 0) {
-      alert("Debes agregar al menos un artículo.");
-      return;
-    }
-
-    const factura = {
-      codigoReserva,
-      cliente,
-      correo,
-      telefono,
-      fecha,
-      nota,
-      total: parseFloat(total),
-      estado: "Pendiente",
-      articulos,
-      creada: new Date()
-    };
-
-    try {
-      await db.collection("facturas").add(factura);
-      document.getElementById("mensaje").textContent = "✅ Factura guardada correctamente.";
-
-      // Enviar a Apps Script (correo)
-      const respuesta = await fetch("https://script.google.com/macros/s/AKfycbxwFQU1yrJBe46jeQ6QYmKT7BO80Ea_ffsFjjMRZRYVbmmRhUYCH9N3LMmFARbLv8PK/exec", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cliente,
-          correo,
-          telefono,
-          fecha,
-          codigo: codigoReserva,
-          total: parseFloat(total),
-          nota,
-          articulos
-        })
-      });
-      const resultado = await respuesta.text();
-      console.log("📩 Respuesta del servidor:", resultado);
-      document.getElementById("mensaje").innerText += "\n📩 Correo enviado correctamente.";
-
-    } catch (e) {
-      console.error("❌ Error al guardar o enviar correo:", e);
-      document.getElementById("mensaje").textContent = "❌ Ocurrió un error al guardar o enviar.";
-    }
+    document.querySelector(".total").textContent = `Total: $${total.toFixed(2)}`;
   }
 
-  // Exponer función al botón HTML
-  window.cargarDesdeReserva = cargarDesdeReserva;
+  function formatearTexto(texto) {
+    return texto
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, l => l.toUpperCase());
+  }
+
 </script>
+
 
 </body>
 </html>
