@@ -229,9 +229,9 @@ function guardarTour() {
     estado: "ACTIVO"
   };
 
-  const ref = tourId
-    ? db.collection("tours").doc(tourId).update(data)
-    : db.collection("tours").add(data);
+const ref = tourId
+  ? db.collection("tours").doc(tourId).update(data)
+  : db.collection("tours").doc(data.nombre.replace(/\s+/g, "_")).set(data);
 
   ref.then(() => {
     alert("Tour guardado correctamente");
