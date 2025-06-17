@@ -116,6 +116,30 @@
       <button onclick="guardarFactura()">Guardar Factura</button>
     </div>
   </div>
+<hr style="margin: 40px 0;">
+<h3 style="color: #02535a;">💰 Historial de Pagos</h3>
+
+<table id="tablaAbonos">
+  <thead>
+    <tr>
+      <th>Fecha</th>
+      <th>Monto</th>
+      <th>Método</th>
+      <th>Nota</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+  <tfoot>
+    <tr>
+      <td colspan="3" class="total">Total Pagado</td>
+      <td id="totalPagado">$0.00</td>
+    </tr>
+    <tr>
+      <td colspan="3" class="total">Saldo Pendiente</td>
+      <td id="saldoPendiente">$0.00</td>
+    </tr>
+  </tfoot>
+</table>
 
  <div class="modal" id="modalAbono">
   <div class="modal-content" style="max-width: 450px;">
@@ -182,6 +206,37 @@
       }
     }
 
+    async function cargarAbonos() {
+  const tbody = document.querySelector("#tablaAbonos tbody");
+  tbody.innerHTML = "";
+
+  let totalPagado = 0;
+  let totalFactura = 1835; // Podés obtener este valor dinámicamente si lo cargás de Firestore
+
+  try {
+    const abonosSnapshot = await db.collection("facturas").doc(codigoReserva).collection("pagos").orderBy("fecha").get();
+    abonosSnapshot.forEach(doc => {
+      const abono = doc.data();
+      totalPagado += parseFloat(abono.monto);
+
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td>${abono.fecha}</td>
+        <td>$${parseFloat(abono.monto).toFixed(2)}</td>
+        <td>${abono.metodo}</td>
+        <td>${abono.nota || ""}</td>
+      `;
+      tbody.appendChild(fila);
+    });
+
+    document.getElementById("totalPagado").textContent = `$${totalPagado.toFixed(2)}`;
+    document.getElementById("saldoPendiente").textContent = `$${(totalFactura - totalPagado).toFixed(2)}`;
+  } catch (error) {
+    console.error("❌ Error al cargar abonos:", error);
+  }
+}
+
+
     async function guardarFactura() {
       const factura = {
         nombre: document.getElementById("nombreCliente").textContent,
@@ -239,9 +294,10 @@
 
     function cerrarModal() {
       document.getElementById("modalAbono").style.display = "none";
+      cargarAbonos();
     }
-
-    cargarDatosReserva();
+cargarDatosReserva();
+cargarAbonos(); // Carga historial al abrir
   </script>
 </body>
 </html>
