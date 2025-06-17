@@ -1323,15 +1323,16 @@ console.log("Pagos:", window.listaPagos);
 
     actualizarTotales(); // 👉 Actualiza total pagado y saldo correctamente
 } catch (e) {
-  console.error("❌ Error al cargar reserva:", e);
-  alert("Error al cargar la reserva.");
-}
-
+    console.error("❌ Error al cargar reserva:", e);
+    alert("Error al cargar la reserva.");
+  }
+} // 👈 Cierre correcto de cargarReservaExistente
 
 // Función de facturación fuera del DOMContentLoaded
 function generarFactura() {
   alert("📄 Función de facturación en construcción.");
 }
+
 function cargarHistorialPagos() {
   const contenedor = document.getElementById("tablaHistorialPagos");
   if (!contenedor) {
@@ -1362,11 +1363,6 @@ function cargarHistorialPagos() {
 
   const btn = document.getElementById("btnFacturar");
   if (btn) btn.style.display = "inline-block";
-}
-
-// ✅ Opcional: si alguien hace clic para facturar
-function generarFactura() {
-  alert("📄 Función de facturación en construcción.");
 }
 </script>
 
