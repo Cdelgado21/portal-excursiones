@@ -195,10 +195,13 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const codigoReserva = urlParams.get('reserva');
-    document.getElementById("codigoReserva").textContent = codigoReserva;
-    document.getElementById("numeroFactura").textContent = Date.now();
+const urlParams = new URLSearchParams(window.location.search);
+const codigoReserva = urlParams.get('reserva');
+
+if (!codigoReserva) {
+  alert("⚠️ No se encontró el código de reserva. Asegúrese de ingresar con ?reserva=CÓDIGO en la URL.");
+  throw new Error("Código de reserva no definido.");
+}
 
      function mostrarModalAgregarPago() {
     document.getElementById('modalAgregarPago').style.display = 'flex';
