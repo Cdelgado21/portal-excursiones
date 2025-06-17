@@ -195,7 +195,28 @@
       alert("❌ Ocurrió un error al cargar la reserva.");
     }
   }
+  async function cargarNombreBonitoDelTour(destinoId) {
+  if (!destinoId) return "Descripción no disponible";
+  try {
+    const doc = await db.collection("tours").doc(destinoId).get();
+    if (doc.exists) {
+      return doc.data().nombre || destinoId;
+    }
+    return destinoId;
+  } catch (error) {
+    console.error("Error al cargar nombre del tour:", error);
+    return destinoId;
+  }
+}
 
+const descripcion = await cargarNombreBonitoDelTour(reserva.destino);
+
+// Crear fila con el nombre formateado
+agregarFilaArticulo({
+  descripcion: descripcion, // <- "Super Promoción Medellín"
+  cantidad: reserva.cantidadAdultos,
+  precio: reserva.precioAdulto
+});
   async function guardarFactura() {
     const codigoReserva = document.getElementById("codigoReserva").value.trim();
     const cliente = document.getElementById("cliente").value.trim();
