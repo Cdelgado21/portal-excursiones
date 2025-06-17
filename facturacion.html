@@ -132,6 +132,7 @@
   </div>
   <div style="clear: both;"></div>
 
+<!-- Modal #1: Ver transacciones -->
 <div class="modal" id="modalTransacciones">
   <div class="modal-content" style="max-width: 600px; border-radius: 12px; font-family: sans-serif;">
     <h2 style="margin-bottom: 20px; color: #1f2937;">Ver transacciones</h2>
@@ -148,9 +149,17 @@
       <tbody id="tablaTransacciones" style="color: #111827;"></tbody>
     </table>
 
-    <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+    <div style="text-align: right;">
+      <button onclick="mostrarModalAgregarPago()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px;">Agregar pago</button>
+      <button onclick="cerrarModal('modalTransacciones')" style="margin-left: 10px; background: none; color: #374151; font-weight: 500; border: none;">Cerrar</button>
+    </div>
+  </div>
+</div>
 
-    <h3 style="margin-bottom: 15px; color: #1f2937;">Agregar pago</h3>
+<!-- Modal #2: Agregar pago -->
+<div class="modal" id="modalAgregarPago">
+  <div class="modal-content" style="max-width: 600px; border-radius: 12px; font-family: sans-serif;">
+    <h2 style="margin-bottom: 20px; color: #1f2937;">Agregar pago</h2>
 
     <label style="font-weight: 500; display: block; margin-bottom: 6px;">Monto pagado</label>
     <input type="number" id="montoAbono" placeholder="Ej. 100" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 15px;" />
@@ -171,10 +180,8 @@
     <textarea id="notaAbono" rows="2" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 20px;" placeholder="Ej. CUENTA ₡ BNCR, comprobante 123456..."></textarea>
 
     <div style="text-align: right; display: flex; justify-content: space-between; align-items: center;">
-      <button onclick="cerrarModal()" style="background: none; color: #374151; font-weight: 500; border: none;">Cerrar</button>
-      <button onclick="registrarAbono()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px;">
-        Agregar pago
-      </button>
+      <button onclick="cerrarModal('modalAgregarPago')" style="background: none; color: #374151; font-weight: 500; border: none;">Cerrar</button>
+      <button onclick="registrarAbono()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px;">Guardar pago</button>
     </div>
   </div>
 </div>
@@ -193,77 +200,82 @@
     document.getElementById("codigoReserva").textContent = codigoReserva;
     document.getElementById("numeroFactura").textContent = Date.now();
 
-    function mostrarTransaccionesModal() {
-      document.getElementById('modalTransacciones').style.display = 'flex';
+     function mostrarModalAgregarPago() {
+    document.getElementById('modalAgregarPago').style.display = 'flex';
+  }
+
+  function mostrarTransaccionesModal() {
+    document.getElementById('modalTransacciones').style.display = 'flex';
+    cargarTransacciones();
+  }
+
+  function cerrarModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  async function cargarTransacciones() {
+    const tbody = document.getElementById("tablaTransacciones");
+    tbody.innerHTML = "";
+    try {
+      const snapshot = await db.collection("facturas").doc(codigoReserva).collection("pagos").orderBy("fecha", "desc").get();
+      let totalPagado = 0;
+      let ultimoPago = "-";
+      const totalFactura = 1835;
+
+      snapshot.forEach((doc, index) => {
+        const data = doc.data();
+        totalPagado += parseFloat(data.monto);
+        if (index === 0) ultimoPago = data.fecha;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.fecha}</td>
+          <td>${data.nota || "—"}</td>
+          <td style="text-align: right;">$${parseFloat(data.monto).toFixed(2)}</td>
+          <td><button onclick="eliminarAbono('${doc.id}')">🗑️</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("resumenSubtotal").textContent = `$${totalFactura.toFixed(2)}`;
+      document.getElementById("resumenTotal").textContent = `$${totalFactura.toFixed(2)}`;
+      document.getElementById("resumenPagado").textContent = `$${totalPagado.toFixed(2)}`;
+      document.getElementById("fechaUltimoPago").textContent = ultimoPago;
+      document.getElementById("importeAdeudado").textContent = `$${(totalFactura - totalPagado).toFixed(2)}`;
+    } catch (error) {
+      console.error("Error al cargar transacciones", error);
+    }
+  }
+
+  async function registrarAbono() {
+    const monto = parseFloat(document.getElementById("montoAbono").value);
+    const metodo = document.getElementById("metodoAbono").value;
+    const fecha = document.getElementById("fechaAbono").value;
+    const nota = document.getElementById("notaAbono").value;
+
+    if (!monto || !metodo || !fecha) return alert("Completa todos los campos");
+
+    const abono = { monto, metodo, fecha, nota, creado: new Date().toISOString() };
+    try {
+      await db.collection("facturas").doc(codigoReserva).collection("pagos").add(abono);
+      cerrarModal('modalAgregarPago');
       cargarTransacciones();
+      alert("💰 Pago registrado correctamente");
+    } catch (error) {
+      console.error("Error al guardar abono", error);
     }
+  }
 
-    function cerrarModal() {
-      document.getElementById('modalTransacciones').style.display = 'none';
+  async function eliminarAbono(id) {
+    if (!confirm("¿Eliminar este abono?")) return;
+    try {
+      await db.collection("facturas").doc(codigoReserva).collection("pagos").doc(id).delete();
+      cargarTransacciones();
+      alert("🗑️ Abono eliminado");
+    } catch (error) {
+      console.error("Error al eliminar abono", error);
     }
-
-    async function cargarTransacciones() {
-      const tbody = document.getElementById("tablaTransacciones");
-      tbody.innerHTML = "";
-      try {
-        const snapshot = await db.collection("facturas").doc(codigoReserva).collection("pagos").orderBy("fecha", "desc").get();
-        let totalPagado = 0;
-        let ultimoPago = "-";
-        const totalFactura = 1835;
-
-        snapshot.forEach((doc, index) => {
-          const data = doc.data();
-          totalPagado += parseFloat(data.monto);
-          if (index === 0) ultimoPago = data.fecha;
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${data.fecha}</td>
-            <td>${data.nota || "—"}</td>
-            <td>$${parseFloat(data.monto).toFixed(2)}</td>
-            <td><button onclick="eliminarAbono('${doc.id}')">🗑️</button></td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        document.getElementById("resumenSubtotal").textContent = `$${totalFactura.toFixed(2)}`;
-        document.getElementById("resumenTotal").textContent = `$${totalFactura.toFixed(2)}`;
-        document.getElementById("resumenPagado").textContent = `$${totalPagado.toFixed(2)}`;
-        document.getElementById("fechaUltimoPago").textContent = ultimoPago;
-        document.getElementById("importeAdeudado").textContent = `$${(totalFactura - totalPagado).toFixed(2)}`;
-      } catch (error) {
-        console.error("Error al cargar transacciones", error);
-      }
-    }
-
-    async function registrarAbono() {
-      const monto = parseFloat(document.getElementById("montoAbono").value);
-      const metodo = document.getElementById("metodoAbono").value;
-      const fecha = document.getElementById("fechaAbono").value;
-      const nota = document.getElementById("notaAbono").value;
-
-      if (!monto || !metodo || !fecha) return alert("Completa todos los campos");
-
-      const abono = { monto, metodo, fecha, nota, creado: new Date().toISOString() };
-      try {
-        await db.collection("facturas").doc(codigoReserva).collection("pagos").add(abono);
-        cargarTransacciones();
-        alert("💰 Pago registrado correctamente");
-      } catch (error) {
-        console.error("Error al guardar abono", error);
-      }
-    }
-
-    async function eliminarAbono(id) {
-      if (!confirm("¿Eliminar este abono?")) return;
-      try {
-        await db.collection("facturas").doc(codigoReserva).collection("pagos").doc(id).delete();
-        cargarTransacciones();
-        alert("🗑️ Abono eliminado");
-      } catch (error) {
-        console.error("Error al eliminar abono", error);
-      }
-    }
-  </script>
+  }
+</script>
 </body>
 </html>
 
