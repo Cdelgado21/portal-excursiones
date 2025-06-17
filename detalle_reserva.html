@@ -1072,7 +1072,8 @@ window.listaPagos = window.listaPagos || [];
   document.getElementById("saldoPendiente").textContent = saldoPendiente.toFixed(2);
 
   // Si tenés un input oculto con id="montoAbono", actualizalo también:
-  document.getElementById("montoAbono").value = totalPagado.toFixed(2);
+  const abonoInput = document.getElementById("montoAbono");
+  if (abonoInput) abonoInput.value = totalPagado.toFixed(2);
 }
   function verificarFilasHabitaciones() {
   const tabla = document.getElementById("tablaResumenHabitaciones");
@@ -1228,6 +1229,11 @@ document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
 const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
 const saldoPendiente = totalGeneral - totalPagado;
 document.getElementById("saldoPendiente").textContent = saldoPendiente.toFixed(2);
+
+    
+// ✅ Mostrar visualmente el historial ya cargado
+cargarHistorialPagos();
+
     
      // ✅ Pasajeros
     if (Array.isArray(data.pasajeros)) {
@@ -1339,7 +1345,8 @@ function cargarHistorialPagos() {
 
   if (pagos.length === 0) {
     contenedor.innerHTML = `<tr><td colspan="4" style="text-align:center; color: #888;">No hay pagos registrados</td></tr>`;
-    document.getElementById("btnFacturar").style.display = "none";
+    const btn = document.getElementById("btnFacturar");
+    if (btn) btn.style.display = "none";
     return;
   }
 
@@ -1354,7 +1361,13 @@ function cargarHistorialPagos() {
     contenedor.appendChild(tr);
   });
 
-  document.getElementById("btnFacturar").style.display = "inline-block";
+  const btn = document.getElementById("btnFacturar");
+  if (btn) btn.style.display = "inline-block";
+}
+
+// ✅ Opcional: si alguien hace clic para facturar
+function generarFactura() {
+  alert("📄 Función de facturación en construcción.");
 }
 </script>
 
