@@ -1167,7 +1167,7 @@ document.getElementById("precioBebe").value = data.precioBebe || 0;
 document.getElementById("embajadora").value = data.embajadora || "";
     
 await cargarInfoTour(data.destino); // 🔄 Cargar visualmente las tarjetas
-console.log("Tours seleccionados:", data.toursOpcionales); // ✅ Mostrar los que se cargaron
+
 
 // Luego marcar los checkboxes
 if (Array.isArray(data.toursOpcionales)) {
@@ -1182,9 +1182,10 @@ window.listaPagos = [];
 
 const tabla = document.getElementById("tablaPagos");
 const historial = document.getElementById("tablaHistorialPagos");
-tabla.innerHTML = "";
-historial.innerHTML = "";
 
+if (tabla) tabla.innerHTML = "";
+if (historial) historial.innerHTML = "";
+    
 let totalPagado = 0;
 
 if (!pagosSnapshot.empty) {
@@ -1199,37 +1200,45 @@ if (!pagosSnapshot.empty) {
     window.listaPagos.push({ fecha, tipo: metodo, monto, nota });
 
     // Mostrar en tabla simple
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td>${fecha}</td>
-      <td>${metodo}</td>
-      <td>$${monto.toFixed(2)}</td>
-    `;
-    tabla.appendChild(fila);
+    if (tabla) {
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td>${fecha}</td>
+        <td>${metodo}</td>
+        <td>$${monto.toFixed(2)}</td>
+      `;
+      tabla.appendChild(fila);
+    }
 
     // Mostrar en historial
-    const filaHist = document.createElement("tr");
-    filaHist.innerHTML = `
-      <td style="padding: 8px;">${fecha}</td>
-      <td style="padding: 8px;">${metodo}</td>
-      <td style="padding: 8px;">$${monto.toFixed(2)}</td>
-      <td style="padding: 8px;">${nota || "—"}</td>
-    `;
-    historial.appendChild(filaHist);
+    if (historial) {
+      const filaHist = document.createElement("tr");
+      filaHist.innerHTML = `
+        <td style="padding: 8px;">${fecha}</td>
+        <td style="padding: 8px;">${metodo}</td>
+        <td style="padding: 8px;">$${monto.toFixed(2)}</td>
+        <td style="padding: 8px;">${nota || "—"}</td>
+      `;
+      historial.appendChild(filaHist);
+    }
 
     totalPagado += monto;
   });
-} else {
+} else if (historial) {
   historial.innerHTML = `<tr><td colspan="4" style="text-align:center; color: #888;">No hay pagos registrados</td></tr>`;
-  document.getElementById("btnFacturar").style.display = "none";
+  const btn = document.getElementById("btnFacturar");
+  if (btn) btn.style.display = "none";
 }
 
-// Mostrar totales
-document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
-const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
-const saldoPendiente = totalGeneral - totalPagado;
-document.getElementById("saldoPendiente").textContent = saldoPendiente.toFixed(2);
+const totalGeneralInput = document.getElementById("totalGeneral");
+const totalPagadoEl = document.getElementById("totalPagado");
+const saldoPendienteEl = document.getElementById("saldoPendiente");
 
+const totalGeneral = parseFloat(totalGeneralInput?.value) || 0;
+const saldoPendiente = totalGeneral - totalPagado;
+
+if (totalPagadoEl) totalPagadoEl.textContent = totalPagado.toFixed(2);
+if (saldoPendienteEl) saldoPendienteEl.textContent = saldoPendiente.toFixed(2);
     
 // ✅ Mostrar visualmente el historial ya cargado
 cargarHistorialPagos();
