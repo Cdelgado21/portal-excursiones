@@ -1222,23 +1222,60 @@ if (Array.isArray(data.toursOpcionales)) {
     if (checkbox) checkbox.checked = true;
   });
 }
+// Cargar pagos desde la colección de facturas
+const pagosSnapshot = await db.collection("facturas").where("reserva", "==", codigo).get();
+window.listaPagos = [];
 
-  if (Array.isArray(data.pagos)) {
-      window.listaPagos = data.pagos || [];
+const tabla = document.getElementById("tablaPagos");
+const historial = document.getElementById("tablaHistorialPagos");
+tabla.innerHTML = "";
+historial.innerHTML = "";
 
-      const tabla = document.getElementById("tablaPagos");
-      tabla.innerHTML = "";
+let totalPagado = 0;
 
-      data.pagos.forEach(p => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${p.fecha}</td>
-          <td>${p.tipo}</td>
-          <td>$${parseFloat(p.monto).toFixed(2)}</td>
-        `;
-        tabla.appendChild(fila);
-      });
-    }
+if (!pagosSnapshot.empty) {
+  pagosSnapshot.forEach(doc => {
+    const pago = doc.data();
+    const fecha = pago.fecha || "";
+    const metodo = pago.metodo || "";
+    const monto = parseFloat(pago.monto || 0);
+    const nota = pago.nota || "";
+
+    // Guardar en lista
+    window.listaPagos.push({ fecha, tipo: metodo, monto, nota });
+
+    // Mostrar en tabla simple
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+      <td>${fecha}</td>
+      <td>${metodo}</td>
+      <td>$${monto.toFixed(2)}</td>
+    `;
+    tabla.appendChild(fila);
+
+    // Mostrar en historial
+    const filaHist = document.createElement("tr");
+    filaHist.innerHTML = `
+      <td style="padding: 8px;">${fecha}</td>
+      <td style="padding: 8px;">${metodo}</td>
+      <td style="padding: 8px;">$${monto.toFixed(2)}</td>
+      <td style="padding: 8px;">${nota || "—"}</td>
+    `;
+    historial.appendChild(filaHist);
+
+    totalPagado += monto;
+  });
+} else {
+  historial.innerHTML = `<tr><td colspan="4" style="text-align:center; color: #888;">No hay pagos registrados</td></tr>`;
+  document.getElementById("btnFacturar").style.display = "none";
+}
+
+// Mostrar totales
+document.getElementById("totalPagado").textContent = totalPagado.toFixed(2);
+const totalGeneral = parseFloat(document.getElementById("totalGeneral").value) || 0;
+const saldoPendiente = totalGeneral - totalPagado;
+document.getElementById("saldoPendiente").textContent = saldoPendiente.toFixed(2);
+    
      // ✅ Pasajeros
     if (Array.isArray(data.pasajeros)) {
       data.pasajeros.forEach(p => {
