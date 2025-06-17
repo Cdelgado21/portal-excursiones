@@ -943,65 +943,66 @@ function mostrarEdadTitular() {
 }
 async function cargarDestinos() {
   try {
-const ref = db.collection("tours");
-const snapshot = await ref.get();
+    const ref = db.collection("tours");
+    const snapshot = await ref.get();
     const select = document.getElementById("destino");
 
     snapshot.forEach(doc => {
       const data = doc.data();
       const opt = document.createElement("option");
-      opt.value = doc.id; // El ID del documento sigue como value
-      opt.textContent = data.nombre || doc.id; // Pero el texto que se muestra es el nombre
+      opt.value = doc.id;
+      opt.textContent = data.nombre || doc.id;
       select.appendChild(opt);
     });
   } catch (e) {
     console.error("Error al cargar destinos:", e);
   }
 
- async function cargarInfoTour(destinoId) {
-  if (!destinoId) return;
+  async function cargarInfoTour(destinoId) {
+    if (!destinoId) return;
 
-  try {
-    const doc = await db.collection("tours").doc(destinoId).get();
-    if (doc.exists) {
-      const data = doc.data();
+    try {
+      const doc = await db.collection("tours").doc(destinoId).get();
+      if (doc.exists) {
+        const data = doc.data();
+        document.getElementById("duracion").value = data.duracion || "";
+        document.getElementById("itinerario").value = data.itinerario_tours || "";
+        window.hotelesDelDestino = data.hoteles || [];
 
-      document.getElementById("duracion").value = data.duracion || "";
-      document.getElementById("itinerario").value = data.itinerario_tours || "";
+        const lista = document.getElementById("toursOpcionalesLista");
+        lista.innerHTML = "";
 
-      window.hotelesDelDestino = data.hoteles || [];
-
-      const lista = document.getElementById("toursOpcionalesLista");
-      lista.innerHTML = "";
-
-      if (Array.isArray(data.tours_opcionales)) {
-        data.tours_opcionales.forEach(item => {
-          const card = document.createElement("div");
-          card.style = `
-            border: 1px solid #ccc;
-            padding: 10px 15px;
-            border-radius: 8px;
-            background: #f9f9f9;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 250px;
-          `;
-          card.innerHTML = `
-            <input type="checkbox" name="opcionales" value="${item.nombre}">
-            <span><strong>${item.nombre}</strong> - $${item.precio}</span>
-          `;
-          lista.appendChild(card);
-        });
+        if (Array.isArray(data.tours_opcionales)) {
+          data.tours_opcionales.forEach(item => {
+            const card = document.createElement("div");
+            card.style = `
+              border: 1px solid #ccc;
+              padding: 10px 15px;
+              border-radius: 8px;
+              background: #f9f9f9;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+              min-width: 250px;
+            `;
+            card.innerHTML = `
+              <input type="checkbox" name="opcionales" value="${item.nombre}">
+              <span><strong>${item.nombre}</strong> - $${item.precio}</span>
+            `;
+            lista.appendChild(card);
+          });
+        }
       }
+    } catch (e) {
+      console.error("Error al cargar información del tour:", e);
     }
-  } catch (e) {
-    console.error("Error al cargar información del tour:", e);
   }
 
-    // ✅ Exponer después de la función
-window.cargarInfoTour = cargarInfoTour;
-}
+  // ✅ Exponer después de la función
+  window.cargarInfoTour = cargarInfoTour;
+
+} // ✅ ESTE es el que faltaba
+  
   function autoResizeTextarea(textarea) {
     textarea.style.height = 'auto'; // reset
     textarea.style.height = (textarea.scrollHeight + 2) + 'px'; // ajuste real
