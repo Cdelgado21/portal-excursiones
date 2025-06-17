@@ -1337,7 +1337,12 @@ console.log("Pagos:", window.listaPagos);
     console.error("❌ Error al cargar reserva:", e);
     alert("Error al cargar la reserva.");
   }
+   unction generarFactura() {
+     alert("📄 Función de facturación en construcción.");
+   }
 
+   cargarHistorialPagos();
+ }
    function cargarHistorialPagos() {
   const contenedor = document.getElementById("tablaHistorialPagos");
   contenedor.innerHTML = "";
@@ -1363,11 +1368,6 @@ console.log("Pagos:", window.listaPagos);
 
   document.getElementById("btnFacturar").style.display = "inline-block";
 }
-   function generarFactura() {
-     alert("📄 Función de facturación en construcción.");
-   }
-
-   cargarHistorialPagos();
 }); // ✅ CIERRA el document.addEventListener
 </script>
 
