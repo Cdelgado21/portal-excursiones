@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Factura de Reserva</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -50,6 +50,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      margin: 5px;
     }
     .modal {
       display: none;
@@ -74,10 +75,10 @@
 <body>
   <div class="factura">
     <h2>Factura de Reserva</h2>
-    <p><strong>Cliente:</strong> <span id="nombreCliente"></span><br>
-       <strong>Correo:</strong> <span id="correoCliente"></span><br>
-       <strong>Código de Reserva:</strong> <span id="codigoReserva"></span><br>
-       <strong>Número de Factura:</strong> <span id="numeroFactura"></span>
+    <p><strong>Cliente:</strong> <span id="nombreCliente">...</span><br>
+       <strong>Correo:</strong> <span id="correoCliente">...</span><br>
+       <strong>Código de Reserva:</strong> <span id="codigoReserva">...</span><br>
+       <strong>Número de Factura:</strong> <span id="numeroFactura">...</span>
     </p>
 
     <table>
@@ -89,11 +90,24 @@
           <th>Importe</th>
         </tr>
       </thead>
-      <tbody id="tablaArticulos"></tbody>
+      <tbody id="tablaArticulos">
+        <tr>
+          <td>SUPER PROMO CANCÚN 2025</td>
+          <td>810.00</td>
+          <td>2</td>
+          <td>1620.00</td>
+        </tr>
+        <tr>
+          <td>BEBÉ</td>
+          <td>215.00</td>
+          <td>1</td>
+          <td>215.00</td>
+        </tr>
+      </tbody>
       <tfoot>
-        <tr><td colspan="3" class="total">Subtotal</td><td id="subtotal">$0.00</td></tr>
-        <tr><td colspan="3" class="total">IVA (0%)</td><td id="iva">$0.00</td></tr>
-        <tr><td colspan="3" class="total">Total</td><td id="total">$0.00</td></tr>
+        <tr><td colspan="3" class="total">Subtotal</td><td>$1835.00</td></tr>
+        <tr><td colspan="3" class="total">IVA (0%)</td><td>$0.00</td></tr>
+        <tr><td colspan="3" class="total">Total</td><td id="total">$1835.00</td></tr>
       </tfoot>
     </table>
 
@@ -107,32 +121,101 @@
     <div class="modal-content">
       <h3>Registrar Abono</h3>
       <label>Monto:</label>
-      <input type="number" id="montoAbono"><br>
+      <input type="number" id="montoAbono" /><br><br>
       <label>Método de Pago:</label>
-      <input type="text" id="metodoAbono"><br>
+      <input type="text" id="metodoAbono" /><br><br>
       <label>Fecha:</label>
-      <input type="date" id="fechaAbono"><br>
+      <input type="date" id="fechaAbono" /><br><br>
       <button onclick="registrarAbono()">Guardar</button>
       <button onclick="cerrarModal()">Cancelar</button>
     </div>
   </div>
 
   <script>
+    // 🔧 Configuración de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.appspot.com",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const codigoReserva = urlParams.get('reserva');
+    document.getElementById("codigoReserva").textContent = codigoReserva;
+    document.getElementById("numeroFactura").textContent = Date.now(); // o usar una numeración consecutiva
+
+    async function cargarDatosReserva() {
+      try {
+        const doc = await db.collection("reservas").doc(codigoReserva).get();
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("nombreCliente").textContent = data.nombre || "";
+          document.getElementById("correoCliente").textContent = data.correo || "";
+        }
+      } catch (error) {
+        console.error("❌ Error al cargar la reserva:", error);
+      }
+    }
+
+    async function guardarFactura() {
+      const factura = {
+        nombre: document.getElementById("nombreCliente").textContent,
+        correo: document.getElementById("correoCliente").textContent,
+        codigoReserva: codigoReserva,
+        numeroFactura: document.getElementById("numeroFactura").textContent,
+        fecha: new Date().toISOString(),
+        articulos: [
+          { descripcion: "SUPER PROMO CANCÚN 2025", precio: 810, cantidad: 2 },
+          { descripcion: "BEBÉ", precio: 215, cantidad: 1 }
+        ],
+        total: 1835
+      };
+
+      try {
+        await db.collection("facturas").doc(codigoReserva).set(factura);
+        alert("✅ Factura guardada correctamente");
+      } catch (error) {
+        console.error("❌ Error al guardar factura:", error);
+      }
+    }
+
+    async function registrarAbono() {
+      const monto = parseFloat(document.getElementById("montoAbono").value);
+      const metodo = document.getElementById("metodoAbono").value;
+      const fecha = document.getElementById("fechaAbono").value;
+
+      if (!monto || !metodo || !fecha) return alert("Completa todos los campos");
+
+      const abono = {
+        monto,
+        metodo,
+        fecha,
+        creado: new Date().toISOString()
+      };
+
+      try {
+        await db.collection("facturas").doc(codigoReserva).collection("pagos").add(abono);
+        alert("💲 Abono registrado correctamente");
+        cerrarModal();
+      } catch (error) {
+        console.error("❌ Error al registrar abono:", error);
+      }
+    }
+
     function mostrarModal() {
-      document.getElementById('modalAbono').style.display = 'flex';
+      document.getElementById("modalAbono").style.display = "flex";
     }
+
     function cerrarModal() {
-      document.getElementById('modalAbono').style.display = 'none';
+      document.getElementById("modalAbono").style.display = "none";
     }
-    function guardarFactura() {
-      // Aquí se guardaría en Firebase
-      alert('Factura guardada (simulado)');
-    }
-    function registrarAbono() {
-      // Aquí se registra el abono en Firebase
-      alert('Abono registrado (simulado)');
-      cerrarModal();
-    }
+
+    cargarDatosReserva();
   </script>
 </body>
 </html>
