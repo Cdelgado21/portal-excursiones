@@ -2,206 +2,139 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Facturación estilo Bookipi</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Factura de Reserva</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f7fafa;
-      padding: 30px;
-      color: #02535a;
+      background: #f0f7f7;
+      margin: 0;
+      padding: 20px;
+    }
+    .factura {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 800px;
+      margin: auto;
     }
     h2 {
       text-align: center;
       color: #02535a;
     }
-    .container {
-      max-width: 900px;
-      margin: auto;
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-    label {
-      font-weight: bold;
-      margin-top: 10px;
-      display: block;
-    }
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 4px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      margin-bottom: 15px;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 20px;
+      margin-top: 20px;
     }
     th, td {
-      border: 1px solid #ddd;
       padding: 10px;
-    }
-    th {
-      background: #02535a;
-      color: white;
-    }
-    tfoot td {
-      font-weight: bold;
-    }
-    button {
-      background: #02535a;
-      color: white;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      border: 1px solid #ccc;
+      text-align: left;
     }
     .total {
       text-align: right;
+      font-weight: bold;
+    }
+    .acciones {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .acciones button {
+      padding: 10px 20px;
+      background-color: #02535a;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 400px;
+      width: 100%;
     }
   </style>
 </head>
 <body>
+  <div class="factura">
+    <h2>Factura de Reserva</h2>
+    <p><strong>Cliente:</strong> <span id="nombreCliente"></span><br>
+       <strong>Correo:</strong> <span id="correoCliente"></span><br>
+       <strong>Código de Reserva:</strong> <span id="codigoReserva"></span><br>
+       <strong>Número de Factura:</strong> <span id="numeroFactura"></span>
+    </p>
 
-<div class="container">
-  <h2>Factura Excursiones Delgado</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Artículo</th>
+          <th>Precio</th>
+          <th>Cantidad</th>
+          <th>Importe</th>
+        </tr>
+      </thead>
+      <tbody id="tablaArticulos"></tbody>
+      <tfoot>
+        <tr><td colspan="3" class="total">Subtotal</td><td id="subtotal">$0.00</td></tr>
+        <tr><td colspan="3" class="total">IVA (0%)</td><td id="iva">$0.00</td></tr>
+        <tr><td colspan="3" class="total">Total</td><td id="total">$0.00</td></tr>
+      </tfoot>
+    </table>
 
-<label>Código de Reserva</label>
-<input type="text" id="codigoReserva" placeholder="Ej: ED-007-2025" />
-<button onclick="cargarDesdeReserva()">🔍 Buscar Reserva</button>
+    <div class="acciones">
+      <button onclick="mostrarModal()">Registrar Abono</button>
+      <button onclick="guardarFactura()">Guardar Factura</button>
+    </div>
+  </div>
 
-<label>Cliente</label>
-<input type="text" id="cliente" placeholder="Ej: Juan Pérez" />
+  <div class="modal" id="modalAbono">
+    <div class="modal-content">
+      <h3>Registrar Abono</h3>
+      <label>Monto:</label>
+      <input type="number" id="montoAbono"><br>
+      <label>Método de Pago:</label>
+      <input type="text" id="metodoAbono"><br>
+      <label>Fecha:</label>
+      <input type="date" id="fechaAbono"><br>
+      <button onclick="registrarAbono()">Guardar</button>
+      <button onclick="cerrarModal()">Cancelar</button>
+    </div>
+  </div>
 
-<label>Correo</label>
-<input type="email" id="correo" placeholder="cliente@email.com" />
-
-<label>Teléfono</label>
-<input type="tel" id="telefono" placeholder="Ej. +506 6132 8183" />
-
-  <label>Fecha</label>
-  <input type="date" id="fecha" />
-
-  <h3>Artículos</h3>
-  <table id="tablaArticulos">
-    <thead>
-      <tr>
-        <th>Descripción</th>
-        <th>Cantidad</th>
-        <th>Precio ($)</th>
-        <th>Importe</th>
-        <th>Acción</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-    <tfoot>
-      <tr>
-        <td colspan="3" class="total">Total:</td>
-        <td id="totalFactura">$0.00</td>
-        <td></td>
-        <div id="abonos" style="margin-top: 20px; background: #f5f5f5; padding: 10px; border-radius: 8px;"></div>
-      </tr>
-    </tfoot>
-  </table>
-
-  <button onclick="agregarArticulo()">➕ Agregar Artículo</button>
-
-  <label>Nota</label>
-  <textarea id="nota" rows="3" placeholder="Gracias por su compra. Para consultas +506 6132 8183"></textarea>
-
-  <button onclick="guardarFactura()">💾 Guardar Factura</button>
-  <p id="mensaje" style="margin-top: 15px; font-weight: bold;"></p>
-</div>
-
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
-    authDomain: "tours-460717.firebaseapp.com",
-    projectId: "tours-460717",
-  };
-
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-
-  async function cargarDesdeReserva() {
-    const codigo = document.getElementById("codigoReserva").value.trim();
-    if (!codigo) return alert("Escribe un código de reserva");
-
-    try {
-      const doc = await db.collection("reservas").doc(codigo).get();
-      if (!doc.exists) return alert("No se encontró la reserva");
-
-      const data = doc.data();
-      document.getElementById("cliente").value = data.nombreTitular || "";
-      document.getElementById("correo").value = data.correo || "";
-      document.getElementById("telefono").value = data.telefono || "";
-      document.getElementById("fecha").value = data.fechaReserva || "";
-
-      const total = parseFloat(data.total || 0);
-      const pagos = data.pagos || [];
-
-      // Mostrar artículo principal
-      agregarFilaArticulo(data.destino || "Tour", 1, total.toFixed(2));
-
-      // Mostrar abonos
-      mostrarAbonos(pagos, total);
-
-    } catch (e) {
-      console.error("Error cargando reserva:", e);
-      alert("Error al cargar la reserva");
+  <script>
+    function mostrarModal() {
+      document.getElementById('modalAbono').style.display = 'flex';
     }
-  }
-
-  function agregarFilaArticulo(descripcion, cantidad, precio) {
-    const tabla = document.getElementById("tablaArticulos").getElementsByTagName("tbody")[0];
-    const fila = tabla.insertRow();
-
-    fila.innerHTML = `
-      <td>${formatearTexto(descripcion)}</td>
-      <td>${cantidad}</td>
-      <td>$${parseFloat(precio).toFixed(2)}</td>
-      <td>$${(cantidad * parseFloat(precio)).toFixed(2)}</td>
-      <td><button onclick="this.closest('tr').remove()">❌</button></td>
-    `;
-    actualizarTotalFactura();
-  }
-
-  function mostrarAbonos(pagos, total) {
-    const abonosDiv = document.getElementById("abonos");
-    let abonado = pagos.reduce((sum, p) => sum + parseFloat(p.monto || 0), 0);
-
-    abonosDiv.innerHTML = `
-      <p><strong>Total del Tour:</strong> $${total.toFixed(2)}</p>
-      <p><strong>Total Abonado:</strong> $${abonado.toFixed(2)}</p>
-      <p><strong>Saldo Pendiente:</strong> $${(total - abonado).toFixed(2)}</p>
-    `;
-  }
-
-  function actualizarTotalFactura() {
-    let total = 0;
-    const filas = document.querySelectorAll("#tablaArticulos tbody tr");
-    filas.forEach(row => {
-      const importe = row.children[3]?.textContent.replace("$", "") || "0";
-      total += parseFloat(importe);
-    });
-    document.querySelector(".total").textContent = `Total: $${total.toFixed(2)}`;
-  }
-
-  function formatearTexto(texto) {
-    return texto
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, l => l.toUpperCase());
-  }
-
-</script>
-
-
+    function cerrarModal() {
+      document.getElementById('modalAbono').style.display = 'none';
+    }
+    function guardarFactura() {
+      // Aquí se guardaría en Firebase
+      alert('Factura guardada (simulado)');
+    }
+    function registrarAbono() {
+      // Aquí se registra el abono en Firebase
+      alert('Abono registrado (simulado)');
+      cerrarModal();
+    }
+  </script>
 </body>
 </html>
+
 
