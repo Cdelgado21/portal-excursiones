@@ -259,7 +259,17 @@ if (!codigoReserva) {
 
     const abono = { monto, metodo, fecha, nota, creado: new Date().toISOString() };
     try {
-      await db.collection("facturas").doc(codigoReserva).collection("pagos").add(abono);
+      const pagoId = await db.collection("facturas").doc(codigoReserva).collection("pagos").add(abono);
+
+// Guardar en colección raíz de facturas (para visibilidad rápida desde otros módulos)
+await db.collection("facturas").add({
+  reserva: codigoReserva,
+  fecha,
+  monto,
+  nota,
+  metodo,
+  creado: new Date()
+});
       cerrarModal('modalAgregarPago');
       cargarTransacciones();
       alert("💰 Pago registrado correctamente");
