@@ -174,7 +174,7 @@ th {
     <button onclick="window.location.href='reservas.html'">Reservas</button>
     <button onclick="window.location.href='clientes.html'">Clientes</button>
   </div>
-
+<button onclick="migrarToursPorNombre()">🚀 Migrar tours</button>
   <h2>Catálogo de Tours</h2>
   <div class="tabla-container">
     <div class="acciones">
@@ -276,6 +276,31 @@ th {
     }
 function abrirOpcionales(tourId) {
   window.open(`opcionales.html?tourId=${tourId}`, '_blank');
+}
+    async function migrarToursPorNombre() {
+  const snapshot = await db.collection("tours").get();
+  const batch = db.batch(); // Para mejorar rendimiento
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    const nuevoId = (data.nombre || "").replace(/\s+/g, "_").replace(/[^\w\-]/g, "").toLowerCase();
+
+    if (!nuevoId || nuevoId === doc.id) {
+      console.log(`❌ Tour omitido: ${doc.id}`);
+      continue;
+    }
+
+    const nuevoRef = db.collection("tours").doc(nuevoId);
+    batch.set(nuevoRef, data); // Copiar
+
+    // ❗ Descomenta esta línea si quieres eliminar los antiguos automáticamente:
+    // batch.delete(doc.ref);
+    
+    console.log(`✅ Migrado ${doc.id} ➡ ${nuevoId}`);
+  }
+
+  await batch.commit();
+  alert("✔ Todos los tours fueron migrados correctamente. Revisa Firebase.");
 }
     window.onload = cargarTours;
   </script>
