@@ -438,20 +438,28 @@
     <p><strong>Saldo Pendiente:</strong> $<span id="saldoPendiente">0</span></p>
   </div>
 
-    <hr style="margin: 25px 0;">
-  
-  <h3>Registrar Pagos</h3>
-  <div style="display: flex; flex-wrap: wrap; gap: 15px;">
-    <input type="date" id="fechaPago" class="campoInput">
-    <input type="number" placeholder="Monto" id="montoPago" class="campoInput">
-    <select id="tipoPago" class="campoInput">
-      <option value="">Tipo de Pago</option>
-      <option value="Efectivo">Efectivo</option>
-      <option value="Tarjeta">Tarjeta</option>
-      <option value="Transferencia">Transferencia</option>
-    </select>
-    <button onclick="agregarPago()" style="padding: 8px 14px; background: #02535a; color: white; border: none; border-radius: 6px;">Agregar Pago</button>
+  <section style="margin-top: 30px;">
+  <h2 style="background-color: #02535a; color: white; padding: 10px; border-radius: 6px;">💰 Historial de Pagos</h2>
+
+  <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+    <thead style="background-color: #f0f0f0;">
+      <tr>
+        <th style="padding: 10px;">Fecha</th>
+        <th style="padding: 10px;">Método</th>
+        <th style="padding: 10px;">Monto</th>
+        <th style="padding: 10px;">Nota</th>
+      </tr>
+    </thead>
+    <tbody id="tablaHistorialPagos">
+      <!-- Se insertan los pagos aquí -->
+    </tbody>
+  </table>
+
+  <div style="text-align: right; margin-top: 20px;">
+    <button id="btnFacturar" onclick="generarFactura()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px;">🧾 Generar Factura</button>
   </div>
+</section>
+
 </section>
 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; margin-top: 20px;">
   <div style="flex: 1; min-width: 250px;">
@@ -1329,7 +1337,36 @@ console.log("Pagos:", window.listaPagos);
     console.error("❌ Error al cargar reserva:", e);
     alert("Error al cargar la reserva.");
   }
+
+   function cargarHistorialPagos() {
+  const contenedor = document.getElementById("tablaHistorialPagos");
+  contenedor.innerHTML = "";
+
+  const pagos = window.listaPagos || [];
+
+  if (pagos.length === 0) {
+    contenedor.innerHTML = `<tr><td colspan="4" style="text-align:center; color: #888;">No hay pagos registrados</td></tr>`;
+    document.getElementById("btnFacturar").style.display = "none"; // ocultar botón si no hay pagos
+    return;
+  }
+
+  pagos.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="padding: 8px;">${p.fecha}</td>
+      <td style="padding: 8px;">${p.tipo}</td>
+      <td style="padding: 8px;">$${parseFloat(p.monto).toFixed(2)}</td>
+      <td style="padding: 8px;">${p.nota || "—"}</td>
+    `;
+    contenedor.appendChild(tr);
+  });
+
+  document.getElementById("btnFacturar").style.display = "inline-block";
 }
+   function generarFactura() {
+  alert("📄 Función de facturación en construcción.");
+}
+cargarHistorialPagos();
 </script>
 
 </body>
