@@ -444,7 +444,7 @@
   </table>
 
   <div style="text-align: right; margin-top: 20px;">
-    <button id="btnFacturar" onclick="generarFactura()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px;">🧾 Generar Factura</button>
+    <a id="btnFacturar" href="#" target="_blank" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none; display: inline-block;">📄 Ver Factura</a>
   </div>
 </section>
 
@@ -681,6 +681,8 @@ for (const tarjeta of tarjetasPasajero) {
     alert("✅ Reserva guardada correctamente como " + codigo);
     document.getElementById("btnCostos").href = `costos_agregar.html?reserva=${codigo}`;
 document.getElementById("btnCostos").style.display = "inline-block";
+    document.getElementById("btnFacturar").href = `facturacion.html?reserva=${codigo}`;
+document.getElementById("btnFacturar").style.display = "inline-block";
   } catch (e) {
     console.error("Error al guardar reserva:", e);
     alert("❌ Ocurrió un error al guardar la reserva.");
@@ -1149,6 +1151,8 @@ const codigo = params.get("codigo") || params.get("id"); // acepta ambos
    // ✅ Mostrar el botón solo si se cargó correctamente la reserva
     document.getElementById("btnCostos").href = `costos_agregar.html?reserva=${codigo}`;
     document.getElementById("btnCostos").style.display = "inline-block";
+   document.getElementById("btnFacturar").href = `facturacion.html?reserva=${codigo}`;
+document.getElementById("btnFacturar").style.display = "inline-block";
 }
 });
  async function cargarReservaExistente(codigo) {
