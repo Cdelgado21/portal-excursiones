@@ -1363,13 +1363,15 @@ console.log("Total cargado:", document.getElementById("totalGeneral").value);
 console.log("Pagos:", window.listaPagos);
 
    actualizarTotales(); // 👉 Actualiza total pagado y saldo correctamente
-  } catch (e) {
+   } catch (e) {
     console.error("❌ Error al cargar reserva:", e);
     alert("Error al cargar la reserva.");
   }
-   function generarFactura() {
-     alert("📄 Función de facturación en construcción.");
-   }
+}); // 👈 este era el que faltaba (¡aquí sí va!)
+
+function generarFactura() {
+  alert("📄 Función de facturación en construcción.");
+}
 
   function cargarHistorialPagos() {
   const contenedor = document.getElementById("tablaHistorialPagos");
