@@ -1371,17 +1371,19 @@ console.log("Pagos:", window.listaPagos);
      alert("📄 Función de facturación en construcción.");
    }
 
-   cargarHistorialPagos();
- }
-   function cargarHistorialPagos() {
+  function cargarHistorialPagos() {
   const contenedor = document.getElementById("tablaHistorialPagos");
-  contenedor.innerHTML = "";
+  if (!contenedor) {
+    console.warn("⚠️ tablaHistorialPagos no está disponible en el DOM.");
+    return;
+  }
 
+  contenedor.innerHTML = "";
   const pagos = window.listaPagos || [];
 
   if (pagos.length === 0) {
     contenedor.innerHTML = `<tr><td colspan="4" style="text-align:center; color: #888;">No hay pagos registrados</td></tr>`;
-    document.getElementById("btnFacturar").style.display = "none"; // ocultar botón si no hay pagos
+    document.getElementById("btnFacturar").style.display = "none";
     return;
   }
 
