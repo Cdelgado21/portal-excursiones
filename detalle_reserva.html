@@ -1362,18 +1362,18 @@ if (Array.isArray(data.hoteles)) {
 console.log("Total cargado:", document.getElementById("totalGeneral").value);
 console.log("Pagos:", window.listaPagos);
 
-   actualizarTotales(); // 👉 Actualiza total pagado y saldo correctamente
-   } catch (e) {
+     actualizarTotales(); // 👉 Actualiza total pagado y saldo correctamente
+  } catch (e) {
     console.error("❌ Error al cargar reserva:", e);
     alert("Error al cargar la reserva.");
   }
-}); // 👈 este era el que faltaba (¡aquí sí va!)
+}); 
 
 function generarFactura() {
   alert("📄 Función de facturación en construcción.");
 }
 
-  function cargarHistorialPagos() {
+function cargarHistorialPagos() {
   const contenedor = document.getElementById("tablaHistorialPagos");
   if (!contenedor) {
     console.warn("⚠️ tablaHistorialPagos no está disponible en el DOM.");
@@ -1402,8 +1402,6 @@ function generarFactura() {
 
   document.getElementById("btnFacturar").style.display = "inline-block";
 }
-
-}); // 👈 este era el que faltaba
 
 </script>
 
