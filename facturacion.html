@@ -6,8 +6,8 @@
   <title>Factura de Reserva</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <style>
-      body {
+ <style>
+    body {
       font-family: Arial, sans-serif;
       background: #f0f7f7;
       margin: 0;
@@ -15,26 +15,38 @@
     }
     .factura {
       background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
       max-width: 900px;
       margin: auto;
-      position: relative;
     }
-    .factura header {
+    .encabezado {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 15px;
+      align-items: center;
       margin-bottom: 20px;
     }
-    .factura header img {
-      height: 60px;
+    .encabezado img {
+      height: 80px;
     }
-    .factura h2 {
+    h2 {
       text-align: center;
+      color: #02535a;
+      margin-top: 10px;
+      margin-bottom: 5px;
+    }
+    .subinfo {
+      text-align: center;
+      color: #333;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+    .info-cliente {
+      margin-bottom: 15px;
+      color: #02535a;
+    }
+    .info-cliente strong {
       color: #02535a;
     }
     table {
@@ -45,6 +57,7 @@
     th, td {
       padding: 10px;
       border: 1px solid #ccc;
+      text-align: left;
     }
     .total {
       text-align: right;
@@ -59,9 +72,9 @@
       background-color: #02535a;
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
-      margin: 10px 5px;
+      margin: 5px;
     }
     .modal {
       display: none;
@@ -96,19 +109,23 @@
   </style>
 </head>
 <body>
-  <div class="factura">
-    <header>
-       <img src="LOGO EXCURSIONES DELGADO ESMERALDA.png" alt="Logo Excursiones Delgado">
-      <div style="text-align:right;">
-        <strong>Código de Reserva:</strong> <span id="codigoReserva">---</span><br>
-        <strong>Número de Factura:</strong> <span id="numeroFactura">---</span>
+   <div class="factura">
+    <div class="encabezado">
+      <img src="LOGOTIPO SIED.JPG" alt="Logo Excursiones Delgado">
+      <div>
+        <h2>Factura de Reserva</h2>
+        <div class="subinfo">
+          <div><strong>Código de Reserva:</strong> <span id="codigoReserva">---</span></div>
+          <div><strong>Número de Factura:</strong> <span id="numeroFactura">001</span></div>
+        </div>
       </div>
-    </header>
-    <h2>Factura de Reserva</h2>
-    <p>
-      <strong>Cliente:</strong> <span id="nombreCliente">---</span><br>
-      <strong>Correo:</strong> <span id="correoCliente">---</span>
-    </p>
+    </div>
+
+    <div class="info-cliente">
+      <p><strong>Cliente:</strong> <span id="nombreCliente">---</span><br>
+         <strong>Correo:</strong> <span id="correoCliente">---</span>
+      </p>
+    </div>
 
     <table>
       <thead>
@@ -119,9 +136,11 @@
           <th>Importe</th>
         </tr>
       </thead>
-      <tbody id="tablaArticulos"></tbody>
+      <tbody id="tablaArticulos">
+        <!-- Llenado por JS -->
+      </tbody>
       <tfoot>
-        <tr><td colspan="3" class="total">Subtotal</td><td id="subtotal">$0.00</td></tr>
+        <tr><td colspan="3" class="total">Subtotal</td><td>$0.00</td></tr>
         <tr><td colspan="3" class="total">IVA (0%)</td><td>$0.00</td></tr>
         <tr><td colspan="3" class="total">Total</td><td id="total">$0.00</td></tr>
       </tfoot>
