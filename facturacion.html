@@ -248,7 +248,31 @@ if (!codigoReserva) {
       console.error("Error al cargar transacciones", error);
     }
   }
+async function cargarDatosReserva() {
+  try {
+    const doc = await db.collection("reservas").doc(codigoReserva).get();
+    if (!doc.exists) {
+      alert("⚠️ No se encontró la reserva en la base de datos.");
+      return;
+    }
 
+    const data = doc.data();
+    document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
+    document.getElementById("correoCliente").textContent = data.correo || "---";
+    document.getElementById("codigoReserva").textContent = codigoReserva;
+
+    // 🔢 Generar número de factura (puede ser el mismo código o una combinación)
+    const año = new Date().getFullYear();
+    const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
+    document.getElementById("numeroFactura").textContent = numeroFactura;
+
+  } catch (error) {
+    console.error("❌ Error al cargar datos de la reserva:", error);
+  }
+}
+
+// Ejecutar apenas cargue el documento
+document.addEventListener("DOMContentLoaded", cargarDatosReserva);
   async function registrarAbono() {
     const monto = parseFloat(document.getElementById("montoAbono").value);
     const metodo = document.getElementById("metodoAbono").value;
@@ -287,6 +311,7 @@ await db.collection("facturas").add({
     } catch (error) {
       console.error("Error al eliminar abono", error);
     }
+    
   }
 </script>
 </body>
