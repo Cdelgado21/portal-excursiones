@@ -399,6 +399,7 @@ if (!codigoReserva) {
 
      function mostrarTransaccionesModal() {
   document.getElementById('modalTransacciones').style.display = 'flex';
+  cargarTransacciones(); // 👈 Esto carga los datos
 }
 
 function mostrarModalAgregarPago() {
