@@ -109,34 +109,32 @@
   </style>
 </head>
 <body>
-  <div class="factura" style="max-width: 900px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; font-family: Arial, sans-serif; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
-
-  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+ <div class="factura" style="max-width: 900px; margin: auto; font-family: Arial, sans-serif; padding: 30px; background: white; border-radius: 16px; box-shadow: 0 0 15px rgba(0,0,0,0.05);">
+  <!-- ENCABEZADO -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
     <img src="LOGO EXCURSIONES DELGADO ESMERALDA.png" alt="Logo Excursiones Delgado" style="height: 250px;">
-
     <div style="text-align: right;">
       <h2 style="margin: 0; color: #02535a;">Factura de Reserva</h2>
-      <p style="margin: 4px 0;"><strong style="color: #333;">Código de Reserva:</strong> <span id="codigoReserva" style="color: #02535a;">ED-010-2025</span></p>
-      <p style="margin: 0;"><strong style="color: #333;">Factura Nº:</strong> <span id="numeroFactura" style="color: #02535a;">001</span></p>
+      <p style="margin: 6px 0; font-size: 14px;"><strong style="color: #444;">Código de Reserva:</strong> <span id="codigoReserva" style="color: #02535a;">ED-010-2025</span></p>
+      <p style="margin: 0; font-size: 14px;"><strong style="color: #444;">Factura Nº:</strong> <span id="numeroFactura" style="color: #02535a;">001</span></p>
     </div>
   </div>
 
-  <div style="display: flex; justify-content: space-between; margin-top: 30px; gap: 20px;">
-    <!-- Datos cliente -->
-    <div style="flex: 1; border: 1px solid #ddd; border-radius: 10px; padding: 20px;">
-      <p style="font-size: 12px; margin-bottom: 8px;">FACTURAR A</p>
-      <p style="font-size: 18px; font-weight: bold; color: #111;" id="nombreCliente">Yulliana Gomez Chaves</p>
-      <p id="correoCliente" style="margin: 2px 0; color: #333;">yullianagomez@gmail.com</p>
-      <p id="telefonoCliente" style="margin: 0; color: #333;">+506 6000 0000</p>
-    </div>
-
-    <!-- Datos resumen -->
-    <div style="flex: 1; border: 1px solid #ddd; border-radius: 10px; padding: 20px;">
-      <p><strong>Emitido:</strong> <span id="fechaEmision">17 Jun 2025</span></p>
-      <p><strong>Viaje Ida:</strong> <span id="fechaIda">04 Ago 2025</span></p>
-      <p><strong>Viaje Regreso:</strong> <span id="fechaRegreso">09 Ago 2025</span></p>
-      <p><strong>Código Vuelo:</strong> <span id="codigoVuelo">AUC1HTR</span></p>
-    </div>
+  <!-- CUADRO ÚNICO REDONDEADO CON INFO -->
+  <div style="border: 1px solid #ccc; border-radius: 12px; padding: 20px; background: #f9f9f9; color: #02535a;">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between;">
+      <div style="min-width: 300px; margin-bottom: 15px;">
+        <p style="font-size: 12px; margin-bottom: 4px; color: #5f9296;">FACTURAR A</p>
+        <p style="font-size: 18px; font-weight: bold; margin: 0;" id="nombreCliente">Yulliana Gomez Chaves</p>
+        <p id="correoCliente" style="margin: 2px 0;">yullianagomez@gmail.com</p>
+        <p id="telefonoCliente" style="margin: 0;">+506 6000 0000</p>
+      </div>
+      <div style="min-width: 250px;">
+        <p style="margin: 4px 0;"><strong>Emitido:</strong> <span id="fechaEmision">17 Jun 2025</span></p>
+        <p style="margin: 4px 0;"><strong>Viaje Ida:</strong> <span id="fechaIda">04 Ago 2025</span></p>
+        <p style="margin: 4px 0;"><strong>Viaje Regreso:</strong> <span id="fechaRegreso">09 Ago 2025</span></p>
+        <p style="margin: 4px 0;"><strong>Código Vuelo:</strong> <span id="codigoVuelo">AUC1HTR</span></p>
+      </div>
   </div>
 
   <div style="margin-top: 30px;">
