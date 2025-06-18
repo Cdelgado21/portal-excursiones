@@ -438,12 +438,6 @@ function cerrarModal(id) {
         `;
         tbody.appendChild(tr);
       });
-
-      document.getElementById("resumenSubtotal").textContent = `$${totalFactura.toFixed(2)}`;
-      document.getElementById("resumenTotal").textContent = `$${totalFactura.toFixed(2)}`;
-      document.getElementById("resumenPagado").textContent = `$${totalPagado.toFixed(2)}`;
-      document.getElementById("fechaUltimoPago").textContent = ultimoPago;
-      document.getElementById("importeAdeudado").textContent = `$${(totalFactura - totalPagado).toFixed(2)}`;
     } catch (error) {
       console.error("Error al cargar transacciones", error);
     }
