@@ -123,28 +123,33 @@
 }
 
 .menu-contextual {
-  position: absolute;
-  right: 10px;
-  top: 35px;
+  position: fixed;
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  z-index: 9999; /* Asegura que se muestre encima */
+  z-index: 9999;
   display: none;
-  overflow: hidden;
+  min-width: 140px;
+  font-family: Arial, sans-serif;
+  padding: 4px 0;
 }
 .menu-contextual button {
-  display: block;
+  padding: 8px 14px;
   width: 100%;
-  padding: 10px;
   text-align: left;
   border: none;
   background: none;
+  font-size: 13px;
   cursor: pointer;
+  color: #02535a;
+  transition: background 0.2s ease;
 }
+
 .menu-contextual button:hover {
-  background-color: #f0f0f0;
+  background-color: #f0f7f7;
+  color: #013c3f;
+  font-weight: 600;
 }
    .modal-content input,
 .modal-content select,
