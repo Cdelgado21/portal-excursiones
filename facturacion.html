@@ -424,7 +424,7 @@ function cerrarModal(id) {
         if (index === 0) ultimoPago = data.fecha;
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${data.fecha}</td>
+         <td>${formatearFecha(data.fecha)}</td>
   <td>${data.nota || "—"}</td>
   <td style="text-align: right;">$${parseFloat(data.monto).toFixed(2)}</td>
   <td style="position: relative;">
@@ -447,6 +447,11 @@ function cerrarModal(id) {
       console.error("Error al cargar transacciones", error);
     }
   }
+    function formatearFecha(fechaISO) {
+  const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const [año, mes, dia] = fechaISO.split("-");
+  return `${dia}-${meses[parseInt(mes) - 1]}-${año}`;
+}
 async function cargarDatosReserva() {
   try {
     const doc = await db.collection("reservas").doc(codigoReserva).get();
@@ -531,7 +536,15 @@ async function registrarAbono() {
   } catch (error) {
     console.error("Error al guardar abono", error);
   }
-}
+  // Cierra todos los menús abiertos
+window.addEventListener('click', function (e) {
+  document.querySelectorAll('.menu-contextual').forEach(menu => {
+    if (!menu.contains(e.target) && !e.target.classList.contains('menu-opciones')) {
+      menu.style.display = 'none';
+    }
+  });
+});
+
 
 </script>
 </body>
