@@ -536,7 +536,9 @@ async function registrarAbono() {
   } catch (error) {
     console.error("Error al guardar abono", error);
   }
-  // Cierra todos los menús abiertos
+}
+
+// ✅ Este bloque debe ir fuera de la función registrarAbono
 window.addEventListener('click', function (e) {
   document.querySelectorAll('.menu-contextual').forEach(menu => {
     if (!menu.contains(e.target) && !e.target.classList.contains('menu-opciones')) {
@@ -544,8 +546,6 @@ window.addEventListener('click', function (e) {
     }
   });
 });
-
-
 </script>
 </body>
 </html>
