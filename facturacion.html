@@ -7,7 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
  <style>
-    body {
+        body {
       font-family: Arial, sans-serif;
       background: #f0f7f7;
       margin: 0;
@@ -28,7 +28,7 @@
       margin-bottom: 20px;
     }
     .encabezado img {
-      height: 80px;
+      height: 250px;
     }
     h2 {
       text-align: center;
@@ -42,13 +42,6 @@
       font-size: 14px;
       margin-bottom: 20px;
     }
-    .info-cliente {
-      margin-bottom: 15px;
-      color: #02535a;
-    }
-    .info-cliente strong {
-      color: #02535a;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -57,241 +50,177 @@
     th, td {
       padding: 10px;
       border: 1px solid #ccc;
-      text-align: left;
     }
-    .total {
-      text-align: right;
-      font-weight: bold;
+    th {
+      background: #f0f0f0;
+      color: #02535a;
     }
     .acciones {
-      margin-top: 20px;
       text-align: center;
+      margin-top: 30px;
     }
     .acciones button {
       padding: 10px 20px;
       background-color: #02535a;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
+      margin: 0 10px;
       cursor: pointer;
-      margin: 5px;
-   /* Estilos para modal de transacciones */
-.modal {
-  display: none;
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  justify-content: center;
-  align-items: center;
-  z-index: 999;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 16px;
-  padding: 30px;
-  max-width: 600px;
-  width: 95%;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-  font-family: Arial, sans-serif;
-}
-
-.titulo-modal {
-  color: #02535a;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.tabla-transacciones {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.tabla-transacciones th, .tabla-transacciones td {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  text-align: left;
-}
-
-.tabla-transacciones td:last-child {
-  text-align: right;
-  position: relative;
-}
-
-/* Botón de tres puntos */
-.menu-opciones {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-}
-
-/* Menú desplegable */
-.menu-contextual {
-  position: absolute;
-  right: 10px;
-  top: 30px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  display: none;
-  z-index: 1000;
-}
-
-.menu-contextual button {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  text-align: left;
-  border: none;
-  background: none;
-  cursor: pointer;
-}
-
-.menu-contextual button:hover {
-  background-color: #f0f0f0;
-}
-
-/* Botones finales */
-.acciones-modal {
-  text-align: right;
-  margin-top: 20px;
-}
-
-.acciones-modal button {
-  background-color: #02535a;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  margin-left: 10px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-    #resumenPagos {
-      margin-top: 30px;
-      max-width: 400px;
-      float: right;
     }
-    #resumenPagos table {
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 600px;
+      width: 95%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .titulo-modal {
+      color: #02535a;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .tabla-transacciones {
       width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
     }
-    #resumenPagos td {
-      padding: 6px;
+    .tabla-transacciones th, .tabla-transacciones td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .acciones-modal {
+      text-align: right;
+      margin-top: 20px;
+    }
+    .acciones-modal button {
+      background-color: #02535a;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      margin-left: 10px;
+      border-radius: 8px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
- <div class="factura" style="max-width: 900px; margin: auto; font-family: Arial, sans-serif; padding: 30px; background: white; border-radius: 16px; box-shadow: 0 0 15px rgba(0,0,0,0.05);">
-  <!-- ENCABEZADO -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <img src="LOGO EXCURSIONES DELGADO ESMERALDA.png" alt="Logo Excursiones Delgado" style="height: 250px;">
-    <div style="text-align: right;">
-      <h2 style="margin: 0; color: #02535a;">Factura de Reserva</h2>
-      <p style="margin: 6px 0; font-size: 14px;"><strong style="color: #444;">Código de Reserva:</strong> <span id="codigoReserva" style="color: #02535a;">ED-010-2025</span></p>
-      <p style="margin: 0; font-size: 14px;"><strong style="color: #444;">Factura Nº:</strong> <span id="numeroFactura" style="color: #02535a;">001</span></p>
+  <div class="factura">
+    <!-- Encabezado -->
+    <div class="encabezado">
+      <img src="LOGO EXCURSIONES DELGADO ESMERALDA.png" alt="Logo Excursiones Delgado">
+      <div style="text-align: right;">
+        <h2>Factura de Reserva</h2>
+        <p><strong style="color:#333;">Código de Reserva:</strong> <span id="codigoReserva" style="color:#02535a;">---</span></p>
+        <p><strong style="color:#333;">Factura Nº:</strong> <span id="numeroFactura" style="color:#02535a;">---</span></p>
+      </div>
     </div>
-  </div>
 
-  <!-- CUADRO ÚNICO REDONDEADO CON INFO -->
-  <div style="border: 1px solid #ccc; border-radius: 12px; padding: 20px; background: #f9f9f9; color: #02535a;">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-between;">
-      <div style="min-width: 300px; margin-bottom: 15px;">
-        <p style="font-size: 12px; margin-bottom: 4px; color: #5f9296;">FACTURAR A</p>
-        <p style="font-size: 18px; font-weight: bold; margin: 0;" id="nombreCliente">Yulliana Gomez Chaves</p>
-        <p id="correoCliente" style="margin: 2px 0;">yullianagomez@gmail.com</p>
-        <p id="telefonoCliente" style="margin: 0;">+506 6000 0000</p>
+    <!-- Información del Cliente -->
+    <div style="border: 1px solid #ccc; border-radius: 12px; padding: 20px; background: #f9f9f9; color: #02535a;">
+      <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+        <div style="min-width: 300px;">
+          <p style="font-size: 12px; color: #5f9296;">FACTURAR A</p>
+          <p id="nombreCliente" style="font-size: 18px; font-weight: bold;">---</p>
+          <p id="correoCliente">---</p>
+          <p id="telefonoCliente">---</p>
+        </div>
+        <div style="min-width: 250px;">
+          <p><strong>Emitido:</strong> <span id="fechaEmision">---</span></p>
+          <p><strong>Viaje Ida:</strong> <span id="fechaIda">---</span></p>
+          <p><strong>Viaje Regreso:</strong> <span id="fechaRegreso">---</span></p>
+          <p><strong>Código Vuelo:</strong> <span id="codigoVuelo">---</span></p>
+        </div>
       </div>
-      <div style="min-width: 250px;">
-        <p style="margin: 4px 0;"><strong>Emitido:</strong> <span id="fechaEmision">17 Jun 2025</span></p>
-        <p style="margin: 4px 0;"><strong>Viaje Ida:</strong> <span id="fechaIda">04 Ago 2025</span></p>
-        <p style="margin: 4px 0;"><strong>Viaje Regreso:</strong> <span id="fechaRegreso">09 Ago 2025</span></p>
-        <p style="margin: 4px 0;"><strong>Código Vuelo:</strong> <span id="codigoVuelo">AUC1HTR</span></p>
-      </div>
-  </div>
+    </div>
 
-  <div style="margin-top: 30px;">
-    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-      <thead style="background: #f0f0f0;">
+    <!-- Tabla -->
+    <table>
+      <thead>
         <tr>
-          <th style="padding: 10px; text-align: left;">Artículo</th>
-          <th style="padding: 10px; text-align: right;">Precio</th>
-          <th style="padding: 10px; text-align: center;">Cantidad</th>
-          <th style="padding: 10px; text-align: right;">Importe</th>
+          <th>Artículo</th>
+          <th style="text-align:right;">Precio</th>
+          <th style="text-align:center;">Cantidad</th>
+          <th style="text-align:right;">Importe</th>
         </tr>
       </thead>
       <tbody id="tablaArticulos">
-        <!-- Se rellena desde JS -->
+        <!-- JS -->
       </tbody>
       <tfoot>
-        <tr><td colspan="3" style="text-align: right; padding: 10px;">Subtotal</td><td id="subtotal" style="text-align: right; padding: 10px;">$0.00</td></tr>
-        <tr><td colspan="3" style="text-align: right; padding: 10px;">IVA (0%)</td><td style="text-align: right; padding: 10px;">$0.00</td></tr>
-        <tr><td colspan="3" style="text-align: right; padding: 10px;"><strong>Total</strong></td><td id="total" style="text-align: right; padding: 10px;"><strong>$0.00</strong></td></tr>
+        <tr><td colspan="3" style="text-align:right;">Subtotal</td><td style="text-align:right;" id="subtotal">$0.00</td></tr>
+        <tr><td colspan="3" style="text-align:right;">IVA (0%)</td><td style="text-align:right;">$0.00</td></tr>
+        <tr><td colspan="3" style="text-align:right;"><strong>Total</strong></td><td style="text-align:right;" id="total"><strong>$0.00</strong></td></tr>
       </tfoot>
     </table>
-  </div>
 
-  <div style="text-align: center; margin-top: 30px;">
-    <button onclick="mostrarTransaccionesModal()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px; margin-right: 10px;">Ver transacciones</button>
-    <button onclick="guardarFactura()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px;">Guardar Factura</button>
-  </div>
-</div>
-<!-- Modal de Ver Transacciones -->
-<div class="modal" id="modalTransacciones">
-  <div class="modal-content">
-    <h2 class="titulo-modal">Ver transacciones</h2>
-    <table class="tabla-transacciones">
-      <thead>
-        <tr>
-          <th>Fecha</th>
-          <th>Nota</th>
-          <th>Importe</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody id="tablaTransacciones">
-        <!-- Filas dinámicas aquí -->
-      </tbody>
-    </table>
-
-    <div class="acciones-modal">
-      <button onclick="mostrarModalAgregarPago()">Agregar pago</button>
-      <button onclick="cerrarModal('modalTransacciones')">Cerrar</button>
+    <!-- Botones -->
+    <div class="acciones">
+      <button onclick="mostrarTransaccionesModal()">Ver transacciones</button>
+      <button onclick="guardarFactura()">Guardar Factura</button>
     </div>
   </div>
-</div>
 
-<!-- Modal #2: Agregar pago -->
-<div class="modal" id="modalAgregarPago">
-  <div class="modal-content" style="max-width: 600px; border-radius: 12px; font-family: sans-serif;">
-    <h2 style="margin-bottom: 20px; color: #1f2937;">Agregar pago</h2>
-
-    <label style="font-weight: 500; display: block; margin-bottom: 6px;">Monto pagado</label>
-    <input type="number" id="montoAbono" placeholder="Ej. 100" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 15px;" />
-
-    <label style="font-weight: 500; display: block; margin-bottom: 6px;">Fecha</label>
-    <input type="date" id="fechaAbono" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 15px;" />
-
-    <label style="font-weight: 500; display: block; margin-bottom: 6px;">Método</label>
-    <select id="metodoAbono" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 15px;">
-      <option value="">Seleccionar</option>
-      <option value="Efectivo">Efectivo</option>
-      <option value="SINPE">SINPE</option>
-      <option value="Tarjeta">Tarjeta</option>
-      <option value="Transferencia">Transferencia</option>
-    </select>
-
-    <label style="font-weight: 500; display: block; margin-bottom: 6px;">Nota</label>
-    <textarea id="notaAbono" rows="2" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; margin-bottom: 20px;" placeholder="Ej. CUENTA ₡ BNCR, comprobante 123456..."></textarea>
-
-    <div style="text-align: right; display: flex; justify-content: space-between; align-items: center;">
-      <button onclick="cerrarModal('modalAgregarPago')" style="background: none; color: #374151; font-weight: 500; border: none;">Cerrar</button>
-      <button onclick="registrarAbono()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px;">Guardar pago</button>
+  <!-- Modal Ver Transacciones -->
+  <div class="modal" id="modalTransacciones">
+    <div class="modal-content">
+      <h2 class="titulo-modal">Ver transacciones</h2>
+      <table class="tabla-transacciones">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Nota</th>
+            <th>Importe</th>
+          </tr>
+        </thead>
+        <tbody id="tablaTransacciones">
+          <!-- JS -->
+        </tbody>
+      </table>
+      <div class="acciones-modal">
+        <button onclick="mostrarModalAgregarPago()">Agregar pago</button>
+        <button onclick="cerrarModal('modalTransacciones')">Cerrar</button>
+      </div>
     </div>
   </div>
-</div>
+
+  <!-- Modal Agregar Pago -->
+  <div class="modal" id="modalAgregarPago">
+    <div class="modal-content">
+      <h2 class="titulo-modal">Agregar pago</h2>
+      <label>Monto pagado</label>
+      <input type="number" id="montoAbono" placeholder="Ej. 100" style="width:100%; padding:10px; margin-bottom:15px;"/>
+      <label>Fecha</label>
+      <input type="date" id="fechaAbono" style="width:100%; padding:10px; margin-bottom:15px;" />
+      <label>Método</label>
+      <select id="metodoAbono" style="width:100%; padding:10px; margin-bottom:15px;">
+        <option value="">Seleccionar</option>
+        <option value="Efectivo">Efectivo</option>
+        <option value="SINPE">SINPE</option>
+        <option value="Tarjeta">Tarjeta</option>
+        <option value="Transferencia">Transferencia</option>
+      </select>
+      <label>Nota</label>
+      <textarea id="notaAbono" style="width:100%; padding:10px;" placeholder="Ej. CUENTA ₡ BNCR, comprobante 123456..."></textarea>
+      <div class="acciones-modal">
+        <button onclick="cerrarModal('modalAgregarPago')">Cerrar</button>
+        <button onclick="registrarAbono()">Guardar pago</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const firebaseConfig = {
