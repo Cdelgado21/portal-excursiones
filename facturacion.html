@@ -478,7 +478,43 @@ async function cargarDatosReserva() {
 
 // Ejecutar apenas cargue el documento
 document.addEventListener("DOMContentLoaded", cargarDatosReserva);
-  
+  // Después de mostrar el código y nombre del cliente
+const tabla = document.getElementById("tablaArticulos");
+tabla.innerHTML = ""; // limpia antes
+
+let subtotal = 0;
+
+function agregarFila(label, precio, cantidad) {
+  const tr = document.createElement("tr");
+  const importe = precio * cantidad;
+  subtotal += importe;
+
+  tr.innerHTML = `
+    <td>${data.destino} (${label})</td>
+    <td style="text-align:right;">$${precio.toFixed(2)}</td>
+    <td style="text-align:center;">${cantidad}</td>
+    <td style="text-align:right;">$${importe.toFixed(2)}</td>
+  `;
+  tabla.appendChild(tr);
+}
+
+// Agregar adultos
+if (data.cantidadAdultos > 0) {
+  agregarFila("Adulto", data.precioAdulto, data.cantidadAdultos);
+}
+// Agregar niños
+if (data.cantidadNinos > 0) {
+  agregarFila("Niño", data.precioNino, data.cantidadNinos);
+}
+// Agregar bebés
+if (data.cantidadBebes > 0) {
+  agregarFila("Bebé", data.precioBebe, data.cantidadBebes);
+}
+
+// Mostrar subtotal y total
+document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
+
   async function eliminarAbono(id) {
   if (!confirm("¿Eliminar este abono?")) return;
   try {
