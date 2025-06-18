@@ -172,6 +172,7 @@
 #modalTransacciones .modal-content {
    position: relative; /* 🔁 necesario para que z-index de hijos funcione */
   overflow: visible; /* 👈 importante para que el menú no se recorte */
+   z-index: 1000;
   background-color: white;
   border-radius: 16px;
   padding: 30px;
@@ -228,18 +229,15 @@
   color: #444;
 }
 
-/* Menú contextual */
 .menu-contextual {
-  position: absolute;
-  right: 10px;
-  top: 35px;
+  position: fixed; /* 👈 CAMBIAMOS de absolute a fixed */
+  right: 50px;
   background: white;
   border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  z-index: 2000;
+  z-index: 9999; /* MUY alto para que esté encima de todo */
   display: none;
-  overflow: hidden;
 }
 
 .menu-contextual button {
@@ -487,16 +485,25 @@ document.addEventListener("DOMContentLoaded", cargarDatosReserva);
   }
 }
 
-// 🔧 Estas funciones estaban dentro por error, las dejamos afuera 👇
-function toggleMenuContextual(id) {
+function toggleMenuContextual(id, event) {
   const menu = document.getElementById(`menu-${id}`);
-  // Oculta otros menús abiertos
-  document.querySelectorAll('.menu-contextual').forEach(el => {
-    if (el.id !== `menu-${id}`) el.style.display = 'none';
-  });
-  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-}
 
+  // Ocultar otros menús
+  document.querySelectorAll('.menu-contextual').forEach(el => {
+    if (el !== menu) el.style.display = 'none';
+  });
+
+  if (menu.style.display === 'block') {
+    menu.style.display = 'none';
+    return;
+  }
+
+  // Mostrar menú y posicionarlo
+  const rect = event.target.getBoundingClientRect();
+  menu.style.display = 'block';
+  menu.style.top = `${rect.bottom + 5}px`; // 5px debajo del botón
+  menu.style.left = `${rect.left - 100}px`; // Ajusta el valor según el ancho de tu menú
+}
 function editarPago(id, fecha, metodo, monto, nota) {
   document.getElementById("montoAbono").value = monto;
   document.getElementById("fechaAbono").value = fecha;
