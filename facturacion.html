@@ -7,7 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body {
+      body {
       font-family: Arial, sans-serif;
       background: #f0f7f7;
       margin: 0;
@@ -15,13 +15,25 @@
     }
     .factura {
       background: white;
-      padding: 25px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 800px;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 900px;
       margin: auto;
+      position: relative;
     }
-    h2 {
+    .factura header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+    .factura header img {
+      height: 60px;
+    }
+    .factura h2 {
       text-align: center;
       color: #02535a;
     }
@@ -33,7 +45,6 @@
     th, td {
       padding: 10px;
       border: 1px solid #ccc;
-      text-align: left;
     }
     .total {
       text-align: right;
@@ -48,9 +59,9 @@
       background-color: #02535a;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
-      margin: 5px;
+      margin: 10px 5px;
     }
     .modal {
       display: none;
@@ -59,29 +70,44 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0, 0, 0, 0.4);
       justify-content: center;
       align-items: center;
-      z-index: 10;
+      z-index: 1000;
     }
     .modal-content {
       background: white;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 700px;
+      padding: 25px;
+      border-radius: 12px;
       width: 90%;
-      max-height: 90%;
-      overflow-y: auto;
+      max-width: 600px;
+    }
+    #resumenPagos {
+      margin-top: 30px;
+      max-width: 400px;
+      float: right;
+    }
+    #resumenPagos table {
+      width: 100%;
+    }
+    #resumenPagos td {
+      padding: 6px;
     }
   </style>
 </head>
 <body>
   <div class="factura">
+    <header>
+      <img src="logotipo_sied.jpg" alt="Logo Excursiones Delgado">
+      <div style="text-align:right;">
+        <strong>Código de Reserva:</strong> <span id="codigoReserva">---</span><br>
+        <strong>Número de Factura:</strong> <span id="numeroFactura">---</span>
+      </div>
+    </header>
     <h2>Factura de Reserva</h2>
-    <p><strong>Cliente:</strong> <span id="nombreCliente">---</span><br>
-       <strong>Correo:</strong> <span id="correoCliente">---</span><br>
-       <strong>Código de Reserva:</strong> <span id="codigoReserva">---</span><br>
-       <strong>Número de Factura:</strong> <span id="numeroFactura">---</span>
+    <p>
+      <strong>Cliente:</strong> <span id="nombreCliente">---</span><br>
+      <strong>Correo:</strong> <span id="correoCliente">---</span>
     </p>
 
     <table>
@@ -93,24 +119,11 @@
           <th>Importe</th>
         </tr>
       </thead>
-      <tbody id="tablaArticulos">
-        <tr>
-          <td>SUPER PROMO CANCÚN 2025</td>
-          <td>810.00</td>
-          <td>2</td>
-          <td>1620.00</td>
-        </tr>
-        <tr>
-          <td>BEBÉ</td>
-          <td>215.00</td>
-          <td>1</td>
-          <td>215.00</td>
-        </tr>
-      </tbody>
+      <tbody id="tablaArticulos"></tbody>
       <tfoot>
-        <tr><td colspan="3" class="total">Subtotal</td><td>$1835.00</td></tr>
+        <tr><td colspan="3" class="total">Subtotal</td><td id="subtotal">$0.00</td></tr>
         <tr><td colspan="3" class="total">IVA (0%)</td><td>$0.00</td></tr>
-        <tr><td colspan="3" class="total">Total</td><td id="total">$1835.00</td></tr>
+        <tr><td colspan="3" class="total">Total</td><td id="total">$0.00</td></tr>
       </tfoot>
     </table>
 
@@ -119,19 +132,6 @@
       <button onclick="guardarFactura()">Guardar Factura</button>
     </div>
   </div>
-
-  <div id="resumenPagos" style="margin-top: 40px; max-width: 400px; float: right;">
-    <table style="width: 100%; border-collapse: collapse;">
-      <tr><td style="text-align: right;">Subtotal:</td><td id="resumenSubtotal" style="text-align: right;">$1835.00</td></tr>
-      <tr><td style="text-align: right;">Total:</td><td id="resumenTotal" style="text-align: right;">$1835.00</td></tr>
-      <tr><td style="text-align: right;">Pagado el <span id="fechaUltimoPago">-</span>:</td><td id="resumenPagado" style="text-align: right;">$0.00</td></tr>
-    </table>
-    <h3 style="text-align: right; margin-top: 10px;">Importe adeudado:<br>
-      <span id="importeAdeudado" style="font-size: 24px; color: #02535a; font-weight: bold;">$0.00</span>
-    </h3>
-  </div>
-  <div style="clear: both;"></div>
-
 <!-- Modal #1: Ver transacciones -->
 <div class="modal" id="modalTransacciones">
   <div class="modal-content" style="max-width: 600px; border-radius: 12px; font-family: sans-serif;">
