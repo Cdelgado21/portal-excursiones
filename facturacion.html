@@ -109,54 +109,62 @@
   </style>
 </head>
 <body>
-   <<div class="factura">
-  <div class="encabezado" style="display: flex; justify-content: space-between; align-items: center;">
+  <div class="factura" style="max-width: 900px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; font-family: Arial, sans-serif; box-shadow: 0 0 10px rgba(0,0,0,0.1);">
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
     <img src="LOGO EXCURSIONES DELGADO ESMERALDA.png" alt="Logo Excursiones Delgado" style="height: 250px;">
 
     <div style="text-align: right;">
       <h2 style="margin: 0; color: #02535a;">Factura de Reserva</h2>
-      <div style="margin-top: 4px;">
-        <strong style="color: #333;">Código de Reserva:</strong>
-        <span id="codigoReserva" style="color: #02535a;">---</span><br>
-        <strong style="color: #333;">Número de Factura:</strong>
-        <span id="numeroFactura" style="color: #02535a;">001</span>
-      </div>
+      <p style="margin: 4px 0;"><strong style="color: #333;">Código de Reserva:</strong> <span id="codigoReserva" style="color: #02535a;">ED-010-2025</span></p>
+      <p style="margin: 0;"><strong style="color: #333;">Factura Nº:</strong> <span id="numeroFactura" style="color: #02535a;">001</span></p>
     </div>
   </div>
 
-  <div class="info-cliente" style="margin-top: 20px;">
-    <p>
-      <strong style="color: #333;">Cliente:</strong>
-      <span id="nombreCliente" style="color: #02535a;">---</span><br>
-      <strong style="color: #333;">Correo:</strong>
-      <span id="correoCliente" style="color: #02535a;">---</span>
-    </p>
+  <div style="display: flex; justify-content: space-between; margin-top: 30px; gap: 20px;">
+    <!-- Datos cliente -->
+    <div style="flex: 1; border: 1px solid #ddd; border-radius: 10px; padding: 20px;">
+      <p style="font-size: 12px; margin-bottom: 8px;">FACTURAR A</p>
+      <p style="font-size: 18px; font-weight: bold; color: #111;" id="nombreCliente">Yulliana Gomez Chaves</p>
+      <p id="correoCliente" style="margin: 2px 0; color: #333;">yullianagomez@gmail.com</p>
+      <p id="telefonoCliente" style="margin: 0; color: #333;">+506 6000 0000</p>
+    </div>
+
+    <!-- Datos resumen -->
+    <div style="flex: 1; border: 1px solid #ddd; border-radius: 10px; padding: 20px;">
+      <p><strong>Emitido:</strong> <span id="fechaEmision">17 Jun 2025</span></p>
+      <p><strong>Viaje Ida:</strong> <span id="fechaIda">04 Ago 2025</span></p>
+      <p><strong>Viaje Regreso:</strong> <span id="fechaRegreso">09 Ago 2025</span></p>
+      <p><strong>Código Vuelo:</strong> <span id="codigoVuelo">AUC1HTR</span></p>
+    </div>
   </div>
 
-    <table>
-      <thead>
+  <div style="margin-top: 30px;">
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+      <thead style="background: #f0f0f0;">
         <tr>
-          <th>Artículo</th>
-          <th>Precio</th>
-          <th>Cantidad</th>
-          <th>Importe</th>
+          <th style="padding: 10px; text-align: left;">Artículo</th>
+          <th style="padding: 10px; text-align: right;">Precio</th>
+          <th style="padding: 10px; text-align: center;">Cantidad</th>
+          <th style="padding: 10px; text-align: right;">Importe</th>
         </tr>
       </thead>
       <tbody id="tablaArticulos">
-        <!-- Llenado por JS -->
+        <!-- Se rellena desde JS -->
       </tbody>
       <tfoot>
-        <tr><td colspan="3" class="total">Subtotal</td><td>$0.00</td></tr>
-        <tr><td colspan="3" class="total">IVA (0%)</td><td>$0.00</td></tr>
-        <tr><td colspan="3" class="total">Total</td><td id="total">$0.00</td></tr>
+        <tr><td colspan="3" style="text-align: right; padding: 10px;">Subtotal</td><td id="subtotal" style="text-align: right; padding: 10px;">$0.00</td></tr>
+        <tr><td colspan="3" style="text-align: right; padding: 10px;">IVA (0%)</td><td style="text-align: right; padding: 10px;">$0.00</td></tr>
+        <tr><td colspan="3" style="text-align: right; padding: 10px;"><strong>Total</strong></td><td id="total" style="text-align: right; padding: 10px;"><strong>$0.00</strong></td></tr>
       </tfoot>
     </table>
-
-    <div class="acciones">
-      <button onclick="mostrarTransaccionesModal()">Ver transacciones</button>
-      <button onclick="guardarFactura()">Guardar Factura</button>
-    </div>
   </div>
+
+  <div style="text-align: center; margin-top: 30px;">
+    <button onclick="mostrarTransaccionesModal()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px; margin-right: 10px;">Ver transacciones</button>
+    <button onclick="guardarFactura()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px;">Guardar Factura</button>
+  </div>
+</div>
 <!-- Modal #1: Ver transacciones -->
 <div class="modal" id="modalTransacciones">
   <div class="modal-content" style="max-width: 600px; border-radius: 12px; font-family: sans-serif;">
