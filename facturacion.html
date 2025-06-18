@@ -263,13 +263,6 @@
   </div>
 </div>
 
-    <div style="text-align: right;">
-      <button onclick="mostrarModalAgregarPago()" style="background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 6px;">Agregar pago</button>
-      <button onclick="cerrarModal('modalTransacciones')" style="margin-left: 10px; background: none; color: #374151; font-weight: 500; border: none;">Cerrar</button>
-    </div>
-  </div>
-</div>
-
 <!-- Modal #2: Agregar pago -->
 <div class="modal" id="modalAgregarPago">
   <div class="modal-content" style="max-width: 600px; border-radius: 12px; font-family: sans-serif;">
@@ -317,18 +310,17 @@ if (!codigoReserva) {
   throw new Error("Código de reserva no definido.");
 }
 
-     function mostrarModalAgregarPago() {
-    document.getElementById('modalAgregarPago').style.display = 'flex';
-  }
+     function mostrarTransaccionesModal() {
+  document.getElementById('modalTransacciones').style.display = 'flex';
+}
 
-  function mostrarTransaccionesModal() {
-    document.getElementById('modalTransacciones').style.display = 'flex';
-    cargarTransacciones();
-  }
+function mostrarModalAgregarPago() {
+  document.getElementById('modalAgregarPago').style.display = 'flex';
+}
 
-  function cerrarModal(id) {
-    document.getElementById(id).style.display = 'none';
-  }
+function cerrarModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
 
   async function cargarTransacciones() {
     const tbody = document.getElementById("tablaTransacciones");
