@@ -430,7 +430,7 @@ function cerrarModal(id) {
   <td>${data.nota || "—"}</td>
   <td style="text-align: right;">$${parseFloat(data.monto).toFixed(2)}</td>
   <td style="position: relative;">
-    <button class="menu-opciones" onclick="toggleMenuContextual('${doc.id}')">⋯</button>
+    <button class="menu-opciones" onclick="toggleMenuContextual('${doc.id}', event)">⋯</button>
     <div class="menu-contextual" id="menu-${doc.id}">
       <button onclick="editarPago('${doc.id}', '${data.fecha}', '${data.metodo}', '${data.monto}', \`${data.nota || ''}\`)">Editar</button>
       <button onclick="eliminarAbono('${doc.id}')">Eliminar</button>
@@ -488,7 +488,7 @@ document.addEventListener("DOMContentLoaded", cargarDatosReserva);
 function toggleMenuContextual(id, event) {
   const menu = document.getElementById(`menu-${id}`);
 
-  // Ocultar otros menús
+  // Oculta todos los demás
   document.querySelectorAll('.menu-contextual').forEach(el => {
     if (el !== menu) el.style.display = 'none';
   });
@@ -498,11 +498,20 @@ function toggleMenuContextual(id, event) {
     return;
   }
 
-  // Mostrar menú y posicionarlo
   const rect = event.target.getBoundingClientRect();
   menu.style.display = 'block';
-  menu.style.top = `${rect.bottom + 5}px`; // 5px debajo del botón
-  menu.style.left = `${rect.left - 100}px`; // Ajusta el valor según el ancho de tu menú
+  menu.style.top = `${rect.bottom + 8}px`;
+
+  // Centrado a la derecha del botón (evita desborde)
+  const viewportWidth = window.innerWidth;
+  const menuWidth = 160;
+  let left = rect.left;
+
+  if ((left + menuWidth) > viewportWidth) {
+    left = viewportWidth - menuWidth - 20;
+  }
+
+  menu.style.left = `${left}px`;
 }
 function editarPago(id, fecha, metodo, monto, nota) {
   document.getElementById("montoAbono").value = monto;
