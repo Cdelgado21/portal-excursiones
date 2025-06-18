@@ -115,6 +115,37 @@
       border-radius: 8px;
       cursor: pointer;
     }
+   .menu-opciones {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.menu-contextual {
+  position: absolute;
+  right: 0;
+  top: 30px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: none;
+  z-index: 1000;
+}
+.menu-contextual button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.menu-contextual button:hover {
+  background-color: #f0f0f0;
+}
+
   </style>
 </head>
 <body>
@@ -267,9 +298,15 @@ function cerrarModal(id) {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${data.fecha}</td>
-          <td>${data.nota || "—"}</td>
-          <td style="text-align: right;">$${parseFloat(data.monto).toFixed(2)}</td>
-          <td><button onclick="eliminarAbono('${doc.id}')">🗑️</button></td>
+  <td>${data.nota || "—"}</td>
+  <td style="text-align: right;">$${parseFloat(data.monto).toFixed(2)}</td>
+  <td style="position: relative;">
+    <button class="menu-opciones" onclick="toggleMenuContextual('${doc.id}')">⋯</button>
+    <div class="menu-contextual" id="menu-${doc.id}">
+      <button onclick="editarPago('${doc.id}', '${data.fecha}', '${data.metodo}', '${data.monto}', \`${data.nota || ''}\`)">Editar</button>
+      <button onclick="eliminarAbono('${doc.id}')">Eliminar</button>
+    </div>
+  </td>
         `;
         tbody.appendChild(tr);
       });
@@ -308,35 +345,7 @@ async function cargarDatosReserva() {
 
 // Ejecutar apenas cargue el documento
 document.addEventListener("DOMContentLoaded", cargarDatosReserva);
-  async function registrarAbono() {
-    const monto = parseFloat(document.getElementById("montoAbono").value);
-    const metodo = document.getElementById("metodoAbono").value;
-    const fecha = document.getElementById("fechaAbono").value;
-    const nota = document.getElementById("notaAbono").value;
-
-    if (!monto || !metodo || !fecha) return alert("Completa todos los campos");
-
-    const abono = { monto, metodo, fecha, nota, creado: new Date().toISOString() };
-    try {
-      const pagoId = await db.collection("facturas").doc(codigoReserva).collection("pagos").add(abono);
-
-// Guardar en colección raíz de facturas (para visibilidad rápida desde otros módulos)
-await db.collection("facturas").add({
-  reserva: codigoReserva,
-  fecha,
-  monto,
-  nota,
-  metodo,
-  creado: new Date()
-});
-      cerrarModal('modalAgregarPago');
-      cargarTransacciones();
-      alert("💰 Pago registrado correctamente");
-    } catch (error) {
-      console.error("Error al guardar abono", error);
-    }
-  }
-
+  
   async function eliminarAbono(id) {
     if (!confirm("¿Eliminar este abono?")) return;
     try {
@@ -348,21 +357,52 @@ await db.collection("facturas").add({
     }
     function toggleMenuContextual(id) {
   const menu = document.getElementById(`menu-${id}`);
-  menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+  // Ocultar cualquier otro menú abierto
+  document.querySelectorAll('.menu-contextual').forEach(el => {
+    if (el.id !== `menu-${id}`) el.style.display = 'none';
+  });
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
 }
 
-function editarPago(id) {
-  // buscar el pago por ID, precargar campos en modal agregar pago
-  // abrir modalAgregarPago()
-  console.log("Editar pago", id);
+function editarPago(id, fecha, metodo, monto, nota) {
+  document.getElementById("montoAbono").value = monto;
+  document.getElementById("fechaAbono").value = fecha;
+  document.getElementById("metodoAbono").value = metodo;
+  document.getElementById("notaAbono").value = nota;
+  document.getElementById("modalAgregarPago").setAttribute("data-edit-id", id);
+  cerrarModal("modalTransacciones");
+  mostrarModalAgregarPago();
 }
 
-function cancelarPago(id) {
-  // eliminar o marcar como cancelado
-  console.log("Cancelar pago", id);
-}
-    
+async function registrarAbono() {
+  const monto = parseFloat(document.getElementById("montoAbono").value);
+  const metodo = document.getElementById("metodoAbono").value;
+  const fecha = document.getElementById("fechaAbono").value;
+  const nota = document.getElementById("notaAbono").value;
+  const idEditar = document.getElementById("modalAgregarPago").getAttribute("data-edit-id");
+
+  if (!monto || !metodo || !fecha) return alert("Completa todos los campos");
+
+  const abono = { monto, metodo, fecha, nota, creado: new Date().toISOString() };
+
+  try {
+    const ref = db.collection("facturas").doc(codigoReserva).collection("pagos");
+
+    if (idEditar) {
+      await ref.doc(idEditar).set(abono); // EDITAR
+    } else {
+      await ref.add(abono); // NUEVO
+    }
+
+    document.getElementById("modalAgregarPago").removeAttribute("data-edit-id");
+    cerrarModal("modalAgregarPago");
+    cargarTransacciones();
+    alert("✅ Pago guardado correctamente");
+  } catch (error) {
+    console.error("Error al guardar abono", error);
   }
+}
+
 </script>
 </body>
 </html>
