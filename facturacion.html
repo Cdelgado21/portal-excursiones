@@ -347,17 +347,20 @@ async function cargarDatosReserva() {
 document.addEventListener("DOMContentLoaded", cargarDatosReserva);
   
   async function eliminarAbono(id) {
-    if (!confirm("¿Eliminar este abono?")) return;
-    try {
-      await db.collection("facturas").doc(codigoReserva).collection("pagos").doc(id).delete();
-      cargarTransacciones();
-      alert("🗑️ Abono eliminado");
-    } catch (error) {
-      console.error("Error al eliminar abono", error);
-    }
-    function toggleMenuContextual(id) {
+  if (!confirm("¿Eliminar este abono?")) return;
+  try {
+    await db.collection("facturas").doc(codigoReserva).collection("pagos").doc(id).delete();
+    cargarTransacciones();
+    alert("🗑️ Abono eliminado");
+  } catch (error) {
+    console.error("Error al eliminar abono", error);
+  }
+}
+
+// 🔧 Estas funciones estaban dentro por error, las dejamos afuera 👇
+function toggleMenuContextual(id) {
   const menu = document.getElementById(`menu-${id}`);
-  // Ocultar cualquier otro menú abierto
+  // Oculta otros menús abiertos
   document.querySelectorAll('.menu-contextual').forEach(el => {
     if (el.id !== `menu-${id}`) el.style.display = 'none';
   });
@@ -389,9 +392,9 @@ async function registrarAbono() {
     const ref = db.collection("facturas").doc(codigoReserva).collection("pagos");
 
     if (idEditar) {
-      await ref.doc(idEditar).set(abono); // EDITAR
+      await ref.doc(idEditar).set(abono);
     } else {
-      await ref.add(abono); // NUEVO
+      await ref.add(abono);
     }
 
     document.getElementById("modalAgregarPago").removeAttribute("data-edit-id");
