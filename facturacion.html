@@ -404,26 +404,37 @@ if (!codigoReserva) {
 
 // =================== FUNCIÓN PARA CARGAR DATOS ===================
 async function cargarDatosReserva() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const codigoReserva = urlParams.get("reserva");
+
+  if (!codigoReserva) {
+    alert("Código de reserva no proporcionado.");
+    return;
+  }
+
   try {
     const docRef = db.collection("reservas").doc(codigoReserva);
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
-      
-      alert("⚠️ No se encontró la reserva en la base de datos.");
+      alert("No se encontró la reserva en la base de datos.");
       return;
     }
 
-    const data = docSnap.data();
-        const fechaReserva = datos.fechaReserva || "Sin fecha registrada";
-    document.getElementById("fechaReservaSpan").textContent = fechaReserva;
-     document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
-    document.getElementById("correoCliente").textContent = data.correo || "---";
-    document.getElementById("telefonoCliente").textContent = data.telefono || "---";
-    document.getElementById("codigoReserva").textContent = codigoReserva;
-document.getElementById("fechaSalida").textContent = data.vueloIda?.fecha || "---";
-document.getElementById("fechaRegreso").textContent = data.vueloRegreso?.fecha || "---";
-document.getElementById("codigoVuelo").textContent = data.vueloIda?.vuelo || "---";
+    const datos = docSnap.data(); // ✅ Aquí se define la variable 'datos'
+
+    // Ahora sí puedes usar datos
+    document.getElementById("fechareservaSpan").textContent = datos.fechaReserva || "Sin fecha registrada";
+    document.getElementById("nombrecliente").textContent = datos.nombreTitular || "---";
+    document.getElementById("correocliente").textContent = datos.correo || "---";
+    document.getElementById("telefonocliente").textContent = datos.telefono || "---";
+    // Otros campos que necesites mostrar...
+
+  } catch (error) {
+    console.error("Error al cargar datos:", error);
+    alert("Ocurrió un error al cargar los datos de la reserva.");
+  }
+}
     
     const año = new Date().getFullYear();
     const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
