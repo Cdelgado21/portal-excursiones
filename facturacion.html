@@ -429,12 +429,6 @@ async function cargarDatosReserva() {
     document.getElementById("correocliente").textContent = datos.correo || "---";
     document.getElementById("telefonocliente").textContent = datos.telefono || "---";
     // Otros campos que necesites mostrar...
-
-  } catch (error) {
-    console.error("Error al cargar datos:", error);
-    alert("Ocurrió un error al cargar los datos de la reserva.");
-  }
-}
     
     const año = new Date().getFullYear();
     const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
