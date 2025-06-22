@@ -424,7 +424,7 @@ async function cargarDatosReserva() {
     const datos = docSnap.data(); // ✅ Aquí se define la variable 'datos'
 
     // Ahora sí puedes usar datos
-    document.getElementById("fechareservaSpan").textContent = datos.fechaReserva || "Sin fecha registrada";
+    document.getElementById("fechareserva").textContent = datos.fechaReserva || "Sin fecha registrada";
     document.getElementById("nombrecliente").textContent = datos.nombreTitular || "---";
     document.getElementById("correocliente").textContent = datos.correo || "---";
     document.getElementById("telefonocliente").textContent = datos.telefono || "---";
