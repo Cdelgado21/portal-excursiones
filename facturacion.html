@@ -386,28 +386,24 @@
   </div>
 
   <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+const firebaseConfig = {
+  apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+  authDomain: "tours-460717.firebaseapp.com",
+  projectId: "tours-460717"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const codigoReserva = urlParams.get("reserva");
+const urlParams = new URLSearchParams(window.location.search);
+const codigoReserva = urlParams.get('reserva');
 
-    if (!codigoReserva) {
-      alert("⚠️ No se encontró el código de reserva. Asegúrese de ingresar con ?reserva=CÓDIGO en la URL.");
-      throw new Error("Código de reserva no definido.");
-    }
+if (!codigoReserva) {
+  alert("⚠️ No se encontró el código de reserva. Asegúrese de ingresar con ?reserva=CÓDIGO en la URL.");
+  throw new Error("Código de reserva no definido.");
+}
 
-    document.addEventListener("DOMContentLoaded", () => {
-      cargarDatosReserva();
-      cargarDetalleFactura();
-    });
-
-    async function cargarDatosReserva() {
+// =================== FUNCIÓN PARA CARGAR DATOS ===================
+async function cargarDatosReserva() {
   try {
     const docRef = db.collection("reservas").doc(codigoReserva);
     const docSnap = await docRef.get();
@@ -426,7 +422,6 @@
     const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
     document.getElementById("numeroFactura").textContent = numeroFactura;
 
-    // Llenar tabla de artículos
     const tabla = document.getElementById("tablaArticulos");
     tabla.innerHTML = "";
     let subtotal = 0;
@@ -448,11 +443,9 @@
     if (data.cantidadAdultos > 0) {
       agregarFila("Adulto", data.precioAdulto, data.cantidadAdultos);
     }
-
     if (data.cantidadNinos > 0) {
       agregarFila("Niño", data.precioNino, data.cantidadNinos);
     }
-
     if (data.cantidadBebes > 0) {
       agregarFila("Bebé", data.precioBebe, data.cantidadBebes);
     }
@@ -460,183 +453,62 @@
     document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
     document.getElementById("iva").textContent = `$0.00`;
     document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
-
   } catch (error) {
     console.error("❌ Error al cargar datos de la reserva:", error);
   }
 }
 
-    async function cargarDetalleFactura() {
-      try {
-        const docRef = db.collection("reservas").doc(codigoReserva);
-        const docSnap = await docRef.get();
-
-        if (!docSnap.exists) {
-          console.error("No se encontró la reserva.");
-          return;
-        }
-
-        const data = docSnap.data();
-        const tabla = document.getElementById("tablaArticulos");
-        tabla.innerHTML = "";
-
-        let subtotal = 0;
-
-        function agregarFila(tipo, precio, cantidad) {
-          const tr = document.createElement("tr");
-
-          const tdArticulo = document.createElement("td");
-          tdArticulo.textContent = `${data.destino} (${tipo})`;
-          tr.appendChild(tdArticulo);
-
-          const tdPrecio = document.createElement("td");
-          tdPrecio.textContent = `$${precio.toFixed(2)}`;
-          tdPrecio.style.textAlign = "right";
-          tr.appendChild(tdPrecio);
-
-          const tdCantidad = document.createElement("td");
-          tdCantidad.textContent = cantidad;
-          tdCantidad.style.textAlign = "center";
-          tr.appendChild(tdCantidad);
-
-          const tdImporte = document.createElement("td");
-          const importe = precio * cantidad;
-          subtotal += importe;
-          tdImporte.textContent = `$${importe.toFixed(2)}`;
-          tdImporte.style.textAlign = "right";
-          tr.appendChild(tdImporte);
-
-          tabla.appendChild(tr);
-        }
-
-        if (data.cantidadAdultos > 0) {
-          agregarFila("Adulto", data.precioAdulto, data.cantidadAdultos);
-        }
-
-        if (data.cantidadNinos > 0) {
-          agregarFila("Niño", data.precioNino, data.cantidadNinos);
-        }
-
-        if (data.cantidadBebes > 0) {
-          agregarFila("Bebé", data.precioBebe, data.cantidadBebes);
-        }
-
-        document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById("iva").textContent = `$0.00`;
-        document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
-      } catch (error) {
-        console.error("Error al obtener la reserva:", error);
-      }
-   
-     function mostrarTransaccionesModal() {
+// =================== TRANSACCIONES ===================
+function mostrarTransaccionesModal() {
   document.getElementById('modalTransacciones').style.display = 'flex';
-  cargarTransacciones(); // 👈 Esto carga los datos
-}
-
-function mostrarModalAgregarPago() {
-  document.getElementById('modalAgregarPago').style.display = 'flex';
+  cargarTransacciones();
 }
 
 function cerrarModal(id) {
   document.getElementById(id).style.display = 'none';
 }
 
-  async function cargarTransacciones() {
-    const tbody = document.getElementById("tablaTransacciones");
-    tbody.innerHTML = "";
-    try {
-      const snapshot = await db.collection("facturas").doc(codigoReserva).collection("pagos").orderBy("fecha", "desc").get();
-      let totalPagado = 0;
-      let ultimoPago = "-";
-      const totalFactura = 1835;
+async function cargarTransacciones() {
+  const tbody = document.getElementById("tablaTransacciones");
+  tbody.innerHTML = "";
+  try {
+    const snapshot = await db.collection("facturas").doc(codigoReserva).collection("pagos").orderBy("fecha", "desc").get();
+    let totalPagado = 0;
 
-      snapshot.forEach((doc, index) => {
-        const data = doc.data();
-        totalPagado += parseFloat(data.monto);
-        if (index === 0) ultimoPago = data.fecha;
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-         <td>${formatearFecha(data.fecha)}</td>
-  <td>${data.nota || "—"}</td>
-  <td style="text-align: right;">$${parseFloat(data.monto).toFixed(2)}</td>
-  <td style="position: relative;">
-    <button class="menu-opciones" onclick="toggleMenuContextual('${doc.id}', event)">⋯</button>
-    <div class="menu-contextual" id="menu-${doc.id}">
-      <button onclick="editarPago('${doc.id}', '${data.fecha}', '${data.metodo}', '${data.monto}', \`${data.nota || ''}\`)">Editar</button>
-      <button onclick="eliminarAbono('${doc.id}')">Eliminar</button>
-    </div>
-  </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    } catch (error) {
-      console.error("Error al cargar transacciones", error);
-    }
+    snapshot.forEach((doc, index) => {
+      const data = doc.data();
+      totalPagado += parseFloat(data.monto);
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${formatearFecha(data.fecha)}</td>
+        <td>${data.nota || "—"}</td>
+        <td style="text-align: right;">$${parseFloat(data.monto).toFixed(2)}</td>
+        <td style="position: relative;">
+          <button class="menu-opciones" onclick="toggleMenuContextual('${doc.id}', event)">⋯</button>
+          <div class="menu-contextual" id="menu-${doc.id}">
+            <button onclick="editarPago('${doc.id}', '${data.fecha}', '${data.metodo}', '${data.monto}', \`${data.nota || ''}\`)">Editar</button>
+            <button onclick="eliminarAbono('${doc.id}')">Eliminar</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (error) {
+    console.error("Error al cargar transacciones", error);
   }
-    function formatearFecha(fechaISO) {
+}
+
+function formatearFecha(fechaISO) {
   const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
   const [año, mes, dia] = fechaISO.split("-");
   return `${dia}-${meses[parseInt(mes) - 1]}-${año}`;
 }
-async function cargarDatosReserva() {
-    try {
-      const doc = await db.collection("reservas").doc(codigoReserva).get();
-      if (!doc.exists) {
-        alert("⚠️ No se encontró la reserva en la base de datos.");
-        return;
-      }
 
-      const data = doc.data();
-      document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
-      document.getElementById("correoCliente").textContent = data.correo || "---";
-      document.getElementById("codigoReserva").textContent = codigoReserva;
-
-      const año = new Date().getFullYear();
-      const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
-      document.getElementById("numeroFactura").textContent = numeroFactura;
-    } catch (error) {
-      console.error("❌ Error al cargar datos de la reserva:", error);
-    }
-  }
-  async function eliminarAbono(id) {
-  if (!confirm("¿Eliminar este abono?")) return;
-  try {
-    await db.collection("facturas").doc(codigoReserva).collection("pagos").doc(id).delete();
-    cargarTransacciones();
-    alert("🗑️ Abono eliminado");
-  } catch (error) {
-    console.error("Error al eliminar abono", error);
-  }
+function mostrarModalAgregarPago() {
+  document.getElementById("modalAgregarPago").style.display = 'flex';
 }
 
-function toggleMenuContextual(id, event) {
-  const menu = document.getElementById(`menu-${id}`);
-
-  // Oculta todos los demás
-  document.querySelectorAll('.menu-contextual').forEach(el => {
-    if (el !== menu) el.style.display = 'none';
-  });
-
-  if (menu.style.display === 'block') {
-    menu.style.display = 'none';
-    return;
-  }
-
-  const rect = event.target.getBoundingClientRect();
-  menu.style.display = 'block';
-  menu.style.top = `${rect.bottom + 8}px`;
-
-  // Centrado a la derecha del botón (evita desborde)
-  const viewportWidth = window.innerWidth;
-  const menuWidth = 160;
-  let left = rect.left;
-
-  if ((left + menuWidth) > viewportWidth) {
-    left = viewportWidth - menuWidth - 20;
-  }
-
-  menu.style.left = `${left}px`;
-}
 function editarPago(id, fecha, metodo, monto, nota) {
   document.getElementById("montoAbono").value = monto;
   document.getElementById("fechaAbono").value = fecha;
@@ -645,6 +517,17 @@ function editarPago(id, fecha, metodo, monto, nota) {
   document.getElementById("modalAgregarPago").setAttribute("data-edit-id", id);
   cerrarModal("modalTransacciones");
   mostrarModalAgregarPago();
+}
+
+async function eliminarAbono(id) {
+  if (!confirm("¿Eliminar este abono?")) return;
+  try {
+    await db.collection("facturas").doc(codigoReserva).collection("pagos").doc(id).delete();
+    cargarTransacciones();
+    alert("🗑️ Abono eliminado");
+  } catch (error) {
+    console.error("Error al eliminar abono", error);
+  }
 }
 
 async function registrarAbono() {
@@ -676,7 +559,35 @@ async function registrarAbono() {
   }
 }
 
-// ✅ Este bloque debe ir fuera de la función registrarAbono
+// =================== MENU CONTEXTUAL ===================
+function toggleMenuContextual(id, event) {
+  const menu = document.getElementById(`menu-${id}`);
+
+  document.querySelectorAll('.menu-contextual').forEach(el => {
+    if (el !== menu) el.style.display = 'none';
+  });
+
+  if (menu.style.display === 'block') {
+    menu.style.display = 'none';
+    return;
+  }
+
+  const rect = event.target.getBoundingClientRect();
+  menu.style.display = 'block';
+  menu.style.top = `${rect.bottom + 8}px`;
+
+  const viewportWidth = window.innerWidth;
+  const menuWidth = 160;
+  let left = rect.left;
+
+  if ((left + menuWidth) > viewportWidth) {
+    left = viewportWidth - menuWidth - 20;
+  }
+
+  menu.style.left = `${left}px`;
+}
+
+// =================== CERRAR MENÚS EXTERNAMENTE ===================
 window.addEventListener('click', function (e) {
   document.querySelectorAll('.menu-contextual').forEach(menu => {
     if (!menu.contains(e.target) && !e.target.classList.contains('menu-opciones')) {
@@ -684,6 +595,10 @@ window.addEventListener('click', function (e) {
     }
   });
 });
+
+// Ejecutar al cargar
+document.addEventListener("DOMContentLoaded", cargarDatosReserva);
 </script>
+
 </body>
 </html>
