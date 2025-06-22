@@ -619,6 +619,7 @@ precioBebe,
 duracion: document.getElementById("duracion")?.value || "",
 itinerario: document.getElementById("itinerario")?.value || "",
 hoteles: Array.from(document.querySelectorAll("#tablaHotelesBody tr")).map(tr => {
+   fechaCreacion: new Date().toISOString(),
   const celdas = tr.querySelectorAll("td");
   return {
     nombre: celdas[0]?.innerText || "",
