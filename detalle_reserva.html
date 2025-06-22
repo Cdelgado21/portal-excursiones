@@ -535,6 +535,11 @@ async function guardarReserva() {
     const pagos = window.listaPagos || [];
     const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
     const saldo = total - abono;
+    let datosExistentes = await db.collection("reservas").doc(codigo).get();
+datosExistentes = datosExistentes.exists ? datosExistentes.data() : {};
+
+let fechaReservaExistente = datosExistentes?.fechaReserva || null;
+let fechaReserva = fechaReservaExistente || new Date().toLocaleDateString('es-CR');
 // 🧮 Guardar desglose de inversión
 const cantidadAdultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
 const cantidadNinos = parseInt(document.getElementById("cantidadNinos").value) || 0;
@@ -582,11 +587,7 @@ await db.collection("costos_reservas").doc(codigo).set({
   actualizado_el: new Date()
 });
 
-let datosExistentes = await db.collection("reservas").doc(codigo).get();
-datosExistentes = datosExistentes.exists ? datosExistentes.data() : {};
 
-let fechaReservaExistente = datosExistentes?.fechaReserva || null;
-let fechaReserva = fechaReservaExistente || new Date().toLocaleDateString('es-CR');
     // Crear objeto a guardar
  const datos = {
   codigo,
