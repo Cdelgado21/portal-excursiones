@@ -498,12 +498,13 @@ function agregarFila(label, precio, cantidad) {
   tabla.appendChild(tr);
 }
 
-   const reservaId = new URLSearchParams(window.location.search).get("reserva");
-const docRef = doc(db, "cotizaciones", reservaId);
+   cconst reservaId = new URLSearchParams(window.location.search).get("reserva");
+const docRef = db.collection("cotizaciones").doc(reservaId);
 
-getDoc(docRef).then((docSnap) => {
-  if (docSnap.exists()) {
+docRef.get().then((docSnap) => {
+  if (docSnap.exists) {
     const data = docSnap.data();
+    console.log(data);
 
     // Asignar datos del cliente
     document.getElementById("nombreCliente").textContent = data.nombre || "---";
@@ -558,11 +559,11 @@ getDoc(docRef).then((docSnap) => {
     document.getElementById("iva").textContent = `$0.00`; // Cambiar si hay IVA
     document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
 
-  } else {
-    console.error("No se encontró la reserva con ese ID.");
+   } else {
+    console.error("No se encontró la cotización.");
   }
 }).catch((error) => {
-  console.error("Error al obtener la reserva:", error);
+  console.error("Error al obtener la cotización:", error);
 });
 
 // Mostrar subtotal y total
