@@ -530,7 +530,6 @@ async function guardarReserva() {
     const vencimientoPasaporteTitular = document.getElementById("vencimientoPasaporteTitular").value || "";
     const nacionalidadTitular = document.getElementById("nacionalidadTitular").value || "";
     const generoTitular = document.getElementById("generoTitular").value || "";
-    const fechaReserva = new Date().toISOString().split("T")[0];
     const destino = document.getElementById("destino").value || "";
     const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
     const pagos = window.listaPagos || [];
@@ -586,10 +585,8 @@ await db.collection("costos_reservas").doc(codigo).set({
 let datosExistentes = await db.collection("reservas").doc(codigo).get();
 datosExistentes = datosExistentes.exists ? datosExistentes.data() : {};
 
-let fechaReserva = null;
-const fechaReservaExistente = datosExistentes?.fechaReserva || null;
-fechaReserva = fechaReservaExistente || new Date().toLocaleDateString('es-CR');
-    
+let fechaReservaExistente = datosExistentes?.fechaReserva || null;
+let fechaReserva = fechaReservaExistente || new Date().toLocaleDateString('es-CR');
     // Crear objeto a guardar
  const datos = {
   codigo,
