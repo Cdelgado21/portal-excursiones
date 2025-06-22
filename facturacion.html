@@ -416,6 +416,7 @@ async function cargarDatosReserva() {
     const data = docSnap.data();
     document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
     document.getElementById("correoCliente").textContent = data.correo || "---";
+    document.getElementById("telefonoCliente").textContent = data.telefono || "---";
     document.getElementById("codigoReserva").textContent = codigoReserva;
 document.getElementById("fechaSalida").textContent = data.vueloIda?.fecha || "---";
 document.getElementById("fechaRegreso").textContent = data.vueloRegreso?.fecha || "---";
