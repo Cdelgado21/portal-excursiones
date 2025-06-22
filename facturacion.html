@@ -453,107 +453,25 @@ function cerrarModal(id) {
   return `${dia}-${meses[parseInt(mes) - 1]}-${año}`;
 }
 async function cargarDatosReserva() {
-  try {
-    const doc = await db.collection("reservas").doc(codigoReserva).get();
-    if (!doc.exists) {
-      alert("⚠️ No se encontró la reserva en la base de datos.");
-      return;
+    try {
+      const doc = await db.collection("reservas").doc(codigoReserva).get();
+      if (!doc.exists) {
+        alert("⚠️ No se encontró la reserva en la base de datos.");
+        return;
+      }
+
+      const data = doc.data();
+      document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
+      document.getElementById("correoCliente").textContent = data.correo || "---";
+      document.getElementById("codigoReserva").textContent = codigoReserva;
+
+      const año = new Date().getFullYear();
+      const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
+      document.getElementById("numeroFactura").textContent = numeroFactura;
+    } catch (error) {
+      console.error("❌ Error al cargar datos de la reserva:", error);
     }
-
-    const data = doc.data();
-    document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
-    document.getElementById("correoCliente").textContent = data.correo || "---";
-    document.getElementById("codigoReserva").textContent = codigoReserva;
-
-    // 🔢 Generar número de factura (puede ser el mismo código o una combinación)
-    const año = new Date().getFullYear();
-    const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
-    document.getElementById("numeroFactura").textContent = numeroFactura;
-
-  } catch (error) {
-    console.error("❌ Error al cargar datos de la reserva:", error);
   }
-}
-
-// Ejecutar apenas cargue el documento
-document.addEventListener("DOMContentLoaded", cargarDatosReserva);
-  // Después de mostrar el código y nombre del cliente
-const tabla = document.getElementById("tablaArticulos");
-tabla.innerHTML = ""; // limpia antes
-
-let subtotal = 0;
-
-function agregarFila(label, precio, cantidad) {
-  const tr = document.createElement("tr");
-  const importe = precio * cantidad;
-  subtotal += importe;
-
-  tr.innerHTML = `
-    <td>${data.destino} (${label})</td>
-    <td style="text-align:right;">$${precio.toFixed(2)}</td>
-    <td style="text-align:center;">${cantidad}</td>
-    <td style="text-align:right;">$${importe.toFixed(2)}</td>
-  `;
-  tabla.appendChild(tr);
-}
-
-docRef.get().then((docSnap) => {
-  
-    let subtotal = 0;
-
-    function agregarFila(tipo, precio, cantidad) {
-      const tabla = document.getElementById("tabla-articulos");
-      const tr = document.createElement("tr");
-
-      const tdArticulo = document.createElement("td");
-      tdArticulo.textContent = `${data.destino} (${tipo})`;
-      tr.appendChild(tdArticulo);
-
-      const tdPrecio = document.createElement("td");
-      tdPrecio.textContent = `$${precio.toFixed(2)}`;
-      tr.appendChild(tdPrecio);
-
-      const tdCantidad = document.createElement("td");
-      tdCantidad.textContent = cantidad;
-      tr.appendChild(tdCantidad);
-
-      const tdImporte = document.createElement("td");
-      const importe = precio * cantidad;
-      subtotal += importe;
-      tdImporte.textContent = `$${importe.toFixed(2)}`;
-      tr.appendChild(tdImporte);
-
-      tabla.appendChild(tr);
-    }
-
-    if (data.cantidadAdultos > 0) {
-      agregarFila("Adulto", data.precioAdulto, data.cantidadAdultos);
-    }
-
-    if (data.cantidadNinos > 0) {
-      agregarFila("Niño", data.precioNino, data.cantidadNinos);
-    }
-
-    if (data.cantidadBebes > 0) {
-      agregarFila("Bebé", data.precioBebe, data.cantidadBebes);
-    }
-
-    // Mostrar totales
-    document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-    document.getElementById("iva").textContent = `$0.00`; // Cambiar si hay IVA
-    document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
-
-   } else {
-    console.error("No se encontró la cotización.");
-  }
-}).catch((error) => {
-  console.error("Error al obtener la cotización:", error);
-});
-
-// Mostrar subtotal y total
-document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
-
   async function eliminarAbono(id) {
   if (!confirm("¿Eliminar este abono?")) return;
   try {
