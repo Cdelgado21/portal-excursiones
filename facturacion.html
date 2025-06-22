@@ -498,7 +498,7 @@ function agregarFila(label, precio, cantidad) {
   tabla.appendChild(tr);
 }
 
-   cconst reservaId = new URLSearchParams(window.location.search).get("reserva");
+   const reservaId = new URLSearchParams(window.location.search).get("reserva");
 const docRef = db.collection("cotizaciones").doc(reservaId);
 
 docRef.get().then((docSnap) => {
