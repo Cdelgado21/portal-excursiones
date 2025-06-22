@@ -498,29 +498,68 @@ function agregarFila(label, precio, cantidad) {
   tabla.appendChild(tr);
 }
 
-    const reservaId = new URLSearchParams(window.location.search).get("reserva");
+   const reservaId = new URLSearchParams(window.location.search).get("reserva");
 const docRef = doc(db, "cotizaciones", reservaId);
 
 getDoc(docRef).then((docSnap) => {
   if (docSnap.exists()) {
-    const data = docSnap.data(); // Asegúrate de declarar aquí la variable
-    console.log("Datos obtenidos:", data);
-    
-// Agregar adultos
-if (data.cantidadAdultos > 0) {
-  agregarFila("Adulto", data.precioAdulto, data.cantidadAdultos);
-}
-// Agregar niños
-if (data.cantidadNinos > 0) {
-  agregarFila("Niño", data.precioNino, data.cantidadNinos);
-}
-// Agregar bebés
-if (data.cantidadBebes > 0) {
-  agregarFila("Bebé", data.precioBebe, data.cantidadBebes);
-}
-     }
+    const data = docSnap.data();
+
+    // Asignar datos del cliente
+    document.getElementById("nombreCliente").textContent = data.nombre || "---";
+    document.getElementById("correoCliente").textContent = data.correo || "---";
+
+    // Datos de vuelo
+    document.getElementById("fechaIda").textContent = data.fecha_salida || "---";
+    document.getElementById("fechaRegreso").textContent = data.fecha_regreso || "---";
+    document.getElementById("aerolinea").textContent = data.aerolinea || "---";
+
+    let subtotal = 0;
+
+    function agregarFila(tipo, precio, cantidad) {
+      const tabla = document.getElementById("tabla-articulos");
+      const tr = document.createElement("tr");
+
+      const tdArticulo = document.createElement("td");
+      tdArticulo.textContent = `${data.destino} (${tipo})`;
+      tr.appendChild(tdArticulo);
+
+      const tdPrecio = document.createElement("td");
+      tdPrecio.textContent = `$${precio.toFixed(2)}`;
+      tr.appendChild(tdPrecio);
+
+      const tdCantidad = document.createElement("td");
+      tdCantidad.textContent = cantidad;
+      tr.appendChild(tdCantidad);
+
+      const tdImporte = document.createElement("td");
+      const importe = precio * cantidad;
+      subtotal += importe;
+      tdImporte.textContent = `$${importe.toFixed(2)}`;
+      tr.appendChild(tdImporte);
+
+      tabla.appendChild(tr);
+    }
+
+    if (data.cantidadAdultos > 0) {
+      agregarFila("Adulto", data.precioAdulto, data.cantidadAdultos);
+    }
+
+    if (data.cantidadNinos > 0) {
+      agregarFila("Niño", data.precioNino, data.cantidadNinos);
+    }
+
+    if (data.cantidadBebes > 0) {
+      agregarFila("Bebé", data.precioBebe, data.cantidadBebes);
+    }
+
+    // Mostrar totales
+    document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById("iva").textContent = `$0.00`; // Cambiar si hay IVA
+    document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
+
   } else {
-    console.error("¡No se encontró la reserva!");
+    console.error("No se encontró la reserva con ese ID.");
   }
 }).catch((error) => {
   console.error("Error al obtener la reserva:", error);
