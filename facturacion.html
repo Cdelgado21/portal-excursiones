@@ -303,11 +303,10 @@
           <p id="telefonoCliente">---</p>
         </div>
         <div style="min-width: 250px;">
-          <p><strong>Emitido:</strong> <span id="fechaEmision">---</span></p>
-          <p><strong>Viaje Ida:</strong> <span id="fechaIda">---</span></p>
-          <p><strong>Viaje Regreso:</strong> <span id="fechaRegreso">---</span></p>
-          <p><strong>Código Vuelo:</strong> <span id="codigoVuelo">---</span></p>
-        </div>
+        <p><strong>Emitido:</strong> <span id="fechaEmision">---</span></p>
+<p><strong>Viaje Ida:</strong> <span id="fechaSalida">---</span></p>
+<p><strong>Viaje Regreso:</strong> <span id="fechaRegreso">---</span></p>
+<p><strong>Código Vuelo:</strong> <span id="codigoVuelo">---</span></p>
       </div>
     </div>
 
@@ -498,24 +497,8 @@ function agregarFila(label, precio, cantidad) {
   tabla.appendChild(tr);
 }
 
-const reservaId = new URLSearchParams(window.location.search).get("reserva");
-console.log("ID recibido:", reservaId); // Opcional para depuración
-
-const docRef = db.collection("reservas").doc(reservaId); // ← CAMBIO AQUÍ
 docRef.get().then((docSnap) => {
-  if (docSnap.exists) {
-    const data = docSnap.data();
-    console.log(data);
-
-    // Asignar datos del cliente
-    document.getElementById("nombreCliente").textContent = data.nombre || "---";
-    document.getElementById("correoCliente").textContent = data.correo || "---";
-
-    // Datos de vuelo
-    document.getElementById("fechaSalida").textContent = data.fecha_salida || "---";
-    document.getElementById("fechaRegreso").textContent = data.fecha_regreso || "---";
-  document.getElementById("aerolineaVuelo").textContent = data.aerolinea || "---";
-
+  
     let subtotal = 0;
 
     function agregarFila(tipo, precio, cantidad) {
