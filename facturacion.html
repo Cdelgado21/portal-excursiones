@@ -602,7 +602,69 @@ function editarPago(id, fecha, metodo, monto, nota) {
   cerrarModal("modalTransacciones");
   mostrarModalAgregarPago();
 }
+async function cargarDetalleFactura() {
+  try {
+    const docRef = db.collection("reservas").doc(codigoReserva);
+    const docSnap = await docRef.get();
 
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      const tabla = document.getElementById("tablaArticulos");
+      tabla.innerHTML = "";
+
+      let subtotal = 0;
+
+      function agregarFila(tipo, precio, cantidad) {
+        const tr = document.createElement("tr");
+
+        const tdArticulo = document.createElement("td");
+        tdArticulo.textContent = `${data.destino} (${tipo})`;
+        tr.appendChild(tdArticulo);
+
+        const tdPrecio = document.createElement("td");
+        tdPrecio.textContent = `$${precio.toFixed(2)}`;
+        tdPrecio.style.textAlign = "right";
+        tr.appendChild(tdPrecio);
+
+        const tdCantidad = document.createElement("td");
+        tdCantidad.textContent = cantidad;
+        tdCantidad.style.textAlign = "center";
+        tr.appendChild(tdCantidad);
+
+        const tdImporte = document.createElement("td");
+        const importe = precio * cantidad;
+        subtotal += importe;
+        tdImporte.textContent = `$${importe.toFixed(2)}`;
+        tdImporte.style.textAlign = "right";
+        tr.appendChild(tdImporte);
+
+        tabla.appendChild(tr);
+      }
+
+      if (data.cantidadAdultos > 0) {
+        agregarFila("Adulto", data.precioAdulto, data.cantidadAdultos);
+      }
+
+      if (data.cantidadNinos > 0) {
+        agregarFila("Niño", data.precioNino, data.cantidadNinos);
+      }
+
+      if (data.cantidadBebes > 0) {
+        agregarFila("Bebé", data.precioBebe, data.cantidadBebes);
+      }
+
+      // Mostrar totales
+      document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+      document.getElementById("iva").textContent = `$0.00`; // IVA fijo 0%
+      document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
+
+    } else {
+      console.error("No se encontró la reserva.");
+    }
+  } catch (error) {
+    console.error("Error al obtener la reserva:", error);
+  }
+}
 async function registrarAbono() {
   const monto = parseFloat(document.getElementById("montoAbono").value);
   const metodo = document.getElementById("metodoAbono").value;
@@ -638,6 +700,7 @@ window.addEventListener('click', function (e) {
     if (!menu.contains(e.target) && !e.target.classList.contains('menu-opciones')) {
       menu.style.display = 'none';
     }
+    cargarDetalleFactura();
   });
 });
 </script>
