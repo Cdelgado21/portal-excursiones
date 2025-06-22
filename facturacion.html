@@ -408,25 +408,63 @@
     });
 
     async function cargarDatosReserva() {
-      try {
-        const doc = await db.collection("reservas").doc(codigoReserva).get();
-        if (!doc.exists) {
-          alert("⚠️ No se encontró la reserva en la base de datos.");
-          return;
-        }
+  try {
+    const docRef = db.collection("reservas").doc(codigoReserva);
+    const docSnap = await docRef.get();
 
-        const data = doc.data();
-        document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
-        document.getElementById("correoCliente").textContent = data.correo || "---";
-        document.getElementById("codigoReserva").textContent = codigoReserva;
-
-        const año = new Date().getFullYear();
-        const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
-        document.getElementById("numeroFactura").textContent = numeroFactura;
-      } catch (error) {
-        console.error("❌ Error al cargar datos de la reserva:", error);
-      }
+    if (!docSnap.exists) {
+      alert("⚠️ No se encontró la reserva en la base de datos.");
+      return;
     }
+
+    const data = docSnap.data();
+    document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
+    document.getElementById("correoCliente").textContent = data.correo || "---";
+    document.getElementById("codigoReserva").textContent = codigoReserva;
+
+    const año = new Date().getFullYear();
+    const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
+    document.getElementById("numeroFactura").textContent = numeroFactura;
+
+    // Llenar tabla de artículos
+    const tabla = document.getElementById("tablaArticulos");
+    tabla.innerHTML = "";
+    let subtotal = 0;
+
+    function agregarFila(tipo, precio, cantidad) {
+      const tr = document.createElement("tr");
+      const importe = precio * cantidad;
+      subtotal += importe;
+
+      tr.innerHTML = `
+        <td>${data.destino} (${tipo})</td>
+        <td style="text-align:right;">$${precio.toFixed(2)}</td>
+        <td style="text-align:center;">${cantidad}</td>
+        <td style="text-align:right;">$${importe.toFixed(2)}</td>
+      `;
+      tabla.appendChild(tr);
+    }
+
+    if (data.cantidadAdultos > 0) {
+      agregarFila("Adulto", data.precioAdulto, data.cantidadAdultos);
+    }
+
+    if (data.cantidadNinos > 0) {
+      agregarFila("Niño", data.precioNino, data.cantidadNinos);
+    }
+
+    if (data.cantidadBebes > 0) {
+      agregarFila("Bebé", data.precioBebe, data.cantidadBebes);
+    }
+
+    document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById("iva").textContent = `$0.00`;
+    document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
+
+  } catch (error) {
+    console.error("❌ Error al cargar datos de la reserva:", error);
+  }
+}
 
     async function cargarDetalleFactura() {
       try {
