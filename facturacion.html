@@ -498,6 +498,14 @@ function agregarFila(label, precio, cantidad) {
   tabla.appendChild(tr);
 }
 
+    const reservaId = new URLSearchParams(window.location.search).get("reserva");
+const docRef = doc(db, "cotizaciones", reservaId);
+
+getDoc(docRef).then((docSnap) => {
+  if (docSnap.exists()) {
+    const data = docSnap.data(); // Asegúrate de declarar aquí la variable
+    console.log("Datos obtenidos:", data);
+    
 // Agregar adultos
 if (data.cantidadAdultos > 0) {
   agregarFila("Adulto", data.precioAdulto, data.cantidadAdultos);
@@ -510,6 +518,13 @@ if (data.cantidadNinos > 0) {
 if (data.cantidadBebes > 0) {
   agregarFila("Bebé", data.precioBebe, data.cantidadBebes);
 }
+     }
+  } else {
+    console.error("¡No se encontró la reserva!");
+  }
+}).catch((error) => {
+  console.error("Error al obtener la reserva:", error);
+});
 
 // Mostrar subtotal y total
 document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
