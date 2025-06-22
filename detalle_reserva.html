@@ -598,6 +598,7 @@ await db.collection("costos_reservas").doc(codigo).set({
   vueloIda,
   vueloRegreso,
   fechaReserva,
+     fechaCreacion: new Date().toLocaleDateString('es-CR'),
   destino,
   total,
   abono,
@@ -620,6 +621,8 @@ duracion: document.getElementById("duracion")?.value || "",
 itinerario: document.getElementById("itinerario")?.value || "",
 hoteles: Array.from(document.querySelectorAll("#tablaHotelesBody tr")).map(tr => {
 
+
+  
   const celdas = tr.querySelectorAll("td");
   return {
     nombre: celdas[0]?.innerText || "",
