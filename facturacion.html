@@ -422,9 +422,10 @@ async function cargarDatosReserva() {
     }
 
     const datos = docSnap.data(); // ✅ Aquí se define la variable 'datos'
+    const fecha = new Date(datos.fechaReserva);
+const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
+document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
 
-    // Ahora sí puedes usar datos
-    document.getElementById("fechaEmisionSpan").textContent = datos.fechaReserva;
     document.getElementById("nombrecliente").textContent = datos.nombreTitular || "---";
     document.getElementById("correocliente").textContent = datos.correo || "---";
     document.getElementById("telefonocliente").textContent = datos.telefono || "---";
@@ -479,11 +480,8 @@ function mostrarTransaccionesModal() {
 function cerrarModal(id) {
   document.getElementById(id).style.display = 'none';
 }
-    const fecha = new Date(datos.fechaReserva);
-const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
-document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
 
-async function cargarTransacciones() {
+    async function cargarTransacciones() {
   const tbody = document.getElementById("tablaTransacciones");
   tbody.innerHTML = "";
   try {
