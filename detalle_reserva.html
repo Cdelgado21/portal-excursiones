@@ -582,6 +582,9 @@ await db.collection("costos_reservas").doc(codigo).set({
   creado_el: new Date(),
   actualizado_el: new Date()
 });
+    let fechaReservaExistente = datosExistentes?.fechaReserva || null;
+
+const fechaReserva = fechaReservaExistente || new Date().toLocaleDateString('es-CR');
     // Crear objeto a guardar
  const datos = {
   codigo,
@@ -598,7 +601,6 @@ await db.collection("costos_reservas").doc(codigo).set({
   vueloIda,
   vueloRegreso,
   fechaReserva,
-     fechaCreacion: new Date().toLocaleDateString('es-CR'),
   destino,
   total,
   abono,
