@@ -582,7 +582,10 @@ await db.collection("costos_reservas").doc(codigo).set({
   creado_el: new Date(),
   actualizado_el: new Date()
 });
-    let fechaReservaExistente = datosExistentes?.fechaReserva || null;
+  let fechaReservaExistente = datosExistentes?.fechaReserva || null;
+
+// ✅ Declaración de la variable antes de usarla
+let fechaReserva;
 
 fechaReserva = fechaReservaExistente || new Date().toLocaleDateString('es-CR');
     // Crear objeto a guardar
