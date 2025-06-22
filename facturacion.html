@@ -303,7 +303,7 @@
           <p id="telefonoCliente">---</p>
         </div>
         <div style="min-width: 250px;">
-        <p><strong>Emitido:</strong> <span id="fechaEmision">---</span></p>
+        <p><strong>Fecha de Emisión:</strong> <span id="fechaReserva">---</span></p>
 <p><strong>Viaje Ida:</strong> <span id="fechaSalida">---</span></p>
 <p><strong>Viaje Regreso:</strong> <span id="fechaRegreso">---</span></p>
 <p><strong>Código Vuelo:</strong> <span id="codigoVuelo">---</span></p>
@@ -415,11 +415,9 @@ async function cargarDatosReserva() {
     }
 
     const data = docSnap.data();
-    const createTime = docSnap.metadata.hasPendingWrites ? new Date() : docSnap.createTime.toDate();
-    if (data.fechaCreacion && document.getElementById("fechaEmision")) {
-  document.getElementById("fechaEmision").textContent = data.fechaCreacion.split("T")[0];
-}
-    document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
+        const fechaReserva = datos.fechaReserva || "Sin fecha registrada";
+    document.getElementById("fechaReservaSpan").textContent = fechaReserva;
+     document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
     document.getElementById("correoCliente").textContent = data.correo || "---";
     document.getElementById("telefonoCliente").textContent = data.telefono || "---";
     document.getElementById("codigoReserva").textContent = codigoReserva;
