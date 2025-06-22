@@ -416,9 +416,9 @@ async function cargarDatosReserva() {
 
     const data = docSnap.data();
     const createTime = docSnap.metadata.hasPendingWrites ? new Date() : docSnap.createTime.toDate();
-
-      // Mostrar fecha de emisión en el HTML
-      document.getElementById("fechaEmision").textContent = createTime.toISOString().split('T')[0];
+    if (data.fechaCreacion && document.getElementById("fechaEmision")) {
+  document.getElementById("fechaEmision").textContent = data.fechaCreacion.split("T")[0];
+}
     document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
     document.getElementById("correoCliente").textContent = data.correo || "---";
     document.getElementById("telefonoCliente").textContent = data.telefono || "---";
