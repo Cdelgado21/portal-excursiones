@@ -409,11 +409,16 @@ async function cargarDatosReserva() {
     const docSnap = await docRef.get();
 
     if (!docSnap.exists) {
+      
       alert("⚠️ No se encontró la reserva en la base de datos.");
       return;
     }
 
     const data = docSnap.data();
+    const createTime = docSnap.metadata.hasPendingWrites ? new Date() : docSnap.createTime.toDate();
+
+      // Mostrar fecha de emisión en el HTML
+      document.getElementById("fechaEmision").textContent = createTime.toISOString().split('T')[0];
     document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
     document.getElementById("correoCliente").textContent = data.correo || "---";
     document.getElementById("telefonoCliente").textContent = data.telefono || "---";
