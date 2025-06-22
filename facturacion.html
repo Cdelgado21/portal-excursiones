@@ -498,9 +498,10 @@ function agregarFila(label, precio, cantidad) {
   tabla.appendChild(tr);
 }
 
-   const reservaId = new URLSearchParams(window.location.search).get("reserva");
-const docRef = db.collection("cotizaciones").doc(reservaId);
+const reservaId = new URLSearchParams(window.location.search).get("reserva");
+console.log("ID recibido:", reservaId); // Opcional para depuración
 
+const docRef = db.collection("reservas").doc(reservaId); // ← CAMBIO AQUÍ
 docRef.get().then((docSnap) => {
   if (docSnap.exists) {
     const data = docSnap.data();
