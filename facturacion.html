@@ -417,7 +417,10 @@ async function cargarDatosReserva() {
     document.getElementById("nombreCliente").textContent = data.nombreTitular || "---";
     document.getElementById("correoCliente").textContent = data.correo || "---";
     document.getElementById("codigoReserva").textContent = codigoReserva;
-
+document.getElementById("fechaSalida").textContent = data.vueloIda?.fecha || "---";
+document.getElementById("fechaRegreso").textContent = data.vueloRegreso?.fecha || "---";
+document.getElementById("codigoVuelo").textContent = data.vueloIda?.vuelo || "---";
+    
     const año = new Date().getFullYear();
     const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
     document.getElementById("numeroFactura").textContent = numeroFactura;
