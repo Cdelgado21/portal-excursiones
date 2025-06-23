@@ -391,45 +391,40 @@ const firebaseConfig = {
   authDomain: "tours-460717.firebaseapp.com",
   projectId: "tours-460717"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    function obtenerCodigoReservaDesdeURL() {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get("reserva");
-    }
+  // Obtener el código de reserva desde la URL
+  const params = new URLSearchParams(window.location.search);
+  const codigoReserva = params.get("reserva");
 
-if (!codigoReserva) {
-  alert("⚠️ No se encontró el código de reserva. Asegúrese de ingresar con ?reserva=CÓDIGO en la URL.");
-  throw new Error("Código de reserva no definido.");
-}
+  if (!codigoReserva) {
+    alert("No se proporcionó un código de reserva.");
+  } else {
+    document.getElementById("codigoReserva").textContent = codigoReserva;
+    
+    try {
+      const ref = doc(db, "reservas", codigoReserva);
+      const snap = await getDoc(ref);
 
-// =================== FUNCIÓN PARA CARGAR DATOS ===================
-  async function cargarDatosReserva() {
-      const codigoReserva = obtenerCodigoReservaDesdeURL();
-      try {
-        const docRef = db.collection("reservas").doc(codigoReserva);
-        const docSnap = await docRef.get();
+      if (snap.exists()) {
+        const datos = snap.data();
 
-        if (!docSnap.exists) {
-          alert("No se encontró la reserva con ese código.");
-          return;
-        }
+        // Mostrar datos básicos
+        document.getElementById("nombreCliente").textContent = datos.nombreCliente || "---";
+        document.getElementById("correoCliente").textContent = datos.correoCliente || "---";
+        document.getElementById("telefonoCliente").textContent = datos.telefonoCliente || "---";
+        document.getElementById("numeroFactura").textContent = "FAC-" + codigoReserva;
 
-        const datos = docSnap.data();
+        // Mostrar fechas y vuelo (desde los objetos anidados)
+        document.getElementById("fechaSalida").textContent = datos.vueloIda?.fecha || "---";
+        document.getElementById("fechaRegreso").textContent = datos.vueloRegreso?.fecha || "---";
+        document.getElementById("codigoVuelo").textContent = datos.vueloIda?.vuelo || "---";
 
-        document.getElementById("codigoReserva").textContent = codigoReserva;
-        document.getElementById("numeroFactura").textContent = `FAC-${codigoReserva}`;
-        document.getElementById("nombreCliente").textContent = datos.nombre || "---";
-        document.getElementById("correoCliente").textContent = datos.correo || "---";
-        document.getElementById("telefonoCliente").textContent = datos.telefono || "---";
-        document.getElementById("fechaIda").textContent = datos.fecha_ida || "---";
-        document.getElementById("fechaRegreso").textContent = datos.fecha_regreso || "---";
-        document.getElementById("codigoVuelo").textContent = datos.codigo_vuelo || "---";
-
-        const fecha = new Date();
-        const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
-        document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
+        // Fecha de emisión (hoy)
+        const hoy = new Date();
+        const fechaEmision = `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`;
+        document.getElementById("fechaEmisionSpan").textContent = fechaEmision;
 
         const tabla = document.getElementById("tablaArticulos");
         tabla.innerHTML = "";
