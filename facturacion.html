@@ -452,7 +452,14 @@
   setTexto("fechaRegreso", fechaRegreso);
 }
 setTexto("codigoVuelo", data.vueloIda.codigo || "---");
+/ Suponiendo que `reserva.vueloIda.fecha` es un string como "2025-06-20"
+const fechaIda = new Date(reserva.vueloIda.fecha + 'T00:00:00'); // Asegura que sea local
+const fechaRegreso = new Date(reserva.vueloRegreso.fecha + 'T00:00:00');
 
+// Mostrar en formato "DD/MM/YYYY"
+const formatoLocal = { day: '2-digit', month: '2-digit', year: 'numeric' };
+document.getElementById("fechaIda").innerText = fechaIda.toLocaleDateString('es-CR', formatoLocal);
+document.getElementById("fechaRegreso").innerText = fechaRegreso.toLocaleDateString('es-CR', formatoLocal);
         // Puedes agregar más campos aquí si lo necesitas
       } else {
         alert("Reserva no encontrada: " + reservaID);
