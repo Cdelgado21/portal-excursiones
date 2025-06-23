@@ -422,9 +422,12 @@ async function cargarDatosReserva() {
     }
 
     const datos = docSnap.data(); // ✅ Aquí se define la variable 'datos'
-    const fecha = new Date(datos.fechaReserva);
-const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
-document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
+ if (datos.fechaReserva && document.getElementById("fechaEmisionSpan")) {
+  // Convertir "21/6/2025" a Date
+  const partes = datos.fechaReserva.split("/"); // [21, 6, 2025]
+  const fecha = new Date(partes[2], partes[1] - 1, partes[0]); // Año, mes (0-index), día
+  const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
+  document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
 
     document.getElementById("nombrecliente").textContent = datos.nombreTitular || "---";
     document.getElementById("correocliente").textContent = datos.correo || "---";
