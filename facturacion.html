@@ -401,46 +401,59 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  async function cargarDatosFactura() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const codigoReserva = urlParams.get("reserva");
-
-    if (!codigoReserva) {
-      alert("No se proporcionó un código de reserva.");
-      return;
-    }
-
-    document.getElementById("codigoReserva").textContent = codigoReserva;
-    document.getElementById("numeroFactura").textContent = "FAC-" + codigoReserva.split("-")[1];
-
+  async function cargarDatosReserva(codigoReserva) {
     try {
-      const reservaRef = doc(db, "reservas", codigoReserva);
-      const reservaSnap = await getDoc(reservaRef);
+      const docRef = doc(db, 'reservas', codigoReserva);
+      const docSnap = await getDoc(docRef);
 
-      if (!reservaSnap.exists()) {
-        alert("Reserva no encontrada.");
+      if (!docSnap.exists()) {
+        alert('La reserva no fue encontrada.');
         return;
       }
 
-      const data = reservaSnap.data();
+      const data = docSnap.data();
 
-      // Aquí colocas la lógica para rellenar tus campos
-      document.getElementById("nombreCliente").textContent = data.nombre || "---";
-      document.getElementById("correoCliente").textContent = data.correo || "---";
-      document.getElementById("telefonoCliente").textContent = data.telefono || "---";
+      // Validaciones para que los elementos existan antes de asignarles valores
+      const nombreCliente = document.getElementById('nombreCliente');
+      if (nombreCliente) nombreCliente.textContent = data.nombre || '---';
 
-      document.getElementById("fechaEmisionSpan").textContent = data.fechaReserva || "---";
-      document.getElementById("fechaIda").textContent = data.vueloIda?.fecha || "---";
-      document.getElementById("fechaRegreso").textContent = data.vueloRegreso?.fecha || "---";
-      document.getElementById("codigoVuelo").textContent = data.vueloIda?.codigo || "---";
+      const correoCliente = document.getElementById('correoCliente');
+      if (correoCliente) correoCliente.textContent = data.correo || '---';
+
+      const telefonoCliente = document.getElementById('telefonoCliente');
+      if (telefonoCliente) telefonoCliente.textContent = data.telefono || '---';
+
+      const fechaEmision = document.getElementById('fechaEmisionSpan');
+      if (fechaEmision) fechaEmision.textContent = new Date(data.vueloIda.fecha).toLocaleDateString();
+
+      const fechaIda = document.getElementById('fechaIda');
+      if (fechaIda) fechaIda.textContent = data.vueloIda?.fecha || '---';
+
+      const fechaRegreso = document.getElementById('fechaRegreso');
+      if (fechaRegreso) fechaRegreso.textContent = data.vueloRegreso?.fecha || '---';
+
+      const codigoVuelo = document.getElementById('codigoVuelo');
+      if (codigoVuelo) codigoVuelo.textContent = data.vueloIda?.codigo || '---';
 
     } catch (error) {
-      console.error("Error al cargar datos de la reserva:", error);
-      alert("Ocurrió un error al obtener los datos de la reserva.");
+      console.error('Error al cargar datos de la reserva:', error);
     }
   }
 
-  window.addEventListener("DOMContentLoaded", cargarDatosFactura);
+  // Ejecutar al cargar la página
+  window.onload = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codigo = urlParams.get('reserva');
+    if (codigo) {
+      document.getElementById('codigoReserva').textContent = codigo;
+      document.getElementById('numeroFactura').textContent = codigo.replace('ED-', 'FAC-');
+
+      cargarDatosReserva(codigo); // Aquí se llama
+    } else {
+      alert("No se proporcionó un código de reserva.");
+    }
+  };
+
 // =================== TRANSACCIONES ===================
 function mostrarTransaccionesModal() {
   document.getElementById('modalTransacciones').style.display = 'flex';
