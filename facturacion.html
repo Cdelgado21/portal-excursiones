@@ -503,20 +503,14 @@ agregarFila(`Tour a ${nombreBonito} - Bebés`,   precioBebe,   bebes);
 document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
 document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
       
-    } else {
-      alert("Reserva no encontrada: " + reservaID);
-    }
-  }).catch((error) => {
-    console.error("Error al obtener datos:", error);
-    alert("Hubo un problema al cargar la reserva.");
-  });
- } else {
-      alert("Reserva no encontrada: " + reservaID);
-    }
-  }).catch((error) => {
-    console.error("Error al obtener datos:", error);
-    alert("Error al cargar la reserva. Verifica la consola.");
-  });
+  } else {
+        alert("Reserva no encontrada: " + reservaID);
+      }
+    })
+    .catch((error) => {
+      console.error("Error al obtener datos:", error);
+      alert("Hubo un problema al cargar la reserva.");
+    });
 } else {
   alert("No se proporcionó un código de reserva.");
 }
