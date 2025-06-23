@@ -426,11 +426,9 @@ async function cargarDatosReserva() {
     // Mostrar la fecha de emisión con base en la fecha de reserva
     const fechaSpan = document.getElementById("fechaEmisionSpan");
     const fechaTexto = datos.fechaReserva;
-
-    if (fechaSpan && fechaTexto) {
-      const fecha = new Date(fechaTexto);
-      const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
-      fechaSpan.textContent = fechaFormateada;
+const fecha = new Date(fechaTexto);
+const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
+document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
     }
 
     document.getElementById("nombrecliente").textContent = datos.nombreTitular || "---";
