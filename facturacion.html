@@ -70,28 +70,27 @@
     }
 
 .modal {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: fixed;
-    z-index: 10000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-  }
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4); /* Fondo oscuro */
+  justify-content: center;
+  align-items: center;
+}
 
-  .modal-content {
-    background-color: white;
-    padding: 25px;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 900px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-    animation: slideIn 0.3s ease-out;
-  }
+.modal-contenido {
+  background-color: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  width: 90%;
+  max-width: 900px;
+}
 
   @keyframes slideIn {
     from {
@@ -506,6 +505,7 @@ function toggleMenu(button) {
 async function mostrarTransaccionesModal() {
   const tabla = document.getElementById("tablaTransaccionesBody");
   const modal = document.getElementById("modalTransacciones");
+  modal.style.display = "flex";
    tabla.innerHTML = "";
 
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
