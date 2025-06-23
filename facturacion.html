@@ -404,88 +404,62 @@ if (!codigoReserva) {
 
 // =================== FUNCIÓN PARA CARGAR DATOS ===================
  async function cargarDatosReserva() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const codigoReserva = urlParams.get("reserva");
+  const codigoReserva = obtenerCodigoReservaDesdeURL();
 
-    if (!codigoReserva) {
-      alert("Código de reserva no proporcionado.");
-      return;
-    }
+  try {
+    const docRef = db.collection("reservas").doc(codigoReserva);
+    const docSnap = await docRef.get();
 
-    try {
-      const docRef = db.collection("reservas").doc(codigoReserva);
-      const docSnap = await docRef.get();
-
-      if (!docSnap.exists) {
-        alert("No se encontró la reserva en la base de datos.");
-        return;
-      }
-
+    if (docSnap.exists) {
       const datos = docSnap.data();
 
-      // Código de reserva
       document.getElementById("codigoReserva").textContent = codigoReserva;
-
-      // Fecha de emisión
-      const fechaTexto = datos.fechaReserva;
-      const fecha = new Date(fechaTexto);
-      if (!isNaN(fecha.getTime())) {
-        const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
-        document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
-      } else {
-        document.getElementById("fechaEmisionSpan").textContent = "---";
-      }
-
-      // Datos del cliente
-      document.getElementById("nombreCliente").textContent = datos.nombreTitular || "---";
+      document.getElementById("numeroFactura").textContent = `FAC-${codigoReserva}`;
+      document.getElementById("nombreCliente").textContent = datos.nombre || "---";
       document.getElementById("correoCliente").textContent = datos.correo || "---";
       document.getElementById("telefonoCliente").textContent = datos.telefono || "---";
+      document.getElementById("fechaIda").textContent = datos.fecha_ida || "---";
+      document.getElementById("fechaRegreso").textContent = datos.fecha_regreso || "---";
+      document.getElementById("codigoVuelo").textContent = datos.codigo_vuelo || "---";
 
-      // Viaje
-      document.getElementById("fechaSalida").textContent = datos.fechaSalida || "---";
-      document.getElementById("fechaRegreso").textContent = datos.fechaRegreso || "---";
-      document.getElementById("codigoVuelo").textContent = datos.codigoVuelo || "---";
+      const fecha = new Date();
+      const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
+      document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
 
-      // Número de factura
-      const año = new Date().getFullYear();
-      const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
-      document.getElementById("numeroFactura").textContent = numeroFactura;
+      // Cargar tabla de artículos si existiera
+      const tabla = document.querySelector("table tbody");
+      tabla.innerHTML = ""; // limpiar primero
 
-      // Tabla de artículos
-      const tabla = document.getElementById("tablaArticulos");
-      tabla.innerHTML = ""; // Limpia tabla
-      let subtotal = 0;
-
-      function agregarFila(tipo, precio, cantidad) {
-        if (cantidad > 0) {
-          const importe = precio * cantidad;
-          subtotal += importe;
-
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${datos.destino} (${tipo})</td>
-            <td style="text-align:right;">$${precio.toFixed(2)}</td>
-            <td style="text-align:center;">${cantidad}</td>
-            <td style="text-align:right;">$${importe.toFixed(2)}</td>
+      if (datos.articulos && Array.isArray(datos.articulos)) {
+        let subtotal = 0;
+        datos.articulos.forEach(art => {
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${art.descripcion}</td>
+            <td>$${parseFloat(art.precio).toFixed(2)}</td>
+            <td>${art.cantidad}</td>
+            <td>$${(parseFloat(art.precio) * parseInt(art.cantidad)).toFixed(2)}</td>
           `;
-          tabla.appendChild(tr);
-        }
+          tabla.appendChild(fila);
+          subtotal += parseFloat(art.precio) * parseInt(art.cantidad);
+        });
+
+        document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById("iva").textContent = `$${(subtotal * 0.0).toFixed(2)}`;
+        document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
       }
 
-      agregarFila("Adulto", datos.precioAdulto || 0, datos.cantidadAdultos || 0);
-      agregarFila("Niño", datos.precioNino || 0, datos.cantidadNinos || 0);
-      agregarFila("Bebé", datos.precioBebe || 0, datos.cantidadBebes || 0);
-
-      // Totales
-      document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-      document.getElementById("iva").textContent = `$0.00`;
-      document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
-
-    } catch (error) {
-      console.error("❌ Error al cargar datos de la reserva:", error);
-      alert("Ocurrió un error al obtener los datos de la reserva.");
+    } else {
+      alert("No se encontró la reserva con ese código.");
     }
+
+  } catch (error) {
+    console.error("Error al cargar datos de la reserva:", error);
+    alert("Ocurrió un error al obtener los datos de la reserva.");
   }
+}
+
+window.onload = cargarDatosReserva;
 
 
 // =================== TRANSACCIONES ===================
@@ -625,8 +599,7 @@ window.addEventListener('click', function (e) {
     }
   });
 });
-  window.onload = cargarDatosReserva;
-// Ejecutar al cargar
+
 document.addEventListener("DOMContentLoaded", cargarDatosReserva);
 </script>
 
