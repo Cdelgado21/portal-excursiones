@@ -2,61 +2,69 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Factura de Reserva</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Arial&display=swap"/>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f0f7f7;
+      background: #f0f7f7;
       margin: 0;
       padding: 20px;
     }
     .factura {
-      background-color: white;
+      background: white;
       padding: 25px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       max-width: 900px;
       margin: auto;
     }
-    h2 {
-      color: #02535a;
-      text-align: center;
-    }
     .encabezado {
       display: flex;
       justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+    .titulo {
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+      color: #02535a;
       margin-bottom: 20px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 10px;
+      margin-top: 15px;
     }
     th, td {
       border: 1px solid #ccc;
       padding: 10px;
-      text-align: left;
+    }
+    th {
+      background: #02535a;
+      color: white;
     }
     .botones {
-      margin-top: 20px;
       text-align: center;
+      margin-top: 20px;
     }
     .botones button {
       background-color: #02535a;
       color: white;
       padding: 10px 20px;
-      margin: 0 10px;
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
       cursor: pointer;
+      margin: 0 10px;
     }
   </style>
 </head>
 <body>
   <div class="factura">
-    <h2>Factura de Reserva</h2>
+    <div class="titulo">Factura de Reserva</div>
     <div class="encabezado">
       <div>
         <strong>Facturar a:</strong><br>
@@ -66,7 +74,7 @@
       </div>
       <div>
         <strong>Código Reserva:</strong> <span id="codigoReserva">---</span><br>
-        <strong>Factura N°:</strong> <span id="numeroFactura">---</span><br>
+        <strong>Factura Nº:</strong> <span id="numeroFactura">---</span><br>
         <strong>Fecha Emisión:</strong> <span id="fechaEmision">---</span>
       </div>
     </div>
@@ -82,16 +90,75 @@
         </tr>
       </thead>
       <tbody id="tablaPagos">
-        <!-- Pagos aquí -->
+        <!-- Se llena dinámicamente -->
       </tbody>
     </table>
 
     <div class="botones">
-      <button onclick="verTransacciones()">Ver transacciones</button>
-      <button onclick="guardarFactura()">Guardar factura</button>
+      <button onclick="alert('Aquí irá el historial')">Ver transacciones</button>
+      <button onclick="alert('Aquí se guardará la factura')">Guardar factura</button>
     </div>
   </div>
 
-  <script type="module" src="facturacion.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZkprk7-JHbUz08LJe4y0mDhZfeZvR8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.appspot.com",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const codigoReserva = urlParams.get('reserva');
+
+    async function cargarFactura(codigo) {
+      try {
+        const docRef = db.collection("reservas").doc(codigo);
+        const docSnap = await docRef.get();
+        if (!docSnap.exists) {
+          alert("Reserva no encontrada.");
+          return;
+        }
+
+        const data = docSnap.data();
+
+        // Datos cliente
+        document.getElementById("nombreCliente").textContent = data.nombre || "No disponible";
+        document.getElementById("correoCliente").textContent = data.correo || "No disponible";
+        document.getElementById("telefonoCliente").textContent = data.telefono || "No disponible";
+
+        // Datos generales
+        document.getElementById("codigoReserva").textContent = codigo;
+        document.getElementById("numeroFactura").textContent = data.factura || "FAC-" + codigo.split('-')[1];
+        document.getElementById("fechaEmision").textContent = new Date().toLocaleDateString();
+
+        // Pagos
+        const tbody = document.getElementById("tablaPagos");
+        tbody.innerHTML = ""; // Limpiar
+
+        (data.pagos || []).forEach((pago, i) => {
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>Pago #${i + 1}</td>
+            <td>$${parseFloat(pago.monto || 0).toFixed(2)}</td>
+            <td>${pago.fecha || "-"}</td>
+            <td>$${parseFloat(pago.importe || 0).toFixed(2)}</td>
+            <td>${pago.nota || ""}</td>
+          `;
+          tbody.appendChild(fila);
+        });
+
+      } catch (error) {
+        console.error("Error al cargar factura:", error);
+      }
+    }
+
+    if (codigoReserva) cargarFactura(codigoReserva);
+  </script>
 </body>
 </html>
