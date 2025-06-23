@@ -481,13 +481,15 @@ notaCell.textContent =
     console.error("Error al cargar datos de la reserva:", error);
   }
 }
+let codigoReserva = '';
+    
 window.onload = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const codigo = urlParams.get('reserva');
-  if (codigo) {
-    document.getElementById('codigoReserva').textContent = codigo;
-    document.getElementById('numeroFactura').textContent = codigo.replace('ED-', 'FAC-');
-    cargarDatosReserva(codigo);
+  if (codigoReserva) {
+    document.getElementById('codigoReserva').textContent = codigoReserva;
+    document.getElementById('numeroFactura').textContent = codigoReserva.replace('ED-', 'FAC-');
+    cargarDatosReserva(codigoReserva);
   } else {
     alert("No se proporcionó un código de reserva.");
   }
