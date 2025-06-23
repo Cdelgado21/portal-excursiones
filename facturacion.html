@@ -413,9 +413,8 @@
 
       const data = docSnap.data();
 
-      // Validaciones para que los elementos existan antes de asignarles valores
-      const nombreCliente = document.getElementById('nombreCliente');
-      if (nombreCliente) nombreCliente.textContent = data.nombre || '---';
+const nombreCliente = document.getElementById('nombreCliente');
+if (nombreCliente) nombreCliente.textContent = data.nombreTitular || '---';
 
       const correoCliente = document.getElementById('correoCliente');
       if (correoCliente) correoCliente.textContent = data.correo || '---';
