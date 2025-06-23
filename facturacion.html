@@ -463,53 +463,45 @@ if (reservaID) {
       // Código del vuelo
       setTexto("codigoVuelo", data.vueloIda?.codigo || "---");
 
-const destino = data.destino;
+const destino = data.destino;      // "super_promocion_medellin"
 const adultos = Number(data.cantidadAdultos) || 0;
-const ninos = Number(data.cantidadNinos) || 0;
-const bebes = Number(data.cantidadBebes) || 0;
+const ninos   = Number(data.cantidadNinos)   || 0;
+const bebes   = Number(data.cantidadBebes)   || 0;
 
-const tabla = document.getElementById("tablaArticulos");
+// --- precios TOMADOS DEL DOCUMENTO DE LA RESERVA ---
+const precioAdulto = Number(data.pasajeros?.precioAdulto) || 0;
+const precioNino   = Number(data.pasajeros?.precioNino)   || 0;
+const precioBebe   = Number(data.pasajeros?.precioBebe)   || 0;
+
+// --- tabla ---
+const tabla    = document.getElementById("tablaArticulos");
 tabla.innerHTML = "";
-let subtotal = 0;
+let subtotal    = 0;
 
-// Buscar en la colección "tours" el documento con ese destino
-db.collection("tours").doc(destino).get()
-  .then((docTour) => {
-    if (!docTour.exists) {
-      alert("Destino no encontrado en la colección 'tours'.");
-      return;
-    }
+function agregarFila(descripcion, precio, cantidad) {
+  if (cantidad > 0) {
+    const importe = precio * cantidad;
+    subtotal += importe;
+    tabla.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td>${descripcion}</td>
+        <td style="text-align:right;">$${precio.toFixed(2)}</td>
+        <td style="text-align:center;">${cantidad}</td>
+        <td style="text-align:right;">$${importe.toFixed(2)}</td>
+      </tr>
+    `);
+  }
+}
 
-    const tourData = docTour.data();
-    const precioAdulto = Number(tourData.precioAdulto) || 0;
-    const precioNino = Number(tourData.precioNino) || 0;
-    const precioBebe = Number(tourData.precioBebe) || 0;
+const nombreBonito = destino.replace(/_/g, " ").replace(/\b\w/g,l=>l.toUpperCase());
 
-    function agregarFila(descripcion, precio, cantidad) {
-      if (cantidad > 0) {
-        const tr = document.createElement("tr");
-        const importe = precio * cantidad;
-        subtotal += importe;
-        tr.innerHTML = `
-          <td>${descripcion}</td>
-          <td style="text-align:right;">$${precio.toFixed(2)}</td>
-          <td style="text-align:center;">${cantidad}</td>
-          <td style="text-align:right;">$${importe.toFixed(2)}</td>
-        `;
-        tabla.appendChild(tr);
-      }
-    }
+agregarFila(`Tour a ${nombreBonito} - Adultos`, precioAdulto, adultos);
+agregarFila(`Tour a ${nombreBonito} - Niños`,   precioNino,   ninos);
+agregarFila(`Tour a ${nombreBonito} - Bebés`,   precioBebe,   bebes);
 
-    // Para mostrar el nombre bonito, usá el campo 'nombre' del tour, no el ID
-    const nombreBonito = tourData.nombre || destino.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
-
-    agregarFila(`${nombreBonito} - Adultos`, precioAdulto, adultos);
-    agregarFila(`${nombreBonito} - Niños`, precioNino, ninos);
-    agregarFila(`${nombreBonito} - Bebés`, precioBebe, bebes);
-
-    // Mostrar totales
-    document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-    document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
+// totales
+document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
 
   })
   .catch((error) => {
