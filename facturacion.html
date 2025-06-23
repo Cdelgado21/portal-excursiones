@@ -499,11 +499,13 @@ function mostrarTransaccionesModal() {
   document.getElementById('modalTransacciones').style.display = 'flex';
   cargarTransacciones();
 }
-
+window.mostrarTransaccionesModal = mostrarTransaccionesModal;
+    
 function cerrarModal(id) {
   document.getElementById(id).style.display = 'none';
 }
-
+window.cerrarModal = cerrarModal;
+    
    async function cargarTransacciones() {
   const tbody = document.getElementById("tablaTransacciones");
   tbody.innerHTML = "";
