@@ -473,14 +473,14 @@ tabla.innerHTML = "";
 let subtotal = 0;
 
 // Buscar en la colección "tours" el documento con ese destino
-db.collection("tours").where("nombre", "==", destino).get()
-  .then((querySnapshot) => {
-    if (querySnapshot.empty) {
+db.collection("tours").doc(destino).get()
+  .then((docTour) => {
+    if (!docTour.exists) {
       alert("Destino no encontrado en la colección 'tours'.");
       return;
     }
 
-    const tourData = querySnapshot.docs[0].data();
+    const tourData = docTour.data();
     const precioAdulto = Number(tourData.precioAdulto) || 0;
     const precioNino = Number(tourData.precioNino) || 0;
     const precioBebe = Number(tourData.precioBebe) || 0;
@@ -500,9 +500,12 @@ db.collection("tours").where("nombre", "==", destino).get()
       }
     }
 
-    agregarFila(`Tour a ${destino} - Adultos`, precioAdulto, adultos);
-    agregarFila(`Tour a ${destino} - Niños`, precioNino, ninos);
-    agregarFila(`Tour a ${destino} - Bebés`, precioBebe, bebes);
+    // Para mostrar el nombre bonito, usá el campo 'nombre' del tour, no el ID
+    const nombreBonito = tourData.nombre || destino.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+
+    agregarFila(`Tour a ${nombreBonito} - Adultos`, precioAdulto, adultos);
+    agregarFila(`Tour a ${nombreBonito} - Niños`, precioNino, ninos);
+    agregarFila(`Tour a ${nombreBonito} - Bebés`, precioBebe, bebes);
 
     // Mostrar totales
     document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
