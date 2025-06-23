@@ -298,9 +298,9 @@
       <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
         <div style="min-width: 300px;">
           <p style="font-size: 12px; color: #5f9296;">FACTURAR A</p>
-          <p id="nombreCliente" style="font-size: 18px; font-weight: bold;">---</p>
-          <p id="correoCliente">---</p>
-          <p id="telefonoCliente">---</p>
+          <p id="nombreTitular" style="font-size: 18px; font-weight: bold;">---</p>
+          <p id="correoTitular">---</p>
+          <p id="telefonoTitular">---</p>
         </div>
         <div style="min-width: 250px;">
         <p><strong>Fecha de Emisión:</strong> <span id="fechaEmisionSpan">---</span></p>
@@ -495,6 +495,8 @@ const reservaID = urlParams.get("reserva"); // Ejemplo: ED-010-2025
 
       // Mostrar el nombre del titular
       document.getElementById("nombreTitular").textContent = data.nombreTitular || '---';
+      document.getElementById("correoTitular").textContent = data.correo || '---';
+document.getElementById("telefonoTitular").textContent = data.telefono || '---';
     } else {
       console.error("No se encontró la reserva.");
     }
