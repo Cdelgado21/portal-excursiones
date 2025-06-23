@@ -425,33 +425,57 @@
         return;
       }
 
-      const data = docSnap.data();
+   const data = docSnap.data();
 
+// Mostrar datos del cliente
 const nombreCliente = document.getElementById('nombreCliente');
 if (nombreCliente) nombreCliente.textContent = data.nombreTitular || '---';
 
-      const correoCliente = document.getElementById('correoCliente');
-      if (correoCliente) correoCliente.textContent = data.correo || '---';
+const correoCliente = document.getElementById('correoCliente');
+if (correoCliente) correoCliente.textContent = data.correo || '---';
 
-      const telefonoCliente = document.getElementById('telefonoCliente');
-      if (telefonoCliente) telefonoCliente.textContent = data.telefono || '---';
+const telefonoCliente = document.getElementById('telefonoCliente');
+if (telefonoCliente) telefonoCliente.textContent = data.telefono || '---';
 
-      const fechaEmision = document.getElementById('fechaEmisionSpan');
-      if (fechaEmision) fechaEmision.textContent = new Date(data.vueloIda.fecha).toLocaleDateString();
+const fechaEmision = document.getElementById('fechaEmisionSpan');
+if (fechaEmision) fechaEmision.textContent = new Date(data.vueloIda.fecha).toLocaleDateString();
 
-      const fechaIda = document.getElementById('fechaIda');
-      if (fechaIda) fechaIda.textContent = data.vueloIda?.fecha || '---';
+const fechaIda = document.getElementById('fechaIda');
+if (fechaIda) fechaIda.textContent = data.vueloIda?.fecha || '---';
 
-      const fechaRegreso = document.getElementById('fechaRegreso');
-      if (fechaRegreso) fechaRegreso.textContent = data.vueloRegreso?.fecha || '---';
+const fechaRegreso = document.getElementById('fechaRegreso');
+if (fechaRegreso) fechaRegreso.textContent = data.vueloRegreso?.fecha || '---';
 
-      const codigoVuelo = document.getElementById('codigoVuelo');
-      if (codigoVuelo) codigoVuelo.textContent = data.vueloIda?.codigo || '---';
+const codigoVuelo = document.getElementById('codigoVuelo');
+if (codigoVuelo) codigoVuelo.textContent = data.vueloIda?.codigo || '---';
 
-    } catch (error) {
-      console.error('Error al cargar datos de la reserva:', error);
-    }
-  }
+// Mostrar tabla de pagos
+const tablaPagos = document.getElementById('tablaPagos').getElementsByTagName('tbody')[0];
+tablaPagos.innerHTML = ""; // Limpiar antes de insertar
+
+if (Array.isArray(data.pagos)) {
+  data.pagos.forEach((pago, index) => {
+    const row = tablaPagos.insertRow();
+
+    const articuloCell = row.insertCell();
+    articuloCell.textContent = `Pago #${index + 1}`;
+
+    const precioCell = row.insertCell();
+    precioCell.textContent = typeof pago.monto === 'number' ? `$${pago.monto.toFixed(2)}` : '$0.00';
+
+    const fechaCell = row.insertCell();
+    fechaCell.textContent = pago.fecha || '---';
+
+    const importeCell = row.insertCell();
+    importeCell.textContent = typeof pago.monto === 'number' ? `$${pago.monto.toFixed(2)}` : '$0.00';
+
+    const notaCell = row.insertCell();
+    notaCell.textContent = typeof pago.nota === 'string'
+      ? (pago.nota.includes("BNCR") ? "✔️ " + pago.nota : pago.nota)
+      : '';
+  });
+}
+
 
   // Ejecutar al cargar la página
   window.onload = () => {
@@ -466,33 +490,7 @@ if (nombreCliente) nombreCliente.textContent = data.nombreTitular || '---';
       alert("No se proporcionó un código de reserva.");
     }
   };
-if (Array.isArray(data.pagos)) {
-  data.pagos.forEach((pago, index) => {
-    const row = tablaPagos.insertRow();
 
-    const articuloCell = row.insertCell();
-    articuloCell.textContent = `Pago #${index + 1}`;
-
-    const precioCell = row.insertCell();
-    precioCell.textContent = typeof pago.monto === 'number' ? `$${pago.monto.toFixed(2)}` : '$0.00';
-
-    const cantidadCell = row.insertCell();
-    cantidadCell.textContent = pago.fecha || '---';
-
-    const importeCell = row.insertCell();
-    importeCell.textContent = typeof pago.monto === 'number' ? `$${pago.monto.toFixed(2)}` : '$0.00';
-
-    const notaCell = row.insertCell();
-    if (typeof pago.nota === 'string') {
-      notaCell.textContent = pago.nota.indexOf("BNCR") > -1
-        ? "✔️ " + pago.nota
-        : pago.nota;
-    } else {
-      notaCell.textContent = '';
-    }
-  });
-}
-    const tablaPagos = document.getElementById('tablaPagos').getElementsByTagName('tbody')[0];
 // =================== TRANSACCIONES ===================
 function mostrarTransaccionesModal() {
   document.getElementById('modalTransacciones').style.display = 'flex';
