@@ -501,32 +501,38 @@ function cerrarModal(id) {
   document.getElementById(id).style.display = 'none';
 }
 
-    async function cargarTransacciones() {
+   async function cargarTransacciones() {
   const tbody = document.getElementById("tablaTransacciones");
   tbody.innerHTML = "";
+
   try {
-    const snapshot = await db.collection("facturas").doc(codigoReserva).collection("pagos").orderBy("fecha", "desc").get();
-    let totalPagado = 0;
+    const snapshot = await db
+      .collection("facturas")
+      .doc(codigoReserva)
+      .collection("pagos")
+      .orderBy("fecha", "desc")
+      .get();
 
     snapshot.forEach((doc, index) => {
       const data = doc.data();
-      totalPagado += parseFloat(data.monto);
+      const notaSegura = typeof data.nota === 'string' ? data.nota : '';
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${formatearFecha(data.fecha)}</td>
-        <td>${data.nota || "—"}</td>
+        <td>${notaSegura || "—"}</td>
         <td style="text-align: right;">$${parseFloat(data.monto).toFixed(2)}</td>
         <td style="position: relative;">
-          <button class="menu-opciones" onclick="toggleMenuContextual('${doc.id}', event)">⋯</button>
+          <button class="menu-opciones" onclick="editarPago('${doc.id}', '${data.fecha}', '${data.metodo}', '${data.monto}', \`${notaSegura}\`)">⋯</button>
           <div class="menu-contextual" id="menu-${doc.id}">
-            <button onclick="editarPago('${doc.id}', '${data.fecha}', '${data.metodo}', '${data.monto}', \`${data.nota || ''}\`)">Editar</button>
+            <button onclick="editarPago('${doc.id}', '${data.fecha}', '${data.metodo}', '${data.monto}', \`${notaSegura}\`)">Editar</button>
             <button onclick="eliminarAbono('${doc.id}')">Eliminar</button>
           </div>
         </td>
       `;
       tbody.appendChild(tr);
     });
+
   } catch (error) {
     console.error("Error al cargar transacciones", error);
   }
@@ -546,7 +552,7 @@ function editarPago(id, fecha, metodo, monto, nota) {
   document.getElementById("montoAbono").value = monto;
   document.getElementById("fechaAbono").value = fecha;
   document.getElementById("metodoAbono").value = metodo;
-  document.getElementById("notaAbono").value = nota;
+  document.getElementById("notaAbono").value = typeof nota === 'string' ? nota : '';
   document.getElementById("modalAgregarPago").setAttribute("data-edit-id", id);
   cerrarModal("modalTransacciones");
   mostrarModalAgregarPago();
