@@ -466,6 +466,12 @@ document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
 let indexEditando = null;
 
 function toggleMenu(button) {
+  // Cierra todos los menús primero
+  document.querySelectorAll('.menu-options').forEach(menu => {
+    if (menu !== button.nextElementSibling) {
+      menu.style.display = 'none';
+    }
+  });
   const menu = button.nextElementSibling;
   menu.style.display = menu.style.display === "block" ? "none" : "block";
   document.addEventListener("click", function hideMenu(e) {
