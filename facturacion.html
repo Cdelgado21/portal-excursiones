@@ -69,20 +69,18 @@
       cursor: pointer;
     }
 
-   .modal {
-  position: relative;
+ .modal {
+  position: fixed; /* <-- Este es el punto más importante */
   top: 0;
   left: 0;
-  z-index: 1000;
+  z-index: 9998;
   width: 100%;
   height: 100%;
-  overflow: visible !important;  /* Permite que los menús se salgan */
   background-color: rgba(0, 0, 0, 0.3);
   display: none;
   align-items: center;
   justify-content: center;
 }
-
 .modal-content {
   background-color: white;
   margin: auto;
