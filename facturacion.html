@@ -421,47 +421,61 @@
     }
   }
 
-  // Obtener el ID de la reserva desde la URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const reservaID = urlParams.get("reserva");
+// Obtener el ID de la reserva desde la URL
+const urlParams = new URLSearchParams(window.location.search);
+const reservaID = urlParams.get("reserva");
 
-  if (reservaID) {
-    db.collection("reservas").doc(reservaID).get().then((doc) => {
-      if (doc.exists) {
-        const data = doc.data();
+if (reservaID) {
+  db.collection("reservas").doc(reservaID).get().then((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
 
-        // Datos generales
-        setTexto("codigoReserva", reservaID);
-        setTexto("numeroFactura", "N/A");
+      // Formato local para fechas
+      const formatoLocal = { day: '2-digit', month: '2-digit', year: 'numeric' };
 
-        // Datos del cliente
-        setTexto("nombreCliente", data.nombreTitular);
-        setTexto("correoCliente", data.correo || "yullianagomez@gmail.com");
-        setTexto("telefonoCliente", data.telefono || "85378012");
+      // Datos generales
+      setTexto("codigoReserva", reservaID);
+      setTexto("numeroFactura", "N/A");
 
-        // Fechas y datos del viaje
-        setTexto("fechaEmisionSpan", data.fechaReserva);
-       setTexto("codigoVuelo", data.vueloIda.codigo || "---");
+      // Datos del cliente
+      setTexto("nombreCliente", data.nombreTitular);
+      setTexto("correoCliente", data.correo || "yullianagomez@gmail.com");
+      setTexto("telefonoCliente", data.telefono || "85378012");
 
+      // Fecha de emisión (ya viene lista)
+      setTexto("fechaEmisionSpan", data.fechaReserva);
 
-const formatoLocal = { day: '2-digit', month: '2-digit', year: 'numeric' };
+      // Fechas del vuelo (ida y regreso) con formato local
+      if (data.vueloIda && data.vueloIda.fecha) {
+        const fechaIda = new Date(data.vueloIda.fecha + 'T00:00:00');
+        document.getElementById("fechaIda").innerText = fechaIda.toLocaleDateString('es-CR', formatoLocal);
+      } else {
+        setTexto("fechaIda", "---");
+      }
 
-if (data.vueloIda && data.vueloIda.fecha) {
-  const fechaIda = new Date(data.vueloIda.fecha + 'T00:00:00').toLocaleDateString('es-CR', formatoLocal);
-  setTexto("fechaIda", fechaIda);
+      if (data.vueloRegreso && data.vueloRegreso.fecha) {
+        const fechaRegreso = new Date(data.vueloRegreso.fecha + 'T00:00:00');
+        document.getElementById("fechaRegreso").innerText = fechaRegreso.toLocaleDateString('es-CR', formatoLocal);
+      } else {
+        setTexto("fechaRegreso", "---");
+      }
+
+      // Código del vuelo
+      setTexto("codigoVuelo", data.vueloIda?.codigo || "---");
+
+      // Podés agregar más campos aquí si lo necesitás
+
+    } else {
+      alert("Reserva no encontrada: " + reservaID);
+    }
+  }).catch((error) => {
+    console.error("Error al obtener datos:", error);
+    alert("Error al cargar la reserva. Verifica la consola.");
+  });
 } else {
-  setTexto("fechaIda", "---");
+  alert("No se proporcionó un código de reserva.");
 }
 
-if (data.vueloRegreso && data.vueloRegreso.fecha) {
-  const fechaRegreso = new Date(data.vueloRegreso.fecha + 'T00:00:00').toLocaleDateString('es-CR', formatoLocal);
-  setTexto("fechaRegreso", fechaRegreso);
-} else {
-  setTexto("fechaRegreso", "---");
-}
-
-setTexto("fechaEmisionSpan", data.fechaReserva || "---");
-setTexto("codigoVuelo", data.vueloIda.codigo || "---");
 </script>
 
 </body>
