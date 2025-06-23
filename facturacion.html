@@ -503,9 +503,9 @@ db.collection("tours").doc(destino).get()
     // Para mostrar el nombre bonito, usá el campo 'nombre' del tour, no el ID
     const nombreBonito = tourData.nombre || destino.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
 
-    agregarFila(`Tour a ${nombreBonito} - Adultos`, precioAdulto, adultos);
-    agregarFila(`Tour a ${nombreBonito} - Niños`, precioNino, ninos);
-    agregarFila(`Tour a ${nombreBonito} - Bebés`, precioBebe, bebes);
+    agregarFila(`${nombreBonito} - Adultos`, precioAdulto, adultos);
+    agregarFila(`${nombreBonito} - Niños`, precioNino, ninos);
+    agregarFila(`${nombreBonito} - Bebés`, precioBebe, bebes);
 
     // Mostrar totales
     document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
