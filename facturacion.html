@@ -478,9 +478,9 @@ const ninos   = Number(data.cantidadNinos)   || 0;
 const bebes   = Number(data.cantidadBebes)   || 0;
 
 // --- precios TOMADOS DEL DOCUMENTO DE LA RESERVA ---
-const precioAdulto = Number(data.pasajeros?.[0]?.precioAdulto) || 0;
-const precioNino   = Number(data.pasajeros?.[0]?.precioNino)   || 0;
-const precioBebe   = Number(data.pasajeros?.[0]?.precioBebe)   || 0;
+const precioAdulto = Number(data.precioAdulto) || 0;
+const precioNino   = Number(data.precioNino)   || 0;
+const precioBebe   = Number(data.precioBebe)   || 0;
       
 // --- tabla ---
 const tabla    = document.getElementById("tablaArticulos");
