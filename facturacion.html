@@ -523,6 +523,35 @@ document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
 } else {
   alert("No se proporcionó un código de reserva.");
 }
+  function mostrarTransaccionesModal() {
+  const modal = document.getElementById("modalTransacciones");
+  const cuerpoTabla = document.getElementById("tablaTransaccionesBody");
+  cuerpoTabla.innerHTML = "";
+
+  const transacciones = data.transacciones || []; // Asegura que no reviente si no hay transacciones
+
+  if (transacciones.length === 0) {
+    cuerpoTabla.innerHTML = "<tr><td colspan='5'>No hay pagos registrados.</td></tr>";
+  } else {
+    transacciones.forEach((t, index) => {
+      cuerpoTabla.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>$${Number(t.monto || 0).toFixed(2)}</td>
+          <td>${t.fecha || "--"}</td>
+          <td>$${Number(t.importe || 0).toFixed(2)}</td>
+          <td>${t.nota || ""}</td>
+        </tr>
+      `;
+    });
+  }
+
+  modal.style.display = "block";
+}
+
+function cerrarTransaccionesModal() {
+  document.getElementById("modalTransacciones").style.display = "none";
+}
 </script>
 
 </body>
