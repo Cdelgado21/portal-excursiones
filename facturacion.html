@@ -413,31 +413,23 @@ async function cargarDatosReserva() {
   }
 
   try {
-    const docRef = db.collection("reservas").doc(codigoReserva);
-    const docSnap = await docRef.get();
+  const fechaTexto = datos.fechaReserva;
+  const fecha = new Date(fechaTexto);
 
-    if (!docSnap.exists) {
-      alert("No se encontró la reserva en la base de datos.");
-      return;
-    }
+  if (!isNaN(fecha.getTime())) {
+    const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
+    document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
+  } else {
+    document.getElementById("fechaEmisionSpan").textContent = "---";
+  }
 
-    const datos = docSnap.data();
+  document.getElementById("nombrecliente").textContent = datos.nombreTitular || "---";
+  document.getElementById("correocliente").textContent = datos.correo || "---";
+  document.getElementById("telefonocliente").textContent = datos.telefono || "---";
 
-    // Mostrar la fecha de emisión con base en la fecha de reserva
-    const fechaSpan = document.getElementById("fechaEmisionSpan");
-    const fechaTexto = datos.fechaReserva;
-const fecha = new Date(fechaTexto);
-const fechaFormateada = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()}`;
-document.getElementById("fechaEmisionSpan").textContent = fechaFormateada;
-    }
-
-    document.getElementById("nombrecliente").textContent = datos.nombreTitular || "---";
-    document.getElementById("correocliente").textContent = datos.correo || "---";
-    document.getElementById("telefonocliente").textContent = datos.telefono || "---";
-
-    const año = new Date().getFullYear();
-    const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
-    document.getElementById("numeroFactura").textContent = numeroFactura;
+  const año = new Date().getFullYear();
+  const numeroFactura = `FAC-${codigoReserva.split('-')[1]}-${año}`;
+  document.getElementById("numeroFactura").textContent = numeroFactura;
 
     const tabla = document.getElementById("tablaArticulos");
     tabla.innerHTML = "";
