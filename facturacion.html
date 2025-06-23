@@ -440,10 +440,10 @@
         setTexto("telefonoCliente", data.telefono || "85378012");
 
         // Fechas y datos del viaje
-        setTexto("fechaEmisionSpan", data.fechaEmision);
-        setTexto("fechaIda", data.fechaReserva);
+        setTexto("fechaEmisionSpan", data.fechaReserva);
+        setTexto("fechaIda", data.fechaIda);
         setTexto("fechaRegreso", data.vueloRegreso.fecha || "---");
-setTexto("codigoVuelo", data.vueloRegreso.vuelo || "---");
+setTexto("codigoVuelo", data.vueloIda.codigo || "---");
 
         // Puedes agregar más campos aquí si lo necesitas
       } else {
