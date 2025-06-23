@@ -473,9 +473,8 @@ if (Array.isArray(data.pagos)) {
     notaCell.textContent = typeof pago.nota === 'string'
       ? (pago.nota.includes("BNCR") ? "✔️ " + pago.nota : pago.nota)
   } catch (error) {
-    console.error('Error al cargar datos de la reserva:', error);
+    console.error("Error al cargar datos de la reserva:", error);
   }
-}
   // Ejecutar al cargar la página
   window.onload = () => {
     const urlParams = new URLSearchParams(window.location.search);
