@@ -509,8 +509,7 @@ async function mostrarTransaccionesModal() {
           <td>$${Number(pago.importe || pago.monto || 0).toFixed(2)}</td>
           <td>${pago.nota || ""}</td>
           <td>
-           <td style="position: relative;">
-  <div class="menu-container">
+     <div class="menu-container">
               <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
               <div class="menu-options">
                 <button onclick="editarPago(${index})">Editar</button>
