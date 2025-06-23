@@ -470,9 +470,9 @@
         importeCell.textContent = typeof pago.monto === 'number' ? `$${pago.monto.toFixed(2)}` : '$0.00';
 
         const notaCell = row.insertCell();
-        notaCell.textContent = typeof pago.nota === 'string'
-          ? (pago.nota.includes("BNCR") ? "✔️ " + pago.nota : pago.nota)
-          : '';
+notaCell.textContent = typeof pago.nota === 'string'
+  ? (pago.nota.includes("BNCR") ? "✔️ " + pago.nota : pago.nota)
+  : '';
       });
     }
 
