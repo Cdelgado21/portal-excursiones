@@ -442,7 +442,15 @@
         // Fechas y datos del viaje
         setTexto("fechaEmisionSpan", data.fechaReserva);
         setTexto("fechaIda", data.vueloIda.fecha || "---");
+        if (data.vueloIda && data.vueloIda.fecha) {
+  const fechaIda = new Date(data.vueloIda.fecha).toLocaleDateString("es-CR");
+  setTexto("fechaIda", fechaIda);
+}
         setTexto("fechaRegreso", data.vueloRegreso.fecha || "---");
+        if (data.vueloRegreso && data.vueloRegreso.fecha) {
+  const fechaRegreso = new Date(data.vueloRegreso.fecha).toLocaleDateString("es-CR");
+  setTexto("fechaRegreso", fechaRegreso);
+}
 setTexto("codigoVuelo", data.vueloIda.codigo || "---");
 
         // Puedes agregar más campos aquí si lo necesitas
