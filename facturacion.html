@@ -453,24 +453,27 @@
 }
 setTexto("codigoVuelo", data.vueloIda.codigo || "---");
 // Suponiendo que la fecha viene como string "YYYY-MM-DD"
-const fechaIda = new Date(reserva.vueloIda.fecha + 'T00:00:00');
-const fechaRegreso = new Date(reserva.vueloRegreso.fecha + 'T00:00:00');
+const fechaIda = new Date(data.vueloIda.fecha + 'T00:00:00');
+const fechaRegreso = new Date(data.vueloRegreso.fecha + 'T00:00:00');
 
 const formatoLocal = { day: '2-digit', month: '2-digit', year: 'numeric' };
 
-document.getElementById("fechaIda").innerText = fechaIda.toLocaleDateString('es-CR', formatoLocal);
-document.getElementById("fechaRegreso").innerText = fechaRegreso.toLocaleDateString('es-CR', formatoLocal);
-        // Puedes agregar más campos aquí si lo necesitas
-      } else {
-        alert("Reserva no encontrada: " + reservaID);
-      }
-    }).catch((error) => {
-      console.error("Error al obtener datos:", error);
-      alert("Error al cargar la reserva. Verifica la consola.");
-    });
-  } else {
-    alert("No se proporcionó un código de reserva.");
-  }
+if (data.vueloIda && data.vueloIda.fecha) {
+  const fechaIda = new Date(data.vueloIda.fecha + 'T00:00:00').toLocaleDateString('es-CR', formatoLocal);
+  setTexto("fechaIda", fechaIda);
+} else {
+  setTexto("fechaIda", "---");
+}
+
+if (data.vueloRegreso && data.vueloRegreso.fecha) {
+  const fechaRegreso = new Date(data.vueloRegreso.fecha + 'T00:00:00').toLocaleDateString('es-CR', formatoLocal);
+  setTexto("fechaRegreso", fechaRegreso);
+} else {
+  setTexto("fechaRegreso", "---");
+}
+
+setTexto("fechaEmisionSpan", data.fechaReserva || "---");
+setTexto("codigoVuelo", data.vueloIda.codigo || "---");
 </script>
 
 </body>
