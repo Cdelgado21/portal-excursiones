@@ -543,17 +543,25 @@ async function mostrarTransaccionesModal() {
       `;
     } else {
       transacciones.forEach((pago, index) => {
-        tabla.innerHTML += `
-          <tr>
-            <td>${index + 1}</td>
-            <td>$${Number(pago.monto || 0).toFixed(2)}</td>
-            <td>${pago.fecha || "-"}</td>
-            <td>$${Number(pago.importe || pago.monto || 0).toFixed(2)}</td>
-            <td>${pago.nota || ""}</td>
-          </tr>
-        `;
-      });
-    }
+  tabla.innerHTML += `
+    <tr>
+      <td>${index + 1}</td>
+      <td>$${Number(pago.monto || 0).toFixed(2)}</td>
+      <td>${pago.fecha || "-"}</td>
+      <td>$${Number(pago.importe || pago.monto || 0).toFixed(2)}</td>
+      <td>${pago.nota || ""}</td>
+      <td>
+        <div class="menu-container">
+          <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
+          <div class="menu-options" style="display: none;">
+            <button onclick="editarPago(${index})">Editar</button>
+            <button onclick="eliminarPago(${index})">Eliminar</button>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `;
+});
 
     document.getElementById("modalTransacciones").style.display = "block";
 
@@ -570,31 +578,76 @@ function abrirModalAgregarPago() {
 function cerrarModal(id) {
   document.getElementById(id).style.display = "none";
 }
+  function toggleMenu(button) {
+  const menu = button.nextElementSibling;
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+  document.addEventListener("click", function hideMenu(e) {
+    if (!menu.contains(e.target) && e.target !== button) {
+      menu.style.display = "none";
+      document.removeEventListener("click", hideMenu);
+    }
+  });
+}
 
 function guardarPago() {
-  const monto = parseFloat(document.getElementById("nuevoMonto").value);
-  const fecha = document.getElementById("nuevaFecha").value;
-  const importe = parseFloat(document.getElementById("nuevoImporte").value);
-  const nota = document.getElementById("nuevaNota").value;
+  const monto = parseFloat(document.getElementById("nuevoMonto").value) || 0;
+  const fecha = document.getElementById("nuevaFecha").value || "";
+  const importe = parseFloat(document.getElementById("nuevoImporte").value) || monto;
+  const nota = document.getElementById("nuevaNota").value || "";
 
-  if (!monto || !fecha) {
-    alert("Debe completar monto y fecha");
-    return;
-  }
+  const nuevoPago = { monto, fecha, importe, nota };
 
-  const nuevaTransaccion = {
-    monto,
-    fecha,
-    importe,
-    nota
-  };
+  const reservaId = new URLSearchParams(window.location.search).get("reserva");
+  const docRef = db.collection("reservas").doc(reservaId);
 
-  // Agregar a data (global) y actualizar visual
-  if (!data.transacciones) data.transacciones = [];
-  data.transacciones.push(nuevaTransaccion);
+  docRef.get().then((doc) => {
+    let pagos = doc.data().pagos || [];
 
-  cerrarModal("modalAgregarPago");
-  mostrarTransaccionesModal();
+    if (indexEditando !== null) {
+      pagos[indexEditando] = nuevoPago;
+      indexEditando = null;
+    } else {
+      pagos.push(nuevoPago);
+    }
+
+    docRef.update({ pagos }).then(() => {
+      cerrarModal('modalAgregarPago');
+      mostrarTransaccionesModal(); // Recargar tabla
+    });
+  });
+}
+  let indexEditando = null;
+
+function editarPago(index) {
+  indexEditando = index;
+  const docId = new URLSearchParams(window.location.search).get("reserva");
+
+  db.collection("reservas").doc(docId).get().then((doc) => {
+    const pagos = doc.data().pagos || [];
+    const pago = pagos[index];
+
+    document.getElementById("nuevoMonto").value = pago.monto;
+    document.getElementById("nuevaFecha").value = pago.fecha;
+    document.getElementById("nuevoImporte").value = pago.importe;
+    document.getElementById("nuevaNota").value = pago.nota;
+
+    document.getElementById("modalAgregarPago").style.display = "block";
+  });
+}
+  function eliminarPago(index) {
+  if (!confirm("¿Deseas eliminar este pago?")) return;
+
+  const reservaId = new URLSearchParams(window.location.search).get("reserva");
+  const docRef = db.collection("reservas").doc(reservaId);
+
+  docRef.get().then((doc) => {
+    let pagos = doc.data().pagos || [];
+    pagos.splice(index, 1); // eliminar
+
+    docRef.update({ pagos }).then(() => {
+      mostrarTransaccionesModal(); // Recargar
+    });
+  });
 }
 </script>
 
