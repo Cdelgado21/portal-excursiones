@@ -463,55 +463,56 @@ if (reservaID) {
       // Código del vuelo
       setTexto("codigoVuelo", data.vueloIda?.codigo || "---");
 
-// 🔽 Sección de artículos (pasajeros)
-const destino = data.destino || "Destino no especificado";
+const destino = data.destino;
 const adultos = Number(data.cantidadAdultos) || 0;
 const ninos = Number(data.cantidadNinos) || 0;
 const bebes = Number(data.cantidadBebes) || 0;
 
-// Precios temporales (puedes traerlos de otra colección si luego lo deseas)
-const precioAdulto = 850;
-const precioNino = 650;
-const precioBebe = 250;
-
 const tabla = document.getElementById("tablaArticulos");
-tabla.innerHTML = ""; // Limpia la tabla antes de llenar
-
+tabla.innerHTML = "";
 let subtotal = 0;
 
-function agregarFila(descripcion, precioUnitario, cantidad) {
-  if (cantidad > 0) {
-    const tr = document.createElement("tr");
-    const importe = precioUnitario * cantidad;
-    subtotal += importe;
-    tr.innerHTML = `
-      <td>${descripcion}</td>
-      <td style="text-align:right;">$${precioUnitario.toFixed(2)}</td>
-      <td style="text-align:center;">${cantidad}</td>
-      <td style="text-align:right;">$${importe.toFixed(2)}</td>
-    `;
-    tabla.appendChild(tr);
-  }
-}
-
-agregarFila(`Tour a ${destino} - Adultos`, precioAdulto, adultos);
-agregarFila(`Tour a ${destino} - Niños`, precioNino, ninos);
-agregarFila(`Tour a ${destino} - Bebés`, precioBebe, bebes);
-
-// Mostrar totales
-document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
-
-    } else {
-      alert("Reserva no encontrada: " + reservaID);
+// Buscar en la colección "tours" el documento con ese destino
+db.collection("tours").where("nombre", "==", destino).get()
+  .then((querySnapshot) => {
+    if (querySnapshot.empty) {
+      alert("Destino no encontrado en la colección 'tours'.");
+      return;
     }
-  }).catch((error) => {
-    console.error("Error al obtener datos:", error);
-    alert("Error al cargar la reserva. Verifica la consola.");
+
+    const tourData = querySnapshot.docs[0].data();
+    const precioAdulto = Number(tourData.precioAdulto) || 0;
+    const precioNino = Number(tourData.precioNino) || 0;
+    const precioBebe = Number(tourData.precioBebe) || 0;
+
+    function agregarFila(descripcion, precio, cantidad) {
+      if (cantidad > 0) {
+        const tr = document.createElement("tr");
+        const importe = precio * cantidad;
+        subtotal += importe;
+        tr.innerHTML = `
+          <td>${descripcion}</td>
+          <td style="text-align:right;">$${precio.toFixed(2)}</td>
+          <td style="text-align:center;">${cantidad}</td>
+          <td style="text-align:right;">$${importe.toFixed(2)}</td>
+        `;
+        tabla.appendChild(tr);
+      }
+    }
+
+    agregarFila(`Tour a ${destino} - Adultos`, precioAdulto, adultos);
+    agregarFila(`Tour a ${destino} - Niños`, precioNino, ninos);
+    agregarFila(`Tour a ${destino} - Bebés`, precioBebe, bebes);
+
+    // Mostrar totales
+    document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+    document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
+
+  })
+  .catch((error) => {
+    console.error("Error al cargar los precios del tour:", error);
+    alert("Hubo un problema al obtener los precios del tour.");
   });
-} else {
-  alert("No se proporcionó un código de reserva.");
-}
 
 </script>
 
