@@ -515,32 +515,39 @@ document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
 }
 async function mostrarTransaccionesModal() {
   const tabla = document.getElementById("tablaTransaccionesBody");
-  const modal = document.getElementById("modalTransacciones");
-  tabla.innerHTML = "";
+  tabla.innerHTML = ""; // Limpiar contenido previo del modal
 
   const urlParams = new URLSearchParams(window.location.search);
-  const reservarId = urlParams.get("reserva");
+  const reservaId = urlParams.get("reserva");
 
-  if (!reservarId) {
-    console.error("ID de reserva no encontrado en la URL.");
-    tabla.innerHTML = "<tr><td colspan='5'>No se encontró la reserva.</td></tr>";
+  if (!reservaId) {
+    alert("No se proporcionó un código de reserva.");
     return;
   }
 
   try {
-    const docRef = await getDoc(doc(db, "reservas", reservarId));
+    const docRef = await db.collection("reservas").doc(reservaId).get();
+    if (!docRef.exists) {
+      tabla.innerHTML = `<tr><td colspan="5" style="text-align:center;">Reserva no encontrada.</td></tr>`;
+      return;
+    }
+
     const data = docRef.data();
     const transacciones = data.pagos || [];
 
     if (transacciones.length === 0) {
-      tabla.innerHTML = "<tr><td colspan='5'>No hay pagos registrados.</td></tr>";
+      tabla.innerHTML = `
+        <tr>
+          <td colspan="5" style="text-align:center;">No hay pagos registrados.</td>
+        </tr>
+      `;
     } else {
       transacciones.forEach((pago, index) => {
         tabla.innerHTML += `
           <tr>
             <td>${index + 1}</td>
             <td>$${Number(pago.monto || 0).toFixed(2)}</td>
-            <td>${pago.fecha || "--"}</td>
+            <td>${pago.fecha || "-"}</td>
             <td>$${Number(pago.importe || pago.monto || 0).toFixed(2)}</td>
             <td>${pago.nota || ""}</td>
           </tr>
@@ -548,10 +555,11 @@ async function mostrarTransaccionesModal() {
       });
     }
 
-    modal.style.display = "block";
+    document.getElementById("modalTransacciones").style.display = "block";
+
   } catch (error) {
     console.error("Error al cargar pagos:", error);
-    tabla.innerHTML = "<tr><td colspan='5'>Error al cargar transacciones.</td></tr>";
+    tabla.innerHTML = `<tr><td colspan="5">Error al cargar transacciones.</td></tr>`;
   }
 }
 
