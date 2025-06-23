@@ -399,126 +399,69 @@
     </div>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZkprk7-JHbUz08LJe4y0mDhZfeZvR8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717",
-      storageBucket: "tours-460717.appspot.com",
-      messagingSenderId: "1000749333444",
-      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
-    };
+  <!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-   firebase.initializeApp(firebaseConfig);
+<script>
+  // Configuración de Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.appspot.com",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+  };
+
+  // Inicializar Firebase
+  firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-function setTexto(id, valor) {
-  const elemento = document.getElementById(id);
-  if (elemento) {
-    elemento.textContent = valor || '---';
-  }
-}
-
-// Obtener ID de reserva desde URL
-const urlParams = new URLSearchParams(window.location.search);
-const reservaID = urlParams.get("reserva");
-
-if (reservaID) {
-  const db = firebase.firestore();
-  db.collection("reservas").doc(reservaID).get().then((doc) => {
-    if (doc.exists) {
-      const data = doc.data();
-
-      // Encabezado
-      setTexto("codigoReserva", reservaID);
-      setTexto("numeroFactura", "N/A");
-
-      // Fechas
-      setTexto("fechaEmisionSpan", data.fechaEmision);
-      setTexto("fechaIda", data.fechaReserva);
-      setTexto("fechaRegreso", data.fechaRegreso);
-      setTexto("codigoVuelo", data.codigoVuelo);
-
-      // Aquí puedes seguir con otros campos si lo deseas...
-
-    } else {
-      alert("No se encontró la reserva.");
+  // Función segura para insertar texto
+  function setTexto(id, valor) {
+    const elemento = document.getElementById(id);
+    if (elemento) {
+      elemento.textContent = valor || "---";
     }
-  }).catch((error) => {
-    console.error("Error al obtener la reserva:", error);
-    alert("Error al cargar la reserva. Consulta la consola.");
-  });
-}
-        // Tabla de artículos
-        const tabla = document.getElementById('tablaArticulos');
-        tabla.innerHTML = '';
-        let subtotal = 0;
-        if (Array.isArray(data.articulos)) {
-          data.articulos.forEach(item => {
-            const fila = document.createElement('tr');
-            const importe = (item.precio || 0) * (item.cantidad || 1);
-            subtotal += importe;
+  }
 
-            fila.innerHTML = `
-              <td>${item.nombre}</td>
-              <td style="text-align:right;">$${item.precio.toFixed(2)}</td>
-              <td style="text-align:center;">${item.cantidad}</td>
-              <td style="text-align:right;">$${importe.toFixed(2)}</td>
-            `;
-            tabla.appendChild(fila);
-          });
-        }
-        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById('total').textContent = `$${subtotal.toFixed(2)}`;
+  // Obtener el ID de la reserva desde la URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const reservaID = urlParams.get("reserva");
 
-        // Pagos
-        const tablaPagos = document.getElementById('tablaPagos').getElementsByTagName('tbody')[0];
-        tablaPagos.innerHTML = '';
-        if (Array.isArray(data.pagos)) {
-          data.pagos.forEach((pago, i) => {
-            const fila = document.createElement('tr');
-            fila.innerHTML = `
-              <td>Pago ${i + 1}</td>
-              <td>$${pago.monto.toFixed(2)}</td>
-              <td>${pago.fecha || ''}</td>
-              <td>$${pago.monto.toFixed(2)}</td>
-              <td>${pago.nota || ''}</td>
-            `;
-            tablaPagos.appendChild(fila);
-          });
-        }
+  if (reservaID) {
+    db.collection("reservas").doc(reservaID).get().then((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
 
+        // Datos generales
+        setTexto("codigoReserva", reservaID);
+        setTexto("numeroFactura", "N/A");
+
+        // Datos del cliente
+        setTexto("nombreCliente", data.nombreTitular);
+        setTexto("correoCliente", data.correo || "yullianagomez@gmail.com");
+        setTexto("telefonoCliente", data.telefono || "85378012");
+
+        // Fechas y datos del viaje
+        setTexto("fechaEmisionSpan", data.fechaEmision);
+        setTexto("fechaIda", data.fechaReserva);
+        setTexto("fechaRegreso", data.fechaRegreso);
+        setTexto("codigoVuelo", data.codigoVuelo);
+
+        // Puedes agregar más campos aquí si lo necesitas
       } else {
-        alert("Reserva no encontrada.");
+        alert("Reserva no encontrada: " + reservaID);
       }
-    }).catch(error => {
-      console.error("Error al obtener la reserva:", error);
-      alert("Ocurrió un error al cargar la información.");
+    }).catch((error) => {
+      console.error("Error al obtener datos:", error);
+      alert("Error al cargar la reserva. Verifica la consola.");
     });
   } else {
-    alert("No se encontró el ID de reserva en la URL.");
+    alert("No se proporcionó un código de reserva.");
   }
-    async function cargarDatosReserva() {
-  try {
-    const docRef = db.collection("reservas").doc(reservaID);
-    const docSnap = await docRef.get();
-
-    if (docSnap.exists) {
-      const data = docSnap.data();
-
-      // Mostrar el nombre del titular
-      document.getElementById("nombreTitular").textContent = data.nombreTitular || '---';
-      document.getElementById("correoTitular").textContent = data.correo || '---';
-document.getElementById("telefonoTitular").textContent = data.telefono || '---';
-    } else {
-      console.error("No se encontró la reserva.");
-    }
-  } catch (error) {
-    console.error("Error al cargar la reserva:", error);
-  }
-}
-
-cargarDatosReserva();
 </script>
+
 </body>
 </html>
