@@ -329,7 +329,21 @@
         <tr><td colspan="3" style="text-align:right;"><strong>Total</strong></td><td style="text-align:right;" id="total"><strong>$0.00</strong></td></tr>
       </tfoot>
     </table>
-
+<h3 style="margin-top: 30px;">Pagos Aplicados</h3>
+<table id="tablaPagos" border="1" cellpadding="8" cellspacing="0" style="width:100%; margin-bottom: 20px;">
+  <thead style="background-color: #02535a; color: white;">
+    <tr>
+      <th>Pago</th>
+      <th>Monto</th>
+      <th>Fecha</th>
+      <th>Importe</th>
+      <th>Nota</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Aquí se insertan dinámicamente las filas -->
+  </tbody>
+</table>
     <!-- Botones -->
     <div class="acciones">
       <button onclick="mostrarTransaccionesModal()">Ver transacciones</button>
@@ -452,7 +466,33 @@ if (nombreCliente) nombreCliente.textContent = data.nombreTitular || '---';
       alert("No se proporcionó un código de reserva.");
     }
   };
+if (Array.isArray(data.pagos)) {
+  data.pagos.forEach((pago, index) => {
+    const row = tablaPagos.insertRow();
 
+    const articuloCell = row.insertCell();
+    articuloCell.textContent = `Pago #${index + 1}`;
+
+    const precioCell = row.insertCell();
+    precioCell.textContent = typeof pago.monto === 'number' ? `$${pago.monto.toFixed(2)}` : '$0.00';
+
+    const cantidadCell = row.insertCell();
+    cantidadCell.textContent = pago.fecha || '---';
+
+    const importeCell = row.insertCell();
+    importeCell.textContent = typeof pago.monto === 'number' ? `$${pago.monto.toFixed(2)}` : '$0.00';
+
+    const notaCell = row.insertCell();
+    if (typeof pago.nota === 'string') {
+      notaCell.textContent = pago.nota.indexOf("BNCR") > -1
+        ? "✔️ " + pago.nota
+        : pago.nota;
+    } else {
+      notaCell.textContent = '';
+    }
+  });
+}
+    const tablaPagos = document.getElementById('tablaPagos').getElementsByTagName('tbody')[0];
 // =================== TRANSACCIONES ===================
 function mostrarTransaccionesModal() {
   document.getElementById('modalTransacciones').style.display = 'flex';
