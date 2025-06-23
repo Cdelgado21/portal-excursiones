@@ -463,41 +463,44 @@ if (reservaID) {
       // Código del vuelo
       setTexto("codigoVuelo", data.vueloIda?.codigo || "---");
 
- // 🔽 Datos del destino y personas
-  const destino = data.destino || "Destino no especificado";
-  const adultos = Number(data.adultos) || 0;
-  const ninos = Number(data.ninos) || 0;
-  const bebes = Number(data.bebes) || 0;
-  const precioAdulto = Number(data.precio_adulto) || 0;
-  const precioNino = Number(data.precio_nino) || 0;
-  const precioBebe = Number(data.precio_bebe) || 0;
+// 🔽 Sección de artículos (pasajeros)
+const destino = data.destino || "Destino no especificado";
+const adultos = Number(data.cantidadAdultos) || 0;
+const ninos = Number(data.cantidadNinos) || 0;
+const bebes = Number(data.cantidadBebes) || 0;
 
-  const tabla = document.getElementById("tablaArticulos");
-  tabla.innerHTML = ""; // Limpia antes
+// Precios temporales (puedes traerlos de otra colección si luego lo deseas)
+const precioAdulto = 850;
+const precioNino = 650;
+const precioBebe = 250;
 
-  let subtotal = 0;
+const tabla = document.getElementById("tablaArticulos");
+tabla.innerHTML = ""; // Limpia la tabla antes de llenar
 
-  function agregarFila(descripcion, precioUnitario, cantidad) {
-    if (cantidad > 0) {
-      const tr = document.createElement("tr");
-      const importe = precioUnitario * cantidad;
-      subtotal += importe;
-      tr.innerHTML = `
-        <td>${descripcion}</td>
-        <td style="text-align:right;">$${precioUnitario.toFixed(2)}</td>
-        <td style="text-align:center;">${cantidad}</td>
-        <td style="text-align:right;">$${importe.toFixed(2)}</td>
-      `;
-      tabla.appendChild(tr);
-    }
+let subtotal = 0;
+
+function agregarFila(descripcion, precioUnitario, cantidad) {
+  if (cantidad > 0) {
+    const tr = document.createElement("tr");
+    const importe = precioUnitario * cantidad;
+    subtotal += importe;
+    tr.innerHTML = `
+      <td>${descripcion}</td>
+      <td style="text-align:right;">$${precioUnitario.toFixed(2)}</td>
+      <td style="text-align:center;">${cantidad}</td>
+      <td style="text-align:right;">$${importe.toFixed(2)}</td>
+    `;
+    tabla.appendChild(tr);
   }
+}
 
-  agregarFila(`Tour a ${destino} - Adultos`, precioAdulto, adultos);
-  agregarFila(`Tour a ${destino} - Niños`, precioNino, ninos);
-  agregarFila(`Tour a ${destino} - Bebés`, precioBebe, bebes);
+agregarFila(`Tour a ${destino} - Adultos`, precioAdulto, adultos);
+agregarFila(`Tour a ${destino} - Niños`, precioNino, ninos);
+agregarFila(`Tour a ${destino} - Bebés`, precioBebe, bebes);
 
-  document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-  document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
+// Mostrar totales
+document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
 
     } else {
       alert("Reserva no encontrada: " + reservaID);
