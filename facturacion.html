@@ -506,9 +506,7 @@ function toggleMenu(button) {
 async function mostrarTransaccionesModal() {
   const tabla = document.getElementById("tablaTransaccionesBody");
   const modal = document.getElementById("modalTransacciones");
-      document.getElementById("modalTransacciones").style.display = "flex";
-    document.getElementById("overlay").style.display = "block";
-  tabla.innerHTML = "";
+   tabla.innerHTML = "";
 
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
   if (!reservaId) {
@@ -559,8 +557,7 @@ function abrirModalAgregarPago() {
 
 function cerrarModal(id) {
   document.getElementById(id).style.display = "none";
-    document.getElementById("overlay").style.display = "none";
-}
+    }
 
 function editarPago(index) {
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
