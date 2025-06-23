@@ -351,51 +351,43 @@
     </div>
   </div>
 
- <div id="modalTransacciones" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); z-index:9999;">
-  <div style="background:white; margin:10% auto; padding:20px; border-radius:8px; width:90%; max-width:700px; position:relative;">
-    <span onclick="cerrarTransaccionesModal()" style="position:absolute; top:10px; right:15px; font-size:22px; cursor:pointer;">&times;</span>
-    <h2 style="margin-bottom:15px;">Pagos Aplicados</h2>
-    <table style="width:100%; border-collapse:collapse;">
-      <thead style="background:#02535a; color:white;">
+<!-- MODAL PRINCIPAL -->
+<div id="modalTransacciones" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Transacciones Registradas</h3>
+    <table>
+      <thead>
         <tr>
-          <th style="padding:10px;">Pago</th>
-          <th style="padding:10px;">Monto</th>
-          <th style="padding:10px;">Fecha</th>
-          <th style="padding:10px;">Importe</th>
-          <th style="padding:10px;">Nota</th>
+          <th>#</th>
+          <th>Monto</th>
+          <th>Fecha</th>
+          <th>Importe</th>
+          <th>Nota</th>
         </tr>
       </thead>
-      <tbody id="tablaTransaccionesBody" style="text-align:center;">
-        <!-- Se llenará dinámicamente -->
-      </tbody>
+      <tbody id="tablaTransaccionesBody"></tbody>
     </table>
+    <div style="text-align:right; margin-top: 10px;">
+      <button onclick="abrirModalAgregarPago()">Agregar Pago</button>
+      <button onclick="cerrarModal('modalTransacciones')">Cancelar</button>
+    </div>
   </div>
 </div>
 
-  <!-- Modal Agregar Pago -->
-  <div class="modal" id="modalAgregarPago">
-    <div class="modal-content">
-      <h2 class="titulo-modal">Agregar pago</h2>
-      <label>Monto pagado</label>
-      <input type="number" id="montoAbono" placeholder="Ej. 100" style="width:100%; padding:10px; margin-bottom:15px;"/>
-      <label>Fecha</label>
-      <input type="date" id="fechaAbono" style="width:100%; padding:10px; margin-bottom:15px;" />
-      <label>Método</label>
-      <select id="metodoAbono" style="width:100%; padding:10px; margin-bottom:15px;">
-        <option value="">Seleccionar</option>
-        <option value="Efectivo">Efectivo</option>
-        <option value="SINPE">SINPE</option>
-        <option value="Tarjeta">Tarjeta</option>
-        <option value="Transferencia">Transferencia</option>
-      </select>
-      <label>Nota</label>
-      <textarea id="notaAbono" style="width:100%; padding:10px;" placeholder="Ej. CUENTA ₡ BNCR, comprobante 123456..."></textarea>
-      <div class="acciones-modal">
-        <button onclick="cerrarModal('modalAgregarPago')">Cerrar</button>
-        <button onclick="registrarAbono()">Guardar pago</button>
-      </div>
+<!-- MODAL SECUNDARIO PARA AGREGAR PAGO -->
+<div id="modalAgregarPago" class="modal" style="display:none;">
+  <div class="modal-content">
+    <h3>Agregar Nuevo Pago</h3>
+    <label>Monto: <input type="number" id="nuevoMonto" /></label>
+    <label>Fecha: <input type="date" id="nuevaFecha" /></label>
+    <label>Importe: <input type="number" id="nuevoImporte" /></label>
+    <label>Nota: <input type="text" id="nuevaNota" /></label>
+    <div style="text-align:right; margin-top: 10px;">
+      <button onclick="guardarPago()">Guardar</button>
+      <button onclick="cerrarModal('modalAgregarPago')">Cancelar</button>
     </div>
   </div>
+</div>
 <script>
   // Configuración de Firebase
   const firebaseConfig = {
@@ -521,7 +513,7 @@ document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
 } else {
   alert("No se proporcionó un código de reserva.");
 }
-  function mostrarTransaccionesModal() {
+ function mostrarTransaccionesModal() {
   const modal = document.getElementById("modalTransacciones");
   const tabla = document.getElementById("tablaTransaccionesBody");
   tabla.innerHTML = "";
@@ -536,9 +528,9 @@ document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
         <tr>
           <td>${index + 1}</td>
           <td>$${Number(t.monto || 0).toFixed(2)}</td>
-          <td>${t.fecha || '--'}</td>
+          <td>${t.fecha || "--"}</td>
           <td>$${Number(t.importe || 0).toFixed(2)}</td>
-          <td>${t.nota || ''}</td>
+          <td>${t.nota || ""}</td>
         </tr>
       `;
     });
@@ -547,8 +539,38 @@ document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
   modal.style.display = "block";
 }
 
-function cerrarTransaccionesModal() {
-  document.getElementById("modalTransacciones").style.display = "none";
+function abrirModalAgregarPago() {
+  document.getElementById("modalAgregarPago").style.display = "block";
+}
+
+function cerrarModal(id) {
+  document.getElementById(id).style.display = "none";
+}
+
+function guardarPago() {
+  const monto = parseFloat(document.getElementById("nuevoMonto").value);
+  const fecha = document.getElementById("nuevaFecha").value;
+  const importe = parseFloat(document.getElementById("nuevoImporte").value);
+  const nota = document.getElementById("nuevaNota").value;
+
+  if (!monto || !fecha) {
+    alert("Debe completar monto y fecha");
+    return;
+  }
+
+  const nuevaTransaccion = {
+    monto,
+    fecha,
+    importe,
+    nota
+  };
+
+  // Agregar a data (global) y actualizar visual
+  if (!data.transacciones) data.transacciones = [];
+  data.transacciones.push(nuevaTransaccion);
+
+  cerrarModal("modalAgregarPago");
+  mostrarTransaccionesModal();
 }
 </script>
 
