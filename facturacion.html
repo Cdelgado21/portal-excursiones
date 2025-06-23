@@ -351,28 +351,26 @@
     </div>
   </div>
 
-  <!-- Modal Ver Transacciones -->
-  <div class="modal" id="modalTransacciones">
-    <div class="modal-content">
-      <h2 class="titulo-modal">Ver transacciones</h2>
-      <table class="tabla-transacciones">
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Nota</th>
-            <th>Importe</th>
-          </tr>
-        </thead>
-        <tbody id="tablaTransaccionesBody">
-          <!-- JS -->
-        </tbody>
-      </table>
-      <div class="acciones-modal">
-        <button onclick="mostrarModalAgregarPago()">Agregar pago</button>
-        <button onclick="cerrarModal('modalTransacciones')">Cerrar</button>
-      </div>
-    </div>
+ <div id="modalTransacciones" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); z-index:9999;">
+  <div style="background:white; margin:10% auto; padding:20px; border-radius:8px; width:90%; max-width:700px; position:relative;">
+    <span onclick="cerrarTransaccionesModal()" style="position:absolute; top:10px; right:15px; font-size:22px; cursor:pointer;">&times;</span>
+    <h2 style="margin-bottom:15px;">Pagos Aplicados</h2>
+    <table style="width:100%; border-collapse:collapse;">
+      <thead style="background:#02535a; color:white;">
+        <tr>
+          <th style="padding:10px;">Pago</th>
+          <th style="padding:10px;">Monto</th>
+          <th style="padding:10px;">Fecha</th>
+          <th style="padding:10px;">Importe</th>
+          <th style="padding:10px;">Nota</th>
+        </tr>
+      </thead>
+      <tbody id="tablaTransaccionesBody" style="text-align:center;">
+        <!-- Se llenará dinámicamente -->
+      </tbody>
+    </table>
   </div>
+</div>
 
   <!-- Modal Agregar Pago -->
   <div class="modal" id="modalAgregarPago">
@@ -524,39 +522,34 @@ document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
   alert("No se proporcionó un código de reserva.");
 }
   function mostrarTransaccionesModal() {
-    const modal = document.getElementById("modalTransacciones");
-    const cuerpoTabla = document.getElementById("tablaTransaccionesBody");
-    if (!cuerpoTabla) {
-      console.error("No se encontró el cuerpo de la tabla de transacciones.");
-      return;
-    }
+  const modal = document.getElementById("modalTransacciones");
+  const tabla = document.getElementById("tablaTransaccionesBody");
+  tabla.innerHTML = "";
 
-    cuerpoTabla.innerHTML = "";
+  const transacciones = data.transacciones || [];
 
-    const transacciones = data.transacciones || [];
-
-    if (transacciones.length === 0) {
-      cuerpoTabla.innerHTML = "<tr><td colspan='5'>No hay pagos registrados.</td></tr>";
-    } else {
-      transacciones.forEach((t, index) => {
-        cuerpoTabla.innerHTML += `
-          <tr>
-            <td>${index + 1}</td>
-            <td>$${Number(t.monto || 0).toFixed(2)}</td>
-            <td>${t.fecha || "--"}</td>
-            <td>$${Number(t.importe || 0).toFixed(2)}</td>
-            <td>${t.nota || ""}</td>
-          </tr>
-        `;
-      });
-    }
-
-    modal.style.display = "block";
+  if (transacciones.length === 0) {
+    tabla.innerHTML = "<tr><td colspan='5'>No hay pagos registrados.</td></tr>";
+  } else {
+    transacciones.forEach((t, index) => {
+      tabla.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>$${Number(t.monto || 0).toFixed(2)}</td>
+          <td>${t.fecha || '--'}</td>
+          <td>$${Number(t.importe || 0).toFixed(2)}</td>
+          <td>${t.nota || ''}</td>
+        </tr>
+      `;
+    });
   }
 
-  function cerrarTransaccionesModal() {
-    document.getElementById("modalTransacciones").style.display = "none";
-  }
+  modal.style.display = "block";
+}
+
+function cerrarTransaccionesModal() {
+  document.getElementById("modalTransacciones").style.display = "none";
+}
 </script>
 
 </body>
