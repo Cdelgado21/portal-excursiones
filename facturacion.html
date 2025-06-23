@@ -429,7 +429,8 @@ if (reservaID) {
   db.collection("reservas").doc(reservaID).get().then((doc) => {
     if (doc.exists) {
       const data = doc.data();
-
+console.log("Data cargada:", data);
+console.log("Precios:", data.pasajeros);
       // Formato local para fechas
       const formatoLocal = { day: '2-digit', month: '2-digit', year: 'numeric' };
 
