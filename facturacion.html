@@ -412,24 +412,43 @@
    firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // Obtener ID desde URL
-  const urlParams = new URLSearchParams(window.location.search);
-const reservaID = urlParams.get("reserva"); // Ejemplo: ED-010-2025
+function setTexto(id, valor) {
+  const elemento = document.getElementById(id);
+  if (elemento) {
+    elemento.textContent = valor || '---';
+  }
+}
 
-  if (reservaID) {
-    db.collection('reservas').doc(reservaID).get().then(doc => {
-      if (doc.exists) {
-        const data = doc.data();
+// Obtener ID de reserva desde URL
+const urlParams = new URLSearchParams(window.location.search);
+const reservaID = urlParams.get("reserva");
 
-        // Llenar encabezado
-        document.getElementById('codigoReserva').textContent = reservaID;
-        document.getElementById('numeroFactura').textContent = data.numeroFactura || 'N/A';
+if (reservaID) {
+  const db = firebase.firestore();
+  db.collection("reservas").doc(reservaID).get().then((doc) => {
+    if (doc.exists) {
+      const data = doc.data();
 
-        // Fechas
-document.getElementById('fechaIda').textContent = data.fechaIda;
-document.getElementById('fechaRegreso').textContent = data.fechaRegreso;
-document.getElementById('codigoVuelo').textContent = data.codigoVuelo;
+      // Encabezado
+      setTexto("codigoReserva", reservaID);
+      setTexto("numeroFactura", "N/A");
 
+      // Fechas
+      setTexto("fechaEmisionSpan", data.fechaEmision);
+      setTexto("fechaIda", data.fechaReserva);
+      setTexto("fechaRegreso", data.fechaRegreso);
+      setTexto("codigoVuelo", data.codigoVuelo);
+
+      // Aquí puedes seguir con otros campos si lo deseas...
+
+    } else {
+      alert("No se encontró la reserva.");
+    }
+  }).catch((error) => {
+    console.error("Error al obtener la reserva:", error);
+    alert("Error al cargar la reserva. Consulta la consola.");
+  });
+}
         // Tabla de artículos
         const tabla = document.getElementById('tablaArticulos');
         tabla.innerHTML = '';
