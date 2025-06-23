@@ -496,9 +496,9 @@ function agregarFila(descripcion, precio, cantidad) {
 
 const nombreBonito = destino.replace(/_/g, " ").replace(/\b\w/g,l=>l.toUpperCase());
 
-agregarFila(`Tour a ${nombreBonito} - Adultos`, precioAdulto, adultos);
-agregarFila(`Tour a ${nombreBonito} - Niños`,   precioNino,   ninos);
-agregarFila(`Tour a ${nombreBonito} - Bebés`,   precioBebe,   bebes);
+agregarFila(`${nombreBonito} - Adultos`, precioAdulto, adultos);
+agregarFila(`${nombreBonito} - Niños`,   precioNino,   ninos);
+agregarFila(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
 
 // totales
 document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
