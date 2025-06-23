@@ -508,6 +508,8 @@ function toggleMenu(button) {
 async function mostrarTransaccionesModal() {
   const tabla = document.getElementById("tablaTransaccionesBody");
   const modal = document.getElementById("modalTransacciones");
+      document.getElementById("modalTransacciones").style.display = "flex";
+    document.getElementById("overlay").style.display = "block";
   tabla.innerHTML = "";
 
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
@@ -554,11 +556,12 @@ function abrirModalAgregarPago() {
   document.getElementById("nuevaFecha").value = "";
   document.getElementById("nuevoImporte").value = "";
   document.getElementById("nuevaNota").value = "";
-  document.getElementById("modalAgregarPago").style.display = "block";
+      document.getElementById("modalAgregarPago").style.display = "flex";
 }
 
 function cerrarModal(id) {
   document.getElementById(id).style.display = "none";
+    document.getElementById("overlay").style.display = "none";
 }
 
 function editarPago(index) {
