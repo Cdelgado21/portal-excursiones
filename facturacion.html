@@ -409,77 +409,81 @@
       appId: "1:1000749333444:web:73437891b59a96b6a4c291"
     };
 
-     firebase.initializeApp(firebaseConfig);
+   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // EXTRAER PARÁMETRO DE LA URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const reservaID = urlParams.get("reserva");
+  // Obtener ID desde URL
+  const params = new URLSearchParams(window.location.search);
+  const reservaID = params.get('reserva');
 
   if (reservaID) {
-    cargarDatosFactura(reservaID);
-  }
+    db.collection('reservas').doc(reservaID).get().then(doc => {
+      if (doc.exists) {
+        const data = doc.data();
 
-  async function cargarDatosFactura(id) {
-    try {
-      const doc = await db.collection("reservas").doc(id).get();
-      if (!doc.exists) return alert("Reserva no encontrada");
+        // Llenar encabezado
+        document.getElementById('codigoReserva').textContent = reservaID;
+        document.getElementById('numeroFactura').textContent = data.numeroFactura || 'N/A';
 
-      const data = doc.data();
+        // Cliente
+        document.getElementById('nombreCliente').textContent = data.nombreCliente || '';
+        document.getElementById('correoCliente').textContent = data.correoCliente || '';
+        document.getElementById('telefonoCliente').textContent = data.telefonoCliente || '';
 
-      // Insertar datos en pantalla
-      document.getElementById("codigoReserva").textContent = id;
-      document.getElementById("numeroFactura").textContent = data.numero_factura || "---";
-      document.getElementById("fechaEmisionSpan").textContent = data.fecha_emision || "---";
-      document.getElementById("nombreCliente").textContent = data.nombre_cliente || "---";
-      document.getElementById("correoCliente").textContent = data.correo || "---";
-      document.getElementById("telefonoCliente").textContent = data.telefono || "---";
-      document.getElementById("fechaIda").textContent = data.fecha_ida || "---";
-      document.getElementById("fechaRegreso").textContent = data.fecha_regreso || "---";
-      document.getElementById("codigoVuelo").textContent = data.codigo_vuelo || "---";
+        // Fechas
+        document.getElementById('fechaEmisionSpan').textContent = data.fechaEmision || '';
+        document.getElementById('fechaIda').textContent = data.fechaIda || '';
+        document.getElementById('fechaRegreso').textContent = data.fechaRegreso || '';
+        document.getElementById('codigoVuelo').textContent = data.codigoVuelo || '';
 
-      // Artículos
-      const tabla = document.getElementById("tablaArticulos");
-      let subtotal = 0;
+        // Tabla de artículos
+        const tabla = document.getElementById('tablaArticulos');
+        tabla.innerHTML = '';
+        let subtotal = 0;
+        if (Array.isArray(data.articulos)) {
+          data.articulos.forEach(item => {
+            const fila = document.createElement('tr');
+            const importe = (item.precio || 0) * (item.cantidad || 1);
+            subtotal += importe;
 
-      if (Array.isArray(data.articulos)) {
-        data.articulos.forEach((art, index) => {
-          const importe = art.precio * art.cantidad;
-          subtotal += importe;
-
-          tabla.innerHTML += `
-            <tr>
-              <td>${art.descripcion}</td>
-              <td style="text-align:right;">$${art.precio.toFixed(2)}</td>
-              <td style="text-align:center;">${art.cantidad}</td>
+            fila.innerHTML = `
+              <td>${item.nombre}</td>
+              <td style="text-align:right;">$${item.precio.toFixed(2)}</td>
+              <td style="text-align:center;">${item.cantidad}</td>
               <td style="text-align:right;">$${importe.toFixed(2)}</td>
-            </tr>
-          `;
-        });
-      }
+            `;
+            tabla.appendChild(fila);
+          });
+        }
+        document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        document.getElementById('total').textContent = `$${subtotal.toFixed(2)}`;
 
-      document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-      document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
-
-      // Pagos
-      const tablaPagos = document.querySelector("#tablaPagos tbody");
-      if (Array.isArray(data.pagos)) {
-        data.pagos.forEach((pago, i) => {
-          tablaPagos.innerHTML += `
-            <tr>
-              <td>${pago.metodo}</td>
+        // Pagos
+        const tablaPagos = document.getElementById('tablaPagos').getElementsByTagName('tbody')[0];
+        tablaPagos.innerHTML = '';
+        if (Array.isArray(data.pagos)) {
+          data.pagos.forEach((pago, i) => {
+            const fila = document.createElement('tr');
+            fila.innerHTML = `
+              <td>Pago ${i + 1}</td>
               <td>$${pago.monto.toFixed(2)}</td>
-              <td>${pago.fecha}</td>
+              <td>${pago.fecha || ''}</td>
               <td>$${pago.monto.toFixed(2)}</td>
-              <td>${pago.nota || ""}</td>
-            </tr>
-          `;
-        });
-      }
+              <td>${pago.nota || ''}</td>
+            `;
+            tablaPagos.appendChild(fila);
+          });
+        }
 
-    } catch (error) {
-      console.error("Error al cargar la factura:", error);
-    }
+      } else {
+        alert("Reserva no encontrada.");
+      }
+    }).catch(error => {
+      console.error("Error al obtener la reserva:", error);
+      alert("Ocurrió un error al cargar la información.");
+    });
+  } else {
+    alert("No se encontró el ID de reserva en la URL.");
   }
 </script>
 </body>
