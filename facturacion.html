@@ -480,7 +480,17 @@
     console.error("Error al cargar datos de la reserva:", error);
   }
 }
-
+window.onload = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const codigo = urlParams.get('reserva');
+  if (codigo) {
+    document.getElementById('codigoReserva').textContent = codigo;
+    document.getElementById('numeroFactura').textContent = codigo.replace('ED-', 'FAC-');
+    cargarDatosReserva(codigo);
+  } else {
+    alert("No se proporcionó un código de reserva.");
+  }
+};
 // =================== TRANSACCIONES ===================
 function mostrarTransaccionesModal() {
   document.getElementById('modalTransacciones').style.display = 'flex';
