@@ -441,7 +441,7 @@
 
         // Fechas y datos del viaje
         setTexto("fechaEmisionSpan", data.fechaReserva);
-        setTexto("fechaIda", data.fechaIda);
+        setTexto("fechaIda", data.vueloIda.fecha || "---");
         setTexto("fechaRegreso", data.vueloRegreso.fecha || "---");
 setTexto("codigoVuelo", data.vueloIda.codigo || "---");
 
