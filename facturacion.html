@@ -153,40 +153,37 @@
 
 .menu-container {
   position: relative;
+  display: inline-block;
 }
 
-.menu-btn {
-  background: transparent;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: #444;
-}
-
-.menu-opciones {
+.menu-options {
   position: absolute;
-  background: white;
+  top: 35px; /* Ajustá según altura del botón */
+  right: 0;
+  background-color: white;
   border: 1px solid #ccc;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  border-radius: 6px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
   z-index: 9999;
-  width: 120px;
-  padding: 5px 0;
+  display: none;
+  min-width: 120px;
 }
 
-.menu-opciones button {
+.menu-options button {
+  display: block;
   width: 100%;
   background: none;
   border: none;
-  padding: 8px 12px;
+  padding: 6px;
   text-align: left;
-  cursor: pointer;
+  font-weight: bold;
   color: #02535a;
-  font-weight: 500;
+  cursor: pointer;
 }
 
-.menu-opciones button:hover {
-  background-color: #f0f0f0;
+.menu-options button:hover {
+  background-color: #f0f7f7;
 }
 }
 .form-grid {
