@@ -513,30 +513,43 @@ document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
 } else {
   alert("No se proporcionó un código de reserva.");
 }
- function mostrarTransaccionesModal() {
+async function mostrarTransaccionesModal() {
   const modal = document.getElementById("modalTransacciones");
   const tabla = document.getElementById("tablaTransaccionesBody");
   tabla.innerHTML = "";
 
-  const transacciones = data.transacciones || [];
+  try {
+    const docRef = await firebase.firestore().collection("reservas").doc(reservaId).get();
+    if (!docRef.exists) {
+      tabla.innerHTML = "<tr><td colspan='5'>Reserva no encontrada.</td></tr>";
+      return;
+    }
 
-  if (transacciones.length === 0) {
-    tabla.innerHTML = "<tr><td colspan='5'>No hay pagos registrados.</td></tr>";
-  } else {
-    transacciones.forEach((t, index) => {
-      tabla.innerHTML += `
-        <tr>
-          <td>${index + 1}</td>
-          <td>$${Number(t.monto || 0).toFixed(2)}</td>
-          <td>${t.fecha || "--"}</td>
-          <td>$${Number(t.importe || 0).toFixed(2)}</td>
-          <td>${t.nota || ""}</td>
-        </tr>
-      `;
-    });
+    const data = docRef.data();
+    const transacciones = data.pagos || [];
+
+    if (transacciones.length === 0) {
+      tabla.innerHTML = "<tr><td colspan='5'>No hay pagos registrados.</td></tr>";
+    } else {
+      transacciones.forEach((pago, index) => {
+        tabla.innerHTML += `
+          <tr>
+            <td>${index + 1}</td>
+            <td>$${Number(pago.monto || 0).toFixed(2)}</td>
+            <td>${pago.fecha || "--"}</td>
+            <td>$${Number(pago.importe || pago.monto || 0).toFixed(2)}</td>
+            <td>${pago.nota || ""}</td>
+          </tr>
+        `;
+      });
+    }
+
+    modal.style.display = "block";
+
+  } catch (error) {
+    console.error("Error al cargar pagos:", error);
+    tabla.innerHTML = "<tr><td colspan='5'>Error al cargar transacciones.</td></tr>";
   }
-
-  modal.style.display = "block";
 }
 
 function abrirModalAgregarPago() {
