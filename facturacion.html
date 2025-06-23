@@ -425,16 +425,10 @@ const reservaID = urlParams.get("reserva"); // Ejemplo: ED-010-2025
         document.getElementById('codigoReserva').textContent = reservaID;
         document.getElementById('numeroFactura').textContent = data.numeroFactura || 'N/A';
 
-        // Cliente
-        document.getElementById('nombreCliente').textContent = data.nombreCliente || '';
-        document.getElementById('correoCliente').textContent = data.correoCliente || '';
-        document.getElementById('telefonoCliente').textContent = data.telefonoCliente || '';
-
         // Fechas
-        document.getElementById('fechaEmisionSpan').textContent = data.fechaEmision || '';
-        document.getElementById('fechaIda').textContent = data.fechaIda || '';
-        document.getElementById('fechaRegreso').textContent = data.fechaRegreso || '';
-        document.getElementById('codigoVuelo').textContent = data.codigoVuelo || '';
+document.getElementById('fechaIda').textContent = data.fechaIda;
+document.getElementById('fechaRegreso').textContent = data.fechaRegreso;
+document.getElementById('codigoVuelo').textContent = data.codigoVuelo;
 
         // Tabla de artículos
         const tabla = document.getElementById('tablaArticulos');
