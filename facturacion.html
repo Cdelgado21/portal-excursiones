@@ -431,6 +431,14 @@ if (reservaID) {
       const data = doc.data();
 console.log("Data cargada:", data);
 console.log("Precios:", data.pasajeros);
+      console.log("Destino:", data.destino);
+console.log("Adultos:", data.cantidadAdultos);
+console.log("Niños:", data.cantidadNinos);
+console.log("Bebés:", data.cantidadBebes);
+
+console.log("Precio Adulto:", data.pasajeros?.precioAdulto);
+console.log("Precio Niño:", data.pasajeros?.precioNino);
+console.log("Precio Bebé:", data.pasajeros?.precioBebe);
       // Formato local para fechas
       const formatoLocal = { day: '2-digit', month: '2-digit', year: 'numeric' };
 
