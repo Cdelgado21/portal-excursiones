@@ -401,10 +401,9 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 👇 Envolver en función async
-  (async () => {
-    const params = new URLSearchParams(window.location.search);
-    const codigoReserva = params.get("reserva");
+  async function cargarDatosFactura() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const codigoReserva = urlParams.get("reserva");
 
     if (!codigoReserva) {
       alert("No se proporcionó un código de reserva.");
@@ -412,48 +411,36 @@
     }
 
     document.getElementById("codigoReserva").textContent = codigoReserva;
-    document.getElementById("numeroFactura").textContent = "FAC-" + codigoReserva;
+    document.getElementById("numeroFactura").textContent = "FAC-" + codigoReserva.split("-")[1];
 
     try {
       const reservaRef = doc(db, "reservas", codigoReserva);
       const reservaSnap = await getDoc(reservaRef);
 
-      if (!reservaSnap.exists()) throw new Error("No se encontró la reserva.");
-      const datos = reservaSnap.data();
-
-      document.getElementById("nombreCliente").textContent = datos.nombreCliente || "---";
-      document.getElementById("correoCliente").textContent = datos.correoCliente || "---";
-      document.getElementById("telefonoCliente").textContent = datos.telefonoCliente || "---";
-
-      document.getElementById("fechaSalida").textContent = datos.vueloIda?.fecha || "---";
-      document.getElementById("fechaRegreso").textContent = datos.vueloRegreso?.fecha || "---";
-      document.getElementById("codigoVuelo").textContent = datos.vueloIda?.vuelo || "---";
-
-      const hoy = new Date();
-      const fecha = `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`;
-      document.getElementById("fechaEmisionSpan").textContent = fecha;
-
-      const costoRef = doc(db, "costos_reservas", codigoReserva);
-      const costoSnap = await getDoc(costoRef);
-      let precio = 0;
-
-      if (costoSnap.exists()) {
-        const costos = costoSnap.data();
-        precio = parseFloat(costos.total || 0);
-        const nombreTour = costos.nombre || "Tour contratado";
-
-        document.getElementById("item").textContent = nombreTour;
-        document.getElementById("precio").textContent = `$${precio.toFixed(2)}`;
-        document.getElementById("importe").textContent = `$${precio.toFixed(2)}`;
-        document.getElementById("subtotal").textContent = `$${precio.toFixed(2)}`;
-        document.getElementById("iva").textContent = "$0.00";
-        document.getElementById("total").textContent = `$${precio.toFixed(2)}`;
+      if (!reservaSnap.exists()) {
+        alert("Reserva no encontrada.");
+        return;
       }
 
-    } catch (e) {
-      console.error("Error al obtener los datos:", e);
+      const data = reservaSnap.data();
+
+      // Aquí colocas la lógica para rellenar tus campos
+      document.getElementById("nombreCliente").textContent = data.nombre || "---";
+      document.getElementById("correoCliente").textContent = data.correo || "---";
+      document.getElementById("telefonoCliente").textContent = data.telefono || "---";
+
+      document.getElementById("fechaEmisionSpan").textContent = data.fechaReserva || "---";
+      document.getElementById("fechaIda").textContent = data.vueloIda?.fecha || "---";
+      document.getElementById("fechaRegreso").textContent = data.vueloRegreso?.fecha || "---";
+      document.getElementById("codigoVuelo").textContent = data.vueloIda?.codigo || "---";
+
+    } catch (error) {
+      console.error("Error al cargar datos de la reserva:", error);
       alert("Ocurrió un error al obtener los datos de la reserva.");
     }
+  }
+
+  window.addEventListener("DOMContentLoaded", cargarDatosFactura);
 // =================== TRANSACCIONES ===================
 function mostrarTransaccionesModal() {
   document.getElementById('modalTransacciones').style.display = 'flex';
