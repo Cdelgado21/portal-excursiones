@@ -286,20 +286,36 @@
   </div>
 </div>
 
-<!-- MODAL SECUNDARIO PARA AGREGAR PAGO -->
 <div id="modalAgregarPago" class="modal" style="display:none;">
   <div class="modal-content">
-    <h3>Agregar Nuevo Pago</h3>
-    <label>Monto: <input type="number" id="nuevoMonto" /></label>
-    <label>Fecha: <input type="date" id="nuevaFecha" /></label>
-    <label>Importe: <input type="number" id="nuevoImporte" /></label>
-    <label>Nota: <input type="text" id="nuevaNota" /></label>
+    <h3 style="margin-bottom: 20px;">Agregar Nuevo Pago</h3>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="nuevoMonto">Monto:</label>
+        <input type="number" id="nuevoMonto" />
+      </div>
+      <div class="form-group">
+        <label for="nuevaFecha">Fecha:</label>
+        <input type="date" id="nuevaFecha" />
+      </div>
+      <div class="form-group">
+        <label for="nuevoImporte">Importe:</label>
+        <input type="number" id="nuevoImporte" />
+      </div>
+      <div class="form-group" style="grid-column: span 3;">
+        <label for="nuevaNota">Nota:</label>
+        <textarea id="nuevaNota" rows="2" placeholder="Ej. Banco, comprobante, referencia..."></textarea>
+      </div>
+    </div>
+
     <div style="text-align: right; margin-top: 20px;">
-  <button onclick="abrirModalAgregarPago()">Agregar Pago</button>
-  <button onclick="cerrarModal('modalTransacciones')" style="background-color:#999;">Cancelar</button>
-</div>
+      <button onclick="guardarPago()">Agregar Pago</button>
+      <button onclick="cerrarModal('modalAgregarPago')" style="background-color: #999;">Cancelar</button>
+    </div>
   </div>
 </div>
+
 <script>
   // Configuración de Firebase
   const firebaseConfig = {
