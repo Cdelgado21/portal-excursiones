@@ -303,8 +303,8 @@
           <p id="telefonoCliente">---</p>
         </div>
         <div style="min-width: 250px;">
-         <p><strong>Fecha de Emisión:</strong> <span id="fechaEmisionSpan">---</span></p>
-        <p><strong>Viaje Ida:</strong> <span id="fechaIda">---</span></p>
+        <p><strong>Fecha de Emisión:</strong> <span id="fechaEmisionSpan">---</span></p>
+        <p><strong>Viaje Ida:</strong> <span id="fechaSalida">---</span></p>
         <p><strong>Viaje Regreso:</strong> <span id="fechaRegreso">---</span></p>
         <p><strong>Código Vuelo:</strong> <span id="codigoVuelo">---</span></p>
       </div>
@@ -388,79 +388,66 @@
   <script>
 const firebaseConfig = {
   apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
-  authDomain: "tours-460717.firebaseapp.com",
-  projectId: "tours-460717"
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.appspot.com",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
 };
 const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // Obtener el código de reserva desde la URL
-  const params = new URLSearchParams(window.location.search);
-  const codigoReserva = params.get("reserva");
+ const params = new URLSearchParams(window.location.search);
+    const codigoReserva = params.get("reserva");
 
-  if (!codigoReserva) {
-    alert("No se proporcionó un código de reserva.");
-  } else {
-    document.getElementById("codigoReserva").textContent = codigoReserva;
-    
-    try {
-      const ref = doc(db, "reservas", codigoReserva);
-      const snap = await getDoc(ref);
+    if (!codigoReserva) {
+      alert("No se proporcionó un código de reserva.");
+    } else {
+      document.getElementById("codigoReserva").textContent = codigoReserva;
+      document.getElementById("numeroFactura").textContent = "FAC-" + codigoReserva;
 
-      if (snap.exists()) {
-        const datos = snap.data();
+      try {
+        const reservaRef = doc(db, "reservas", codigoReserva);
+        const reservaSnap = await getDoc(reservaRef);
 
-        // Mostrar datos básicos
+        if (!reservaSnap.exists()) throw new Error("No se encontró la reserva.");
+        const datos = reservaSnap.data();
+
         document.getElementById("nombreCliente").textContent = datos.nombreCliente || "---";
         document.getElementById("correoCliente").textContent = datos.correoCliente || "---";
         document.getElementById("telefonoCliente").textContent = datos.telefonoCliente || "---";
-        document.getElementById("numeroFactura").textContent = "FAC-" + codigoReserva;
 
-        // Mostrar fechas y vuelo (desde los objetos anidados)
         document.getElementById("fechaSalida").textContent = datos.vueloIda?.fecha || "---";
         document.getElementById("fechaRegreso").textContent = datos.vueloRegreso?.fecha || "---";
         document.getElementById("codigoVuelo").textContent = datos.vueloIda?.vuelo || "---";
 
-        // Fecha de emisión (hoy)
         const hoy = new Date();
-        const fechaEmision = `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`;
-        document.getElementById("fechaEmisionSpan").textContent = fechaEmision;
+        const fecha = `${hoy.getDate().toString().padStart(2, '0')}/${(hoy.getMonth()+1).toString().padStart(2, '0')}/${hoy.getFullYear()}`;
+        document.getElementById("fechaEmisionSpan").textContent = fecha;
 
-        const tabla = document.getElementById("tablaArticulos");
-        tabla.innerHTML = "";
+        // Consultar costos
+        const costoRef = doc(db, "costos_reservas", codigoReserva);
+        const costoSnap = await getDoc(costoRef);
+        let precio = 0;
 
-        let subtotal = 0;
-        if (datos.articulos && Array.isArray(datos.articulos)) {
-          datos.articulos.forEach(art => {
-            const fila = document.createElement("tr");
-            const precio = parseFloat(art.precio || 0);
-            const cantidad = parseInt(art.cantidad || 1);
-            const importe = precio * cantidad;
+        if (costoSnap.exists()) {
+          const costos = costoSnap.data();
+          precio = parseFloat(costos.total || 0);
+          const nombreTour = costos.nombre || "Tour contratado";
 
-            fila.innerHTML = `
-              <td>${art.descripcion}</td>
-              <td>$${precio.toFixed(2)}</td>
-              <td>${cantidad}</td>
-              <td>$${importe.toFixed(2)}</td>
-            `;
-            tabla.appendChild(fila);
-            subtotal += importe;
-          });
+          document.getElementById("item").textContent = nombreTour;
+          document.getElementById("precio").textContent = `$${precio.toFixed(2)}`;
+          document.getElementById("importe").textContent = `$${precio.toFixed(2)}`;
+          document.getElementById("subtotal").textContent = `$${precio.toFixed(2)}`;
+          document.getElementById("iva").textContent = "$0.00";
+          document.getElementById("total").textContent = `$${precio.toFixed(2)}`;
         }
 
-        document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-        document.getElementById("iva").textContent = "$0.00";
-        document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
-
-      } catch (error) {
-        console.error("Error al cargar datos de la reserva:", error);
+      } catch (e) {
+        console.error("Error al obtener los datos:", e);
         alert("Ocurrió un error al obtener los datos de la reserva.");
       }
     }
-
-
-window.onload = cargarDatosReserva;
-
 
 // =================== TRANSACCIONES ===================
 function mostrarTransaccionesModal() {
