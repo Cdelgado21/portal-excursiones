@@ -306,13 +306,7 @@
           <th>#</th>
           <th>Monto</th>
           <th>Fecha</th>
-          <label for="nuevoMetodo">Método de Pago</label>
-<select id="nuevoMetodo" style="width: 100%; padding: 8px; margin: 8px 0;">
-  <option value="Transferencia">Transferencia</option>
-  <option value="Efectivo">Efectivo</option>
-  <option value="Tarjeta">Tarjeta</option>
-  <option value="Sin especificar">Sin especificar</option>
-</select>
+          <th>Método</th>
           <th>Nota</th>
         </tr>
       </thead>
@@ -340,10 +334,13 @@
         <label>Fecha:</label>
         <input type="date" id="nuevaFecha" />
       </div>
-      <div class="form-group">
-        <label>Importe:</label>
-        <input type="number" id="nuevoImporte" />
-      </div>
+     <label for="nuevoMetodo">Método de Pago</label>
+<select id="nuevoMetodo" style="width: 100%; padding: 8px; margin: 8px 0;">
+  <option value="Transferencia">Transferencia</option>
+  <option value="Efectivo">Efectivo</option>
+  <option value="Tarjeta">Tarjeta</option>
+  <option value="Sin especificar">Sin especificar</option>
+</select>
       <div class="form-group" style="grid-column: 1 / -1;">
         <label>Nota:</label>
         <textarea id="nuevaNota"></textarea>
