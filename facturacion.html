@@ -595,10 +595,9 @@ function guardarPago() {
   document.getElementById("nuevaNota").value = "";
   document.getElementById("modalAgregarPago").style.display = "flex"; // <- corregido aquí
 }
-  function cerrarModalAgregarPago() {
-  document.getElementById("modalAgregarPago").style.display = "none"; // <- corregido
+function cerrarModalAgregaPago() {
+  document.getElementById("modalAgregarPago").style.display = "none";
 }
-
 function eliminarPago(index) {
   if (!confirm("¿Deseas eliminar este pago?")) return;
 
