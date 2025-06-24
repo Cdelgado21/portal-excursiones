@@ -572,6 +572,14 @@ function guardarPago() {
     });
   });
 }
+  function abrirModalAgregarPago() {
+  indexEditando = null;
+  document.getElementById("nuevoMonto").value = "";
+  document.getElementById("nuevaFecha").value = "";
+  document.getElementById("nuevoImporte").value = "";
+  document.getElementById("nuevaNota").value = "";
+  document.getElementById("modalAgregarPago").style.display = "flex";
+}
 
 function eliminarPago(index) {
   if (!confirm("¿Deseas eliminar este pago?")) return;
