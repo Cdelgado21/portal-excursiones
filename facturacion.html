@@ -302,20 +302,21 @@
   </div>
 </div>
 
+<!-- MODAL PARA AGREGAR PAGO -->
 <div id="modalAgregaPago" class="modal" style="display: none;">
   <div class="modal-contenido">
     <h3>Agregar Nuevo Pago</h3>
 
-    <label>Monto:</label>
+    <label for="nuevoMonto">Monto:</label>
     <input type="number" id="nuevoMonto" />
 
-    <label>Fecha:</label>
+    <label for="nuevaFecha">Fecha:</label>
     <input type="date" id="nuevaFecha" />
 
-    <label>Importe:</label>
+    <label for="nuevoImporte">Importe:</label>
     <input type="number" id="nuevoImporte" />
 
-    <label>Nota:</label>
+    <label for="nuevaNota">Nota:</label>
     <textarea id="nuevaNota"></textarea>
 
     <div style="margin-top: 20px;">
@@ -526,7 +527,7 @@ function abrirModalAgregaPago() {
   document.getElementById("nuevaNota").value = "";
   document.getElementById("modalAgregaPago").style.display = "flex";
 }
-  function cerrarModalPago() {
+  function cerrarModalAgregaPago() {
   document.getElementById("modalAgregaPago").style.display = "none";
 }
 function editarPago(index) {
