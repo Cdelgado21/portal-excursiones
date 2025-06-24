@@ -306,7 +306,13 @@
           <th>#</th>
           <th>Monto</th>
           <th>Fecha</th>
-          <th>Método</th>
+          <label for="nuevoMetodo">Método de Pago</label>
+<select id="nuevoMetodo" style="width: 100%; padding: 8px; margin: 8px 0;">
+  <option value="Transferencia">Transferencia</option>
+  <option value="Efectivo">Efectivo</option>
+  <option value="Tarjeta">Tarjeta</option>
+  <option value="Sin especificar">Sin especificar</option>
+</select>
           <th>Nota</th>
         </tr>
       </thead>
@@ -559,13 +565,6 @@ function editarPago(index) {
 
     document.getElementById("nuevoMonto").value = pago.monto;
     document.getElementById("nuevaFecha").value = pago.fecha;
-    <label for="nuevoMetodo">Método de Pago</label>
-<select id="nuevoMetodo">
-  <option value="Transferencia">Transferencia</option>
-  <option value="Efectivo">Efectivo</option>
-  <option value="Tarjeta">Tarjeta</option>
-  <option value="Sin especificar">Sin especificar</option>
-</select>
   document.getElementById("nuevoMetodo").value = pago.metodo || "Sin especificar";
     document.getElementById("nuevaNota").value = pago.nota;
 
