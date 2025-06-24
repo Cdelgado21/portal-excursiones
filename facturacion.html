@@ -302,28 +302,34 @@
   </div>
 </div>
 
-<div id="modalAgregarPago" class="modal" style="display:none;">
-    <div class="modal-contenido">
-    <h3 style="margin-bottom: 20px;">Agregar Nuevo Pago</h3>
-
+<div id="modalAgregaPago" class="modal" style="display: none;">
+  <div class="modal-contenido">
+    <h3>Agregar Nuevo Pago</h3>
     <div class="form-grid">
+      <!-- Formulario aquí -->
       <div class="form-group">
-        <label for="nuevoMonto">Monto:</label>
-        <input type="number" id="nuevoMonto" />
+        <label>Monto:</label>
+        <input id="nuevoMonto" type="number" />
       </div>
       <div class="form-group">
-        <label for="nuevaFecha">Fecha:</label>
-        <input type="date" id="nuevaFecha" />
+        <label>Fecha:</label>
+        <input id="nuevaFecha" type="date" />
       </div>
       <div class="form-group">
-        <label for="nuevoImporte">Importe:</label>
-        <input type="number" id="nuevoImporte" />
+        <label>Importe:</label>
+        <input id="nuevoImporte" type="number" />
       </div>
-      <div class="form-group" style="grid-column: span 3;">
-        <label for="nuevaNota">Nota:</label>
-        <textarea id="nuevaNota" rows="2" placeholder="Ej. Banco, comprobante, referencia..."></textarea>
+      <div class="form-group">
+        <label>Nota:</label>
+        <textarea id="nuevaNota"></textarea>
       </div>
     </div>
+    <div class="acciones">
+      <button onclick="guardarPago()">Guardar</button>
+      <button onclick="cerrarModalPago()">Cancelar</button>
+    </div>
+  </div>
+</div>
 
     <div style="text-align: right; margin-top: 20px;">
       <button onclick="guardarPago()">Agregar Pago</button>
