@@ -532,7 +532,12 @@ function cerrarModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.style.display = "none";
 }
-  
+  function abrirModalAgregaPago() {
+  document.getElementById("modalAgregaPago").style.display = "flex";
+}
+  function cerrarModalPago() {
+  document.getElementById("modalAgregaPago").style.display = "none";
+}
 function editarPago(index) {
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
   db.collection("reservas").doc(reservaId).get().then((doc) => {
