@@ -517,22 +517,18 @@ async function mostrarTransaccionesModal() {
     });
   }
 
-  modal.style.display = "block";
-}
-
-function abrirModalAgregarPago() {
-  indexEditando = null;
-  document.getElementById("nuevoMonto").value = "";
-  document.getElementById("nuevaFecha").value = "";
-  document.getElementById("nuevoImporte").value = "";
-  document.getElementById("nuevaNota").value = "";
-      document.getElementById("modalAgregarPago").style.display = "flex";
+function abrirModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) modal.style.display = "flex";
 }
 
 function cerrarModal(id) {
-  document.getElementById(id).style.display = "none";
-    }
-
+  const modal = document.getElementById(id);
+  if (modal) modal.style.display = "none";
+}
+abrirModal("modalTransacciones");
+cerrarModal("modalAgregarPago");
+  
 function editarPago(index) {
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
   db.collection("reservas").doc(reservaId).get().then((doc) => {
