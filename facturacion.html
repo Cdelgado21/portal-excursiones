@@ -305,39 +305,25 @@
 <div id="modalAgregaPago" class="modal" style="display: none;">
   <div class="modal-contenido">
     <h3>Agregar Nuevo Pago</h3>
-    <div class="form-grid">
-      <!-- Formulario aquí -->
-      <div class="form-group">
-        <label>Monto:</label>
-        <input id="nuevoMonto" type="number" />
-      </div>
-      <div class="form-group">
-        <label>Fecha:</label>
-        <input id="nuevaFecha" type="date" />
-      </div>
-      <div class="form-group">
-        <label>Importe:</label>
-        <input id="nuevoImporte" type="number" />
-      </div>
-      <div class="form-group">
-        <label>Nota:</label>
-        <textarea id="nuevaNota"></textarea>
-      </div>
-    </div>
-    <div class="acciones">
+
+    <label>Monto:</label>
+    <input type="number" id="nuevoMonto" />
+
+    <label>Fecha:</label>
+    <input type="date" id="nuevaFecha" />
+
+    <label>Importe:</label>
+    <input type="number" id="nuevoImporte" />
+
+    <label>Nota:</label>
+    <textarea id="nuevaNota"></textarea>
+
+    <div style="margin-top: 20px;">
       <button onclick="guardarPago()">Guardar</button>
-      <button onclick="cerrarModalPago()">Cancelar</button>
+      <button onclick="cerrarModalAgregaPago()">Cancelar</button>
     </div>
   </div>
 </div>
-
-    <div style="text-align: right; margin-top: 20px;">
-      <button onclick="guardarPago()">Agregar Pago</button>
-      <button onclick="cerrarModal('modalAgregarPago')" style="background-color: #999;">Cancelar</button>
-    </div>
-  </div>
-</div>
-
 <script>
   // Configuración de Firebase
   const firebaseConfig = {
@@ -532,7 +518,12 @@ function cerrarModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.style.display = "none";
 }
-  function abrirModalAgregaPago() {
+function abrirModalAgregaPago() {
+  indexEditando = null;
+  document.getElementById("nuevoMonto").value = "";
+  document.getElementById("nuevaFecha").value = "";
+  document.getElementById("nuevoImporte").value = "";
+  document.getElementById("nuevaNota").value = "";
   document.getElementById("modalAgregaPago").style.display = "flex";
 }
   function cerrarModalPago() {
