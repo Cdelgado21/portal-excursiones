@@ -303,7 +303,7 @@
 </div>
 
 <!-- MODAL PARA AGREGAR PAGO -->
-<div id="modalAgregaPago" class="modal" style="display: none;">
+<div id="modalAgregarPago" class="modal" style="display: none;">
   <div class="modal-contenido">
     <h3>Agregar Nuevo Pago</h3>
 
@@ -321,7 +321,7 @@
 
     <div style="margin-top: 20px;">
       <button onclick="guardarPago()">Guardar</button>
-      <button onclick="cerrarModalAgregaPago()">Cancelar</button>
+      <button onclick="cerrarModalAgregarPago()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -563,7 +563,7 @@ function guardarPago() {
     });
   });
 }
- function abrirModalAgregaPago() {
+ function abrirModalAgregarPago() {
   indexEditando = null;
   document.getElementById("nuevoMonto").value = "";
   document.getElementById("nuevaFecha").value = "";
@@ -571,7 +571,7 @@ function guardarPago() {
   document.getElementById("nuevaNota").value = "";
   document.getElementById("modalAgregarPago").style.display = "flex"; // <- corregido aquí
 }
-  function cerrarModalAgregaPago() {
+  function cerrarModalAgregarPago() {
   document.getElementById("modalAgregarPago").style.display = "none"; // <- corregido
 }
 
