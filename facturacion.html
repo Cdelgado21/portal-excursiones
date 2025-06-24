@@ -576,7 +576,8 @@ function guardarPago() {
   const importe = parseFloat(document.getElementById("nuevoImporte").value) || monto;
   const nota = document.getElementById("nuevaNota").value || "";
 
-  const metodo = document.getElementById("nuevoMetodo").value || "Sin especificar";
+ const metodoElement = document.getElementById("nuevoMetodo");
+const metodo = metodoElement ? metodoElement.value : "Sin especificar";
 const nuevoPago = { monto, fecha, metodo, nota };
 
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
