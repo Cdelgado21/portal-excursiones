@@ -519,17 +519,7 @@ function cerrarModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.style.display = "none";
 }
-function abrirModalAgregaPago() {
-  indexEditando = null;
-  document.getElementById("nuevoMonto").value = "";
-  document.getElementById("nuevaFecha").value = "";
-  document.getElementById("nuevoImporte").value = "";
-  document.getElementById("nuevaNota").value = "";
-  document.getElementById("modalAgregaPago").style.display = "flex";
-}
-  function cerrarModalAgregaPago() {
-  document.getElementById("modalAgregaPago").style.display = "none";
-}
+
 function editarPago(index) {
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
   db.collection("reservas").doc(reservaId).get().then((doc) => {
@@ -573,13 +563,16 @@ function guardarPago() {
     });
   });
 }
-  function abrirModalAgregarPago() {
+ function abrirModalAgregaPago() {
   indexEditando = null;
   document.getElementById("nuevoMonto").value = "";
   document.getElementById("nuevaFecha").value = "";
   document.getElementById("nuevoImporte").value = "";
   document.getElementById("nuevaNota").value = "";
-  document.getElementById("modalAgregarPago").style.display = "flex";
+  document.getElementById("modalAgregarPago").style.display = "flex"; // <- corregido aquí
+}
+  function cerrarModalAgregaPago() {
+  document.getElementById("modalAgregarPago").style.display = "none"; // <- corregido
 }
 
 function eliminarPago(index) {
