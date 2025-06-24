@@ -364,6 +364,13 @@ let data = {}
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
+  function formatearFecha(fechaISO) {
+  const fecha = new Date(fechaISO);
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  const año = fecha.getFullYear();
+  return `${dia}-${mes}-${año}`;
+}
   // Función segura para insertar texto
   function setTexto(id, valor) {
     const elemento = document.getElementById(id);
@@ -517,7 +524,7 @@ async function mostrarTransaccionesModal() {
         <tr>
           <td>${index + 1}</td>
           <td>$${Number(pago.monto || 0).toFixed(2)}</td>
-          <td>${pago.fecha || "-"}</td>
+          <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
           <td>$${Number(pago.importe || pago.monto || 0).toFixed(2)}</td>
           <td>${pago.nota || ""}</td>
           <td>
