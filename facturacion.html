@@ -287,19 +287,17 @@ input[type="date"] {
         <tr><td colspan="3" style="text-align:right;">IVA (0%)</td><td style="text-align:right;">$0.00</td></tr>
         <tr><td colspan="3" style="text-align:right;"><strong>Total</strong></td><td style="text-align:right;" id="total"><strong>$0.00</strong></td></tr>
       </tfoot>
-    </table>
-<h3 style="margin-top: 30px;">Pagos Aplicados</h3>
-<table id="tablaTransaccionesBody" border="1" cellpadding="8" cellspacing="0" style="width:100%; margin-bottom: 20px;">
+    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; margin-bottom: 20px;">
   <thead style="background-color: #02535a; color: white;">
     <tr>
       <th>Pago</th>
       <th>Monto</th>
       <th>Fecha</th>
-   <th>Método</th>
+      <th>Método</th>
       <th>Nota</th>
     </tr>
   </thead>
-  <tbody>
+  <tbody id="tablaTransaccionesBody">
     <!-- Aquí se insertan dinámicamente las filas -->
   </tbody>
 </table>
