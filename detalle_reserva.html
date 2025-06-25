@@ -1186,7 +1186,7 @@ if (Array.isArray(data.toursOpcionales)) {
   });
 }
 // Cargar pagos desde la colección de facturas
-const pagosSnapshot = await db.collection("facturas").where("reserva", "==", codigo).get();
+const pagosSnapshot = await db.collection("reservas").where("reserva", "==", codigo).get();
 window.listaPagos = [];
 
 const tabla = document.getElementById("tablaPagos");
