@@ -409,12 +409,7 @@ if (reservaID) {
   if (doc.exists) {
   const data = doc.data(); // Primero definís 'data'
   
-if (data.facturaGenerada) {
-  // ✅ Mostrar el número ya guardado
-  document.getElementById("numeroFactura").textContent = data.numeroFactura || "---";
-  alert("Ya existe una factura para esta reserva.");
-  return;
-}
+
   // Aquí sí ya podés usar 'data'
   console.log("Data cargada:", data);
   console.log("Precios:", data.pasajeros);
