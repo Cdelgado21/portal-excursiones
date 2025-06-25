@@ -1192,8 +1192,8 @@ if (!docRef.exists) {
   return;
 }
 
-const data = docRef.data();
-const pagos = reservadata.pagos || [];
+const reservaData = docRef.data();
+const pagos = reservaData.pagos || [];
 
 window.listaPagos = [];
 const tabla = document.getElementById("tablaPagos");
