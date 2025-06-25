@@ -423,7 +423,7 @@ console.log("Precio Bebé:", data.pasajeros?.precioBebe);
 
       // Datos generales
       setTexto("codigoReserva", reservaID);
-      setTexto("numeroFactura", "N/A");
+      setTexto("numeroFactura", data.numeroFactura || "N/A");
 
       // Datos del cliente
       setTexto("nombreCliente", data.nombreTitular);
@@ -641,6 +641,40 @@ function eliminarPago(index) {
       mostrarTransaccionesModal();
     });
   });
+}
+  async function obtenerNumeroFactura() {
+  const ref = db.collection("counters").doc("facturas");
+
+  const doc = await ref.get();
+  let ultimo = 0;
+
+  if (doc.exists) {
+    ultimo = doc.data().ultimo || 0;
+  }
+
+  const nuevo = ultimo + 1;
+
+  await ref.set({ ultimo: nuevo });
+
+  return nuevo.toString().padStart(3, '0'); // ejemplo: 001, 002, 003...
+}
+
+async function guardarFactura() {
+  const reservaId = new URLSearchParams(window.location.search).get("reserva");
+  if (!reservaId) return alert("No se encontró el ID de la reserva.");
+
+  const numeroFactura = await obtenerNumeroFactura();
+
+  // Guardar el número en Firestore bajo la reserva
+  await db.collection("reservas").doc(reservaId).update({
+    numeroFactura: numeroFactura,
+    fechaFactura: new Date().toISOString()
+  });
+
+  // Mostrar en pantalla
+  document.getElementById("numeroFactura").textContent = numeroFactura;
+
+  alert("Factura generada correctamente.");
 }
 </script>
 
