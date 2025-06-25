@@ -408,11 +408,13 @@ if (reservaID) {
   db.collection("reservas").doc(reservaID).get().then((doc) => {
   if (doc.exists) {
   const data = doc.data(); // Primero definís 'data'
- if (data.facturaGenerada) {
-  console.log("Número de factura:", data.numeroFactura);
-  document.getElementById("numeroFactura").textContent = data.numeroFactura || "---";
-  document.querySelector("button[onclick='guardarFactura()']").disabled = true;
-}
+window.onload = function () {
+  if (data.facturaGenerada) {
+    console.log("Número de factura:", data.numeroFactura);
+    document.getElementById("numeroFactura").textContent = data.numeroFactura || "---";
+    document.querySelector("button[onclick='guardarFactura()']").disabled = true;
+  }
+};
 
   // Aquí sí ya podés usar 'data'
   console.log("Data cargada:", data);
