@@ -500,7 +500,25 @@ agregarFila(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
 // totales
 document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
 document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
-      
+      const pagos = data.pagos || [];
+const tablaPagos = document.getElementById("tablaTransaccionesBody");
+tablaPagos.innerHTML = "";
+
+if (pagos.length === 0) {
+  tablaPagos.innerHTML = `<tr><td colspan="5">No hay pagos registrados.</td></tr>`;
+} else {
+  pagos.forEach((pago, index) => {
+    tablaPagos.innerHTML += `
+      <tr>
+        <td>${index + 1}</td>
+        <td>$${Number(pago.monto || 0).toFixed(2)}</td>
+        <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
+        <td>${pago.metodo || "Sin especificar"}</td>
+        <td>${pago.nota || ""}</td>
+      </tr>
+    `;
+  });
+}
   } else {
         alert("Reserva no encontrada: " + reservaID);
       }
