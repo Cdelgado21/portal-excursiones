@@ -409,12 +409,15 @@ if (reservaID) {
   if (doc.exists) {
   const data = doc.data(); // Primero definís 'data'
   
-  if (data.facturaGenerada) {
-    alert("Esta reserva ya tiene una factura generada.");
-    document.querySelector("button[onclick='guardarFactura()']").disabled = true;
-    return; // Evita seguir ejecutando si ya tiene factura
-  }
+if (data.facturaGenerada) {
+  alert("Esta reserva ya tiene una factura generada.");
 
+  // 👇 Mostrar el número de factura antes de salir
+  setTexto("numeroFactura", data.numeroFactura || "N/A");
+
+  document.querySelector("button[onclick='guardarFactura()']").disabled = true;
+  return;
+}
   // Aquí sí ya podés usar 'data'
   console.log("Data cargada:", data);
   console.log("Precios:", data.pasajeros);
@@ -431,8 +434,7 @@ console.log("Precio Bebé:", data.pasajeros?.precioBebe);
 
       // Datos generales
       setTexto("codigoReserva", reservaID);
-      setTexto("numeroFactura", data.numeroFactura || "N/A");
-
+    
       // Datos del cliente
       setTexto("nombreCliente", data.nombreTitular);
       setTexto("correoCliente", data.correo || "yullianagomez@gmail.com");
