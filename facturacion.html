@@ -489,23 +489,23 @@ function agregarFila(descripcion, precio, cantidad) {
   }
 }
 
-const nombreBonito = destino.replace(/_/g, " ").replace(/\b\w/g,l=>l.toUpperCase());
+const nombreBonito = destino.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
 
 agregarFila(`${nombreBonito} - Adultos`, precioAdulto, adultos);
-agregarFila(`${nombreBonito} - Niños`,   precioNino,   ninos);
-agregarFila(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
+agregarFila(`${nombreBonito} - Niños`, precioNino, ninos);
+agregarFila(`${nombreBonito} - Bebés`, precioBebe, bebes);
 
-// totales
 document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
-     const pagos = data.pagos || [];
+document.getElementById("total").textContent = `$${subtotal.toFixed(2)}`;
+
+// ---- PAGOS ----
+const pagos = data.pagos || [];
 const tablaPagos = document.getElementById("tablaTransaccionesBody");
 tablaPagos.innerHTML = "";
 
 if (pagos.length === 0) {
   tablaPagos.innerHTML = `<tr><td colspan="5">No hay pagos registrados.</td></tr>`;
 } else {
-  // Mostrar cada pago
   pagos.forEach((pago, index) => {
     tablaPagos.innerHTML += `
       <tr>
@@ -518,18 +518,11 @@ if (pagos.length === 0) {
     `;
   });
 
-  // Calcular el total abonado
   const totalAbonado = pagos.reduce((acc, pago) => acc + (parseFloat(pago.monto) || 0), 0);
-
-  // Obtener total de la reserva
-  const totalElemento = document.getElementById("total");
-  const totalTexto = totalElemento.textContent.replace(/[^0-9.]/g, '');
+  const totalTexto = document.getElementById("total").textContent.replace(/[^0-9.]/g, '');
   const totalReserva = parseFloat(totalTexto) || 0;
-
-  // Calcular saldo restante
   const saldoRestante = totalReserva - totalAbonado;
 
-  // Mostrar saldo restante debajo
   const filaSaldo = document.createElement('tr');
   filaSaldo.innerHTML = `
     <td colspan="5" style="text-align:right; font-weight:bold; padding-top:10px;">
@@ -541,7 +534,6 @@ if (pagos.length === 0) {
   `;
   tablaPagos.appendChild(filaSaldo);
 }
-    }
 function toggleMenu(button) {
   // Cierra todos los menús primero
   document.querySelectorAll('.menu-options').forEach(menu => {
