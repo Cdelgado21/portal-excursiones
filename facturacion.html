@@ -410,9 +410,10 @@ if (reservaID) {
   const data = doc.data(); // Primero definís 'data'
   
 if (data.facturaGenerada) {
-  alert("Esta reserva ya tiene una factura generada.");
-  document.querySelector("button[onclick='guardarFactura()']").disabled = true;
-  // ⚠️ NO HACER RETURN aquí
+  // ✅ Mostrar el número ya guardado
+  document.getElementById("numeroFactura").textContent = data.numeroFactura || "---";
+  alert("Ya existe una factura para esta reserva.");
+  return;
 }
   // Aquí sí ya podés usar 'data'
   console.log("Data cargada:", data);
@@ -430,7 +431,7 @@ console.log("Precio Bebé:", data.pasajeros?.precioBebe);
 
       // Datos generales
       setTexto("codigoReserva", reservaID);
-    
+    setTexto("numeroFactura", data.facturaGenerada.numeroFactura || "---");
       // Datos del cliente
       setTexto("nombreCliente", data.nombreTitular);
       setTexto("correoCliente", data.correo || "yullianagomez@gmail.com");
@@ -445,6 +446,7 @@ console.log("Precio Bebé:", data.pasajeros?.precioBebe);
         document.getElementById("fechaIda").innerText = fechaIda.toLocaleDateString('es-CR', formatoLocal);
       } else {
         setTexto("fechaIda", "---");
+        setTexto("numeroFactura", "---"); // Por si aún no hay factura generada
       }
 
       if (data.vueloRegreso && data.vueloRegreso.fecha) {
