@@ -287,19 +287,17 @@ input[type="date"] {
         <tr><td colspan="3" style="text-align:right;">IVA (0%)</td><td style="text-align:right;">$0.00</td></tr>
         <tr><td colspan="3" style="text-align:right;"><strong>Total</strong></td><td style="text-align:right;" id="total"><strong>$0.00</strong></td></tr>
       </tfoot>
-    </table>
-<h3 style="margin-top: 30px;">Pagos Aplicados</h3>
-<table id="tablaPagos" border="1" cellpadding="8" cellspacing="0" style="width:100%; margin-bottom: 20px;">
+    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; margin-bottom: 20px;">
   <thead style="background-color: #02535a; color: white;">
     <tr>
       <th>Pago</th>
       <th>Monto</th>
       <th>Fecha</th>
-   <th>Método</th>
+      <th>Método</th>
       <th>Nota</th>
     </tr>
   </thead>
-  <tbody>
+  <tbody id="tablaTransaccionesBody">
     <!-- Aquí se insertan dinámicamente las filas -->
   </tbody>
 </table>
@@ -408,7 +406,7 @@ if (reservaID) {
   db.collection("reservas").doc(reservaID).get().then((doc) => {
   if (doc.exists) {
   const data = doc.data(); // Primero definís 'data'
-window.onload = function () {
+
   if (data.facturaGenerada) {
   const campoFactura = document.getElementById("numeroFactura");
   if (campoFactura) {
@@ -500,7 +498,25 @@ agregarFila(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
 // totales
 document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
 document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
-      
+      const pagos = data.pagos || [];
+const tablaPagos = document.getElementById("tablaTransaccionesBody");
+tablaPagos.innerHTML = "";
+
+if (pagos.length === 0) {
+  tablaPagos.innerHTML = `<tr><td colspan="5">No hay pagos registrados.</td></tr>`;
+} else {
+  pagos.forEach((pago, index) => {
+    tablaPagos.innerHTML += `
+      <tr>
+        <td>${index + 1}</td>
+        <td>$${Number(pago.monto || 0).toFixed(2)}</td>
+        <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
+        <td>${pago.metodo || "Sin especificar"}</td>
+        <td>${pago.nota || ""}</td>
+      </tr>
+    `;
+  });
+}
   } else {
         alert("Reserva no encontrada: " + reservaID);
       }
