@@ -407,6 +407,10 @@ const reservaID = urlParams.get("reserva");
 if (reservaID) {
   db.collection("reservas").doc(reservaID).get().then((doc) => {
     if (doc.exists) {
+      if (data.facturaGenerada) {
+  alert("Esta reserva ya tiene una factura generada.");
+  document.querySelector("button[onclick='guardarFactura()']").disabled = true;
+}
       const data = doc.data();
 console.log("Data cargada:", data);
 console.log("Precios:", data.pasajeros);
@@ -659,22 +663,56 @@ function eliminarPago(index) {
   return nuevo.toString().padStart(3, '0'); // ejemplo: 001, 002, 003...
 }
 
-async function guardarFactura() {
+function guardarFactura() {
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
-  if (!reservaId) return alert("No se encontró el ID de la reserva.");
+  const docRef = db.collection("reservas").doc(reservaId);
 
-  const numeroFactura = await obtenerNumeroFactura();
+  docRef.get().then((doc) => {
+    if (!doc.exists) {
+      alert("Reserva no encontrada.");
+      return;
+    }
 
-  // Guardar el número en Firestore bajo la reserva
-  await db.collection("reservas").doc(reservaId).update({
-    numeroFactura: numeroFactura,
-    fechaFactura: new Date().toISOString()
+    const data = doc.data();
+
+    if (data.facturaGenerada) {
+      alert("Ya existe una factura para esta reserva.");
+      return;
+    }
+
+    // ✅ Generar número de factura
+    generarNumeroFactura().then((nuevoNumero) => {
+      const datosActualizados = {
+        numeroFactura: nuevoNumero,
+        facturaGenerada: true,
+        fechaFactura: new Date().toISOString(),
+        usuarioFactura: "Cristopher" // o toma desde auth si implementas login
+      };
+
+      // Actualizar reserva
+      docRef.update(datosActualizados).then(() => {
+        document.getElementById("numeroFactura").textContent = nuevoNumero;
+        alert("✅Factura guardada exitosamente.");
+        document.querySelector("button[onclick='guardarFactura()']").disabled = true;
+      });
+    });
   });
+}
 
-  // Mostrar en pantalla
-  document.getElementById("numeroFactura").textContent = numeroFactura;
+// ✅ Función para generar número incremental tipo 001, 002...
+async function generarNumeroFactura() {
+  const ref = db.collection("configuracion").doc("factura");
+  const doc = await ref.get();
 
-  alert("Factura generada correctamente.");
+  let numero = 1;
+  if (doc.exists) {
+    numero = (doc.data().contador || 0) + 1;
+  }
+
+  // Guardar el nuevo contador
+  await ref.set({ contador: numero });
+
+  return numero.toString().padStart(3, '0'); // Ej: 001, 002, etc.
 }
 </script>
 
