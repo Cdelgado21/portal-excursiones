@@ -406,15 +406,19 @@ const reservaID = urlParams.get("reserva");
 
 if (reservaID) {
   db.collection("reservas").doc(reservaID).get().then((doc) => {
-    if (doc.exists) {
-      if (data.facturaGenerada) {
-  alert("Esta reserva ya tiene una factura generada.");
-  document.querySelector("button[onclick='guardarFactura()']").disabled = true;
-}
-      const data = doc.data();
-console.log("Data cargada:", data);
-console.log("Precios:", data.pasajeros);
-      console.log("Destino:", data.destino);
+  if (doc.exists) {
+  const data = doc.data(); // Primero definís 'data'
+  
+  if (data.facturaGenerada) {
+    alert("Esta reserva ya tiene una factura generada.");
+    document.querySelector("button[onclick='guardarFactura()']").disabled = true;
+    return; // Evita seguir ejecutando si ya tiene factura
+  }
+
+  // Aquí sí ya podés usar 'data'
+  console.log("Data cargada:", data);
+  console.log("Precios:", data.pasajeros);
+  console.log("Destino:", data.destino);
 console.log("Adultos:", data.cantidadAdultos);
 console.log("Niños:", data.cantidadNinos);
 console.log("Bebés:", data.cantidadBebes);
