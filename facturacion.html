@@ -330,18 +330,15 @@
         <label>Monto:</label>
         <input type="number" id="nuevoMonto" />
       </div>
-      <div class="form-group">
-        <label>Fecha:</label>
-        <input type="date" id="nuevaFecha" />
-      </div>
-     <label for="nuevoMetodo">Método de Pago</label>
-<select id="nuevoMetodo" style="width: 100%; padding: 8px; margin: 8px 0;">
-  <option value="Transferencia">Transferencia</option>
-  <option value="Efectivo">Efectivo</option>
-  <option value="Tarjeta">Tarjeta</option>
-  <option value="Sin especificar">Sin especificar</option>
-</select>
-      <div class="form-group" style="grid-column: 1 / -1;">
+      <<div class="form-group">
+  <label for="nuevoMetodo">Método de Pago</label>
+  <select id="nuevoMetodo" class="form-control">
+    <option value="Transferencia">Transferencia</option>
+    <option value="Efectivo">Efectivo</option>
+    <option value="Tarjeta">Tarjeta</option>
+  </select>
+</div>
+</div>
         <label>Nota:</label>
         <textarea id="nuevaNota"></textarea>
       </div>
@@ -577,7 +574,7 @@ function guardarPago() {
   const nota = document.getElementById("nuevaNota").value || "";
 
  const metodoElement = document.getElementById("nuevoMetodo");
-const metodo = metodoElement ? metodoElement.value : "Sin especificar";
+const metodo = metodoElement && metodoElement.value ? metodoElement.value : "Sin especificar";
 const nuevoPago = { monto, fecha, metodo, nota };
 
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
