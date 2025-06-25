@@ -1372,7 +1372,7 @@ function cargarHistorialPagos() {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td style="padding: 8px;">${p.fecha}</td>
-      <td style="padding: 8px;">${p.tipo}</td>
+      <td style="padding: 8px;">${p.metodo}</td>
       <td style="padding: 8px;">$${parseFloat(p.monto).toFixed(2)}</td>
       <td style="padding: 8px;">${p.nota || "—"}</td>
     `;
