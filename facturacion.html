@@ -517,6 +517,26 @@ if (pagos.length === 0) {
     `;
   });
 }
+    const totalAbonado = pagos.reduce((acc, pago) => acc + (parseFloat(pago.monto) || 0), 0);
+  
+  // Total de la reserva
+  const totalTexto = document.getElementById("total").textContent.replace(/[^0-9.]/g, '');
+  const totalReserva = parseFloat(totalTexto) || 0;
+
+  // Calcular saldo
+  const saldoRestante = totalReserva - totalAbonado;
+
+  // Crear fila de saldo
+  const filaSaldo = document.createElement("tr");
+  filaSaldo.innerHTML = `
+    <td colspan="5" style="text-align:right; font-weight:bold; padding-top:10px;">
+      Saldo Restante: 
+      <span style="color:${saldoRestante > 0 ? '#d9534f' : '#02535a'};">
+        $${saldoRestante.toFixed(2)}
+      </span>
+    </td>
+  `;
+  tablaPagos.appendChild(filaSaldo);
   } else {
         alert("Reserva no encontrada: " + reservaID);
       }
