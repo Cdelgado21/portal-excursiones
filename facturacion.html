@@ -499,7 +499,7 @@ agregarFila(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
 // totales
 document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
 document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
-    const pagos = data.pagos || [];
+const pagos = data.pagos || [];
 const tablaPagos = document.getElementById("tablaTransaccionesBody");
 tablaPagos.innerHTML = "";
 
@@ -518,16 +518,26 @@ if (pagos.length === 0) {
     `;
   });
 
-  // ✅ Calcular total abonado
+  // Calcular total abonado
   const totalAbonado = pagos.reduce((acc, pago) => acc + (parseFloat(pago.monto) || 0), 0);
+  console.log("Total abonado:", totalAbonado);
 
-  // ✅ Obtener total de la reserva
-  const totalReserva = parseFloat(document.getElementById("total").textContent.replace('$', '')) || 0;
+  // Obtener total de reserva
+  const totalElemento = document.getElementById("total");
+  if (!totalElemento) {
+    console.error("❌ No se encontró el elemento con ID 'total'");
+    return;
+  }
 
-  // ✅ Calcular saldo restante
+  const totalTexto = totalElemento.textContent.replace(/[^0-9.]/g, ''); // elimina todo menos números y punto
+  const totalReserva = parseFloat(totalTexto) || 0;
+  console.log("Total reserva:", totalReserva);
+
+  // Calcular saldo restante
   const saldoRestante = totalReserva - totalAbonado;
+  console.log("Saldo restante:", saldoRestante);
 
-  // ✅ Mostrar saldo restante en nueva fila
+  // Mostrar saldo restante
   const filaSaldo = document.createElement('tr');
   filaSaldo.innerHTML = `
     <td colspan="5" style="text-align:right; font-weight:bold; padding-top:10px;">
@@ -539,6 +549,7 @@ if (pagos.length === 0) {
   `;
   tablaPagos.appendChild(filaSaldo);
 }
+
 let indexEditando = null;
 
 function toggleMenu(button) {
