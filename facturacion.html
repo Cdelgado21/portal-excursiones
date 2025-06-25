@@ -503,9 +503,11 @@ const pagos = data.pagos || [];
 const tablaPagos = document.getElementById("tablaTransaccionesBody");
 tablaPagos.innerHTML = "";
 
+// Si no hay pagos
 if (pagos.length === 0) {
   tablaPagos.innerHTML = `<tr><td colspan="5">No hay pagos registrados.</td></tr>`;
 } else {
+  // Mostrar cada pago
   pagos.forEach((pago, index) => {
     tablaPagos.innerHTML += `
       <tr>
@@ -518,21 +520,28 @@ if (pagos.length === 0) {
     `;
   });
 
+  // Calcular total abonado
   const totalAbonado = pagos.reduce((acc, pago) => acc + (parseFloat(pago.monto) || 0), 0);
-  const totalTexto = document.getElementById("total").textContent.replace(/[^0-9.]/g, '');
-  const totalReserva = parseFloat(totalTexto) || 0;
+
+  // Obtener total de la reserva (desde la tabla)
+  const totalReservaTexto = document.getElementById("total").textContent.replace(/[^0-9.]/g, '');
+  const totalReserva = parseFloat(totalReservaTexto) || 0;
+
+  // Calcular saldo restante
   const saldoRestante = totalReserva - totalAbonado;
 
-  const filaSaldo = document.createElement('tr');
+  // Crear elemento visual debajo de la tabla
+  const filaSaldo = document.createElement('div');
+  filaSaldo.style = "margin-top: 20px; text-align: right; font-weight: bold; font-size: 18px;";
   filaSaldo.innerHTML = `
-    <td colspan="5" style="text-align:right; font-weight:bold; padding-top:10px;">
-      Saldo Restante:
-      <span style="color:${saldoRestante > 0 ? '#d9534f' : '#02535a'};">
-        $${saldoRestante.toFixed(2)}
-      </span>
-    </td>
+    Saldo Restante:
+    <span style="color: ${saldoRestante > 0 ? '#d9534f' : '#02535a'};">
+      $${saldoRestante.toFixed(2)}
+    </span>
   `;
-  tablaPagos.appendChild(filaSaldo);
+
+  // Insertar después de la tabla
+  tablaPagos.parentNode.appendChild(filaSaldo);
 }
 function toggleMenu(button) {
   // Cierra todos los menús primero
