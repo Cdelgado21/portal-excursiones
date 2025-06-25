@@ -578,12 +578,12 @@ function editarPago(index) {
 function guardarPago() {
   const monto = parseFloat(document.getElementById("nuevoMonto").value) || 0;
   const fecha = document.getElementById("nuevaFecha").value || "";
-  const importe = parseFloat(document.getElementById("nuevoImporte").value) || monto;
   const nota = document.getElementById("nuevaNota").value || "";
 
- const metodoElement = document.getElementById("nuevoMetodo");
-const metodo = metodoElement && metodoElement.value ? metodoElement.value : "Sin especificar";
-const nuevoPago = { monto, fecha, metodo, nota };
+  const metodoElement = document.getElementById("nuevoMetodo");
+  const metodo = metodoElement && metodoElement.value ? metodoElement.value : "Sin especificar";
+
+  const nuevoPago = { monto, fecha, metodo, nota };
 
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
   const docRef = db.collection("reservas").doc(reservaId);
