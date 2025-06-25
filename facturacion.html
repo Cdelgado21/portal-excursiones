@@ -378,11 +378,10 @@ input[type="date"] {
     messagingSenderId: "1000749333444",
     appId: "1:1000749333444:web:73437891b59a96b6a4c291"
   };
-let data = {}
-  let indexEditando = null;
-  // Inicializar Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+let data = {};
+let indexEditando = null;  // ✅ Agregar esta línea
 
   function formatearFecha(fechaISO) {
   const fecha = new Date(fechaISO);
