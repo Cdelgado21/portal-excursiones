@@ -411,12 +411,8 @@ if (reservaID) {
   
 if (data.facturaGenerada) {
   alert("Esta reserva ya tiene una factura generada.");
-
-  // 👇 Mostrar el número de factura antes de salir
-  setTexto("numeroFactura", data.numeroFactura || "N/A");
-
   document.querySelector("button[onclick='guardarFactura()']").disabled = true;
-  return;
+  // ⚠️ NO HACER RETURN aquí
 }
   // Aquí sí ya podés usar 'data'
   console.log("Data cargada:", data);
