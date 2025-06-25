@@ -1206,7 +1206,7 @@ if (!pagosSnapshot.empty) {
     const nota = pago.nota || "";
 
     // Guardar en lista
-    window.listaPagos.push({ fecha, tipo: metodo, monto, nota });
+    window.listaPagos.push({ fecha, metodo, monto, nota });
 
     // Mostrar en tabla simple
     if (tabla) {
