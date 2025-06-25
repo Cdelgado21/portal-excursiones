@@ -301,6 +301,7 @@ input[type="date"] {
     <!-- Aquí se insertan dinámicamente las filas -->
   </tbody>
 </table>
+      <div id="saldoRestanteBox" style="text-align:right; font-weight:bold; margin-top:15px;"></div>
     <!-- Botones -->
     <div class="acciones">
       <button onclick="mostrarTransaccionesModal()">Ver transacciones</button>
@@ -526,17 +527,16 @@ if (pagos.length === 0) {
   // Calcular saldo
   const saldoRestante = totalReserva - totalAbonado;
 
-  // Crear fila de saldo
-  const filaSaldo = document.createElement("tr");
-  filaSaldo.innerHTML = `
-    <td colspan="5" style="text-align:right; font-weight:bold; padding-top:10px;">
-      Saldo Restante: 
-      <span style="color:${saldoRestante > 0 ? '#d9534f' : '#02535a'};">
-        $${saldoRestante.toFixed(2)}
-      </span>
-    </td>
+// Mostrar saldo fuera de la tabla
+const saldoBox = document.getElementById("saldoRestanteBox");
+if (saldoBox) {
+  saldoBox.innerHTML = `
+    Saldo Restante: 
+    <span style="color:${saldoRestante > 0 ? '#d9534f' : '#02535a'};">
+      $${saldoRestante.toFixed(2)}
+    </span>
   `;
-  tablaPagos.appendChild(filaSaldo);
+}
   } else {
         alert("Reserva no encontrada: " + reservaID);
       }
