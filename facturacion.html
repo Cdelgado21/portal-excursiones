@@ -405,7 +405,7 @@ const reservaID = urlParams.get("reserva");
 if (reservaID) {
   db.collection("reservas").doc(reservaID).get().then((doc) => {
   if (doc.exists) {
-  const data = doc.data(); // Primero definís 'data'
+ data = doc.data(); // Primero definís 'data'
 
   if (data.facturaGenerada) {
   const campoFactura = document.getElementById("numeroFactura");
