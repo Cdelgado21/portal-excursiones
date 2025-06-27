@@ -267,27 +267,33 @@ input[type="date"] {
         <p><strong>Viaje Regreso:</strong> <span id="fechaRegreso">---</span></p>
         <p><strong>Código Vuelo:</strong> <span id="codigoVuelo">---</span></p>
       </div>
- <h3 style="margin: 0; color: #02535a;">Detalle de Factura</h3>
-    <!-- Tabla -->
-    <table>
-      <thead>
-        <tr>
-          <th>Artículo</th>
-          <th style="text-align:right;">Precio</th>
-          <th style="text-align:center;">Cantidad</th>
-          <th style="text-align:right;">Importe</th>
-        </tr>
-      </thead>
-      <tbody id="tablaArticulos">
-        <!-- JS -->
-      </tbody>
-      <tfoot>
-        <tr><td colspan="3" style="text-align:right;">Subtotal</td><td style="text-align:right;" id="subtotal">$0.00</td></tr>
-        <tr><td colspan="3" style="text-align:right;">IVA (0%)</td><td style="text-align:right;">$0.00</td></tr>
-        <tr><td colspan="3" style="text-align:right;"><strong>Total</strong></td><td style="text-align:right;" id="total"><strong>$0.00</strong></td></tr>
-      </tfoot>
-      <h3 style="margin: 0; color: #02535a;">Historial de Pagos</h3>
-    <table border="1" cellpadding="8" cellspacing="0" style="width:100%; margin-bottom: 20px;">
+<div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 10px;">
+  <h2 style="margin: 0; color: #02535a;">Detalle de Factura</h2>
+  <h2 style="margin: 0; color: #02535a;">Historial de Pagos</h2>
+</div>
+
+<!-- Tabla de Artículos -->
+<table>
+  <thead>
+    <tr>
+      <th>Artículo</th>
+      <th style="text-align:right;">Precio</th>
+      <th style="text-align:center;">Cantidad</th>
+      <th style="text-align:right;">Importe</th>
+    </tr>
+  </thead>
+  <tbody id="tablaArticulos">
+    <!-- JS -->
+  </tbody>
+  <tfoot>
+    <tr><td colspan="3" style="text-align:right;">Subtotal</td><td style="text-align:right;" id="subtotal">$0.00</td></tr>
+    <tr><td colspan="3" style="text-align:right;">IVA (0%)</td><td style="text-align:right;">$0.00</td></tr>
+    <tr><td colspan="3" style="text-align:right;"><strong>Total</strong></td><td style="text-align:right;" id="total"><strong>$0.00</strong></td></tr>
+  </tfoot>
+</table>
+
+<!-- Tabla de Pagos -->
+<table border="1" cellpadding="8" cellspacing="0" style="width:100%; margin-top: 20px;">
   <thead style="background-color: #02535a; color: white;">
     <tr>
       <th>Pago</th>
