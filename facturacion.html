@@ -825,121 +825,126 @@ function actualizarResumenFacturacion(data) {
 }
 async function generarFacturaPDF() {
   const { jsPDF } = window.jspdf;
-  const { getDoc } = firebase.firestore();  // Asegurate que esta línea esté también
   const doc = new jsPDF();
   const colorVerde = "#02535a";
 
-  // Paso 2: Obtener código de reserva de la URL
+  // Obtener código de reserva desde URL
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("reserva");
+
   const docRef = firebase.firestore().collection("reservas").doc(codigo);
+  const docSnapshot = await docRef.get();
 
-const docSnapshot = await docRef.get();
-const codigoReserva = docSnapshot.id;
-const nombreTitular = docSnapshot.data().nombreTitular;
-
-    const img = new Image();
-    img.src = "Facturacion.png"; // Fondo
-
-    img.onload = () => {
-      doc.addImage(img, 'PNG', 0, 0, 210, 297);
-
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(colorVerde);
-      let y = 20;
-
-      // 🧾 Factura A
-      doc.setFontSize(14);
-      doc.text("Factura a:", 20, y);
-      doc.setFontSize(12);
-      y += 8;
-      doc.setTextColor(0, 0, 0);
-      doc.text("Cristopher Delgado Naranjo", 20, y);
-      y += 6;
-      doc.text("cris.delgado21@gmail.com", 20, y);
-      y += 6;
-      doc.text("89542056", 20, y);
-
-      // 📅 Datos del viaje
-      y = 20;
-      doc.setTextColor(colorVerde);
-      doc.text("Fecha de Emisión: 28/6/2025", 120, y);
-      y += 8;
-      doc.text("Viaje Ida: 03/07/2025", 120, y);
-      y += 8;
-      doc.text("Viaje Regreso: 07/07/2025", 120, y);
-      y += 8;
-      doc.text("Código Vuelo: UYE621", 120, y);
-
-      // 🧾 Detalle de Factura
-      y += 12;
-      doc.setTextColor(colorVerde);
-      doc.setFontSize(13);
-      doc.text("Detalle de Factura", 20, y);
-      y += 8;
-
-      const detalles = [
-        { desc: "Super Promoción Medellín - Adultos", precio: 639, cantidad: 2 },
-        { desc: "Super Promoción Medellín - Niños", precio: 599, cantidad: 1 },
-        { desc: "Super Promoción Medellín - Bebés", precio: 159, cantidad: 1 },
-      ];
-
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      detalles.forEach((item) => {
-        const total = item.precio * item.cantidad;
-        doc.text(item.desc, 20, y);
-        doc.text(`$${item.precio.toFixed(2)}`, 120, y);
-        doc.text(`${item.cantidad}`, 150, y);
-        doc.text(`$${total.toFixed(2)}`, 180, y, { align: 'right' });
-        y += 7;
-      });
-
-      const totalReserva = detalles.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
-
-      // 💲 Total
-      y += 10;
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(colorVerde);
-      doc.text(`Total: $${totalReserva.toFixed(2)}`, 180, y, { align: 'right' });
-
-      // 💳 Historial de Pagos
-      y += 15;
-      doc.setFontSize(13);
-      doc.text("Historial de Pagos", 20, y);
-      y += 8;
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-
-      const pagos = []; // puedes rellenar desde Firebase o manual
-
-      if (pagos.length === 0) {
-        doc.text("No hay pagos registrados.", 20, y);
-      } else {
-        pagos.forEach(pago => {
-          doc.text(`Pago: $${pago.monto} - ${pago.fecha} - ${pago.metodo}`, 20, y);
-          y += 6;
-        });
-      }
-
-      // 📌 Resumen financiero
-      const pagosAplicados = pagos.reduce((sum, p) => sum + p.monto, 0);
-      const saldo = totalReserva - pagosAplicados;
-
-      y += 12;
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 20, y);
-      y += 6;
-      doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 20, y);
-      y += 6;
-      doc.setTextColor(saldo > 0 ? "red" : "green");
-      doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 20, y);
-
-      // 💾 Guardar PDF
-      doc.save(`Factura N°${codigoReserva} - ${nombreTitular}.pdf`);
-    };
+  if (!docSnapshot.exists) {
+    alert("No se encontró la reserva.");
+    return;
   }
+
+  const data = docSnapshot.data();
+  const nombreTitular = data.nombreTitular || "Titular";
+  const correo = data.correo || "";
+  const telefono = data.telefono || "";
+  const detalleFactura = data.detalleFactura || [];
+  const pagos = data.pagos || [];
+
+  const img = new Image();
+  img.src = "Facturacion.png"; // Fondo personalizado
+
+  img.onload = () => {
+    doc.addImage(img, 'PNG', 0, 0, 210, 297);
+    doc.setFont("helvetica", "normal");
+
+    let y = 20;
+
+    // 🧾 Factura A
+    doc.setFontSize(14);
+    doc.setTextColor(colorVerde);
+    doc.text("Factura a:", 20, y);
+
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    y += 8;
+    doc.text(nombreTitular, 20, y);
+    y += 6;
+    doc.text(correo, 20, y);
+    y += 6;
+    doc.text(telefono, 20, y);
+
+    // 📅 Datos del viaje
+    y = 20;
+    doc.setFontSize(12);
+    doc.setTextColor(colorVerde);
+    doc.text(`Fecha de Emisión: ${data.fechaEmision || "N/D"}`, 120, y);
+    y += 8;
+    doc.text(`Viaje Ida: ${data.fechaIda || "N/D"}`, 120, y);
+    y += 8;
+    doc.text(`Viaje Regreso: ${data.fechaRegreso || "N/D"}`, 120, y);
+    y += 8;
+    doc.text(`Código Vuelo: ${data.codigoVuelo || "N/D"}`, 120, y);
+
+    // 🧾 Detalle de Factura
+    y += 12;
+    doc.setFontSize(13);
+    doc.setTextColor(colorVerde);
+    doc.text("Detalle de Factura", 20, y);
+    y += 8;
+
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+
+    detalleFactura.forEach((item) => {
+      const total = item.precio * item.cantidad;
+      doc.text(item.desc, 20, y);
+      doc.text(`$${item.precio.toFixed(2)}`, 120, y);
+      doc.text(`${item.cantidad}`, 150, y);
+      doc.text(`$${total.toFixed(2)}`, 180, y, { align: 'right' });
+      y += 7;
+    });
+
+    const totalReserva = detalleFactura.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
+
+    // 💲 Total
+    y += 10;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(colorVerde);
+    doc.text(`Total: $${totalReserva.toFixed(2)}`, 180, y, { align: 'right' });
+
+    // 💳 Historial de Pagos
+    y += 15;
+    doc.setFontSize(13);
+    doc.text("Historial de Pagos", 20, y);
+    y += 8;
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+
+    if (pagos.length === 0) {
+      doc.text("No hay pagos registrados.", 20, y);
+      y += 6;
+    } else {
+      pagos.forEach(pago => {
+        doc.text(`Pago: $${pago.monto} - ${pago.fecha} - ${pago.metodo}`, 20, y);
+        y += 6;
+      });
+    }
+
+    const pagosAplicados = pagos.reduce((sum, p) => sum + p.monto, 0);
+    const saldo = totalReserva - pagosAplicados;
+
+    // 📌 Resumen financiero
+    y += 12;
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 20, y);
+    y += 6;
+    doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 20, y);
+    y += 6;
+    doc.setTextColor(saldo > 0 ? "red" : "green");
+    doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 20, y);
+
+    // 💾 Guardar PDF
+    doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
+  };
+}
+
 </script>
 
 </body>
