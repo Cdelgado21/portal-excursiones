@@ -883,16 +883,16 @@ img.onload = () => {
   doc.text(docSnapshot.data().telefono || "N/D", 20, yCliente);
 
   // 📅 Datos del viaje
-  let yViaje = 55;
-  doc.setTextColor(colorVerde);
-  doc.setFontSize(12);
-  doc.text(`Fecha de Emisión: ${docSnapshot.data().fecha_emision || "N/D"}`, 120, yViaje);
-  yViaje += 8;
-  doc.text(`Viaje Ida: ${docSnapshot.data().fecha_ida || "N/D"}`, 120, yViaje);
-  yViaje += 8;
-  doc.text(`Viaje Regreso: ${docSnapshot.data().fecha_regreso || "N/D"}`, 120, yViaje);
-  yViaje += 8;
-  doc.text(`Código Vuelo: ${docSnapshot.data().codigo_vuelo || "N/D"}`, 120, yViaje);
+let yViaje = 55;
+doc.setTextColor(colorVerde);
+doc.setFontSize(12);
+doc.text(`Fecha de Emisión: ${data.fecha_emision || "N/D"}`, 120, yViaje);
+yViaje += 8;
+doc.text(`Viaje Ida: ${data.fecha_ida || "N/D"}`, 120, yViaje);
+yViaje += 8;
+doc.text(`Viaje Regreso: ${data.fecha_regreso || "N/D"}`, 120, yViaje);
+yViaje += 8;
+doc.text(`Código Vuelo: ${data.codigo_vuelo || "N/D"}`, 120, yViaje);
 
     // 🧾 Detalle de Factura
   let y = 95; 
