@@ -470,7 +470,7 @@ console.log("Precio Bebé:", data.pasajeros?.precioBebe);
       // Código del vuelo
       setTexto("codigoVuelo", data.vueloIda?.codigo || "---");
 
-const destino = data.destino;      // "super_promocion_medellin"
+const nombreBonito = data.nombreDestino || 
 const adultos = Number(data.cantidadAdultos) || 0;
 const ninos   = Number(data.cantidadNinos)   || 0;
 const bebes   = Number(data.cantidadBebes)   || 0;
