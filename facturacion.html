@@ -470,7 +470,6 @@ console.log("Precio Bebé:", data.pasajeros?.precioBebe);
       // Código del vuelo
       setTexto("codigoVuelo", data.vueloIda?.codigo || "---");
 
-const nombreBonito = data.nombreDestino || 
 const adultos = Number(data.cantidadAdultos) || 0;
 const ninos   = Number(data.cantidadNinos)   || 0;
 const bebes   = Number(data.cantidadBebes)   || 0;
@@ -500,7 +499,8 @@ function agregarFila(descripcion, precio, cantidad) {
   }
 }
 
-const nombreBonito = destino.replace(/_/g, " ").replace(/\b\w/g,l=>l.toUpperCase());
+const nombreBonito = data.nombreDestino || 
+  (data.destino ? data.destino.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()) : "Destino no definido");
 
 agregarFila(`${nombreBonito} - Adultos`, precioAdulto, adultos);
 agregarFila(`${nombreBonito} - Niños`,   precioNino,   ninos);
