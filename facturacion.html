@@ -578,10 +578,10 @@ function toggleMenu(button) {
 }
 
 async function mostrarTransaccionesModal() {
-  const tbodyModal = document.getElementById("tablaTransaccionesModalBody"); // CORRECTO
+  const tbodyModal = document.getElementById("tablaTransaccionesModalBody");
   const modal = document.getElementById("modalTransacciones");
   modal.style.display = "flex";
-  tbodyModal.innerHTML = ""; // Limpiar contenido previo
+  tbodyModal.innerHTML = "";
 
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
   if (!reservaId) {
@@ -593,29 +593,10 @@ async function mostrarTransaccionesModal() {
   const data = docRef.data();
   const transacciones = data.pagos || [];
 
-  if (transacciones.length === 0) {
-    tbodyModal.innerHTML = `<tr><td colspan="5">No hay pagos registrados.</td></tr>`;
-  } else {
-    transacciones.forEach((pago, index) => {
-  tbodyModal.innerHTML += `
-    <tr>
-      <td>${index + 1}</td>
-      <td>$${Number(pago.monto || 0).toFixed(2)}</td>
-      <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
-      <td>${pago.metodo || "Sin especificar"}</td>
-      <td>${pago.nota || ""}</td>
-      <td>
-        <div class="menu-container">
-          <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
-          <div class="menu-options">
-            <button onclick="editarPago(${index})">Editar</button>
-            <button onclick="eliminarPago(${index})">Eliminar</button>
-          </div>
-        </div>
-      </td>
-    </tr>
-  `;
-});
+  renderizarTransaccionesModal(transacciones); // ✔️ se usa aquí
+}
+
+ 
 function abrirModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.style.display = "flex";
@@ -768,14 +749,28 @@ async function generarNumeroFactura() {
   const tbodyModal = document.getElementById("tablaTransaccionesModalBody");
   tbodyModal.innerHTML = "";
 
+  if (transacciones.length === 0) {
+    tbodyModal.innerHTML = `<tr><td colspan="6">No hay pagos registrados.</td></tr>`;
+    return;
+  }
+
   transacciones.forEach((pago, index) => {
     const fila = document.createElement("tr");
     fila.innerHTML = `
       <td>${index + 1}</td>
-      <td>$${pago.monto.toFixed(2)}</td>
-      <td>${pago.fecha}</td>
-      <td>${pago.metodo}</td>
+      <td>$${Number(pago.monto || 0).toFixed(2)}</td>
+      <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
+      <td>${pago.metodo || "Sin especificar"}</td>
       <td>${pago.nota || ""}</td>
+      <td>
+        <div class="menu-container">
+          <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
+          <div class="menu-options">
+            <button onclick="editarPago(${index})">Editar</button>
+            <button onclick="eliminarPago(${index})">Eliminar</button>
+          </div>
+        </div>
+      </td>
     `;
     tbodyModal.appendChild(fila);
   });
