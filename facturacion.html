@@ -6,6 +6,8 @@
   <title>Factura de Reserva</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
   body {
     font-family: Arial, sans-serif;
@@ -313,6 +315,7 @@ input[type="date"] {
     <div class="acciones">
       <button onclick="mostrarTransaccionesModal()">Ver transacciones</button>
       <button onclick="guardarFactura()">Guardar Factura</button>
+      <button onclick="generarFacturaPDF()">Descargar Factura</button>
     </div>
   </div>
 
@@ -820,6 +823,68 @@ function actualizarResumenFacturacion(data) {
     });
   }
 }
+  async function generarFacturaPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Cargar imagen de fondo
+    const img = new Image();
+    img.src = "Facturacion.png"; // Asegurate que esta imagen esté en el mismo directorio del HTML
+
+    img.onload = () => {
+      doc.addImage(img, 'PNG', 0, 0, 210, 297); // A4 tamaño completo
+
+      const margen = 20;
+      let y = 30;
+
+      // Factura encabezado
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.setTextColor(0, 83, 90);
+      doc.text("Factura a:", margen, y);
+      y += 10;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Cristopher Delgado Naranjo", margen, y);
+      y += 8;
+      doc.text("cris.delgado21@gmail.com", margen, y);
+      y += 8;
+      doc.text("89542056", margen, y);
+
+      // Detalles del viaje
+      y += 20;
+      doc.setFont("helvetica", "bold");
+      doc.text("Detalle de Factura", margen, y);
+      y += 10;
+
+      const detalles = [
+        { desc: "Super Promoción Medellín - Adultos", precio: 639, cantidad: 2 },
+        { desc: "Super Promoción Medellín - Niños", precio: 599, cantidad: 1 },
+        { desc: "Super Promoción Medellín - Bebés", precio: 159, cantidad: 1 },
+      ];
+
+      doc.setFont("helvetica", "normal");
+      detalles.forEach((item) => {
+        const total = item.precio * item.cantidad;
+        doc.text(`${item.desc}`, margen, y);
+        doc.text(`$${item.precio.toFixed(2)}`, 120, y);
+        doc.text(`${item.cantidad}`, 150, y);
+        doc.text(`$${total.toFixed(2)}`, 170, y, { align: 'right' });
+        y += 8;
+      });
+
+      // Totales
+      y += 10;
+      const subtotal = detalles.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Total: $${subtotal.toFixed(2)}`, 170, y, { align: 'right' });
+
+      // Guardar PDF
+      doc.save("Factura_ExcursionesDelgado.pdf");
+    };
+  }
 </script>
 
 </body>
