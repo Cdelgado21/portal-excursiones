@@ -840,6 +840,7 @@ async function generarFacturaPDF() {
     return;
   }
 
+  
   const data = docSnapshot.data();
   const nombreTitular = data.nombreTitular || "Titular";
   const correo = data.correo || "";
@@ -852,8 +853,15 @@ async function generarFacturaPDF() {
 
   img.onload = () => {
     doc.addImage(img, 'PNG', 0, 0, 210, 297);
-    doc.setFont("helvetica", "normal");
+doc.setFont("helvetica", "bold");
+doc.setFontSize(22);
+doc.setTextColor(colorVerde);
+doc.text("Factura de Reserva", 105, 25, { align: "center" });
 
+doc.setFontSize(13);
+doc.setTextColor(0, 0, 0);
+doc.text(`Código de Reserva: ${codigoReserva}`, 105, 35, { align: "center" });
+doc.text(`Factura N°: ---`, 105, 42, { align: "center" }); 
     let y = 20;
 
     // 🧾 Factura A
