@@ -647,16 +647,16 @@ function guardarPago() {
       pagos.push(nuevoPago);
     }
 
-docRef.update({ pagos }).then(() => {
-  cerrarModal("modalAgregarPago");
-  mostrarTransaccionesModal();
-  docRef.get().then((doc) => {
-    const dataActualizada = doc.data();
-    actualizarResumenFacturacion(dataActualizada);
-  });
-}); // ✅ ESTA llave y punto y coma estaba faltando
-
-} // ❗ esta llave estaba faltando para cerrar guardarPago()
+    docRef.update({ pagos }).then(() => {
+      cerrarModal("modalAgregarPago");
+      mostrarTransaccionesModal();
+      docRef.get().then((doc) => {
+        const dataActualizada = doc.data();
+        actualizarResumenFacturacion(dataActualizada);
+      });
+    }); // ← cierre de docRef.update
+  }); // ← cierre de docRef.get
+} // ← cierre final de la función guardarPago
 
  function abrirModalAgregarPago() {
   indexEditando = null;
