@@ -827,6 +827,8 @@ function actualizarResumenFacturacion(data) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     const colorVerde = "#02535a";
+   let codigoReserva = "ED-011-2025";
+let nombreTitular = "Cristopher Delgado Naranjo";
 
     const img = new Image();
     img.src = "Facturacion.png"; // Fondo
