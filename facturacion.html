@@ -387,6 +387,7 @@ input[type="date"] {
     appId: "1:1000749333444:web:73437891b59a96b6a4c291"
   };
 let data = {}
+  let listaDePagos = []; 
   // Inicializar Firebase
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
@@ -507,6 +508,7 @@ agregarFila(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
 document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
 document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
       const pagos = data.pagos || [];
+    listaDePagos = pagos; // Para usar en el modal
 const tablaPagos = document.getElementById("tablaTransaccionesBody");
 tablaPagos.innerHTML = "";
 
@@ -779,11 +781,7 @@ async function generarNumeroFactura() {
     tbodyModal.appendChild(fila);
   });
 }
-  function mostrarTransaccionesModal() {
-  // Usa la misma fuente de datos que se usó para cargar la tabla principal
-  renderizarTransaccionesModal(listaDePagos); // Asegúrate que `listaDePagos` exista y tenga los datos actualizados
-  document.getElementById("modalTransacciones").style.display = "block";
-}
+
 </script>
 
 </body>
