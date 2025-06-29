@@ -781,15 +781,18 @@ async function generarNumeroFactura() {
     tbodyModal.appendChild(fila);
   });
 }
-function actualizarResumenFacturacion(dataReserva) {
-  const totalReserva = parseFloat(dataReserva.precioTotal || 0);
-  const pagos = dataReserva.pagos || [];
-  const totalPagado = pagos.reduce((acc, pago) => acc + parseFloat(pago.monto || 0), 0);
-  const saldo = totalReserva - totalPagado;
+function actualizarResumenFacturacion(data) {
+  const totalReserva = Number(data.total || 0);
+  const pagos = data.pagos || [];
 
-  document.getElementById("totalReserva").textContent = `$${totalReserva.toFixed(2)}`;
-  document.getElementById("totalPagado").textContent = `$${totalPagado.toFixed(2)}`;
-  document.getElementById("saldoRestante").textContent = `$${saldo.toFixed(2)}`;
+  let pagosAplicados = pagos.reduce((sum, pago) => sum + Number(pago.monto || 0), 0);
+  let saldoRestante = totalReserva - pagosAplicados;
+
+  document.getElementById("resumenFacturacion").innerHTML = `
+    <div>Total de la Reserva: <span style="color:#02535a;">$${totalReserva.toFixed(2)}</span></div>
+    <div>Pagos Aplicados: <span style="color:#5f9296;">$${pagosAplicados.toFixed(2)}</span></div>
+    <div>Saldo Restante: <span style="color:#d9534f;">$${saldoRestante.toFixed(2)}</span></div>
+  `;
 }
 
 </script>
