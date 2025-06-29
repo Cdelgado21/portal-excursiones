@@ -327,6 +327,7 @@ input[type="date"] {
           <th>Fecha</th>
           <th>Método</th>
           <th>Nota</th>
+          <th>Acciones</th> 
         </tr>
       </thead>
       <tbody id="tablaTransaccionesModalBody">
@@ -596,18 +597,25 @@ async function mostrarTransaccionesModal() {
     tbodyModal.innerHTML = `<tr><td colspan="5">No hay pagos registrados.</td></tr>`;
   } else {
     transacciones.forEach((pago, index) => {
-      tbodyModal.innerHTML += `
-        <tr>
-          <td>${index + 1}</td>
-          <td>$${Number(pago.monto || 0).toFixed(2)}</td>
-          <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
-          <td>${pago.metodo || "Sin especificar"}</td>
-          <td>${pago.nota || ""}</td>
-        </tr>
-      `;
-    });
-  }
-}
+  tbodyModal.innerHTML += `
+    <tr>
+      <td>${index + 1}</td>
+      <td>$${Number(pago.monto || 0).toFixed(2)}</td>
+      <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
+      <td>${pago.metodo || "Sin especificar"}</td>
+      <td>${pago.nota || ""}</td>
+      <td>
+        <div class="menu-container">
+          <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
+          <div class="menu-options">
+            <button onclick="editarPago(${index})">Editar</button>
+            <button onclick="eliminarPago(${index})">Eliminar</button>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `;
+});
 function abrirModal(id) {
   const modal = document.getElementById(id);
   if (modal) modal.style.display = "flex";
