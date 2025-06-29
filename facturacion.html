@@ -416,7 +416,8 @@ if (reservaID) {
   db.collection("reservas").doc(reservaID).get().then((doc) => {
   if (doc.exists) {
   const data = doc.data(); // Primero definís 'data'
-
+actualizarResumenFacturacion(data);
+    
   if (data.facturaGenerada) {
   const campoFactura = document.getElementById("numeroFactura");
   if (campoFactura) {
@@ -646,12 +647,14 @@ function guardarPago() {
       pagos.push(nuevoPago);
     }
 
-  docRef.update({ pagos }).then(() => {
+ docRef.update({ pagos }).then(() => {
   cerrarModal("modalAgregarPago");
-  mostrarTransaccionesModal(); // 👈 Esto vuelve a cargar el modal
-  actualizarResumenFactura();  // 👈 Y esta función debe recalcular el total pagado y saldo restante
-});
+  mostrarTransaccionesModal();
+  docRef.get().then((doc) => {
+    const dataActualizada = doc.data();
+    actualizarResumenFacturacion(dataActualizada); // 👈✔️ ACTUALIZA DESPUÉS DE EDITAR/GUARDAR
   });
+});
 }
  function abrirModalAgregarPago() {
   indexEditando = null;
