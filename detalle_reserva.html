@@ -531,6 +531,7 @@ async function guardarReserva() {
     const nacionalidadTitular = document.getElementById("nacionalidadTitular").value || "";
     const generoTitular = document.getElementById("generoTitular").value || "";
     const destino = document.getElementById("destino").value || "";
+    const nombreDestino = document.getElementById("destino").options[document.getElementById("destino").selectedIndex].text || "";
     const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
     const pagos = window.listaPagos || [];
     const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
@@ -605,6 +606,7 @@ await db.collection("costos_reservas").doc(codigo).set({
   vueloRegreso,
   fechaReserva,
   destino,
+  nombreDestino,
   total,
   abono,
   saldo,
