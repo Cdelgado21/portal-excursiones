@@ -834,9 +834,9 @@ async function generarFacturaPDF() {
   const codigo = params.get("reserva");
   const docRef = firebase.firestore().collection("reservas").doc(codigo);
 
-  const docData = await getDoc(docRef);
-  const codigoReserva = docData.id;
-  const nombreTitular = docData.data().nombreTitular;
+const docSnapshot = await docRef.get();
+const codigoReserva = docSnapshot.id;
+const nombreTitular = docSnapshot.data().nombreTitular;
 
     const img = new Image();
     img.src = "Facturacion.png"; // Fondo
