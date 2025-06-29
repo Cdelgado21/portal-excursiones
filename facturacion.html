@@ -329,7 +329,7 @@ input[type="date"] {
           <th>Nota</th>
         </tr>
       </thead>
-      <tbody id="tablaTransaccionesBody">
+      <tbody id="tablaTransaccionesModalBody">
         <!-- Aquí se cargan las transacciones -->
       </tbody>
     </table>
@@ -762,6 +762,27 @@ async function generarNumeroFactura() {
   await ref.set({ contador: numero });
 
   return numero.toString().padStart(3, '0'); // Ej: 001, 002, etc.
+}
+  function renderizarTransaccionesModal(transacciones) {
+  const tbodyModal = document.getElementById("tablaTransaccionesModalBody");
+  tbodyModal.innerHTML = "";
+
+  transacciones.forEach((pago, index) => {
+    const fila = document.createElement("tr");
+    fila.innerHTML = `
+      <td>${index + 1}</td>
+      <td>$${pago.monto.toFixed(2)}</td>
+      <td>${pago.fecha}</td>
+      <td>${pago.metodo}</td>
+      <td>${pago.nota || ""}</td>
+    `;
+    tbodyModal.appendChild(fila);
+  });
+}
+  function mostrarTransaccionesModal() {
+  // Usa la misma fuente de datos que se usó para cargar la tabla principal
+  renderizarTransaccionesModal(listaDePagos); // Asegúrate que `listaDePagos` exista y tenga los datos actualizados
+  document.getElementById("modalTransacciones").style.display = "block";
 }
 </script>
 
