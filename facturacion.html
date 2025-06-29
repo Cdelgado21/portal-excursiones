@@ -304,10 +304,10 @@ input[type="date"] {
     <!-- Aquí se insertan dinámicamente las filas -->
   </tbody>
 </table>
-      <div id="resumenFacturacion" style="margin-top:20px; text-align:right; font-weight:bold;">
-  <div>Total de la Reserva: <span style="color:#02535a;">$639.00</span></div>
-  <div>Pagos Aplicados: <span style="color:#5f9296;">$480.00</span></div>
-  <div>Saldo Restante: <span style="color:#d9534f;">$159.00</span></div>
+  <div id="resumenFacturacion" style="margin-top:20px; text-align:right; font-weight:bold;">
+  <div>Total de la Reserva: <span id="totalReserva" style="color:#02535a;">$639.00</span></div>
+  <div>Pagos Aplicados: <span id="totalPagado" style="color:#5f9296;">$480.00</span></div>
+  <div>Saldo Restante: <span id="saldoRestante" style="color:#d9534f;">$159.00</span></div>
 </div>
     <!-- Botones -->
     <div class="acciones">
@@ -776,19 +776,15 @@ async function generarNumeroFactura() {
     tbodyModal.appendChild(fila);
   });
 }
-  function actualizarResumenFactura() {
-  const reservaId = new URLSearchParams(window.location.search).get("reserva");
-  db.collection("reservas").doc(reservaId).get().then(doc => {
-    const data = doc.data();
-    const pagos = data.pagos || [];
+function actualizarResumenFacturacion(dataReserva) {
+  const totalReserva = parseFloat(dataReserva.precioTotal || 0);
+  const pagos = dataReserva.pagos || [];
+  const totalPagado = pagos.reduce((acc, pago) => acc + parseFloat(pago.monto || 0), 0);
+  const saldo = totalReserva - totalPagado;
 
-    const totalPagado = pagos.reduce((sum, pago) => sum + parseFloat(pago.monto || 0), 0);
-    const totalReserva = parseFloat(data.precioTotal || 0);
-    const saldoRestante = totalReserva - totalPagado;
-
-    document.getElementById("totalPagado").textContent = `$${totalPagado.toFixed(2)}`;
-    document.getElementById("saldoRestante").textContent = `$${saldoRestante.toFixed(2)}`;
-  });
+  document.getElementById("totalReserva").textContent = `$${totalReserva.toFixed(2)}`;
+  document.getElementById("totalPagado").textContent = `$${totalPagado.toFixed(2)}`;
+  document.getElementById("saldoRestante").textContent = `$${saldo.toFixed(2)}`;
 }
 
 </script>
