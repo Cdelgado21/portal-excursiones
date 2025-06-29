@@ -793,8 +793,27 @@ function actualizarResumenFacturacion(data) {
     <div>Pagos Aplicados: <span style="color:#5f9296;">$${pagosAplicados.toFixed(2)}</span></div>
     <div>Saldo Restante: <span style="color:#d9534f;">$${saldoRestante.toFixed(2)}</span></div>
   `;
-}
 
+  // ✅ También actualizamos la tabla principal de historial de pagos
+  const tablaPagos = document.getElementById("tablaTransaccionesBody");
+  tablaPagos.innerHTML = "";
+
+  if (pagos.length === 0) {
+    tablaPagos.innerHTML = `<tr><td colspan="5">No hay pagos registrados.</td></tr>`;
+  } else {
+    pagos.forEach((pago, index) => {
+      tablaPagos.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>$${Number(pago.monto || 0).toFixed(2)}</td>
+          <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
+          <td>${pago.metodo || "Sin especificar"}</td>
+          <td>${pago.nota || ""}</td>
+        </tr>
+      `;
+    });
+  }
+}
 </script>
 
 </body>
