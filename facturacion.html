@@ -633,7 +633,6 @@ function guardarPago() {
   const metodo = metodoElement && metodoElement.value ? metodoElement.value : "Sin especificar";
 
   const nuevoPago = { monto, fecha, metodo, nota };
-
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
   const docRef = db.collection("reservas").doc(reservaId);
 
@@ -649,14 +648,15 @@ function guardarPago() {
 
     docRef.update({ pagos }).then(() => {
       cerrarModal("modalAgregarPago");
-      mostrarTransaccionesModal();
+      // 🔁 Actualizamos todos los componentes
       docRef.get().then((doc) => {
         const dataActualizada = doc.data();
         actualizarResumenFacturacion(dataActualizada);
+        renderizarTransaccionesModal(dataActualizada.pagos || []);
       });
-    }); // ← cierre de docRef.update
-  }); // ← cierre de docRef.get
-} // ← cierre final de la función guardarPago
+    });
+  });
+}
 
  function abrirModalAgregarPago() {
   indexEditando = null;
@@ -678,8 +678,14 @@ function eliminarPago(index) {
   docRef.get().then((doc) => {
     let pagos = doc.data().pagos || [];
     pagos.splice(index, 1);
+
     docRef.update({ pagos }).then(() => {
-      mostrarTransaccionesModal();
+      // 🔁 Actualizamos todos los componentes
+      docRef.get().then((doc) => {
+        const dataActualizada = doc.data();
+        actualizarResumenFacturacion(dataActualizada);
+        renderizarTransaccionesModal(dataActualizada.pagos || []);
+      });
     });
   });
 }
