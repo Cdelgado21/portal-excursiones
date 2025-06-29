@@ -647,14 +647,16 @@ function guardarPago() {
       pagos.push(nuevoPago);
     }
 
- docRef.update({ pagos }).then(() => {
+docRef.update({ pagos }).then(() => {
   cerrarModal("modalAgregarPago");
   mostrarTransaccionesModal();
   docRef.get().then((doc) => {
     const dataActualizada = doc.data();
-    actualizarResumenFacturacion(dataActualizada); // 👈✔️ ACTUALIZA DESPUÉS DE EDITAR/GUARDAR
+    actualizarResumenFacturacion(dataActualizada);
   });
-});
+}); // ✅ ESTA llave y punto y coma estaba faltando
+
+} // ❗← esta llave estaba faltando para cerrar guardarPago()
 
  function abrirModalAgregarPago() {
   indexEditando = null;
