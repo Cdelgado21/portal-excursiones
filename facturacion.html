@@ -646,10 +646,11 @@ function guardarPago() {
       pagos.push(nuevoPago);
     }
 
-    docRef.update({ pagos }).then(() => {
-      cerrarModal("modalAgregarPago");
-      mostrarTransaccionesModal();
-    });
+  docRef.update({ pagos }).then(() => {
+  cerrarModal("modalAgregarPago");
+  mostrarTransaccionesModal(); // 👈 Esto vuelve a cargar el modal
+  actualizarResumenFactura();  // 👈 Y esta función debe recalcular el total pagado y saldo restante
+});
   });
 }
  function abrirModalAgregarPago() {
@@ -773,6 +774,20 @@ async function generarNumeroFactura() {
       </td>
     `;
     tbodyModal.appendChild(fila);
+  });
+}
+  function actualizarResumenFactura() {
+  const reservaId = new URLSearchParams(window.location.search).get("reserva");
+  db.collection("reservas").doc(reservaId).get().then(doc => {
+    const data = doc.data();
+    const pagos = data.pagos || [];
+
+    const totalPagado = pagos.reduce((sum, pago) => sum + parseFloat(pago.monto || 0), 0);
+    const totalReserva = parseFloat(data.precioTotal || 0);
+    const saldoRestante = totalReserva - totalPagado;
+
+    document.getElementById("totalPagado").textContent = `$${totalPagado.toFixed(2)}`;
+    document.getElementById("saldoRestante").textContent = `$${saldoRestante.toFixed(2)}`;
   });
 }
 
