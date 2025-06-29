@@ -577,12 +577,10 @@ function toggleMenu(button) {
 }
 
 async function mostrarTransaccionesModal() {
-  const tabla = document.getElementById("tablaTransaccionesBody");
-  const modal = document.getElementById("modalTransacciones");
   const tbodyModal = document.getElementById("tablaTransaccionesModalBody"); // CORRECTO
   const modal = document.getElementById("modalTransacciones");
   modal.style.display = "flex";
-   tabla.innerHTML = "";
+  tbodyModal.innerHTML = ""; // Limpiar contenido previo
 
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
   if (!reservaId) {
@@ -595,25 +593,16 @@ async function mostrarTransaccionesModal() {
   const transacciones = data.pagos || [];
 
   if (transacciones.length === 0) {
-    tabla.innerHTML = `<tr><td colspan="6">No hay pagos registrados.</td></tr>`;
+    tbodyModal.innerHTML = `<tr><td colspan="5">No hay pagos registrados.</td></tr>`;
   } else {
     transacciones.forEach((pago, index) => {
-      tabla.innerHTML += `
+      tbodyModal.innerHTML += `
         <tr>
           <td>${index + 1}</td>
           <td>$${Number(pago.monto || 0).toFixed(2)}</td>
           <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
           <td>${pago.metodo || "Sin especificar"}</td>
           <td>${pago.nota || ""}</td>
-          <td>
-     <div class="menu-container">
-              <button class="menu-btn" onclick="toggleMenu(this)">⋮</button>
-              <div class="menu-options">
-                <button onclick="editarPago(${index})">Editar</button>
-                <button onclick="eliminarPago(${index})">Eliminar</button>
-              </div>
-            </div>
-          </td>
         </tr>
       `;
     });
