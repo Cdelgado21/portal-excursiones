@@ -486,11 +486,14 @@ const precioBebe   = Number(data.precioBebe)   || 0;
 const tabla    = document.getElementById("tablaArticulos");
 tabla.innerHTML = "";
 let subtotal    = 0;
+let detalleFactura = []; // ⬅️ Esto es nuevo
 
 function agregarFila(descripcion, precio, cantidad) {
   if (cantidad > 0) {
     const importe = precio * cantidad;
     subtotal += importe;
+
+    // Mostrar en la tabla visual
     tabla.insertAdjacentHTML("beforeend", `
       <tr>
         <td>${descripcion}</td>
@@ -499,6 +502,13 @@ function agregarFila(descripcion, precio, cantidad) {
         <td style="text-align:right;">$${importe.toFixed(2)}</td>
       </tr>
     `);
+
+    // Guardar en el array de detalle
+    detalleFactura.push({
+      desc: descripcion,
+      precio: precio,
+      cantidad: cantidad
+    });
   }
 }
 
