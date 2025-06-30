@@ -923,7 +923,7 @@ doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
 
     detalleFactura.forEach((item) => {
       const total = item.precio * item.cantidad;
-      doc.text(item.desc, 20, y);
+     doc.text(item.nombre || item.desc || "Artículo", 20, y);
       doc.text(`$${item.precio.toFixed(2)}`, 120, y);
       doc.text(`${item.cantidad}`, 150, y);
       doc.text(`$${total.toFixed(2)}`, 180, y, { align: 'right' });
