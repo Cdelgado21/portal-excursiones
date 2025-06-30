@@ -889,9 +889,24 @@ doc.setFontSize(12);
 
 doc.text(`Fecha de Emisión: ${data.fechaReserva || "N/D"}`, 120, yViaje);
 yViaje += 8;
-doc.text(`Viaje Ida: ${data.vueloIda?.fecha || "N/D"}`, 120, yViaje);
+const formatearFecha = (fechaStr) => {
+  try {
+    const fecha = new Date(fechaStr);
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const anio = fecha.getFullYear();
+    return `${dia}/${mes}/${anio}`;
+  } catch {
+    return "N/D";
+  }
+};
+
+const fechaIda = formatearFecha(data.vueloIda?.fecha);
+const fechaRegreso = formatearFecha(data.vueloRegreso?.fecha);
+
+doc.text(`Viaje Ida: ${fechaIda}`, 120, yViaje);
 yViaje += 8;
-doc.text(`Viaje Regreso: ${data.vueloRegreso?.fecha || "N/D"}`, 120, yViaje);
+doc.text(`Viaje Regreso: ${fechaRegreso}`, 120, yViaje);
 yViaje += 8;
 doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
 
