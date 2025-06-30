@@ -887,7 +887,7 @@ let yViaje = 55;
 doc.setTextColor(colorVerde);
 doc.setFontSize(12);
 
-doc.text(`Fecha de Emisión: ${data.fecha_emision || "N/D"}`, 120, yViaje);
+doc.text(`Fecha de Emisión: ${data.fechaEmisionSpan || "N/D"}`, 120, yViaje);
 yViaje += 8;
 doc.text(`Viaje Ida: ${data.vueloIda?.fecha || "N/D"}`, 120, yViaje);
 yViaje += 8;
