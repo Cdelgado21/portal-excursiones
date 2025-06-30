@@ -849,78 +849,91 @@ async function generarFacturaPDF() {
     alert("No se encontró la reserva.");
     return;
   }
-  
+
   const data = docSnapshot.data();
   const nombreTitular = data.nombreTitular || "Titular";
   const correo = data.correo || "";
   const telefono = data.telefono || "";
-  const detalleFactura = data.detalleFactura || [];
   const pagos = data.pagos || [];
 
+  // 📦 Leer tabla del HTML para construir detalleFactura
+  const filas = document.querySelectorAll("#tablaArticulos tr");
+  const detalleFactura = [];
+
+  filas.forEach(fila => {
+    const celdas = fila.querySelectorAll("td");
+    if (celdas.length === 4) {
+      const descripcion = celdas[0].innerText.trim();
+      const precio = parseFloat(celdas[1].innerText.replace('$', '').trim());
+      const cantidad = parseInt(celdas[2].innerText.trim());
+      detalleFactura.push({ desc: descripcion, precio, cantidad });
+    }
+  });
+
+  // 🖼️ Cargar imagen de fondo
   const img = new Image();
-  img.src = "Facturacion.png"; // Fondo personalizado
+  img.src = "Facturacion.png";
 
-img.onload = () => {
-  doc.addImage(img, 'PNG', 0, 0, 210, 297);
+  img.onload = () => {
+    doc.addImage(img, 'PNG', 0, 0, 210, 297);
+    doc.setFont("helvetica", "bold");
 
-  const colorVerde = "#02535a";
-  doc.setFont("helvetica", "bold");
+    // 🔷 Encabezado
+    doc.setFontSize(22);
+    doc.setTextColor(colorVerde);
+    doc.text("Factura de Reserva", 105, 28, { align: "center" });
 
-  // 🔷 Título principal
-  doc.setFontSize(22);
-  doc.setTextColor(colorVerde);
-  doc.text("Factura de Reserva", 105, 28, { align: "center" });
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Código de Reserva: ${codigo}`, 105, 36, { align: "center" });
+    doc.text(`Factura N°: ---`, 105, 42, { align: "center" });
 
-  doc.setFontSize(12);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Código de Reserva: ${codigo}`, 105, 36, { align: "center" });
-  doc.text(`Factura N°: ---`, 105, 42, { align: "center" });
+    // 👤 Datos del cliente
+    let yCliente = 55;
+    doc.setTextColor(colorVerde);
+    doc.setFontSize(14);
+    doc.text("Factura a:", 20, yCliente);
 
-  // 🧾 Datos del cliente
-  let yCliente = 55;
-  doc.setTextColor(colorVerde);
-  doc.setFontSize(14);
-  doc.text("Factura a:", 20, yCliente);
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(12);
+    yCliente += 8;
+    doc.text(nombreTitular, 20, yCliente);
+    yCliente += 6;
+    doc.text(correo, 20, yCliente);
+    yCliente += 6;
+    doc.text(telefono, 20, yCliente);
 
-  doc.setTextColor(0, 0, 0);
-  doc.setFontSize(12);
-  yCliente += 8;
-  doc.text(nombreTitular || "N/D", 20, yCliente);
-  yCliente += 6;
-  doc.text(docSnapshot.data().correo || "N/D", 20, yCliente);
-  yCliente += 6;
-  doc.text(docSnapshot.data().telefono || "N/D", 20, yCliente);
+    // ✈️ Datos del viaje
+    let yViaje = 55;
+    doc.setTextColor(colorVerde);
+    doc.setFontSize(12);
 
-// 📅 Datos del viaje
-let yViaje = 55;
-doc.setTextColor(colorVerde);
-doc.setFontSize(12);
+    const formatearFecha = (fechaStr) => {
+      try {
+        const fecha = new Date(fechaStr);
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const anio = fecha.getFullYear();
+        return `${dia}/${mes}/${anio}`;
+      } catch {
+        return "N/D";
+      }
+    };
 
-doc.text(`Fecha de Emisión: ${data.fechaReserva || "N/D"}`, 120, yViaje);
-yViaje += 8;
-const formatearFecha = (fechaStr) => {
-  try {
-    const fecha = new Date(fechaStr);
-    const dia = String(fecha.getDate()).padStart(2, '0');
-    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-    const anio = fecha.getFullYear();
-    return `${dia}/${mes}/${anio}`;
-  } catch {
-    return "N/D";
-  }
-};
+    const fechaIda = formatearFecha(data.vueloIda?.fecha);
+    const fechaRegreso = formatearFecha(data.vueloRegreso?.fecha);
+    const fechaReserva = data.fechaReserva || "N/D";
 
-const fechaIda = formatearFecha(data.vueloIda?.fecha);
-const fechaRegreso = formatearFecha(data.vueloRegreso?.fecha);
+    doc.text(`Fecha de Emisión: ${fechaReserva}`, 120, yViaje);
+    yViaje += 8;
+    doc.text(`Viaje Ida: ${fechaIda}`, 120, yViaje);
+    yViaje += 8;
+    doc.text(`Viaje Regreso: ${fechaRegreso}`, 120, yViaje);
+    yViaje += 8;
+    doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
 
-doc.text(`Viaje Ida: ${fechaIda}`, 120, yViaje);
-yViaje += 8;
-doc.text(`Viaje Regreso: ${fechaRegreso}`, 120, yViaje);
-yViaje += 8;
-doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
-
-    // 🧾 Detalle de Factura
-  let y = 95; 
+    // 📄 Detalle de Factura
+    let y = 95;
     y += 12;
     doc.setFontSize(13);
     doc.setTextColor(colorVerde);
@@ -932,7 +945,7 @@ doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
 
     detalleFactura.forEach((item) => {
       const total = item.precio * item.cantidad;
-     doc.text(item.nombre || item.desc || "Artículo", 20, y);
+      doc.text(item.desc, 20, y);
       doc.text(`$${item.precio.toFixed(2)}`, 120, y);
       doc.text(`${item.cantidad}`, 150, y);
       doc.text(`$${total.toFixed(2)}`, 180, y, { align: 'right' });
@@ -941,7 +954,7 @@ doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
 
     const totalReserva = detalleFactura.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
 
-    // 💲 Total
+    // 💰 Total
     y += 10;
     doc.setFont("helvetica", "bold");
     doc.setTextColor(colorVerde);
@@ -982,7 +995,6 @@ doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
     doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
   };
 }
-
 </script>
 
 </body>
