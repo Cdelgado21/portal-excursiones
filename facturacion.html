@@ -849,7 +849,6 @@ async function generarFacturaPDF() {
     alert("No se encontró la reserva.");
     return;
   }
-console.log("Detalle de Factura:", detalleFactura);
   
   const data = docSnapshot.data();
   const nombreTitular = data.nombreTitular || "Titular";
