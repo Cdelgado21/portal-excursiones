@@ -932,33 +932,45 @@ async function generarFacturaPDF() {
     yViaje += 8;
     doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
 
-    let y = 95;
-y += 12;
+  // 📄 Detalle de Factura con bordes tipo tabla
+let y = 95;
 doc.setFontSize(13);
 doc.setTextColor(colorVerde);
+doc.setFont("helvetica", "bold");
 doc.text("Detalle de Factura", 20, y);
 y += 8;
 
-// Encabezados de columna
+// Encabezados
 doc.setFontSize(11);
-doc.setFont("helvetica", "bold");
 doc.setTextColor(0, 0, 0);
 doc.text("Descripción", 20, y);
-doc.text("Precio", 120, y);
-doc.text("Cant.", 150, y);
-doc.text("Total", 180, y, { align: 'right' });
+doc.text("Precio", 100, y, { align: 'right' });
+doc.text("Cantidad", 140, y, { align: 'right' });
+doc.text("Total", 190, y, { align: 'right' });
 
-y += 6;
+y += 4;
+// Línea después de encabezados
+doc.line(20, y, 190, y);
+y += 4;
+
 doc.setFont("helvetica", "normal");
 
 detalleFactura.forEach((item) => {
   const total = item.precio * item.cantidad;
   doc.text(item.desc, 20, y);
-  doc.text(`$${item.precio.toFixed(2)}`, 120, y);
-  doc.text(`${item.cantidad}`, 150, y);
-  doc.text(`$${total.toFixed(2)}`, 180, y, { align: 'right' });
-  y += 7;
+  doc.text(`$${item.precio.toFixed(2)}`, 100, y, { align: 'right' });
+  doc.text(`${item.cantidad}`, 140, y, { align: 'right' });
+  doc.text(`$${total.toFixed(2)}`, 190, y, { align: 'right' });
+
+  y += 6;
+  doc.line(20, y, 190, y); // Línea horizontal debajo de cada fila
 });
+
+// Opcional: dibujar bordes verticales simulando una tabla
+let startY = 103;
+let endY = y - 2;
+doc.line(20, startY, 20, endY);   // Borde izquierdo
+doc.line(190, startY, 190, endY); // Borde derecho
 
     const totalReserva = detalleFactura.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
 
