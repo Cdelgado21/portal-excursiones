@@ -949,6 +949,9 @@ let y = 100;
 doc.setFontSize(13);
 doc.setFont("helvetica", "bold");
 doc.setTextColor(colorVerde);
+doc.setDrawColor(200); // color gris claro
+doc.setLineWidth(0.5);
+doc.line(20, y - 5, 190, y - 5); // línea horizontal antes del título "Historial de Pagos"
 doc.text("Detalle de Factura", 25, y);
 y += 10;
 
@@ -993,7 +996,10 @@ y += 20;
 doc.setFontSize(13);
 doc.setTextColor(colorVerde);
 doc.setFont("helvetica", "bold");
-doc.text("Historial de Pagos", 20, y);
+doc.setDrawColor(200); // color gris claro
+doc.setLineWidth(0.5);
+doc.line(20, y - 5, 190, y - 5); // línea horizontal antes del título "Historial de Pagos"
+doc.text("Historial de Pagos", 25, y);
 y += 10;
 
 // Encabezados
