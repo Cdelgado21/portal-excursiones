@@ -1034,26 +1034,27 @@ doc.setFontSize(13);
 doc.setTextColor(colorVerde);
 doc.setFont("helvetica", "bold");
 doc.text("Saldo de Factura", 25, y);
+        y += 12;
 doc.setDrawColor(200); // color gris claro
 doc.setLineWidth(0.2);
 doc.line(20, y - 5, 190, y - 5); // línea horizontal antes del título "Historial de Pagos"
     
     // 📌 Resumen financiero
-    y += 12;
+
   // Posición inicial (ajustá y según tu diseño)
 doc.setFontSize(11);
 doc.setFont("helvetica", "normal");
-doc.setTextColor(colorVerde);
+doc.setTextColor(0, 0, 0);
 doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 25, y);
 y += 6;
 
 // Pagos Aplicados (color naranja)
-doc.setTextColor(colorVerde);
+doc.setTextColor(0, 0, 0);
 doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 25, y);
 y += 6;
 
 // Saldo Restante (color rojo)
-doc.setTextColor(colorVerde);
+doc.setTextColor(0, 0, 0);
 doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 25, y);
 y += 6;
 
