@@ -977,6 +977,8 @@ doc.setFont("helvetica", "bold");
 doc.setTextColor(colorVerde);
 doc.text(`Total: $${totalFactura.toFixed(2)}`, 187, y, { align: 'right' });
 
+    const totalReserva = detalleFactura.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+
     // 💳 Historial de Pagos
     y += 15;
     doc.setFontSize(13);
