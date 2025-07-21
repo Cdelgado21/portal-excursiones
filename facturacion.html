@@ -992,7 +992,7 @@ doc.text(`Total: $${totalFactura.toFixed(2)}`, 187, y, { align: 'right' });
     const totalReserva = detalleFactura.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
 
 // 📄 Historial de Pagos en estilo Detalle de Factura
-y += 20;
+y += 10;
 doc.setFontSize(13);
 doc.setTextColor(colorVerde);
 doc.setFont("helvetica", "bold");
@@ -1029,12 +1029,12 @@ if (pagos.length === 0) {
     const pagosAplicados = pagos.reduce((sum, p) => sum + p.monto, 0);
     const saldo = totalReserva - pagosAplicados;
 
-    y += 20;
+    y += 10;
 doc.setFontSize(13);
 doc.setTextColor(colorVerde);
 doc.setFont("helvetica", "bold");
 doc.text("Saldo de Factura", 25, y);
-        y += 12;
+        y += 5;
 doc.setDrawColor(200); // color gris claro
 doc.setLineWidth(0.2);
 doc.line(20, y - 5, 190, y - 5); // línea horizontal antes del título "Historial de Pagos"
