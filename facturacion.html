@@ -934,43 +934,49 @@ async function generarFacturaPDF() {
 
   // 📄 Detalle de Factura con bordes tipo tabla
 let y = 95;
+let totalFactura = 0;
+
 doc.setFontSize(13);
-doc.setTextColor(colorVerde);
 doc.setFont("helvetica", "bold");
+doc.setTextColor(colorVerde);
 doc.text("Detalle de Factura", 20, y);
 y += 8;
 
-// Encabezados
+// Fondo gris encabezado
+doc.setFillColor(245, 245, 245);
+doc.roundedRect(20, y, 170, 10, 2, 2, 'F');
+
 doc.setFontSize(11);
 doc.setTextColor(0, 0, 0);
-doc.text("Descripción", 20, y);
-doc.text("Precio", 100, y, { align: 'right' });
-doc.text("Cantidad", 140, y, { align: 'right' });
-doc.text("Total", 190, y, { align: 'right' });
+doc.setFont("helvetica", "bold");
+doc.text("Descripción", 24, y + 7);
+doc.text("Precio", 105, y + 7, { align: 'right' });
+doc.text("Cantidad", 145, y + 7, { align: 'right' });
+doc.text("Total", 187, y + 7, { align: 'right' });
 
-y += 4;
-// Línea después de encabezados
-doc.line(20, y, 190, y);
-y += 4;
-
+y += 14;
 doc.setFont("helvetica", "normal");
 
 detalleFactura.forEach((item) => {
-  const total = item.precio * item.cantidad;
-  doc.text(item.desc, 20, y);
-  doc.text(`$${item.precio.toFixed(2)}`, 100, y, { align: 'right' });
-  doc.text(`${item.cantidad}`, 140, y, { align: 'right' });
-  doc.text(`$${total.toFixed(2)}`, 190, y, { align: 'right' });
+  if (item.cantidad > 0) {
+    const total = item.precio * item.cantidad;
+    totalFactura += total;
 
-  y += 6;
-  doc.line(20, y, 190, y); // Línea horizontal debajo de cada fila
+    doc.setTextColor(60, 60, 60);
+    doc.text(item.desc, 24, y);
+    doc.text(`$${item.precio.toFixed(2)}`, 105, y, { align: 'right' });
+    doc.text(`${item.cantidad}`, 145, y, { align: 'right' });
+    doc.text(`$${total.toFixed(2)}`, 187, y, { align: 'right' });
+
+    y += 9; // Separación entre filas
+  }
 });
 
-// Opcional: dibujar bordes verticales simulando una tabla
-let startY = 103;
-let endY = y - 2;
-doc.line(20, startY, 20, endY);   // Borde izquierdo
-doc.line(190, startY, 190, endY); // Borde derecho
+// Total al final
+y += 5;
+doc.setFont("helvetica", "bold");
+doc.setTextColor(colorVerde);
+doc.text(`Total: $${totalFactura.toFixed(2)}`, 187, y, { align: 'right' });
 
     const totalReserva = detalleFactura.reduce((acc, item) => acc + item.precio * item.cantidad, 0);
 
