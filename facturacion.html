@@ -934,9 +934,16 @@ async function generarFacturaPDF() {
     yViaje += 8;
     doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
 
-// Color blanco de fondo para toda la tarjeta
-doc.setFillColor(255, 255, 255);
-doc.roundedRect(15, 90, 180, 80 + detalleFactura.length * 9, 5, 5, 'F'); // altura dinámica
+// Calcular la altura total dinámica
+const alturaDetalle = detalleFactura.length * 9;
+const alturaPagos = pagos.length > 0 ? pagos.length * 9 + 20 : 15;
+const alturaTotales = 30; // espacio para Totales/Pagos Aplicados/Saldo Restante
+const paddingVertical = 20; // margen superior e inferior extra
+const alturaTotal = 80 + alturaDetalle + alturaPagos + alturaTotales + paddingVertical;
+
+// Dibujar rectángulo que envuelve todo
+doc.setFillColor(255, 255, 255); // blanco
+doc.roundedRect(15, 90, 180, alturaTotal, 5, 5, 'F'); // abarca todo el contenido
 
 let y = 100;
 doc.setFontSize(13);
