@@ -981,43 +981,35 @@ doc.text(`Total: $${totalFactura.toFixed(2)}`, 187, y, { align: 'right' });
 
     const totalReserva = detalleFactura.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
 
-// Manual table sin autoTable
+// 📄 Historial de Pagos como tabla
+y += 15;
+doc.setFontSize(13);
+doc.setTextColor(colorVerde);
+doc.text("Historial de Pagos", 20, y);
 y += 10;
-const colX = [20, 60, 100, 150];
-const colWidth = [35, 35, 40, 35];
-const rowHeight = 9;
 
+// Encabezados
 doc.setFontSize(11);
+doc.setTextColor(0, 0, 0);
 doc.setFont("helvetica", "bold");
-doc.setFillColor(240, 247, 247);
-doc.setTextColor(0);
+doc.text("Fecha", 20, y);
+doc.text("Monto", 90, y);
+doc.text("Método", 140, y);
+y += 6;
 
-// Dibujar encabezado
-['Pago', 'Monto', 'Fecha', 'Método'].forEach((txt, i) => {
-  doc.rect(colX[i], y, colWidth[i], rowHeight, 'F');
-  doc.text(txt, colX[i] + 2, y + 6);
-});
-
-y += rowHeight;
 doc.setFont("helvetica", "normal");
 
-// Dibujar cada fila
-pagos.forEach((pago, index) => {
-  const fila = [
-    `${index + 1}`,
-    `$${pago.monto.toFixed(2)}`,
-    formatearFecha(pago.fecha),
-    pago.metodo || "N/D"
-  ];
-
-  fila.forEach((txt, i) => {
-    doc.rect(colX[i], y, colWidth[i], rowHeight);
-    doc.text(txt, colX[i] + 2, y + 6);
+if (pagos.length === 0) {
+  doc.text("No hay pagos registrados.", 20, y);
+  y += 6;
+} else {
+  pagos.forEach((pago) => {
+    doc.text(`${pago.fecha}`, 20, y);
+    doc.text(`$${pago.monto.toFixed(2)}`, 90, y);
+    doc.text(`${pago.metodo}`, 140, y);
+    y += 6;
   });
-
-  y += rowHeight;
-});
-
+}
 
     const pagosAplicados = pagos.reduce((sum, p) => sum + p.monto, 0);
     const saldo = totalReserva - pagosAplicados;
