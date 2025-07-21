@@ -981,48 +981,42 @@ doc.text(`Total: $${totalFactura.toFixed(2)}`, 187, y, { align: 'right' });
 
     const totalReserva = detalleFactura.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
 
-y += 15;
+// Manual table sin autoTable
+y += 10;
+const colX = [20, 60, 100, 150];
+const colWidth = [35, 35, 40, 35];
+const rowHeight = 9;
 
-doc.setFontSize(13);
-doc.setTextColor(colorVerde);
-doc.text("Historial de Pagos", 20, y);
+doc.setFontSize(11);
+doc.setFont("helvetica", "bold");
+doc.setFillColor(240, 247, 247);
+doc.setTextColor(0);
 
-y += 5;
+// Dibujar encabezado
+['Pago', 'Monto', 'Fecha', 'Método'].forEach((txt, i) => {
+  doc.rect(colX[i], y, colWidth[i], rowHeight, 'F');
+  doc.text(txt, colX[i] + 2, y + 6);
+});
 
-if (pagos.length === 0) {
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  doc.text("No hay pagos registrados.", 20, y + 10);
-} else {
-  const body = pagos.map((pago, i) => [
-    i + 1,
+y += rowHeight;
+doc.setFont("helvetica", "normal");
+
+// Dibujar cada fila
+pagos.forEach((pago, index) => {
+  const fila = [
+    `${index + 1}`,
     `$${pago.monto.toFixed(2)}`,
-    pago.fecha, // o formatear a dd/mm/yyyy si lo deseás
-    pago.metodo
-  ]);
+    formatearFecha(pago.fecha),
+    pago.metodo || "N/D"
+  ];
 
-  doc.autoTable({
-    startY: y + 10,
-    head: [['Pago', 'Monto', 'Fecha', 'Método']],
-    body: body,
-    theme: 'grid',
-    styles: {
-      font: 'helvetica',
-      fontSize: 10,
-      cellPadding: 3,
-    },
-    headStyles: {
-      fillColor: [2, 83, 90], // tu color #02535a
-      textColor: 255,
-      fontStyle: 'bold',
-    },
-    alternateRowStyles: {
-      fillColor: [240, 247, 247] // color fondo claro
-    },
+  fila.forEach((txt, i) => {
+    doc.rect(colX[i], y, colWidth[i], rowHeight);
+    doc.text(txt, colX[i] + 2, y + 6);
   });
 
-  y = doc.lastAutoTable.finalY;
-}
+  y += rowHeight;
+});
 
 
     const pagosAplicados = pagos.reduce((sum, p) => sum + p.monto, 0);
