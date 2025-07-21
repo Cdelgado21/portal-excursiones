@@ -935,9 +935,9 @@ async function generarFacturaPDF() {
     doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
 
 // Calcular la altura total dinámica
-const alturaDetalle = detalleFactura.length * 9;
-const alturaPagos = pagos.length > 0 ? pagos.length * 9 + 20 : 15;
-const alturaTotales = 30; // espacio para Totales/Pagos Aplicados/Saldo Restante
+const alturaDetalle = detalleFactura.length * 8;
+const alturaPagos = pagos.length > 0 ? pagos.length * 8 + 20 : 15;
+const alturaTotales = 15; // espacio para Totales/Pagos Aplicados/Saldo Restante
 const paddingVertical = 5; // margen superior e inferior extra
 const alturaTotal = 80 + alturaDetalle + alturaPagos + alturaTotales + paddingVertical;
 
