@@ -1018,7 +1018,7 @@ if (pagos.length === 0) {
   y += 6;
 } else {
   pagos.forEach((pago) => {
-    doc.text(`${pago.fecha}`, 30, y);
+    doc.text(formatearFecha(pago.fecha), 30, y);
     doc.text(`$${pago.monto.toFixed(2)}`, 90, y);
     doc.text(`${pago.metodo}`, 150, y);
     y += 6;
