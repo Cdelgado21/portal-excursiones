@@ -1031,14 +1031,26 @@ if (pagos.length === 0) {
 
     // 📌 Resumen financiero
     y += 12;
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 20, y);
-    y += 6;
-    doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 20, y);
-    y += 6;
-    doc.setTextColor(saldo > 0 ? "red" : "green");
-    doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 20, y);
+  // Posición inicial (ajustá y según tu diseño)
+doc.setFontSize(11);
+doc.setFont("helvetica", "normal");
+doc.setTextColor(0, 0, 0);
+doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 20, y);
+y += 6;
 
+// Pagos Aplicados (color naranja)
+doc.setTextColor(244, 152, 89); // #f49859
+doc.text(`Pagos Aplicados: $${totalPagos.toFixed(2)}`, 20, y);
+y += 6;
+
+// Saldo Restante (color rojo)
+doc.setTextColor(255, 0, 0); // rojo fuerte
+doc.text(`Saldo Restante: $${saldoRestante.toFixed(2)}`, 20, y);
+y += 6;
+
+// Restaurar color negro por si se usa más abajo
+doc.setTextColor(0, 0, 0);
+    
     // 💾 Guardar PDF
     doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
   };
