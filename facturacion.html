@@ -981,51 +981,37 @@ doc.text(`Total: $${totalFactura.toFixed(2)}`, 187, y, { align: 'right' });
 
     const totalReserva = detalleFactura.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
 
-// 📄 Historial de Pagos como tabla personalizada
-y += 15;
+// 📄 Historial de Pagos en estilo Detalle de Factura
+y += 20;
 doc.setFontSize(13);
 doc.setTextColor(colorVerde);
+doc.setFont("helvetica", "bold");
 doc.text("Historial de Pagos", 20, y);
-y += 8;
+y += 10;
 
 // Encabezados
-const colX = [20, 90, 140];
-const colWidth = [60, 40, 40];
-const rowHeight = 8;
-
 doc.setFontSize(11);
-doc.setFont("helvetica", "bold");
-doc.setFillColor(240, 247, 247);
-doc.setTextColor(0);
+doc.setTextColor(0, 0, 0);
+doc.text("Fecha", 30, y);
+doc.text("Monto", 90, y);
+doc.text("Método", 150, y);
+y += 6;
 
-// Dibujar encabezados con fondo
-["Fecha", "Monto", "Método"].forEach((txt, i) => {
-  doc.rect(colX[i], y, colWidth[i], rowHeight, 'F');
-  doc.text(txt, colX[i] + 2, y + 6);
-});
-
-y += rowHeight;
 doc.setFont("helvetica", "normal");
 
+// Contenido de los pagos
 if (pagos.length === 0) {
-  doc.text("No hay pagos registrados.", 20, y + 6);
+  doc.text("No hay pagos registrados.", 30, y);
   y += 6;
 } else {
-  pagos.forEach((pago, index) => {
-    const fila = [
-      formatearFecha(pago.fecha),
-      `$${pago.monto.toFixed(2)}`,
-      pago.metodo || "N/D"
-    ];
-
-    fila.forEach((txt, i) => {
-      doc.rect(colX[i], y, colWidth[i], rowHeight);
-      doc.text(txt, colX[i] + 2, y + 6);
-    });
-
-    y += rowHeight;
+  pagos.forEach((pago) => {
+    doc.text(`${pago.fecha}`, 30, y);
+    doc.text(`$${pago.monto.toFixed(2)}`, 90, y);
+    doc.text(`${pago.metodo}`, 150, y);
+    y += 6;
   });
 }
+
 
     const pagosAplicados = pagos.reduce((sum, p) => sum + p.monto, 0);
     const saldo = totalReserva - pagosAplicados;
