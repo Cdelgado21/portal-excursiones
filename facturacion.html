@@ -1054,7 +1054,9 @@ doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 25, y);
 y += 6;
 
 // Saldo Restante (color rojo)
-doc.setTextColor(0, 0, 0);
+doc.setFontSize(12);
+doc.setFont("helvetica", "bold");
+doc.setTextColor(colorVerde);
 doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 25, y);
 y += 6;
 
