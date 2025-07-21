@@ -938,7 +938,7 @@ async function generarFacturaPDF() {
 const alturaDetalle = detalleFactura.length * 9;
 const alturaPagos = pagos.length > 0 ? pagos.length * 9 + 20 : 15;
 const alturaTotales = 30; // espacio para Totales/Pagos Aplicados/Saldo Restante
-const paddingVertical = 60; // margen superior e inferior extra
+const paddingVertical = 5; // margen superior e inferior extra
 const alturaTotal = 80 + alturaDetalle + alturaPagos + alturaTotales + paddingVertical;
 
 // Dibujar rectángulo que envuelve todo
