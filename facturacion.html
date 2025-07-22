@@ -1095,12 +1095,12 @@ doc.setTextColor(0, 0, 0);
     const urlWebApp = "https://script.google.com/macros/s/AKfycbz2X6nAhAdk3BGAKbnUtyghT0DNcfNbcKTkFe-1mlfSJYin4LEJXuc1y9SYJsVEGMh1zA/exec"; // ← Poné tu URL del Web App aquí
 
     const data = {
-      destinatario: destinatario,
-      asunto: "Factura de Reserva | Excursiones Delgado",
-      mensaje: "Gracias por viajar con nosotros. Adjunto encontrará su factura.",
-      archivoBase64: base64PDF,
-      nombreArchivo: "Factura_Reserva.pdf"
-    };
+  emailDestino: destinatario,  // 👈 ESTE CAMBIO es clave
+  asunto: "Factura de Reserva | Excursiones Delgado",
+  mensaje: "Gracias por viajar con nosotros. Adjunto encontrará su factura.",
+  archivoBase64: base64PDF,
+  nombreArchivo: "Factura_Reserva.pdf"
+};
 
     const response = await fetch(urlWebApp, {
       method: "POST",
