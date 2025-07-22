@@ -1092,7 +1092,7 @@ doc.setTextColor(0, 0, 0);
   try {
     const base64PDF = await generarPDFBase64(); // Ya debés tener esta función
     const destinatario = document.getElementById("correoCliente").textContent.trim();
- const urlWebApp = "https://proxy-factura.cris-delgado21.workers.dev/";
+const urlWebApp = "https://proxy-correo.cris-delgado21.workers.dev/";
 
     const data = {
   emailDestino: destinatario,  // 👈 ESTE CAMBIO es clave
@@ -1102,11 +1102,11 @@ doc.setTextColor(0, 0, 0);
   nombreArchivo: "Factura_Reserva.pdf"
 };
 
-    const response = await fetch(urlWebApp, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+   const response = await fetch(urlWebApp, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(data),
+});
 
     const result = await response.text();
     alert(result);
