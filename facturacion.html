@@ -1092,7 +1092,7 @@ doc.setTextColor(0, 0, 0);
   try {
     const base64PDF = await generarPDFBase64(); // Ya debés tener esta función
     const destinatario = document.getElementById("correoCliente").textContent.trim();
-    const urlWebApp = "fetch('https://proxy-factura.cris-delgado21.workers.dev/'; // ← Poné tu URL del Web App aquí
+ const urlWebApp = "https://proxy-factura.cris-delgado21.workers.dev/";
 
     const data = {
   emailDestino: destinatario,  // 👈 ESTE CAMBIO es clave
