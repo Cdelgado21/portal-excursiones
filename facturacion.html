@@ -1068,40 +1068,30 @@ doc.setTextColor(0, 0, 0);
     doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
   };
 }
-  async function enviarPorCorreo() {
+ async function enviarFacturaPorCorreo() {
+  const base64PDF = await generarPDFBase64(); // Asumimos que esta función ya te da el base64
+  const destinatario = document.getElementById('correoCliente').textContent.trim(); // Asegúrate que esté bien capturado
+  const urlWebApp = "https://script.google.com/macros/s/AKfycbz2X6nAhAdk3BGAKbnUtyghT0DNcfNbcKTkFe-1mlfSJYin4LEJXuc1y9SYJsVEGMh1zA/exec"; // ← Pegá aquí tu URL
+
+  const data = {
+    destinatario: destinatario,
+    asunto: "Factura de Reserva | Excursiones Delgado",
+    mensaje: "Adjunto encontrará su factura. ¡Gracias por viajar con nosotros!",
+    archivoBase64: base64PDF,
+    nombreArchivo: "Factura_Reserva.pdf"
+  };
+
   try {
-    const doc = generarFacturaPDF(); // Esta función ya la tenés, que devuelve el PDF generado con jsPDF
-    const pdfBlob = doc.output('blob');
+    const res = await fetch(urlWebApp, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
 
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64PDF = reader.result.split(',')[1];
-
-      const datosCorreo = {
-        destinatario: "cris.delgado21@gmail.com", // o extraelo de los datos de reserva
-        asunto: `Factura de Reserva ${codigo}`,
-        mensaje: `Estimado cliente, adjuntamos su factura para la reserva con código ${codigo}.`,
-        archivoBase64: base64PDF,
-        nombreArchivo: `Factura-${codigo}.pdf`
-      };
-
-      const respuesta = await fetch("https://cris-delgado21.trabajadores.dev/enviar-correo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(datosCorreo)
-      });
-
-      if (respuesta.ok) {
-        alert("Correo enviado correctamente ✅");
-      } else {
-        alert("Error al enviar el correo ❌");
-      }
-    };
-
-    reader.readAsDataURL(pdfBlob);
+    const text = await res.text();
+    alert(text);
   } catch (error) {
-    console.error("Error al enviar por correo:", error);
-    alert("Ocurrió un error.");
+    alert("Error al enviar el correo: " + error.message);
   }
 }
 </script>
