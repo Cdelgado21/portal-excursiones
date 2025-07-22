@@ -1068,30 +1068,31 @@ doc.setTextColor(0, 0, 0);
     doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
   };
 }
- async function enviarFacturaPorCorreo() {
-  const base64PDF = await generarPDFBase64(); // Asumimos que esta función ya te da el base64
-  const destinatario = document.getElementById('correoCliente').textContent.trim(); // Asegúrate que esté bien capturado
-  const urlWebApp = "https://script.google.com/macros/s/AKfycbz2X6nAhAdk3BGAKbnUtyghT0DNcfNbcKTkFe-1mlfSJYin4LEJXuc1y9SYJsVEGMh1zA/exec"; // ← Pegá aquí tu URL
-
-  const data = {
-    destinatario: destinatario,
-    asunto: "Factura de Reserva | Excursiones Delgado",
-    mensaje: "Adjunto encontrará su factura. ¡Gracias por viajar con nosotros!",
-    archivoBase64: base64PDF,
-    nombreArchivo: "Factura_Reserva.pdf"
-  };
-
+ async function enviarPorCorreo() {
   try {
-    const res = await fetch(urlWebApp, {
+    const base64PDF = await generarPDFBase64(); // Ya debés tener esta función
+    const destinatario = document.querySelector("b").textContent.trim(); // Asegurá que sea el correo correcto
+    const urlWebApp = "https://script.google.com/macros/s/AKfycbz2X6nAhAdk3BGAKbnUtyghT0DNcfNbcKTkFe-1mlfSJYin4LEJXuc1y9SYJsVEGMh1zA/exec"; // ← Poné tu URL del Web App aquí
+
+    const data = {
+      destinatario: destinatario,
+      asunto: "Factura de Reserva | Excursiones Delgado",
+      mensaje: "Gracias por viajar con nosotros. Adjunto encontrará su factura.",
+      archivoBase64: base64PDF,
+      nombreArchivo: "Factura_Reserva.pdf"
+    };
+
+    const response = await fetch(urlWebApp, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
 
-    const text = await res.text();
-    alert(text);
+    const result = await response.text();
+    alert(result);
   } catch (error) {
-    alert("Error al enviar el correo: " + error.message);
+    console.error("Error al enviar el correo:", error);
+    alert("Ocurrió un error al enviar el correo.");
   }
 }
 </script>
