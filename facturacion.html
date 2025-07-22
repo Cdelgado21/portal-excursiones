@@ -8,7 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
   body {
@@ -1067,6 +1067,26 @@ doc.setTextColor(0, 0, 0);
     // 💾 Guardar PDF
     doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
   };
+}
+
+  function generarPDFBase64() {
+  return new Promise((resolve, reject) => {
+    const element = document.querySelector(".factura"); // Asegúrate que el contenedor principal de la factura tenga esta clase
+    const opt = {
+      margin:       0.5,
+      filename:     'factura.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).outputPdf('datauristring').then(function(pdfBase64) {
+      const base64 = pdfBase64.split(',')[1]; // eliminamos el encabezado "data:application/pdf;base64,"
+      resolve(base64);
+    }).catch(function(error) {
+      reject(error);
+    });
+  });
 }
  async function enviarPorCorreo() {
   try {
