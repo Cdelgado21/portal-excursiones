@@ -884,11 +884,11 @@ async function generarFacturaPDF() {
     doc.setFontSize(22);
     doc.setTextColor(colorVerde);
     doc.text("Factura de Reserva", 105, 28, { align: "center" });
-
+const numeroFactura = document.getElementById('numeroFactura').textContent;
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text(`Código de Reserva: ${codigo}`, 105, 36, { align: "center" });
-    doc.text(`Factura N°:${numeroFactura}`, 105, 42, { align: "center" });
+    doc.text(`Factura N°: ${numeroFactura}`, 105, 42, { align: "center" });
 
     // 👤 Datos del cliente
     let yCliente = 55;
