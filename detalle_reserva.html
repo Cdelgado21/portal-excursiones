@@ -883,9 +883,16 @@ function extraerTramosDesdeLineasSueltas(texto) {
 function extraerTramosDelTexto(texto) {
   const porParentesis = extraerTramosDesdeParentesis(texto);
   if (porParentesis.length >= 2) return porParentesis; // formato con ciudad completa detectado
-  const porGuiones = extraerTramosDesdeGuiones(texto);
-  if (porGuiones.length >= 1) return porGuiones;
-  return extraerTramosDesdeLineasSueltas(texto);
+  // FIX: se cambió el orden — antes probaba "guiones" antes que "líneas sueltas".
+  // Eso causaba que menciones repetidas en secciones ajenas al itinerario (ej.
+  // "SJO - GUA: No Asignado" en la lista de asientos por pasajero) se detectaran
+  // como si fueran el encabezado real del vuelo, a veces en el orden equivocado
+  // (ida/regreso invertidos). Las "líneas sueltas" (el código grande y solo en
+  // su propia línea) corresponden al encabezado real del itinerario, así que
+  // se prueban primero.
+  const porLineasSueltas = extraerTramosDesdeLineasSueltas(texto);
+  if (porLineasSueltas.length >= 1) return porLineasSueltas;
+  return extraerTramosDesdeGuiones(texto);
 }
 
 // Junta todo lo detectado en "segmentos" de vuelo (uno por cada número de vuelo
@@ -2172,6 +2179,5 @@ function cargarHistorialPagos() {
 
 </body>
 </html>
-
 
 
