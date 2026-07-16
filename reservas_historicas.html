@@ -134,8 +134,9 @@
 
     // Calcula la cantidad de personas cubriendo los 3 esquemas distintos que
     // ha tenido el sistema a lo largo del tiempo (ver reservas.html para más detalle).
+    // FIX: se eliminó el uso de "data.numero" — ese campo es el consecutivo de
+    // la reserva (1, 2, 3...), no la cantidad de personas.
     function calcularPersonas(data) {
-      if (typeof data.numero === 'number' && data.numero > 0) return data.numero;
       const adultos = data.cantidadAdultos || 0;
       const ninos = data.cantidadNinos || 0;
       const bebes = data.cantidadBebes || 0;
