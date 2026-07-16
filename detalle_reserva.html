@@ -6,6 +6,7 @@
   <title>Detalle de Reserva</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
   <style>
     body {
@@ -157,6 +158,15 @@
         <option value="Femenino">Femenino</option>
         <option value="Masculino">Masculino</option>
       </select>
+    </div>
+  </div>
+
+  <!-- NUEVO: adjuntar foto/escaneo del pasaporte del titular -->
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
+    <div style="flex: 1; min-width: 250px;">
+      <label for="pasaporteTitularFile">Foto/Escaneo del Pasaporte (opcional)</label>
+      <input type="file" id="pasaporteTitularFile" accept="image/*,application/pdf">
+      <div id="pasaporteTitularActual" style="margin-top:6px; font-size: 0.85rem;"></div>
     </div>
   </div>
 </section>
@@ -460,6 +470,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+const storage = firebase.storage();
 
 const params = new URLSearchParams(window.location.search);
 const codigoReservaExistente = params.get("codigo");
@@ -592,6 +603,19 @@ async function guardarReserva() {
     let fechaReservaExistente = datosExistentes?.fechaReserva || null;
     let fechaReserva = fechaReservaExistente || new Date().toLocaleDateString('es-CR');
 
+    // NUEVO: subir pasaporte del titular a Firebase Storage si se seleccionó
+    // un archivo nuevo. Si no se seleccionó ninguno, se conserva el que ya
+    // existía (para no borrar un pasaporte ya subido al simplemente editar
+    // otro campo de la reserva).
+    let pasaporteTitularURL = datosExistentes?.pasaporteTitularURL || "";
+    const archivoPasaporteTitular = document.getElementById("pasaporteTitularFile")?.files[0];
+    if (archivoPasaporteTitular) {
+      const refTitular = storage.ref().child(`pasaportes/${codigo}/titular_${Date.now()}_${archivoPasaporteTitular.name}`);
+      await refTitular.put(archivoPasaporteTitular);
+      pasaporteTitularURL = await refTitular.getDownloadURL();
+    }
+    const pasajerosExistentes = datosExistentes?.pasajeros || [];
+
     await db.collection("costos_reservas").doc(codigo).set({
       codigo: codigo,
       fecha_viaje: fechaReserva,
@@ -608,7 +632,7 @@ async function guardarReserva() {
       codigo, numero, año,
       nombreTitular, cedula, correo, telefono,
       fechaNacimientoTitular, vencimientoPasaporteTitular,
-      nacionalidadTitular, generoTitular,
+      nacionalidadTitular, generoTitular, pasaporteTitularURL,
       vueloIda, vueloRegreso,
       fechaReserva, destino, nombreDestino,
       total, abono, saldo, pagos, embajadora,
@@ -633,16 +657,32 @@ async function guardarReserva() {
       })
     };
 
-    document.querySelectorAll(".tarjeta-pasajero").forEach(p => {
+    // NUEVO: sube el pasaporte de cada pasajero acompañante si se seleccionó un
+    // archivo nuevo en su tarjeta; si no, conserva el que ya tenía guardado.
+    // Se usa un ciclo for (no forEach) porque necesitamos "await" para cada subida.
+    const tarjetasPasajeroParaGuardar = document.querySelectorAll(".tarjeta-pasajero");
+    for (let i = 0; i < tarjetasPasajeroParaGuardar.length; i++) {
+      const p = tarjetasPasajeroParaGuardar[i];
+      const inputArchivo = p.querySelector(".pasaportePasajeroFile");
+      const archivoNuevo = inputArchivo?.files[0];
+      let pasaporteURL = pasajerosExistentes[i]?.pasaporteURL || "";
+
+      if (archivoNuevo) {
+        const refPasajero = storage.ref().child(`pasaportes/${codigo}/pasajero_${i}_${Date.now()}_${archivoNuevo.name}`);
+        await refPasajero.put(archivoNuevo);
+        pasaporteURL = await refPasajero.getDownloadURL();
+      }
+
       datos.pasajeros.push({
         nombre: p.querySelector(".nombrePasajero")?.value || "",
         documento: p.querySelector(".documentoPasajero")?.value || "",
         vencimiento: p.querySelector(".vencimientoPasaportePasajero")?.value || "",
         nacimiento: p.querySelector(".fechaNacimientoPasajero")?.value || "",
         nacionalidad: p.querySelector(".nacionalidadPasajero")?.value || "",
-        genero: p.querySelector(".generoPasajero")?.value || ""
+        genero: p.querySelector(".generoPasajero")?.value || "",
+        pasaporteURL
       });
-    });
+    }
 
     // FIX: antes buscaba #aerolineaIda / #fechaIda / #vueloIda (IDs duplicados con
     // los del "Vuelo de Ida" principal). Ahora usa clases propias para cada vuelo
@@ -819,6 +859,15 @@ function agregarPasajero() {
           <option value="Femenino">Femenino</option>
           <option value="Masculino">Masculino</option>
         </select>
+      </div>
+    </div>
+
+    <!-- NUEVO: adjuntar foto/escaneo del pasaporte de este pasajero -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px;">
+      <div style="flex: 1; min-width: 250px;">
+        <label>Foto/Escaneo del Pasaporte (opcional)</label>
+        <input type="file" class="pasaportePasajeroFile" accept="image/*,application/pdf">
+        <div class="pasaportePasajeroActual" style="margin-top:6px; font-size: 0.85rem;"></div>
       </div>
     </div>
   `;
@@ -1110,6 +1159,13 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("nacionalidadTitular").value = data.nacionalidadTitular || "";
     document.getElementById("generoTitular").value = data.generoTitular || "";
 
+    if (data.pasaporteTitularURL) {
+      const contPasaporteTitular = document.getElementById("pasaporteTitularActual");
+      if (contPasaporteTitular) {
+        contPasaporteTitular.innerHTML = `<a href="${data.pasaporteTitularURL}" target="_blank">📎 Ver pasaporte actual</a>`;
+      }
+    }
+
     document.getElementById("cantidadAdultos").value = data.cantidadAdultos || 0;
     document.getElementById("cantidadNinos").value = data.cantidadNinos || 0;
     document.getElementById("cantidadBebes").value = data.cantidadBebes || 0;
@@ -1217,6 +1273,13 @@ async function cargarReservaExistente(codigo) {
 
           const genero = ult.querySelector(".generoPasajero");
           if (genero) genero.value = p.genero || "";
+
+          if (p.pasaporteURL) {
+            const contPasaportePasajero = ult.querySelector(".pasaportePasajeroActual");
+            if (contPasaportePasajero) {
+              contPasaportePasajero.innerHTML = `<a href="${p.pasaporteURL}" target="_blank">📎 Ver pasaporte actual</a>`;
+            }
+          }
         }
       });
     }
@@ -1321,4 +1384,3 @@ function cargarHistorialPagos() {
 
 </body>
 </html>
-
