@@ -716,10 +716,19 @@ function extraerFechasDelTexto(texto) {
     fechas.push({ fecha: `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`, index: m.index });
   }
 
-  const regexTexto = /\b(\d{1,2})\s+([A-ZÁÉÍÓÚ]{3,9})\.?\s+(\d{4})\b/gi;
-  while ((m = regexTexto.exec(texto)) !== null) {
+  // Formato "Día Mes Año" (ej. "13 Julio 2026")
+  const regexDiaMes = /\b(\d{1,2})\s+([A-ZÁÉÍÓÚ]{3,9})\.?\s+(\d{4})\b/gi;
+  while ((m = regexDiaMes.exec(texto)) !== null) {
     const mm = MESES_TEXTO[m[2].substring(0, 3).toUpperCase()];
     if (mm) fechas.push({ fecha: `${m[3]}-${mm}-${m[1].padStart(2, "0")}`, index: m.index });
+  }
+
+  // NUEVO: formato "Mes Día, Año" (ej. "Agosto 6, 2026" — el que usan los
+  // comprobantes de Copa Airlines). Antes solo se reconocía el orden inverso.
+  const regexMesDia = /\b([A-ZÁÉÍÓÚ]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})\b/gi;
+  while ((m = regexMesDia.exec(texto)) !== null) {
+    const mm = MESES_TEXTO[m[1].substring(0, 3).toUpperCase()];
+    if (mm) fechas.push({ fecha: `${m[3]}-${mm}-${m[2].padStart(2, "0")}`, index: m.index });
   }
 
   return fechas.sort((a, b) => a.index - b.index);
@@ -730,27 +739,56 @@ function extraerVuelosDelTexto(texto) {
   const vuelos = [];
   let m;
   while ((m = regexVuelo.exec(texto)) !== null) {
+    // NUEVO: filtra falsos positivos típicos de números de tarjeta enmascarados
+    // (ej. "CAXXXXXXXXXXXX6312" — las últimas "XX" + 4 dígitos calzan con el
+    // mismo patrón que un número de vuelo real).
+    const antes = texto.substring(Math.max(0, m.index - 3), m.index);
+    if (m[1] === "XX" || /X{2,}$/.test(antes)) continue;
     vuelos.push({ numero: `${m[1]}${m[2]}`, index: m.index });
   }
   return vuelos;
 }
 
-function extraerRutasDelTexto(texto) {
-  const regexRuta = /\b([A-Z]{3})\s*(?:[-→>]{1,2}|A)\s*([A-Z]{3})(?:\s*(?:[-→>]{1,2}|A)\s*([A-Z]{3}))?\b/g;
-  const rutas = [];
+// Busca códigos de aeropuerto de 3 letras entre paréntesis, como en
+// "SAN JOSE(SJO) - PANAMA CITY(PTY)" — formato común en comprobantes con
+// nombre de ciudad completo. Empareja códigos consecutivos como origen->destino.
+function extraerTramosDesdeParentesis(texto) {
+  const codigos = [];
+  const regex = /\(([A-Z]{3})\)/g;
   let m;
-  while ((m = regexRuta.exec(texto)) !== null) {
-    rutas.push({ texto: m[0], index: m.index });
+  while ((m = regex.exec(texto)) !== null) {
+    codigos.push({ codigo: m[1], index: m.index });
   }
-  return rutas;
+  const tramos = [];
+  for (let i = 0; i < codigos.length - 1; i++) {
+    tramos.push({ origen: codigos[i].codigo, destino: codigos[i + 1].codigo, index: codigos[i + 1].index });
+  }
+  return tramos;
+}
+
+// Formato alterno: códigos pegados uno al otro, como "SJO → PTY" o "SJO-PTY".
+function extraerTramosDesdeGuiones(texto) {
+  const regex = /\b([A-Z]{3})\s*(?:[-→>]{1,2})\s*([A-Z]{3})\b/g;
+  const tramos = [];
+  let m;
+  while ((m = regex.exec(texto)) !== null) {
+    tramos.push({ origen: m[1], destino: m[2], index: m.index });
+  }
+  return tramos;
+}
+
+function extraerTramosDelTexto(texto) {
+  const porParentesis = extraerTramosDesdeParentesis(texto);
+  if (porParentesis.length >= 2) return porParentesis; // formato con ciudad completa detectado
+  return extraerTramosDesdeGuiones(texto);
 }
 
 // Junta todo lo detectado en "segmentos" de vuelo (uno por cada número de vuelo
-// encontrado), asociando la fecha y ruta más cercanas en el texto.
+// encontrado), asociando la fecha y el tramo (origen/destino) más cercanos en el texto.
 function detectarSegmentosDeVuelo(texto) {
   const fechas = extraerFechasDelTexto(texto);
   const vuelos = extraerVuelosDelTexto(texto);
-  const rutas = extraerRutasDelTexto(texto);
+  const tramos = extraerTramosDelTexto(texto);
 
   function masCercano(lista, posicion) {
     if (!lista.length) return null;
@@ -763,23 +801,30 @@ function detectarSegmentosDeVuelo(texto) {
   const segmentos = [];
   vuelos.forEach(v => {
     const fecha = masCercano(fechas, v.index)?.fecha || "";
-    const clave = v.numero + fecha;
+    const tramoCercano = masCercano(tramos, v.index);
+    const tramo = tramoCercano ? { origen: tramoCercano.origen, destino: tramoCercano.destino } : null;
+    const clave = v.numero + fecha + (tramo ? tramo.origen + tramo.destino : "");
     if (!vistos.has(clave)) {
       vistos.add(clave);
       segmentos.push({
         numero: v.numero,
         fecha,
-        ruta: masCercano(rutas, v.index)?.texto || ""
+        tramo,
+        ruta: tramo ? `${tramo.origen} → ${tramo.destino}` : ""
       });
     }
   });
 
+  // Sort estable: si no hay fecha, se conserva el orden en que aparecen en el
+  // documento (que normalmente ya sigue el orden cronológico ida -> regreso).
   return segmentos.sort((a, b) => (a.fecha || "9999").localeCompare(b.fecha || "9999"));
 }
 
-// Agrupa los segmentos en "trayectos": segmentos con fechas separadas por 1 día
-// o menos se consideran escalas del mismo trayecto (ida, o regreso). Un salto
-// mayor de fecha marca el cambio de "ida" a "regreso".
+// Agrupa los segmentos en "trayectos" (ida / regreso), usando en orden de
+// confianza: 1) comparación de origen/destino (la más confiable, no depende
+// de que el OCR haya leído bien la fecha), 2) cercanía de fechas, 3) si no hay
+// ninguna señal, se asume que es un trayecto NUEVO (más seguro que fundirlo
+// como escala y que el regreso "desaparezca" sin que nadie lo note).
 function agruparSegmentosEnTrayectos(segmentos) {
   const grupos = [];
   segmentos.forEach(seg => {
@@ -788,17 +833,34 @@ function agruparSegmentosEnTrayectos(segmentos) {
       grupos.push([seg]);
       return;
     }
-    const fechaAnterior = ultimoGrupo[ultimoGrupo.length - 1].fecha;
-    if (!seg.fecha || !fechaAnterior) {
-      ultimoGrupo.push(seg); // sin fecha para comparar, se asume mismo trayecto
+    const anterior = ultimoGrupo[ultimoGrupo.length - 1];
+
+    if (seg.tramo && anterior.tramo) {
+      const esRegreso = seg.tramo.origen === anterior.tramo.destino && seg.tramo.destino === anterior.tramo.origen;
+      const esEscala = seg.tramo.origen === anterior.tramo.destino && seg.tramo.destino !== anterior.tramo.origen;
+      if (esRegreso) {
+        grupos.push([seg]);
+        return;
+      }
+      if (esEscala) {
+        ultimoGrupo.push(seg);
+        return;
+      }
+      // Si el tramo no encaja con ninguno de los dos patrones esperados, se
+      // sigue evaluando por fecha en vez de adivinar.
+    }
+
+    if (seg.fecha && anterior.fecha) {
+      const diffDias = Math.abs(new Date(seg.fecha) - new Date(anterior.fecha)) / 86400000;
+      if (diffDias <= 1) {
+        ultimoGrupo.push(seg);
+      } else {
+        grupos.push([seg]);
+      }
       return;
     }
-    const diffDias = Math.abs(new Date(seg.fecha) - new Date(fechaAnterior)) / 86400000;
-    if (diffDias <= 1) {
-      ultimoGrupo.push(seg); // misma fecha o un día después -> escala del mismo trayecto
-    } else {
-      grupos.push([seg]); // salto grande de fecha -> nuevo trayecto (regreso)
-    }
+
+    grupos.push([seg]); // sin ruta ni fecha confiable -> trayecto nuevo, más seguro
   });
   return grupos;
 }
