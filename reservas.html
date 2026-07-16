@@ -42,11 +42,11 @@
       color: white;
     }
     .acciones button {
-     display: flex;
-  gap: 6px;
-  justify-content: center;
-  align-items: center;
-}
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+    }
     .editar-btn {
       background-color: transparent;
       color: white;
@@ -60,7 +60,6 @@
 <body>
   <h2>📦 Reservas Registradas</h2>
   <button class="btn-agregar" onclick="window.location.href='detalle_reserva.html'">➕ Agregar reserva</button>
-
   <table id="tablaReservas">
     <thead>
       <tr>
@@ -78,31 +77,36 @@
       <!-- Reservas se cargarán dinámicamente -->
     </tbody>
   </table>
-
   <script>
-   const firebaseConfig = {
-  apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-  authDomain: "tours-460717.firebaseapp.com",
-  projectId: "tours-460717"
-};
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-
     const tabla = document.querySelector("#tablaReservas tbody");
 
+    // FIX: los nombres de campo no coincidían con el esquema real que usa
+    // detalle_reserva.html (nombreTitular, telefono, correo, fechaReserva, numero
+    // — en vez de nombreCliente, telefonoCliente, correoCliente, fechaViaje,
+    // pasajeros.length). Por eso la mayoría de filas mostraban "-".
+    //
+    // También se corrige el destino: ahora se usa nombreDestino (texto legible)
+    // con destino (el ID) como respaldo, en vez de mostrar siempre el ID sin resolver.
     function cargarReservas() {
       db.collection("reservas").get().then(snapshot => {
         snapshot.forEach(doc => {
           const data = doc.data();
           const fila = document.createElement("tr");
-         fila.innerHTML = `
-  <td>${doc.id}</td>
-  <td>${data.nombreCliente || '-'}</td>
-  <td>${data.telefonoCliente || '-'}</td>
-  <td>${data.correoCliente || '-'}</td>
-  <td>${data.destino || '-'}</td>
-  <td>${(data.pasajeros?.length || 0) + 1}</td>
-  <td>${data.fechaViaje || '-'}</td>
+          fila.innerHTML = `
+            <td>${doc.id}</td>
+            <td>${data.nombreTitular || '-'}</td>
+            <td>${data.telefono || '-'}</td>
+            <td>${data.correo || '-'}</td>
+            <td>${data.nombreDestino || data.destino || '-'}</td>
+            <td>${data.numero || ((data.cantidadAdultos || 0) + (data.cantidadNinos || 0) + (data.cantidadBebes || 0)) || '-'}</td>
+            <td>${data.fechaReserva || '-'}</td>
             <td class="acciones">
               <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
               <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
@@ -112,7 +116,6 @@
         });
       });
     }
-
     function eliminarReserva(id) {
       if (confirm("¿Deseas eliminar esta reserva?")) {
         db.collection("reservas").doc(id).delete().then(() => {
@@ -121,7 +124,6 @@
         });
       }
     }
-
     window.onload = cargarReservas;
   </script>
 </body>
