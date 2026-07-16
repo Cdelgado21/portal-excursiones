@@ -1098,6 +1098,72 @@ async function eliminarTiqueteVuelo(indice) {
   }
 }
 
+// NUEVO: detecta menciones de equipaje en el comprobante (objeto personal,
+// maleta de mano, maleta documentada) y arma líneas para el resumen. Como
+// estos datos se repiten idénticos por cada pasajero en el comprobante, se
+// toma cada combinación una sola vez (no se suma por pasajero).
+function extraerEquipajeDelTexto(texto) {
+  const resultados = [];
+  const vistos = new Set();
+  let m;
+
+  const regexObjetoPersonal = /(\d+)\s*(?:objetos?|art[ií]culos?)\s*personal(?:es)?/gi;
+  while ((m = regexObjetoPersonal.exec(texto)) !== null) {
+    const clave = `objeto-${m[1]}`;
+    if (!vistos.has(clave)) {
+      vistos.add(clave);
+      resultados.push(`${m[1]} artículo(s) personal(es) por persona`);
+    }
+  }
+
+  const regexManoConPeso = /(\d+)\s*maletas?\s*de\s*mano(?:\s*de\s*(\d+)\s*[Kk]g)?/gi;
+  while ((m = regexManoConPeso.exec(texto)) !== null) {
+    const clave = `mano-${m[1]}-${m[2] || ''}`;
+    if (!vistos.has(clave)) {
+      vistos.add(clave);
+      resultados.push(`${m[1]} maleta(s) de mano${m[2] ? ` (${m[2]}kg)` : ''} por persona`);
+    }
+  }
+
+  const regexDocumentada = /(\d+)\s*maletas?\s*document\w*(?:\s*de\s*(\d+)\s*[Kk]gs?)?/gi;
+  while ((m = regexDocumentada.exec(texto)) !== null) {
+    const clave = `doc-${m[1]}-${m[2] || ''}`;
+    if (!vistos.has(clave)) {
+      vistos.add(clave);
+      resultados.push(`${m[1]} maleta(s) documentada(s)${m[2] ? ` de ${m[2]}kg` : ''} por persona`);
+    }
+  }
+
+  return resultados;
+}
+
+// NUEVO: respaldo cuando el comprobante NO detalla el equipaje explícitamente,
+// pero sí menciona una tarifa/clase conocida cuya política de equipaje ya
+// sabemos (dato que confirmó Cristopher, no viene escrito en el comprobante).
+// ⚠️ Esto es una REGLA DE NEGOCIO, no un dato leído directamente — si Avianca
+// o Copa cambian su política de equipaje, hay que actualizar esto a mano.
+const POLITICAS_EQUIPAJE_AVIANCA = {
+  BASIC: "1 artículo personal por persona (sin equipaje de mano ni de bodega incluido)",
+  LIGHT: "1 maleta de mano + 1 artículo personal por persona",
+  CLASSIC: "1 maleta de mano + 1 maleta de bodega (23kg) + 1 artículo personal por persona",
+  FLEX: "1 maleta de mano + 1 maleta de bodega (23kg) + 1 artículo personal por persona"
+};
+
+function inferirEquipajePorPoliticaTarifa(texto) {
+  const matchAvianca = /Fare:\s*(BASIC|LIGHT|CLASSIC|FLEX)/i.exec(texto);
+  if (matchAvianca) {
+    const tarifa = matchAvianca[1].toUpperCase();
+    const politica = POLITICAS_EQUIPAJE_AVIANCA[tarifa];
+    if (politica) {
+      return [`${politica} (según política de tarifa ${tarifa} de Avianca — verificar que siga vigente)`];
+    }
+  }
+  if (/Economy\s*Class/i.test(texto)) {
+    return ["1 maleta de mano + 1 artículo personal por persona (según política de Economy Class de Copa — verificar que siga vigente)"];
+  }
+  return [];
+}
+
 async function procesarOCRTiquete(archivo) {
   const contenedor = document.getElementById("tiqueteVueloMensaje");
   if (!VISION_API_KEY || VISION_API_KEY === "TU_API_KEY_AQUI") {
@@ -1157,6 +1223,29 @@ async function procesarOCRTiquete(archivo) {
 
     if (resultado.trayectosDetectados > 2) {
       piezas.push(`⚠️ Se detectaron ${resultado.trayectosDetectados} trayectos distintos — parece un itinerario multi-destino, revisa con más cuidado de lo usual`);
+    }
+
+    // NUEVO: detecta y agrega el equipaje mencionado en el comprobante al
+    // resumen (sin borrar lo que ya hubiera escrito antes). Si no se encontró
+    // nada explícito, se intenta inferir por la política de tarifa conocida.
+    let lineasEquipaje = extraerEquipajeDelTexto(texto);
+    let equipajeEsInferido = false;
+    if (lineasEquipaje.length === 0) {
+      lineasEquipaje = inferirEquipajePorPoliticaTarifa(texto);
+      equipajeEsInferido = lineasEquipaje.length > 0;
+    }
+    if (lineasEquipaje.length > 0) {
+      const campoEquipaje = document.getElementById("equipaje");
+      const existente = campoEquipaje.value.trim();
+      const nuevasLineas = lineasEquipaje.filter(l => !existente.includes(l));
+      if (nuevasLineas.length > 0) {
+        campoEquipaje.value = existente ? `${existente}\n${nuevasLineas.join("\n")}` : nuevasLineas.join("\n");
+      }
+      piezas.push(
+        equipajeEsInferido
+          ? `Equipaje inferido por política de tarifa (no venía explícito en el comprobante) — revisa el resumen de equipaje.`
+          : `Equipaje detectado (${lineasEquipaje.length} tipo(s)) — revisa el resumen de equipaje.`
+      );
     }
 
     let mensaje = piezas.join(" ") + `. <strong>Revisa todos los datos con cuidado antes de guardar</strong> — la lectura de comprobantes es menos precisa que la del pasaporte, y las escalas agregadas al campo "Vuelo Intermedio" (tanto de ida como de regreso) necesitan verificación extra.`;
@@ -2179,5 +2268,4 @@ function cargarHistorialPagos() {
 
 </body>
 </html>
-
 
