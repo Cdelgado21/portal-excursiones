@@ -253,10 +253,10 @@
       <label for="codigoBoletoRegreso" style="white-space: nowrap;">Código de Aerolínea:</label>
       <input type="text" id="codigoBoletoRegreso" placeholder="Ej. AUC5TG" style="min-width: 160px;">
     </div>
-
-    <label for="infoVueloRegreso">Información del Vuelo de Regreso</label>
-    <textarea id="infoVueloRegreso" rows="3" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM"></textarea>
   </div>
+
+  <label for="infoVueloRegreso">Información del Vuelo de Regreso</label>
+  <textarea id="infoVueloRegreso" rows="3" placeholder="Ej. MDE → PTY → SJO, llegada 6:45 PM"></textarea>
 
   <h3>Equipaje</h3>
   <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 10px;">
@@ -831,10 +831,38 @@ function extraerTramosDesdeGuiones(texto) {
   return tramos;
 }
 
+// NUEVO: último respaldo — algunos comprobantes (ej. Volaris) muestran el
+// código de cada aeropuerto SOLO en su propia línea, con el nombre completo
+// de la ciudad y la flecha en líneas aparte (el OCR los separa así aunque en
+// el diseño visual se vean lado a lado). Se buscan líneas que sean
+// EXACTAMENTE 3 letras mayúsculas, y se emparejan si están razonablemente
+// cerca una de otra (menos de 400 caracteres de distancia en el texto).
+function extraerTramosDesdeLineasSueltas(texto) {
+  const lineas = texto.split("\n");
+  const codigos = [];
+  let posicion = 0;
+  for (const linea of lineas) {
+    const limpia = linea.trim();
+    if (/^[A-Z]{3}$/.test(limpia)) {
+      codigos.push({ codigo: limpia, index: posicion });
+    }
+    posicion += linea.length + 1;
+  }
+  const tramos = [];
+  for (let i = 0; i < codigos.length - 1; i++) {
+    if (codigos[i].codigo === codigos[i + 1].codigo) continue;
+    if (codigos[i + 1].index - codigos[i].index > 400) continue; // demasiado lejos, no es la misma ruta
+    tramos.push({ origen: codigos[i].codigo, destino: codigos[i + 1].codigo, index: codigos[i + 1].index });
+  }
+  return tramos;
+}
+
 function extraerTramosDelTexto(texto) {
   const porParentesis = extraerTramosDesdeParentesis(texto);
   if (porParentesis.length >= 2) return porParentesis; // formato con ciudad completa detectado
-  return extraerTramosDesdeGuiones(texto);
+  const porGuiones = extraerTramosDesdeGuiones(texto);
+  if (porGuiones.length >= 1) return porGuiones;
+  return extraerTramosDesdeLineasSueltas(texto);
 }
 
 // Junta todo lo detectado en "segmentos" de vuelo (uno por cada número de vuelo
@@ -1051,9 +1079,6 @@ async function procesarOCRTiquete(archivo) {
 
   try {
     const texto = await extraerTextoDocumento(archivo);
-    console.log("=== TEXTO EXTRAÍDO POR OCR (para depurar) ===");
-    console.log(texto);
-    console.log("=== FIN DEL TEXTO ===");
     const resultado = interpretarItinerarioVuelos(texto);
     const codigoReservaAerolinea = extraerCodigoReservaAerolinea(texto);
 
@@ -1448,7 +1473,10 @@ let vueloCounter = 1;
 function agregarVueloIntermedio() {
   const container = document.getElementById("vuelosIntermediosContainer");
   const html = `
-    <div style="border:1px solid #ccc; padding:15px; border-radius:8px; margin-bottom:15px; background:#fafafa;">
+    <div style="border:1px solid #ccc; padding:15px; border-radius:8px; margin-bottom:15px; background:#fafafa; position:relative;">
+      <span onclick="this.parentElement.remove()"
+            style="position:absolute; top:10px; right:10px; cursor:pointer; color:#b00020; font-weight:bold;"
+            title="Quitar este vuelo intermedio">❌</span>
       <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
         <div style="display: flex; align-items: center; gap: 6px;">
           <label>Aerolínea:</label>
