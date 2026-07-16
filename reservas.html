@@ -130,6 +130,22 @@
       return null;
     }
 
+    // Calcula la cantidad de personas cubriendo los 3 esquemas distintos que
+    // ha tenido el sistema a lo largo del tiempo:
+    // 1) campo "numero" directo (el más nuevo)
+    // 2) desglose cantidadAdultos + cantidadNinos + cantidadBebes
+    // 3) esquema viejo: arreglo "pasajeros" (acompañantes) + 1 por el titular
+    function calcularPersonas(data) {
+      if (typeof data.numero === 'number' && data.numero > 0) return data.numero;
+      const adultos = data.cantidadAdultos || 0;
+      const ninos = data.cantidadNinos || 0;
+      const bebes = data.cantidadBebes || 0;
+      const sumaDesglose = adultos + ninos + bebes;
+      if (sumaDesglose > 0) return sumaDesglose;
+      if (Array.isArray(data.pasajeros) && data.pasajeros.length > 0) return data.pasajeros.length + 1;
+      return null;
+    }
+
     function cargarReservas() {
       db.collection("reservas").get().then(snapshot => {
         const hoy = new Date();
@@ -155,7 +171,7 @@
             <td>${data.telefono || '-'}</td>
             <td>${data.correo || '-'}</td>
             <td>${data.nombreDestino || data.destino || '-'}</td>
-            <td>${data.numero || ((data.cantidadAdultos || 0) + (data.cantidadNinos || 0) + (data.cantidadBebes || 0)) || '-'}</td>
+            <td>${calcularPersonas(data) ?? '-'}</td>
             <td>${data.fechaReserva || '-'}</td>
             <td class="acciones">
               <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
