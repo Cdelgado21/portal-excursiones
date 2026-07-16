@@ -880,6 +880,121 @@ function extraerTramosDesdeLineasSueltas(texto) {
   return tramos;
 }
 
+// NUEVO: diccionario de nombres de ciudad/aeropuerto -> código IATA de 3
+// letras. Para comprobantes que no traen el código corto en ningún lado (como
+// el de Avianca, que solo escribe "SAN JOSE JUAN SANTAMARIA" completo).
+// ⚠️ Esta lista NO cubre todos los aeropuertos del mundo (son miles) — es una
+// selección amplia de los destinos más comunes de Latinoamérica, el Caribe,
+// EE.UU. y Europa. Si aparece un destino nuevo que no está aquí, avísame
+// para agregarlo. Para ciudades con más de un aeropuerto (ej. Buenos Aires,
+// Río de Janeiro, São Paulo) se usó el aeropuerto internacional principal.
+const CIUDADES_A_CODIGO = {
+  // Costa Rica
+  "SAN JOSE": "SJO", "SAN JOSÉ": "SJO",
+  "LIBERIA": "LIR",
+  // Centroamérica
+  "GUATEMALA CITY": "GUA", "GUATEMALA": "GUA",
+  "PANAMA CITY": "PTY", "PANAMA": "PTY", "PANAMÁ": "PTY",
+  "MANAGUA": "MGA",
+  "SAN SALVADOR": "SAL",
+  "TEGUCIGALPA": "TGU",
+  "BELIZE CITY": "BZE", "BELICE": "BZE",
+  // México
+  "MEXICO CITY": "MEX", "CIUDAD DE MEXICO": "MEX", "CIUDAD DE MÉXICO": "MEX",
+  "CANCUN": "CUN", "CANCÚN": "CUN",
+  "GUADALAJARA": "GDL",
+  "MONTERREY": "MTY",
+  "LOS CABOS": "SJD", "CABO SAN LUCAS": "SJD",
+  "PUERTO VALLARTA": "PVR",
+  // Caribe
+  "SANTO DOMINGO": "SDQ",
+  "PUNTA CANA": "PUJ",
+  "SAN JUAN": "SJU",
+  "ARUBA": "AUA",
+  "CURAZAO": "CUR", "CURACAO": "CUR",
+  "LA HABANA": "HAV", "HAVANA": "HAV",
+  "MONTEGO BAY": "MBJ",
+  "KINGSTON": "KIN",
+  "NASSAU": "NAS",
+  // Colombia
+  "BOGOTA": "BOG", "BOGOTÁ": "BOG",
+  "MEDELLIN": "MDE", "MEDELLÍN": "MDE",
+  "CARTAGENA": "CTG",
+  "CALI": "CLO",
+  "BARRANQUILLA": "BAQ",
+  "SAN ANDRES": "ADZ", "SAN ANDRÉS": "ADZ",
+  // Resto de Sudamérica
+  "QUITO": "UIO",
+  "GUAYAQUIL": "GYE",
+  "LIMA": "LIM",
+  "CUSCO": "CUZ",
+  "CARACAS": "CCS",
+  "BUENOS AIRES": "EZE",
+  "USHUAIA": "USH",
+  "EL CALAFATE": "FTE", "CALAFATE": "FTE",
+  "BARILOCHE": "BRC",
+  "MONTEVIDEO": "MVD",
+  "ASUNCION": "ASU", "ASUNCIÓN": "ASU",
+  "SANTA CRUZ": "VVI",
+  "LA PAZ": "LPB",
+  "RIO DE JANEIRO": "GIG", "RÍO DE JANEIRO": "GIG",
+  "SAO PAULO": "GRU", "SÃO PAULO": "GRU",
+  "SANTIAGO": "SCL", "SANTIAGO DE CHILE": "SCL",
+  // Estados Unidos y Canadá
+  "MIAMI": "MIA",
+  "NUEVA YORK": "JFK", "NEW YORK": "JFK",
+  "LOS ANGELES": "LAX",
+  "ORLANDO": "MCO",
+  "HOUSTON": "IAH",
+  "DALLAS": "DFW",
+  "ATLANTA": "ATL",
+  "CHICAGO": "ORD",
+  "TORONTO": "YYZ",
+  // Europa
+  "MADRID": "MAD",
+  "BARCELONA": "BCN",
+  "PARIS": "CDG", "PARÍS": "CDG",
+  "LONDRES": "LHR", "LONDON": "LHR",
+  "AMSTERDAM": "AMS", "ÁMSTERDAM": "AMS",
+  "FRANKFURT": "FRA",
+  "ROMA": "FCO",
+  "LISBOA": "LIS"
+
+};
+
+function extraerTramosDesdeCiudades(texto) {
+  const textoUpper = texto.toUpperCase();
+  // Nombres largos primero, para que "GUATEMALA CITY" no quede opacado por "GUATEMALA".
+  const nombres = Object.keys(CIUDADES_A_CODIGO).sort((a, b) => b.length - a.length);
+
+  const encontrados = [];
+  nombres.forEach(nombre => {
+    let desde = 0;
+    let idx;
+    while ((idx = textoUpper.indexOf(nombre, desde)) !== -1) {
+      encontrados.push({ codigo: CIUDADES_A_CODIGO[nombre], index: idx });
+      desde = idx + nombre.length;
+    }
+  });
+  encontrados.sort((a, b) => a.index - b.index);
+
+  // Fusiona menciones muy cercanas del mismo código (ej. el nombre de la
+  // ciudad aparece dos veces seguidas, una vez completo y otra abreviado).
+  const codigosUnicos = [];
+  encontrados.forEach(e => {
+    const anterior = codigosUnicos[codigosUnicos.length - 1];
+    if (anterior && anterior.codigo === e.codigo && (e.index - anterior.index) < 50) return;
+    codigosUnicos.push(e);
+  });
+
+  const tramos = [];
+  for (let i = 0; i < codigosUnicos.length - 1; i++) {
+    if (codigosUnicos[i].codigo === codigosUnicos[i + 1].codigo) continue;
+    tramos.push({ origen: codigosUnicos[i].codigo, destino: codigosUnicos[i + 1].codigo, index: codigosUnicos[i + 1].index });
+  }
+  return tramos;
+}
+
 function extraerTramosDelTexto(texto) {
   const porParentesis = extraerTramosDesdeParentesis(texto);
   if (porParentesis.length >= 2) return porParentesis; // formato con ciudad completa detectado
@@ -892,6 +1007,9 @@ function extraerTramosDelTexto(texto) {
   // se prueban primero.
   const porLineasSueltas = extraerTramosDesdeLineasSueltas(texto);
   if (porLineasSueltas.length >= 1) return porLineasSueltas;
+  // NUEVO: respaldo por nombre de ciudad conocido (ej. comprobantes de Avianca).
+  const porCiudades = extraerTramosDesdeCiudades(texto);
+  if (porCiudades.length >= 1) return porCiudades;
   return extraerTramosDesdeGuiones(texto);
 }
 
@@ -1197,6 +1315,14 @@ async function procesarOCRTiquete(archivo) {
 
     let piezas = [`✅ Vuelo de ida detectado${resultado.ida.numero ? ` (${resultado.ida.numero})` : ' (sin número de vuelo en el comprobante)'}`];
 
+    // NUEVO: si no se encontró ruta, se avisa explícitamente — así el campo
+    // "Información del Vuelo" no se queda con datos viejos de otra prueba sin
+    // que nadie se dé cuenta (este comprobante no tenía códigos de aeropuerto
+    // de 3 letras en ningún lado para poder armar la ruta).
+    if (!resultado.ida.ruta) {
+      piezas.push(`(sin ruta detectada — revisa que "Información del Vuelo de Ida" no tenga datos de una prueba anterior)`);
+    }
+
     resultado.escalasIda.forEach(seg => agregarEscalaDetectada(seg, "Escala de ida", codigoReservaAerolinea));
     if (resultado.escalasIda.length > 0) {
       piezas.push(`con ${resultado.escalasIda.length} escala(s)`);
@@ -1208,6 +1334,10 @@ async function procesarOCRTiquete(archivo) {
       if (resultado.regreso.ruta) document.getElementById("infoVueloRegreso").value = resultado.regreso.ruta;
       if (codigoReservaAerolinea) document.getElementById("codigoBoletoRegreso").value = codigoReservaAerolinea;
       piezas.push(`y de regreso${resultado.regreso.numero ? ` (${resultado.regreso.numero})` : ' (sin número de vuelo)'}`);
+
+      if (!resultado.regreso.ruta) {
+        piezas.push(`(sin ruta de regreso detectada — revisa "Información del Vuelo de Regreso")`);
+      }
 
       resultado.escalasRegreso.forEach(seg => agregarEscalaDetectada(seg, "Escala de regreso", codigoReservaAerolinea));
       if (resultado.escalasRegreso.length > 0) {
@@ -2268,4 +2398,5 @@ function cargarHistorialPagos() {
 
 </body>
 </html>
+
 
