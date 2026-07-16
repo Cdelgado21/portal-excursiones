@@ -652,7 +652,11 @@ const AEROLINEAS_CONOCIDAS = {
   "COPA AIRLINES": "Copa Airlines",
   "COPA": "Copa Airlines",
   "VOLARIS": "Volaris",
-  "WINGO": "Wingo"
+  "WINGO": "Wingo",
+  // NUEVO: Wingo opera legalmente como "Aero República S.A." — su nombre no
+  // siempre aparece literal en el comprobante, solo el del operador real.
+  "AERO REPUBLICA": "Wingo",
+  "AERO REPÚBLICA": "Wingo"
 };
 
 const MESES_TEXTO = {
@@ -708,13 +712,27 @@ function detectarAerolinea(texto) {
   return "";
 }
 
-// NUEVO: busca el código de confirmación/reserva de la aerolínea (el "Id de
-// Orden", también llamado PNR) — normalmente un código corto alfanumérico,
-// el mismo para todos los tramos de una misma compra.
+// NUEVO: busca el código de confirmación/reserva de la aerolínea. Cada
+// aerolínea usa su propia frase para esto (Copa: "Id de Orden", Avianca:
+// "Booking ref", otras: "Localizador", "PNR", "Código de reserva") — se
+// prueban varias en orden hasta encontrar una que calce.
 function extraerCodigoReservaAerolinea(texto) {
-  const regex = /Id\s+de\s+Orden\s*[:\n]?\s*([A-Z0-9]{5,8})/i;
-  const m = regex.exec(texto);
-  return m ? m[1].toUpperCase() : "";
+  const patrones = [
+    /Id\s+de\s+Orden\s*[:\n]?\s*([A-Z0-9]{5,8})/i,
+    /Booking\s*ref(?:erence)?\.?\s*[:\n]?\s*([A-Z0-9]{5,8})/i,
+    // FIX: el relleno opcional (nombre de aerolínea antes del código, ej.
+    // "Volaris") ahora solo acepta letras — antes usaba \w+ (letras Y dígitos),
+    // lo que podía "comerse" por error el código de reserva mismo cuando no
+    // había dos puntos claros de por medio (ej. "Código de reserva\n5Z11QI").
+    /C[oó]digo\s+de\s+reserva(?:ci[oó]n)?(?:\s+[A-Za-zÁÉÍÓÚáéíóú]+)?\s*[:\n]?\s*([A-Z0-9]{5,8})/i,
+    /Localizador\s*[:\n]?\s*([A-Z0-9]{5,8})/i,
+    /\bPNR\s*[:\n]?\s*([A-Z0-9]{5,8})/i
+  ];
+  for (const regex of patrones) {
+    const m = regex.exec(texto);
+    if (m) return m[1].toUpperCase();
+  }
+  return "";
 }
 
 function extraerFechasDelTexto(texto) {
@@ -741,6 +759,13 @@ function extraerFechasDelTexto(texto) {
     if (mm) fechas.push({ fecha: `${m[3]}-${mm}-${m[2].padStart(2, "0")}`, index: m.index });
   }
 
+  // NUEVO: formato compacto sin espacios (ej. "31May2026" — el que usa Avianca)
+  const regexCompacta = /\b(\d{1,2})([A-Za-z]{3})(\d{4})\b/g;
+  while ((m = regexCompacta.exec(texto)) !== null) {
+    const mm = MESES_TEXTO[m[2].toUpperCase()];
+    if (mm) fechas.push({ fecha: `${m[3]}-${mm}-${m[1].padStart(2, "0")}`, index: m.index });
+  }
+
   return fechas.sort((a, b) => a.index - b.index);
 }
 
@@ -759,6 +784,19 @@ function extraerVuelosDelTexto(texto) {
   return vuelos;
 }
 
+// NUEVO: respaldo para aerolíneas como Volaris, que en su comprobante escriben
+// solo el número de vuelo sin letras pegadas (ej. "Vuelo: 4062" en vez de
+// "Y4 4062"). Se busca la etiqueta "Vuelo"/"Flight" seguida de dígitos.
+function extraerVuelosPorEtiqueta(texto) {
+  const regex = /(?:Vuelo|Flight|N[uú]mero de Vuelo)\s*[:\-]?\s*(\d{2,4})\b/gi;
+  const vuelos = [];
+  let m;
+  while ((m = regex.exec(texto)) !== null) {
+    vuelos.push({ numero: m[1], index: m.index });
+  }
+  return vuelos;
+}
+
 // Busca códigos de aeropuerto de 3 letras entre paréntesis, como en
 // "SAN JOSE(SJO) - PANAMA CITY(PTY)" — formato común en comprobantes con
 // nombre de ciudad completo. Empareja códigos consecutivos como origen->destino.
@@ -771,6 +809,12 @@ function extraerTramosDesdeParentesis(texto) {
   }
   const tramos = [];
   for (let i = 0; i < codigos.length - 1; i++) {
+    // FIX: cuando el mismo comprobante repite el trayecto varias veces (una
+    // vez arriba como resumen, otra vez abajo con el desglose de precios), al
+    // emparejar códigos consecutivos se puede formar un tramo "basura" entre
+    // el final de una mención y el inicio de la siguiente, con el mismo
+    // código repetido dos veces (ej. "...MDE) ... (MDE)..." = MDE->MDE). Se descarta.
+    if (codigos[i].codigo === codigos[i + 1].codigo) continue;
     tramos.push({ origen: codigos[i].codigo, destino: codigos[i + 1].codigo, index: codigos[i + 1].index });
   }
   return tramos;
@@ -797,7 +841,11 @@ function extraerTramosDelTexto(texto) {
 // encontrado), asociando la fecha y el tramo (origen/destino) más cercanos en el texto.
 function detectarSegmentosDeVuelo(texto) {
   const fechas = extraerFechasDelTexto(texto);
-  const vuelos = extraerVuelosDelTexto(texto);
+  // Prioridad: número de vuelo CON letras de aerolínea pegadas (más confiable,
+  // ej. "CM343"). Si no se encuentra ninguno, se usa el respaldo por etiqueta
+  // "Vuelo:"/"Flight:" (formato de Volaris, sin letras pegadas al número).
+  const vuelosConLetras = extraerVuelosDelTexto(texto);
+  const vuelos = vuelosConLetras.length > 0 ? vuelosConLetras : extraerVuelosPorEtiqueta(texto);
   const tramos = extraerTramosDelTexto(texto);
 
   function masCercano(lista, posicion) {
@@ -805,6 +853,30 @@ function detectarSegmentosDeVuelo(texto) {
     return lista.reduce((mejor, actual) =>
       Math.abs(actual.index - posicion) < Math.abs(mejor.index - posicion) ? actual : mejor
     );
+  }
+
+  // NUEVO: si NO se encontró ningún número de vuelo (ni por letras ni por
+  // etiqueta) — comprobantes como el de Wingo que no lo incluyen en absoluto —
+  // se arma un segmento por cada ruta encontrada, dejando el número de vuelo
+  // en blanco. Así al menos la aerolínea, el código de reserva y las fechas/
+  // rutas sí se completan, en vez de detenerse por completo.
+  if (vuelos.length === 0 && tramos.length > 0) {
+    const vistosSinNumero = new Set();
+    const segmentosSinNumero = [];
+    tramos.forEach(t => {
+      const fecha = masCercano(fechas, t.index)?.fecha || "";
+      const clave = t.origen + t.destino + fecha;
+      if (!vistosSinNumero.has(clave)) {
+        vistosSinNumero.add(clave);
+        segmentosSinNumero.push({
+          numero: "",
+          fecha,
+          tramo: { origen: t.origen, destino: t.destino },
+          ruta: `${t.origen} → ${t.destino}`
+        });
+      }
+    });
+    return segmentosSinNumero.sort((a, b) => (a.fecha || "9999").localeCompare(b.fecha || "9999"));
   }
 
   const vistos = new Set();
@@ -991,12 +1063,12 @@ async function procesarOCRTiquete(archivo) {
       document.getElementById("aerolineaIda").value = resultado.aerolinea;
       document.getElementById("aerolineaRegreso").value = resultado.aerolinea;
     }
-    document.getElementById("vueloIda").value = resultado.ida.numero;
+    if (resultado.ida.numero) document.getElementById("vueloIda").value = resultado.ida.numero;
     if (resultado.ida.fecha) document.getElementById("fechaIda").value = resultado.ida.fecha;
     if (resultado.ida.ruta) document.getElementById("infoVueloIda").value = resultado.ida.ruta;
     if (codigoReservaAerolinea) document.getElementById("codigoBoletoIda").value = codigoReservaAerolinea;
 
-    let piezas = [`✅ Vuelo de ida detectado (${resultado.ida.numero})`];
+    let piezas = [`✅ Vuelo de ida detectado${resultado.ida.numero ? ` (${resultado.ida.numero})` : ' (sin número de vuelo en el comprobante)'}`];
 
     resultado.escalasIda.forEach(seg => agregarEscalaDetectada(seg, "Escala de ida", codigoReservaAerolinea));
     if (resultado.escalasIda.length > 0) {
@@ -1004,11 +1076,11 @@ async function procesarOCRTiquete(archivo) {
     }
 
     if (resultado.regreso) {
-      document.getElementById("vueloRegreso").value = resultado.regreso.numero;
+      if (resultado.regreso.numero) document.getElementById("vueloRegreso").value = resultado.regreso.numero;
       if (resultado.regreso.fecha) document.getElementById("fechaRegreso").value = resultado.regreso.fecha;
       if (resultado.regreso.ruta) document.getElementById("infoVueloRegreso").value = resultado.regreso.ruta;
       if (codigoReservaAerolinea) document.getElementById("codigoBoletoRegreso").value = codigoReservaAerolinea;
-      piezas.push(`y de regreso (${resultado.regreso.numero})`);
+      piezas.push(`y de regreso${resultado.regreso.numero ? ` (${resultado.regreso.numero})` : ' (sin número de vuelo)'}`);
 
       resultado.escalasRegreso.forEach(seg => agregarEscalaDetectada(seg, "Escala de regreso", codigoReservaAerolinea));
       if (resultado.escalasRegreso.length > 0) {
