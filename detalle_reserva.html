@@ -473,8 +473,160 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
+// NUEVO: clave de Google Cloud Vision para leer datos del pasaporte automáticamente.
+// IMPORTANTE: reemplaza "TU_API_KEY_AQUI" por la clave real que vas a generar en
+// Google Cloud Console. Debe estar restringida por referrer HTTP a tu dominio
+// (ver instrucciones que te di aparte) para que nadie más pueda usarla.
+const VISION_API_KEY = "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8";
+
 const params = new URLSearchParams(window.location.search);
 const codigoReservaExistente = params.get("codigo");
+
+// ==========================================
+// NUEVO: LECTURA AUTOMÁTICA DE PASAPORTE (OCR)
+// ==========================================
+
+// Nombres de nacionalidad para los códigos de país más comunes en la agencia.
+// Si el código no está en esta lista, se deja el código tal cual (ej. "XYZ")
+// para que el usuario lo corrija manualmente.
+const NACIONALIDADES_MRZ = {
+  CRI: "Costarricense", USA: "Estadounidense", MEX: "Mexicana", COL: "Colombiana",
+  PAN: "Panameña", GTM: "Guatemalteca", HND: "Hondureña", SLV: "Salvadoreña",
+  NIC: "Nicaragüense", ESP: "Española", ARG: "Argentina", CHL: "Chilena",
+  PER: "Peruana", ECU: "Ecuatoriana", BRA: "Brasileña", DOM: "Dominicana",
+  VEN: "Venezolana", CAN: "Canadiense", GBR: "Británica", FRA: "Francesa",
+  DEU: "Alemana", ITA: "Italiana"
+};
+
+// Envía la imagen a Google Cloud Vision y devuelve todo el texto detectado.
+async function extraerTextoPasaporte(archivo) {
+  const base64 = await new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onload = () => resolve(lector.result.split(",")[1]);
+    lector.onerror = reject;
+    lector.readAsDataURL(archivo);
+  });
+
+  const respuesta = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: [{
+        image: { content: base64 },
+        features: [{ type: "DOCUMENT_TEXT_DETECTION" }]
+      }]
+    })
+  });
+
+  const datos = await respuesta.json();
+  if (datos.error) {
+    throw new Error(datos.error.message || "Error desconocido de Google Vision");
+  }
+  return datos.responses?.[0]?.fullTextAnnotation?.text || "";
+}
+
+// Convierte una fecha del formato MRZ (AAMMDD) a formato de input date (YYYY-MM-DD).
+function convertirFechaMRZ(aammdd, esFechaNacimiento) {
+  if (!/^\d{6}$/.test(aammdd)) return "";
+  const aa = parseInt(aammdd.substring(0, 2));
+  const mm = aammdd.substring(2, 4);
+  const dd = aammdd.substring(4, 6);
+  let año;
+  if (esFechaNacimiento) {
+    // Regla estándar de pasaportes: si el año de 2 dígitos es mayor al actual,
+    // asumimos que es de 1900s; si no, de 2000s. (ej. hoy "26": "30" -> 1930, "10" -> 2010)
+    const añoActualCorto = new Date().getFullYear() % 100;
+    año = aa > añoActualCorto ? 1900 + aa : 2000 + aa;
+  } else {
+    // Los vencimientos de pasaporte siempre son fechas futuras/recientes -> 2000s
+    año = 2000 + aa;
+  }
+  return `${año}-${mm}-${dd}`;
+}
+
+// Busca las 2 líneas de la MRZ (zona de lectura mecánica, al pie del pasaporte)
+// dentro del texto detectado, y extrae los datos según el estándar TD3.
+function parsearMRZPasaporte(textoCompleto) {
+  const lineas = textoCompleto
+    .split("\n")
+    .map(l => l.replace(/\s/g, "").toUpperCase())
+    .filter(l => /^[A-Z0-9<]{30,44}$/.test(l));
+
+  if (lineas.length < 2) return null;
+
+  const linea1 = lineas[lineas.length - 2].padEnd(44, "<").substring(0, 44);
+  const linea2 = lineas[lineas.length - 1].padEnd(44, "<").substring(0, 44);
+
+  if (linea1[0] !== "P") return null; // no coincide con un pasaporte tipo TD3
+
+  const partesNombre = linea1.substring(5).split("<<");
+  const apellido = (partesNombre[0] || "").replace(/</g, " ").trim();
+  const nombres = (partesNombre[1] || "").replace(/</g, " ").trim();
+
+  const numeroDocumento = linea2.substring(0, 9).replace(/</g, "").trim();
+  const codigoNacionalidad = linea2.substring(10, 13).replace(/</g, "");
+  const sexoMRZ = linea2.substring(20, 21);
+
+  return {
+    nombreCompleto: [nombres, apellido].filter(Boolean).join(" ").trim(),
+    documento: numeroDocumento,
+    nacionalidad: NACIONALIDADES_MRZ[codigoNacionalidad] || codigoNacionalidad,
+    fechaNacimiento: convertirFechaMRZ(linea2.substring(13, 19), true),
+    fechaVencimiento: convertirFechaMRZ(linea2.substring(21, 27), false),
+    genero: sexoMRZ === "M" ? "Masculino" : sexoMRZ === "F" ? "Femenino" : ""
+  };
+}
+
+// Función principal: procesa el archivo seleccionado y llena los campos indicados.
+// "campos" es un objeto con referencias a los elementos del formulario a llenar.
+// "contenedorMensaje" es el <div> donde se muestra el estado ("Leyendo...", etc.)
+async function procesarOCRPasaporte(archivo, campos, contenedorMensaje) {
+  if (!archivo || !archivo.type.startsWith("image/")) {
+    // El OCR solo aplica a imágenes (no a PDF, que no siempre es una foto legible del MRZ)
+    return;
+  }
+  if (!VISION_API_KEY || VISION_API_KEY === "TU_API_KEY_AQUI") {
+    if (contenedorMensaje) {
+      contenedorMensaje.innerHTML = `<span style="color:#a35b00;">⚠️ Falta configurar la clave de Google Vision para el autocompletado.</span>`;
+    }
+    return;
+  }
+
+  if (contenedorMensaje) {
+    contenedorMensaje.innerHTML = `<span style="color:#555;">🔎 Leyendo datos del pasaporte...</span>`;
+  }
+
+  try {
+    const texto = await extraerTextoPasaporte(archivo);
+    const datosMRZ = parsearMRZPasaporte(texto);
+
+    if (!datosMRZ) {
+      if (contenedorMensaje) {
+        contenedorMensaje.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo leer automáticamente. Completa los datos a mano.</span>`;
+      }
+      return;
+    }
+
+    if (campos.nombre && datosMRZ.nombreCompleto) campos.nombre.value = datosMRZ.nombreCompleto;
+    if (campos.documento && datosMRZ.documento) campos.documento.value = datosMRZ.documento;
+    if (campos.nacionalidad && datosMRZ.nacionalidad) campos.nacionalidad.value = datosMRZ.nacionalidad;
+    if (campos.nacimiento && datosMRZ.fechaNacimiento) {
+      campos.nacimiento.value = datosMRZ.fechaNacimiento;
+      campos.nacimiento.dispatchEvent(new Event("change"));
+    }
+    if (campos.vencimiento && datosMRZ.fechaVencimiento) campos.vencimiento.value = datosMRZ.fechaVencimiento;
+    if (campos.genero && datosMRZ.genero) campos.genero.value = datosMRZ.genero;
+
+    if (contenedorMensaje) {
+      contenedorMensaje.innerHTML = `<span style="color:#0a7a2f;">✅ Datos leídos automáticamente — por favor verifícalos antes de guardar.</span>`;
+    }
+  } catch (e) {
+    console.error("Error leyendo pasaporte con OCR:", e);
+    if (contenedorMensaje) {
+      contenedorMensaje.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo procesar la imagen automáticamente. Completa los datos a mano.</span>`;
+    }
+  }
+}
 
 async function generarCodigoReserva() {
   const añoActual = new Date().getFullYear();
@@ -874,6 +1026,22 @@ function agregarPasajero() {
   `;
 
   container.appendChild(pasajeroDiv);
+
+  // NUEVO: cuando se selecciona la foto del pasaporte de este pasajero, se
+  // intenta leer automáticamente con OCR y llenar sus campos.
+  const inputPasaportePasajero = pasajeroDiv.querySelector(".pasaportePasajeroFile");
+  inputPasaportePasajero.addEventListener("change", function () {
+    const archivo = this.files[0];
+    if (!archivo) return;
+    procesarOCRPasaporte(archivo, {
+      nombre: pasajeroDiv.querySelector(".nombrePasajero"),
+      documento: pasajeroDiv.querySelector(".documentoPasajero"),
+      nacimiento: pasajeroDiv.querySelector(".fechaNacimientoPasajero"),
+      vencimiento: pasajeroDiv.querySelector(".vencimientoPasaportePasajero"),
+      nacionalidad: pasajeroDiv.querySelector(".nacionalidadPasajero"),
+      genero: pasajeroDiv.querySelector(".generoPasajero")
+    }, pasajeroDiv.querySelector(".pasaportePasajeroActual"));
+  });
 }
 
 function calcularEdadPasajero(inputFecha) {
@@ -1110,6 +1278,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.abrirModalHotel = abrirModalHotel;
   window.cerrarModalHotel = cerrarModalHotel;
   window.guardarHotelModal = guardarHotelModal;
+
+  // NUEVO: cuando se selecciona la foto del pasaporte del titular, se intenta
+  // leer automáticamente con OCR y llenar los campos correspondientes.
+  document.getElementById("pasaporteTitularFile").addEventListener("change", function () {
+    const archivo = this.files[0];
+    if (!archivo) return;
+    procesarOCRPasaporte(archivo, {
+      nombre: document.getElementById("nombreTitular"),
+      documento: document.getElementById("cedulaTitular"),
+      nacimiento: document.getElementById("fechaNacimientoTitular"),
+      vencimiento: document.getElementById("vencimientoPasaporteTitular"),
+      nacionalidad: document.getElementById("nacionalidadTitular"),
+      genero: document.getElementById("generoTitular")
+    }, document.getElementById("pasaporteTitularActual"));
+  });
 
   document.querySelectorAll('.autoresize').forEach(textarea => {
     textarea.addEventListener('input', () => autoResizeTextarea(textarea));
