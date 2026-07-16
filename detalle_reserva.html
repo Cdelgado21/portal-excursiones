@@ -190,6 +190,7 @@
     <label for="tiqueteVueloFile">Adjuntar comprobante de vuelo (PDF o imagen) para autocompletar</label>
     <input type="file" id="tiqueteVueloFile" accept="image/*,application/pdf">
     <div id="tiqueteVueloMensaje" style="margin-top:6px; font-size: 0.85rem;"></div>
+    <div id="tiquetesVueloLista" style="margin-top:10px; font-size: 0.85rem;"></div>
   </div>
 
   <h3>Vuelo de Ida</h3>
@@ -707,6 +708,15 @@ function detectarAerolinea(texto) {
   return "";
 }
 
+// NUEVO: busca el código de confirmación/reserva de la aerolínea (el "Id de
+// Orden", también llamado PNR) — normalmente un código corto alfanumérico,
+// el mismo para todos los tramos de una misma compra.
+function extraerCodigoReservaAerolinea(texto) {
+  const regex = /Id\s+de\s+Orden\s*[:\n]?\s*([A-Z0-9]{5,8})/i;
+  const m = regex.exec(texto);
+  return m ? m[1].toUpperCase() : "";
+}
+
 function extraerFechasDelTexto(texto) {
   const fechas = [];
   let m;
@@ -887,7 +897,7 @@ function interpretarItinerarioVuelos(texto) {
 
 // Agrega una escala usando el campo "Vuelo Intermedio" que ya existe en el
 // formulario (compartido para escalas de ida y de regreso).
-function agregarEscalaDetectada(segmento, etiqueta) {
+function agregarEscalaDetectada(segmento, etiqueta, codigoReservaAerolinea) {
   agregarVueloIntermedio();
   const tarjetas = document.querySelectorAll("#vuelosIntermediosContainer > div");
   const ultima = tarjetas[tarjetas.length - 1];
@@ -895,11 +905,29 @@ function agregarEscalaDetectada(segmento, etiqueta) {
   const campoVuelo = ultima.querySelector(".vueloIntermedio");
   const campoFecha = ultima.querySelector(".fechaIntermedio");
   const campoDescripcion = ultima.querySelector(".descripcionIntermedio");
+  const campoCodigo = ultima.querySelector(".codigoIntermedio");
   if (campoVuelo) campoVuelo.value = segmento.numero;
   if (campoFecha && segmento.fecha) campoFecha.value = segmento.fecha;
   if (campoDescripcion) {
     campoDescripcion.value = `[${etiqueta}] ${segmento.ruta || ""}`.trim();
   }
+  if (campoCodigo && codigoReservaAerolinea) campoCodigo.value = codigoReservaAerolinea;
+}
+
+// Dibuja la lista acumulada de comprobantes de vuelo guardados en la reserva
+// (el "expediente" — cada uno con su nombre, fecha de subida y link para verlo).
+function mostrarListaTiquetesVuelo(lista) {
+  const contenedor = document.getElementById("tiquetesVueloLista");
+  if (!contenedor) return;
+  if (!Array.isArray(lista) || lista.length === 0) {
+    contenedor.innerHTML = "";
+    return;
+  }
+  const filas = lista.map(t => {
+    const fecha = t.fecha ? new Date(t.fecha).toLocaleDateString('es-CR') : "";
+    return `<li><a href="${t.url}" target="_blank">📎 ${t.nombre || 'Comprobante'}</a>${fecha ? ` — subido el ${fecha}` : ""}</li>`;
+  }).join("");
+  contenedor.innerHTML = `<strong>Comprobantes guardados:</strong><ul style="margin:6px 0 0 20px; padding:0;">${filas}</ul>`;
 }
 
 async function procesarOCRTiquete(archivo) {
@@ -914,6 +942,7 @@ async function procesarOCRTiquete(archivo) {
   try {
     const texto = await extraerTextoDocumento(archivo);
     const resultado = interpretarItinerarioVuelos(texto);
+    const codigoReservaAerolinea = extraerCodigoReservaAerolinea(texto);
 
     if (!resultado.ida) {
       contenedor.innerHTML = `<span style="color:#a35b00;">⚠️ No se detectó ningún número de vuelo. Completa los datos a mano.</span>`;
@@ -927,10 +956,11 @@ async function procesarOCRTiquete(archivo) {
     document.getElementById("vueloIda").value = resultado.ida.numero;
     if (resultado.ida.fecha) document.getElementById("fechaIda").value = resultado.ida.fecha;
     if (resultado.ida.ruta) document.getElementById("infoVueloIda").value = resultado.ida.ruta;
+    if (codigoReservaAerolinea) document.getElementById("codigoBoletoIda").value = codigoReservaAerolinea;
 
     let piezas = [`✅ Vuelo de ida detectado (${resultado.ida.numero})`];
 
-    resultado.escalasIda.forEach(seg => agregarEscalaDetectada(seg, "Escala de ida"));
+    resultado.escalasIda.forEach(seg => agregarEscalaDetectada(seg, "Escala de ida", codigoReservaAerolinea));
     if (resultado.escalasIda.length > 0) {
       piezas.push(`con ${resultado.escalasIda.length} escala(s)`);
     }
@@ -939,14 +969,19 @@ async function procesarOCRTiquete(archivo) {
       document.getElementById("vueloRegreso").value = resultado.regreso.numero;
       if (resultado.regreso.fecha) document.getElementById("fechaRegreso").value = resultado.regreso.fecha;
       if (resultado.regreso.ruta) document.getElementById("infoVueloRegreso").value = resultado.regreso.ruta;
+      if (codigoReservaAerolinea) document.getElementById("codigoBoletoRegreso").value = codigoReservaAerolinea;
       piezas.push(`y de regreso (${resultado.regreso.numero})`);
 
-      resultado.escalasRegreso.forEach(seg => agregarEscalaDetectada(seg, "Escala de regreso"));
+      resultado.escalasRegreso.forEach(seg => agregarEscalaDetectada(seg, "Escala de regreso", codigoReservaAerolinea));
       if (resultado.escalasRegreso.length > 0) {
         piezas.push(`con ${resultado.escalasRegreso.length} escala(s)`);
       }
     } else {
       piezas.push(`. No se detectó vuelo de regreso — complétalo a mano si aplica`);
+    }
+
+    if (codigoReservaAerolinea) {
+      piezas.push(`Código de reserva de la aerolínea: ${codigoReservaAerolinea}.`);
     }
 
     if (resultado.trayectosDetectados > 2) {
@@ -1103,6 +1138,22 @@ async function guardarReserva() {
     }
     const pasajerosExistentes = datosExistentes?.pasajeros || [];
 
+    // NUEVO: si se seleccionó un comprobante de vuelo, se sube a Storage y se
+    // AGREGA al expediente acumulado (no reemplaza los anteriores — cada
+    // comprobante subido en el tiempo queda guardado con su fecha).
+    let tiquetesVuelo = datosExistentes?.tiquetesVuelo || [];
+    const archivoTiqueteVuelo = document.getElementById("tiqueteVueloFile")?.files[0];
+    if (archivoTiqueteVuelo) {
+      const refTiquete = storage.ref().child(`tiquetes/${codigo}/${Date.now()}_${archivoTiqueteVuelo.name}`);
+      await refTiquete.put(archivoTiqueteVuelo);
+      const urlTiquete = await refTiquete.getDownloadURL();
+      tiquetesVuelo = [...tiquetesVuelo, {
+        nombre: archivoTiqueteVuelo.name,
+        url: urlTiquete,
+        fecha: new Date().toISOString()
+      }];
+    }
+
     await db.collection("costos_reservas").doc(codigo).set({
       codigo: codigo,
       fecha_viaje: fechaReserva,
@@ -1120,6 +1171,7 @@ async function guardarReserva() {
       nombreTitular, cedula, correo, telefono,
       fechaNacimientoTitular, vencimientoPasaporteTitular,
       nacionalidadTitular, generoTitular, pasaporteTitularURL,
+      tiquetesVuelo,
       vueloIda, vueloRegreso,
       fechaReserva, destino, nombreDestino,
       total, abono, saldo, pagos, embajadora,
@@ -1186,6 +1238,14 @@ async function guardarReserva() {
 
     await db.collection("reservas").doc(codigo).set(datos);
     alert("✅ Reserva guardada correctamente como " + codigo);
+
+    // Refresca la lista visible del expediente y limpia el campo de archivo,
+    // para que si guardas de nuevo sin subir otro comprobante, no se duplique
+    // el mismo archivo en el expediente.
+    mostrarListaTiquetesVuelo(tiquetesVuelo);
+    document.getElementById("tiqueteVueloFile").value = "";
+    document.getElementById("tiqueteVueloMensaje").innerHTML = "";
+
     document.getElementById("btnCostos").href = `costos_agregar.html?reserva=${codigo}`;
     document.getElementById("btnCostos").style.display = "inline-block";
     document.getElementById("btnFacturar").href = `facturacion.html?reserva=${codigo}`;
@@ -1701,6 +1761,8 @@ async function cargarReservaExistente(codigo) {
         contPasaporteTitular.innerHTML = `<a href="${data.pasaporteTitularURL}" target="_blank">📎 Ver pasaporte actual</a>`;
       }
     }
+
+    mostrarListaTiquetesVuelo(data.tiquetesVuelo || []);
 
     document.getElementById("cantidadAdultos").value = data.cantidadAdultos || 0;
     document.getElementById("cantidadNinos").value = data.cantidadNinos || 0;
