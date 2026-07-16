@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Reservas - Excursiones Delgado</title>
+  <title>Reservas Activas - Excursiones Delgado</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
@@ -16,14 +16,33 @@
       text-align: center;
       color: #02535a;
     }
-    .btn-agregar {
+    .barra-superior {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .btn-agregar, .btn-historicas {
       background-color: #02535a;
       color: white;
       padding: 10px 15px;
       border: none;
       border-radius: 6px;
-      margin-bottom: 20px;
       cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 14px;
+    }
+    .btn-historicas {
+      background-color: #6c757d;
+    }
+    .contador {
+      text-align: center;
+      color: #555;
+      margin-bottom: 15px;
+      font-size: 0.9rem;
     }
     table {
       width: 100%;
@@ -58,8 +77,15 @@
   </style>
 </head>
 <body>
-  <h2>📦 Reservas Registradas</h2>
-  <button class="btn-agregar" onclick="window.location.href='detalle_reserva.html'">➕ Agregar reserva</button>
+  <h2>📦 Reservas Activas</h2>
+
+  <div class="barra-superior">
+    <button class="btn-agregar" onclick="window.location.href='detalle_reserva.html'">➕ Agregar reserva</button>
+    <a class="btn-historicas" href="reservas_historicas.html">🕓 Ver reservas históricas</a>
+  </div>
+
+  <p class="contador" id="contador"></p>
+
   <table id="tablaReservas">
     <thead>
       <tr>
@@ -87,17 +113,41 @@
     const db = firebase.firestore();
     const tabla = document.querySelector("#tablaReservas tbody");
 
-    // FIX: los nombres de campo no coincidían con el esquema real que usa
-    // detalle_reserva.html (nombreTitular, telefono, correo, fechaReserva, numero
-    // — en vez de nombreCliente, telefonoCliente, correoCliente, fechaViaje,
-    // pasajeros.length). Por eso la mayoría de filas mostraban "-".
-    //
-    // También se corrige el destino: ahora se usa nombreDestino (texto legible)
-    // con destino (el ID) como respaldo, en vez de mostrar siempre el ID sin resolver.
+    // Convierte los dos formatos de fecha que existen en la base de datos
+    // ("2025-06-08" y "21/6/2025") a un objeto Date comparable.
+    function parseFechaReserva(str) {
+      if (!str) return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return new Date(str + "T00:00:00");
+      }
+      const partes = str.split("/");
+      if (partes.length === 3) {
+        const [dia, mes, año] = partes.map(Number);
+        if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) {
+          return new Date(año, mes - 1, dia);
+        }
+      }
+      return null;
+    }
+
     function cargarReservas() {
       db.collection("reservas").get().then(snapshot => {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        let contadorActivas = 0;
+        let contadorSinFecha = 0;
+
         snapshot.forEach(doc => {
           const data = doc.data();
+          const fecha = parseFechaReserva(data.fechaReserva);
+
+          // Si la fecha ya pasó, esta reserva pertenece a reservas_historicas.html, se omite aquí.
+          if (fecha && fecha < hoy) return;
+
+          if (!fecha) contadorSinFecha++;
+          contadorActivas++;
+
           const fila = document.createElement("tr");
           fila.innerHTML = `
             <td>${doc.id}</td>
@@ -114,8 +164,16 @@
           `;
           tabla.appendChild(fila);
         });
+
+        const contadorEl = document.getElementById("contador");
+        let texto = `${contadorActivas} reserva${contadorActivas === 1 ? '' : 's'} activa${contadorActivas === 1 ? '' : 's'}`;
+        if (contadorSinFecha > 0) {
+          texto += ` (${contadorSinFecha} sin fecha de viaje registrada — revisar)`;
+        }
+        contadorEl.textContent = texto;
       });
     }
+
     function eliminarReserva(id) {
       if (confirm("¿Deseas eliminar esta reserva?")) {
         db.collection("reservas").doc(id).delete().then(() => {
