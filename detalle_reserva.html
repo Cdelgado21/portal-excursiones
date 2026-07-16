@@ -1102,6 +1102,9 @@ async function procesarOCRTiquete(archivo) {
 
   try {
     const texto = await extraerTextoDocumento(archivo);
+    console.log("=== TEXTO EXTRAÍDO POR OCR (varias páginas, para depurar) ===");
+    console.log(texto);
+    console.log("=== FIN DEL TEXTO ===");
     const resultado = interpretarItinerarioVuelos(texto);
     const codigoReservaAerolinea = extraerCodigoReservaAerolinea(texto);
 
@@ -2169,5 +2172,6 @@ function cargarHistorialPagos() {
 
 </body>
 </html>
+
 
 
