@@ -8,6 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <style>
     body {
@@ -183,6 +184,13 @@
 
 <section>
   <h2>Itinerario de Vuelos</h2>
+
+  <!-- NUEVO: adjuntar comprobante de vuelo (PDF o imagen) para autocompletar -->
+  <div style="margin-bottom: 20px; padding: 12px; background: #f0f7f7; border-radius: 8px;">
+    <label for="tiqueteVueloFile">Adjuntar comprobante de vuelo (PDF o imagen) para autocompletar</label>
+    <input type="file" id="tiqueteVueloFile" accept="image/*,application/pdf">
+    <div id="tiqueteVueloMensaje" style="margin-top:6px; font-size: 0.85rem;"></div>
+  </div>
 
   <h3>Vuelo de Ida</h3>
   <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
@@ -627,6 +635,270 @@ async function procesarOCRPasaporte(archivo, campos, contenedorMensaje) {
     }
   }
 }
+
+// ==========================================
+// NUEVO: LECTURA AUTOMÁTICA DE COMPROBANTE DE VUELO (OCR + patrones)
+// A diferencia del pasaporte (que tiene un formato mundial estandarizado, el MRZ),
+// los comprobantes de vuelo NO tienen un formato único — cada aerolínea arma el
+// suyo distinto. Por eso esto es "mejor esfuerzo": busca patrones típicos
+// (número de vuelo, fechas, nombre de aerolínea, ruta) y siempre debe revisarse.
+// ==========================================
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+const AEROLINEAS_CONOCIDAS = {
+  "AVIANCA": "Avianca",
+  "COPA AIRLINES": "Copa Airlines",
+  "COPA": "Copa Airlines",
+  "VOLARIS": "Volaris",
+  "WINGO": "Wingo"
+};
+
+const MESES_TEXTO = {
+  ENE: "01", JAN: "01", FEB: "02", MAR: "03", ABR: "04", APR: "04",
+  MAY: "05", JUN: "06", JUL: "07", AGO: "08", AUG: "08", SEP: "09",
+  OCT: "10", NOV: "11", DIC: "12", DEC: "12"
+};
+
+// Convierte el archivo (imagen o PDF) a una imagen base64 lista para enviar a Vision.
+// Si es PDF, se renderiza la primera página como imagen usando pdf.js.
+async function obtenerImagenBase64DeArchivo(archivo) {
+  if (archivo.type === "application/pdf") {
+    const bytes = await archivo.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+    const pagina = await pdf.getPage(1);
+    const viewport = pagina.getViewport({ scale: 2 });
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await pagina.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    return canvas.toDataURL("image/png").split(",")[1];
+  }
+  return await new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onload = () => resolve(lector.result.split(",")[1]);
+    lector.onerror = reject;
+    lector.readAsDataURL(archivo);
+  });
+}
+
+async function extraerTextoDocumento(archivo) {
+  const base64 = await obtenerImagenBase64DeArchivo(archivo);
+  const respuesta = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: [{
+        image: { content: base64 },
+        features: [{ type: "DOCUMENT_TEXT_DETECTION" }]
+      }]
+    })
+  });
+  const datos = await respuesta.json();
+  if (datos.error) throw new Error(datos.error.message || "Error desconocido de Google Vision");
+  return datos.responses?.[0]?.fullTextAnnotation?.text || "";
+}
+
+function detectarAerolinea(texto) {
+  const textoUpper = texto.toUpperCase();
+  for (const clave in AEROLINEAS_CONOCIDAS) {
+    if (textoUpper.includes(clave)) return AEROLINEAS_CONOCIDAS[clave];
+  }
+  return "";
+}
+
+function extraerFechasDelTexto(texto) {
+  const fechas = [];
+  let m;
+
+  const regexNumerico = /\b(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})\b/g;
+  while ((m = regexNumerico.exec(texto)) !== null) {
+    fechas.push({ fecha: `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`, index: m.index });
+  }
+
+  const regexTexto = /\b(\d{1,2})\s+([A-ZÁÉÍÓÚ]{3,9})\.?\s+(\d{4})\b/gi;
+  while ((m = regexTexto.exec(texto)) !== null) {
+    const mm = MESES_TEXTO[m[2].substring(0, 3).toUpperCase()];
+    if (mm) fechas.push({ fecha: `${m[3]}-${mm}-${m[1].padStart(2, "0")}`, index: m.index });
+  }
+
+  return fechas.sort((a, b) => a.index - b.index);
+}
+
+function extraerVuelosDelTexto(texto) {
+  const regexVuelo = /\b([A-Z]{2})\s?-?\s?(\d{3,4})\b/g;
+  const vuelos = [];
+  let m;
+  while ((m = regexVuelo.exec(texto)) !== null) {
+    vuelos.push({ numero: `${m[1]}${m[2]}`, index: m.index });
+  }
+  return vuelos;
+}
+
+function extraerRutasDelTexto(texto) {
+  const regexRuta = /\b([A-Z]{3})\s*(?:[-→>]{1,2}|A)\s*([A-Z]{3})(?:\s*(?:[-→>]{1,2}|A)\s*([A-Z]{3}))?\b/g;
+  const rutas = [];
+  let m;
+  while ((m = regexRuta.exec(texto)) !== null) {
+    rutas.push({ texto: m[0], index: m.index });
+  }
+  return rutas;
+}
+
+// Junta todo lo detectado en "segmentos" de vuelo (uno por cada número de vuelo
+// encontrado), asociando la fecha y ruta más cercanas en el texto.
+function detectarSegmentosDeVuelo(texto) {
+  const fechas = extraerFechasDelTexto(texto);
+  const vuelos = extraerVuelosDelTexto(texto);
+  const rutas = extraerRutasDelTexto(texto);
+
+  function masCercano(lista, posicion) {
+    if (!lista.length) return null;
+    return lista.reduce((mejor, actual) =>
+      Math.abs(actual.index - posicion) < Math.abs(mejor.index - posicion) ? actual : mejor
+    );
+  }
+
+  const vistos = new Set();
+  const segmentos = [];
+  vuelos.forEach(v => {
+    const fecha = masCercano(fechas, v.index)?.fecha || "";
+    const clave = v.numero + fecha;
+    if (!vistos.has(clave)) {
+      vistos.add(clave);
+      segmentos.push({
+        numero: v.numero,
+        fecha,
+        ruta: masCercano(rutas, v.index)?.texto || ""
+      });
+    }
+  });
+
+  return segmentos.sort((a, b) => (a.fecha || "9999").localeCompare(b.fecha || "9999"));
+}
+
+// Agrupa los segmentos en "trayectos": segmentos con fechas separadas por 1 día
+// o menos se consideran escalas del mismo trayecto (ida, o regreso). Un salto
+// mayor de fecha marca el cambio de "ida" a "regreso".
+function agruparSegmentosEnTrayectos(segmentos) {
+  const grupos = [];
+  segmentos.forEach(seg => {
+    const ultimoGrupo = grupos[grupos.length - 1];
+    if (!ultimoGrupo) {
+      grupos.push([seg]);
+      return;
+    }
+    const fechaAnterior = ultimoGrupo[ultimoGrupo.length - 1].fecha;
+    if (!seg.fecha || !fechaAnterior) {
+      ultimoGrupo.push(seg); // sin fecha para comparar, se asume mismo trayecto
+      return;
+    }
+    const diffDias = Math.abs(new Date(seg.fecha) - new Date(fechaAnterior)) / 86400000;
+    if (diffDias <= 1) {
+      ultimoGrupo.push(seg); // misma fecha o un día después -> escala del mismo trayecto
+    } else {
+      grupos.push([seg]); // salto grande de fecha -> nuevo trayecto (regreso)
+    }
+  });
+  return grupos;
+}
+
+function interpretarItinerarioVuelos(texto) {
+  const aerolinea = detectarAerolinea(texto);
+  const segmentos = detectarSegmentosDeVuelo(texto);
+  const trayectos = agruparSegmentosEnTrayectos(segmentos);
+
+  const trayectoIda = trayectos[0] || null;
+  // Si hay más de 2 trayectos (ej. multi-destino), se ignoran los intermedios
+  // y se toma el último como regreso — es un caso raro que igual requiere revisión manual.
+  const trayectoRegreso = trayectos.length > 1 ? trayectos[trayectos.length - 1] : null;
+
+  return {
+    aerolinea,
+    ida: trayectoIda ? trayectoIda[0] : null,
+    escalasIda: trayectoIda ? trayectoIda.slice(1) : [],
+    regreso: trayectoRegreso ? trayectoRegreso[0] : null,
+    escalasRegreso: trayectoRegreso ? trayectoRegreso.slice(1) : [],
+    trayectosDetectados: trayectos.length
+  };
+}
+
+// Agrega una escala usando el campo "Vuelo Intermedio" que ya existe en el
+// formulario (compartido para escalas de ida y de regreso).
+function agregarEscalaDetectada(segmento, etiqueta) {
+  agregarVueloIntermedio();
+  const tarjetas = document.querySelectorAll("#vuelosIntermediosContainer > div");
+  const ultima = tarjetas[tarjetas.length - 1];
+  if (!ultima) return;
+  const campoVuelo = ultima.querySelector(".vueloIntermedio");
+  const campoFecha = ultima.querySelector(".fechaIntermedio");
+  const campoDescripcion = ultima.querySelector(".descripcionIntermedio");
+  if (campoVuelo) campoVuelo.value = segmento.numero;
+  if (campoFecha && segmento.fecha) campoFecha.value = segmento.fecha;
+  if (campoDescripcion) {
+    campoDescripcion.value = `[${etiqueta}] ${segmento.ruta || ""}`.trim();
+  }
+}
+
+async function procesarOCRTiquete(archivo) {
+  const contenedor = document.getElementById("tiqueteVueloMensaje");
+  if (!VISION_API_KEY || VISION_API_KEY === "TU_API_KEY_AQUI") {
+    contenedor.innerHTML = `<span style="color:#a35b00;">⚠️ Falta configurar la clave de Google Vision.</span>`;
+    return;
+  }
+
+  contenedor.innerHTML = `<span style="color:#555;">🔎 Leyendo comprobante de vuelo...</span>`;
+
+  try {
+    const texto = await extraerTextoDocumento(archivo);
+    const resultado = interpretarItinerarioVuelos(texto);
+
+    if (!resultado.ida) {
+      contenedor.innerHTML = `<span style="color:#a35b00;">⚠️ No se detectó ningún número de vuelo. Completa los datos a mano.</span>`;
+      return;
+    }
+
+    if (resultado.aerolinea) {
+      document.getElementById("aerolineaIda").value = resultado.aerolinea;
+      document.getElementById("aerolineaRegreso").value = resultado.aerolinea;
+    }
+    document.getElementById("vueloIda").value = resultado.ida.numero;
+    if (resultado.ida.fecha) document.getElementById("fechaIda").value = resultado.ida.fecha;
+    if (resultado.ida.ruta) document.getElementById("infoVueloIda").value = resultado.ida.ruta;
+
+    let piezas = [`✅ Vuelo de ida detectado (${resultado.ida.numero})`];
+
+    resultado.escalasIda.forEach(seg => agregarEscalaDetectada(seg, "Escala de ida"));
+    if (resultado.escalasIda.length > 0) {
+      piezas.push(`con ${resultado.escalasIda.length} escala(s)`);
+    }
+
+    if (resultado.regreso) {
+      document.getElementById("vueloRegreso").value = resultado.regreso.numero;
+      if (resultado.regreso.fecha) document.getElementById("fechaRegreso").value = resultado.regreso.fecha;
+      if (resultado.regreso.ruta) document.getElementById("infoVueloRegreso").value = resultado.regreso.ruta;
+      piezas.push(`y de regreso (${resultado.regreso.numero})`);
+
+      resultado.escalasRegreso.forEach(seg => agregarEscalaDetectada(seg, "Escala de regreso"));
+      if (resultado.escalasRegreso.length > 0) {
+        piezas.push(`con ${resultado.escalasRegreso.length} escala(s)`);
+      }
+    } else {
+      piezas.push(`. No se detectó vuelo de regreso — complétalo a mano si aplica`);
+    }
+
+    if (resultado.trayectosDetectados > 2) {
+      piezas.push(`⚠️ Se detectaron ${resultado.trayectosDetectados} trayectos distintos — parece un itinerario multi-destino, revisa con más cuidado de lo usual`);
+    }
+
+    let mensaje = piezas.join(" ") + `. <strong>Revisa todos los datos con cuidado antes de guardar</strong> — la lectura de comprobantes es menos precisa que la del pasaporte, y las escalas agregadas al campo "Vuelo Intermedio" (tanto de ida como de regreso) necesitan verificación extra.`;
+    contenedor.innerHTML = `<span style="color:#0a7a2f;">${mensaje}</span>`;
+  } catch (e) {
+    console.error("Error leyendo comprobante de vuelo:", e);
+    contenedor.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo procesar el documento. Completa los datos a mano.</span>`;
+  }
+}
+
 
 async function generarCodigoReserva() {
   const añoActual = new Date().getFullYear();
@@ -1292,6 +1564,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       nacionalidad: document.getElementById("nacionalidadTitular"),
       genero: document.getElementById("generoTitular")
     }, document.getElementById("pasaporteTitularActual"));
+  });
+
+  // NUEVO: cuando se selecciona el comprobante de vuelo, se intenta leer y
+  // autocompletar el itinerario de vuelos automáticamente.
+  document.getElementById("tiqueteVueloFile").addEventListener("change", function () {
+    const archivo = this.files[0];
+    if (!archivo) return;
+    procesarOCRTiquete(archivo);
   });
 
   document.querySelectorAll('.autoresize').forEach(textarea => {
