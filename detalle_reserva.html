@@ -915,19 +915,57 @@ function agregarEscalaDetectada(segmento, etiqueta, codigoReservaAerolinea) {
 }
 
 // Dibuja la lista acumulada de comprobantes de vuelo guardados en la reserva
-// (el "expediente" — cada uno con su nombre, fecha de subida y link para verlo).
+// (el "expediente" — cada uno con su nombre, fecha de subida, link para verlo
+// y un botón para eliminarlo).
+window.tiquetesVueloActuales = [];
 function mostrarListaTiquetesVuelo(lista) {
+  window.tiquetesVueloActuales = Array.isArray(lista) ? lista : [];
   const contenedor = document.getElementById("tiquetesVueloLista");
   if (!contenedor) return;
-  if (!Array.isArray(lista) || lista.length === 0) {
+  if (window.tiquetesVueloActuales.length === 0) {
     contenedor.innerHTML = "";
     return;
   }
-  const filas = lista.map(t => {
+  const filas = window.tiquetesVueloActuales.map((t, i) => {
     const fecha = t.fecha ? new Date(t.fecha).toLocaleDateString('es-CR') : "";
-    return `<li><a href="${t.url}" target="_blank">📎 ${t.nombre || 'Comprobante'}</a>${fecha ? ` — subido el ${fecha}` : ""}</li>`;
+    return `<li>
+      <a href="${t.url}" target="_blank">📎 ${t.nombre || 'Comprobante'}</a>${fecha ? ` — subido el ${fecha}` : ""}
+      <button type="button" onclick="eliminarTiqueteVuelo(${i})" style="margin-left:8px; background:transparent; color:#b00020; border:none; cursor:pointer; font-size:0.85rem; text-decoration:underline;">🗑️ Eliminar</button>
+    </li>`;
   }).join("");
   contenedor.innerHTML = `<strong>Comprobantes guardados:</strong><ul style="margin:6px 0 0 20px; padding:0;">${filas}</ul>`;
+}
+
+// NUEVO: elimina un comprobante — borra el archivo real de Storage y quita la
+// referencia guardada en la reserva. Requiere que la reserva ya tenga código
+// (es decir, que ya se haya guardado al menos una vez).
+async function eliminarTiqueteVuelo(indice) {
+  const codigo = window.codigoActualReserva || codigoReservaExistente;
+  if (!codigo) {
+    alert("⚠️ Primero guarda la reserva antes de poder eliminar comprobantes.");
+    return;
+  }
+  const item = window.tiquetesVueloActuales[indice];
+  if (!item) return;
+
+  const confirmar = confirm(`¿Eliminar el comprobante "${item.nombre}"?\n\nEsta acción no se puede deshacer.`);
+  if (!confirmar) return;
+
+  try {
+    try {
+      await storage.refFromURL(item.url).delete();
+    } catch (e) {
+      console.warn("No se pudo borrar el archivo de Storage (puede que ya no exista):", e);
+    }
+
+    const nuevaLista = window.tiquetesVueloActuales.filter((_, i) => i !== indice);
+    await db.collection("reservas").doc(codigo).update({ tiquetesVuelo: nuevaLista });
+    mostrarListaTiquetesVuelo(nuevaLista);
+    alert("✅ Comprobante eliminado.");
+  } catch (e) {
+    console.error("Error al eliminar comprobante:", e);
+    alert("❌ No se pudo eliminar el comprobante.");
+  }
 }
 
 async function procesarOCRTiquete(archivo) {
@@ -1141,6 +1179,7 @@ async function guardarReserva() {
       alert("⚠️ No se pudo generar el código de reserva. Intenta nuevamente.");
       return;
     }
+    window.codigoActualReserva = codigo;
 
     let datosExistentes = await db.collection("reservas").doc(codigo).get();
     datosExistentes = datosExistentes.exists ? datosExistentes.data() : {};
