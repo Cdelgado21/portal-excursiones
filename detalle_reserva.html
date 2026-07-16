@@ -665,20 +665,19 @@ const MESES_TEXTO = {
   OCT: "10", NOV: "11", DIC: "12", DEC: "12"
 };
 
-// Convierte el archivo (imagen o PDF) a una imagen base64 lista para enviar a Vision.
-// Si es PDF, se renderiza la primera página como imagen usando pdf.js.
-async function obtenerImagenBase64DeArchivo(archivo) {
-  if (archivo.type === "application/pdf") {
-    const bytes = await archivo.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
-    const pagina = await pdf.getPage(1);
-    const viewport = pagina.getViewport({ scale: 2 });
-    const canvas = document.createElement("canvas");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    await pagina.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
-    return canvas.toDataURL("image/png").split(",")[1];
-  }
+// Renderiza UNA página específica de un PDF (ya abierto con pdf.js) como imagen base64.
+async function renderizarPaginaPDFaBase64(pdf, numeroPagina) {
+  const pagina = await pdf.getPage(numeroPagina);
+  const viewport = pagina.getViewport({ scale: 2 });
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await pagina.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+  return canvas.toDataURL("image/png").split(",")[1];
+}
+
+// Convierte un archivo de imagen normal (no PDF) a base64.
+async function archivoImagenABase64(archivo) {
   return await new Promise((resolve, reject) => {
     const lector = new FileReader();
     lector.onload = () => resolve(lector.result.split(",")[1]);
@@ -687,8 +686,7 @@ async function obtenerImagenBase64DeArchivo(archivo) {
   });
 }
 
-async function extraerTextoDocumento(archivo) {
-  const base64 = await obtenerImagenBase64DeArchivo(archivo);
+async function llamarVisionOCR(base64) {
   const respuesta = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -702,6 +700,31 @@ async function extraerTextoDocumento(archivo) {
   const datos = await respuesta.json();
   if (datos.error) throw new Error(datos.error.message || "Error desconocido de Google Vision");
   return datos.responses?.[0]?.fullTextAnnotation?.text || "";
+}
+
+// FIX: antes solo se leía la primera página del PDF. Comprobantes como la
+// impresión de un correo de Gmail pueden tener el itinerario de ida en una
+// página y el de regreso en otra — por eso el vuelo de regreso nunca se
+// detectaba en esos casos. Ahora se procesan hasta 3 páginas y se junta todo
+// el texto antes de buscar los datos (límite para no hacerlo demasiado lento
+// ni gastar cuota de Google Vision de más en documentos muy largos).
+async function extraerTextoDocumento(archivo) {
+  if (archivo.type !== "application/pdf") {
+    const base64 = await archivoImagenABase64(archivo);
+    return await llamarVisionOCR(base64);
+  }
+
+  const bytes = await archivo.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+  const totalPaginas = Math.min(pdf.numPages, 3);
+
+  let textoCompleto = "";
+  for (let numeroPagina = 1; numeroPagina <= totalPaginas; numeroPagina++) {
+    const base64 = await renderizarPaginaPDFaBase64(pdf, numeroPagina);
+    const textoPagina = await llamarVisionOCR(base64);
+    textoCompleto += "\n" + textoPagina;
+  }
+  return textoCompleto;
 }
 
 function detectarAerolinea(texto) {
@@ -1075,7 +1098,7 @@ async function procesarOCRTiquete(archivo) {
     return;
   }
 
-  contenedor.innerHTML = `<span style="color:#555;">🔎 Leyendo comprobante de vuelo...</span>`;
+  contenedor.innerHTML = `<span style="color:#555;">🔎 Leyendo comprobante de vuelo... (si es un PDF de varias páginas puede tardar unos segundos más)</span>`;
 
   try {
     const texto = await extraerTextoDocumento(archivo);
@@ -2146,4 +2169,5 @@ function cargarHistorialPagos() {
 
 </body>
 </html>
+
 
