@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservas Históricas - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+      color: #02535a;
+    }
+    .barra-superior {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .btn-volver {
+      background-color: #02535a;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 14px;
+    }
+    .contador {
+      text-align: center;
+      color: #555;
+      margin-bottom: 15px;
+      font-size: 0.9rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ccc;
+    }
+    th {
+      background-color: #6c757d;
+      color: white;
+    }
+    tr {
+      opacity: 0.85;
+    }
+    .acciones button {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+    }
+    .editar-btn {
+      background-color: transparent;
+      color: white;
+    }
+    .eliminar-btn {
+      background-color: transparent;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h2>🕓 Reservas Históricas</h2>
+
+  <div class="barra-superior">
+    <a class="btn-volver" href="reservas.html">◀ Ver reservas activas</a>
+  </div>
+
+  <p class="contador" id="contador"></p>
+
+  <table id="tablaReservas">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Cliente</th>
+        <th>Teléfono</th>
+        <th>Correo</th>
+        <th>Destino</th>
+        <th>Personas</th>
+        <th>Fecha de viaje</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Reservas se cargarán dinámicamente -->
+    </tbody>
+  </table>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const tabla = document.querySelector("#tablaReservas tbody");
+
+    // Misma función que reservas.html — convierte los dos formatos de fecha
+    // que existen en la base de datos a un objeto Date comparable.
+    // NOTA: esta función está duplicada entre reservas.html y esta página.
+    // Cuando lleguemos a la Fase 6 (limpieza general), conviene moverla a un
+    // solo archivo .js compartido para no tener que mantenerla en dos lugares.
+    function parseFechaReserva(str) {
+      if (!str) return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return new Date(str + "T00:00:00");
+      }
+      const partes = str.split("/");
+      if (partes.length === 3) {
+        const [dia, mes, año] = partes.map(Number);
+        if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) {
+          return new Date(año, mes - 1, dia);
+        }
+      }
+      return null;
+    }
+
+    function cargarReservas() {
+      db.collection("reservas").get().then(snapshot => {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        let contador = 0;
+
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const fecha = parseFechaReserva(data.fechaReserva);
+
+          // Solo se muestran reservas con fecha confirmada en el pasado.
+          // Las que no tienen fecha registrada se quedan en reservas.html
+          // (activas) para que no se pierdan de vista sin revisar.
+          if (!fecha || fecha >= hoy) return;
+
+          contador++;
+
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${doc.id}</td>
+            <td>${data.nombreTitular || '-'}</td>
+            <td>${data.telefono || '-'}</td>
+            <td>${data.correo || '-'}</td>
+            <td>${data.nombreDestino || data.destino || '-'}</td>
+            <td>${data.numero || ((data.cantidadAdultos || 0) + (data.cantidadNinos || 0) + (data.cantidadBebes || 0)) || '-'}</td>
+            <td>${data.fechaReserva || '-'}</td>
+            <td class="acciones">
+              <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
+              <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
+            </td>
+          `;
+          tabla.appendChild(fila);
+        });
+
+        document.getElementById("contador").textContent =
+          `${contador} reserva${contador === 1 ? '' : 's'} histórica${contador === 1 ? '' : 's'}`;
+      });
+    }
+
+    function eliminarReserva(id) {
+      if (confirm("¿Deseas eliminar esta reserva? Esta acción no se puede deshacer.")) {
+        db.collection("reservas").doc(id).delete().then(() => {
+          alert("Reserva eliminada");
+          location.reload();
+        });
+      }
+    }
+    window.onload = cargarReservas;
+  </script>
+</body>
+</html>
