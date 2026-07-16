@@ -1070,6 +1070,13 @@ async function guardarReserva() {
       return;
     }
 
+    // NUEVO: obligatorio para que la cantidad de personas se calcule bien en
+    // la tabla de reservas (ver el bug que corregimos: sin esto, salía "-").
+    if (cantidadAdultos < 1) {
+      alert("⚠️ Debes indicar al menos 1 adulto en \"Cantidad de Adultos\" (aunque el titular viaje solo).");
+      return;
+    }
+
     if (!fechaNacimientoTitular || new Date(fechaNacimientoTitular) > new Date()) {
       alert("⚠️ La fecha de nacimiento del titular debe ser válida y estar en el pasado.");
       return;
@@ -1099,6 +1106,21 @@ async function guardarReserva() {
         alert("⚠️ Todos los pasajeros deben tener una fecha de nacimiento válida y en el pasado.");
         return;
       }
+    }
+
+    // NUEVO: la cantidad total del desglose (Adultos + Niños + Bebés) debe
+    // coincidir exactamente con "titular + tarjetas de pasajero agregadas" —
+    // así el conteo de personas siempre es consistente en toda la reserva.
+    const totalDesglose = cantidadAdultos + cantidadNinos + cantidadBebes;
+    const totalPasajerosReal = 1 + tarjetasPasajero.length; // 1 = el titular
+    if (totalDesglose !== totalPasajerosReal) {
+      alert(
+        `⚠️ La cantidad de personas no coincide.\n\n` +
+        `Desglose de precios (Adultos + Niños + Bebés): ${totalDesglose}\n` +
+        `Titular + pasajeros agregados: ${totalPasajerosReal}\n\n` +
+        `Corrige el desglose de precios o agrega/quita tarjetas de pasajero para que ambos números coincidan.`
+      );
+      return;
     }
 
     // ==========================================
