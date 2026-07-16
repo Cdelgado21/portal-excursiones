@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
   <style>
     body {
@@ -1093,6 +1094,16 @@ function actualizarTotales() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // NUEVO: inicia sesión anónima con Firebase para que Storage permita subir
+  // los pasaportes (las reglas de seguridad exigen un usuario autenticado).
+  // Esto es una solución intermedia — cuando se migre el login del sistema a
+  // Firebase Authentication real, esto se puede reemplazar.
+  try {
+    await firebase.auth().signInAnonymously();
+  } catch (e) {
+    console.error("No se pudo iniciar sesión anónima:", e);
+  }
+
   await cargarDestinos();
   window.listaPagos = window.listaPagos || [];
   document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
