@@ -93,14 +93,18 @@
     }
     main#contenidoPrincipal {
       margin-left: 0;
+      padding: 20px 20px 20px 70px;
       transition: margin-left 0.3s ease;
+      box-sizing: border-box;
     }
     main#contenidoPrincipal.sidebar-visible {
       margin-left: 250px;
+      padding-left: 20px;
     }
     @media screen and (max-width: 768px) {
       main#contenidoPrincipal.sidebar-visible {
         margin-left: 0;
+        padding-left: 70px;
       }
     }
 
@@ -109,7 +113,7 @@
       background-color: #f0f7f7;
       color: #02535a;
       margin: 0;
-      padding: 20px;
+      padding: 0;
     }
     h2 {
       background-color: #02535a;
