@@ -7,10 +7,105 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
+    /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links li a.activo {
+      background-color: #ffb703;
+      color: #02535a;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+      padding-left: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+        padding-left: 70px;
+      }
+    }
+
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f7f7;
-      padding: 20px;
+      padding: 0;
     }
     h2 {
       text-align: center;
@@ -77,6 +172,30 @@
   </style>
 </head>
 <body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html" class="activo"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+
   <h2>📦 Reservas Activas</h2>
 
   <div class="barra-superior">
@@ -130,6 +249,19 @@
       return null;
     }
 
+    // NUEVO: la fecha se ha guardado con formatos distintos a lo largo del
+    // año (a veces "2025-06-08" con guiones, a veces "16/7/2026" con barras),
+    // según qué versión del código la escribió. Esta función usa el parseo de
+    // arriba y siempre la vuelve a mostrar de la misma forma (DD/MM/AAAA).
+    function formatearFechaVisible(str) {
+      const fecha = parseFechaReserva(str);
+      if (!fecha) return str || '-';
+      const dia = String(fecha.getDate()).padStart(2, '0');
+      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+      const año = fecha.getFullYear();
+      return `${dia}/${mes}/${año}`;
+    }
+
     // Calcula la cantidad de personas cubriendo los 3 esquemas distintos que
     // ha tenido el sistema a lo largo del tiempo:
     // 1) campo "numero" directo (el más nuevo)
@@ -175,7 +307,7 @@
             <td>${data.correo || '-'}</td>
             <td>${data.nombreDestino || data.destino || '-'}</td>
             <td>${calcularPersonas(data) ?? '-'}</td>
-            <td>${data.fechaReserva || '-'}</td>
+            <td>${formatearFechaVisible(data.fechaReserva)}</td>
             <td class="acciones">
               <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
               <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
@@ -201,8 +333,53 @@
         });
       }
     }
-    window.onload = cargarReservas;
+
+    // NUEVO: menú lateral de navegación (igual que dashboard.html)
+    function inicializarMenuLateral() {
+      const usuario = JSON.parse(localStorage.getItem("usuario"));
+      const sidebar = document.getElementById("sidebar");
+      const contenido = document.getElementById("contenidoPrincipal");
+      const toggleBtn = document.querySelector('.toggle-btn');
+
+      if (usuario) {
+        document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+        document.getElementById("rolUsuario").innerText = usuario.rol || "";
+      } else {
+        document.getElementById("nombreUsuario").innerText = "Invitado";
+      }
+
+      window.toggleSidebar = function () {
+        sidebar.classList.toggle('active');
+        contenido.classList.toggle('sidebar-visible');
+      };
+
+      window.cerrarSesionYRedirigir = function () {
+        localStorage.removeItem("usuario");
+        window.location.href = "login.html";
+      };
+
+      function checkScreenSize() {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('active');
+          contenido.classList.remove('sidebar-visible');
+        } else {
+          sidebar.classList.add('active');
+          contenido.classList.add('sidebar-visible');
+        }
+        toggleBtn.style.display = "block";
+      }
+
+      window.addEventListener('resize', checkScreenSize);
+      checkScreenSize();
+    }
+
+    window.onload = function () {
+      inicializarMenuLateral();
+      cargarReservas();
+    };
   </script>
+
+  </main>
 </body>
 </html>
 
