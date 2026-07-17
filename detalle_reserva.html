@@ -1633,6 +1633,21 @@ async function guardarReserva() {
       return;
     }
 
+    // NUEVO: si es una reserva NUEVA (no existe código todavía) y la fecha del
+    // vuelo de ida ya pasó, se bloquea el guardado — no tiene sentido crear una
+    // reserva nueva para un viaje que ya ocurrió. Si es una reserva EXISTENTE
+    // que se está corrigiendo (ej. actualizar un pago de un viaje ya realizado),
+    // no se bloquea, para no estorbar correcciones legítimas.
+    const fechaIdaIngresada = document.getElementById("fechaIda").value;
+    if (!codigoReservaExistente && fechaIdaIngresada) {
+      const hoySinHora = new Date();
+      hoySinHora.setHours(0, 0, 0, 0);
+      if (new Date(fechaIdaIngresada) < hoySinHora) {
+        alert("⚠️ La fecha del vuelo de ida ya pasó. No se puede crear una reserva nueva para una fecha anterior a hoy. Verifica la fecha ingresada.");
+        return;
+      }
+    }
+
     if (!fechaNacimientoTitular || new Date(fechaNacimientoTitular) > new Date()) {
       alert("⚠️ La fecha de nacimiento del titular debe ser válida y estar en el pasado.");
       return;
@@ -1701,8 +1716,12 @@ async function guardarReserva() {
 
     let datosExistentes = await db.collection("reservas").doc(codigo).get();
     datosExistentes = datosExistentes.exists ? datosExistentes.data() : {};
-    let fechaReservaExistente = datosExistentes?.fechaReserva || null;
-    let fechaReserva = fechaReservaExistente || new Date().toLocaleDateString('es-CR');
+    // FIX: antes, si no había fechaReserva guardada, se rellenaba sola con la
+    // fecha de HOY (el día en que se guardaba, no una fecha real del viaje) —
+    // por eso aparecían reservas con "fecha de viaje" = el día que alguien
+    // hizo una prueba, sin relación con ningún vuelo real. Ahora se sincroniza
+    // con la fecha real del Vuelo de Ida que se llenó en el formulario.
+    let fechaReserva = fechaIdaIngresada || datosExistentes?.fechaReserva || "";
 
     // NUEVO: subir pasaporte del titular a Firebase Storage si se seleccionó
     // un archivo nuevo. Si no se seleccionó ninguno, se conserva el que ya
