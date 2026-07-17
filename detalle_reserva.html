@@ -11,6 +11,99 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <style>
+    /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html,
+       para que se vea consistente en todo el sistema y se pueda pasar de
+       un módulo a otro sin tener que volver siempre al panel principal). */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links li a.activo {
+      background-color: #ffb703;
+      color: #02535a;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      transition: margin-left 0.3s ease;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+      }
+    }
+
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f7f7;
@@ -95,6 +188,30 @@
   </style>
 </head>
 <body>
+
+<button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+<div class="sidebar" id="sidebar">
+  <div class="user-info">
+    <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+    <h3 id="nombreUsuario">Cargando...</h3>
+    <small id="rolUsuario">-</small>
+  </div>
+  <ul class="nav-links">
+    <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+    <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+    <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+    <li><a href="reservas.html" class="activo"><span class="icon">🧳</span>Reservas</a></li>
+    <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+    <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+    <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+    <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+    <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+    <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+  </ul>
+</div>
+
+<main id="contenidoPrincipal">
 
 <h2>Detalle de Reserva</h2>
 
@@ -1387,6 +1504,51 @@ async function procesarOCRTiquete(archivo) {
 }
 
 
+// ==========================================
+// NUEVO: MENÚ LATERAL DE NAVEGACIÓN (igual que dashboard.html)
+// ==========================================
+function inicializarMenuLateral() {
+  const usuario = JSON.parse(localStorage.getItem("usuario"));
+  const sidebar = document.getElementById("sidebar");
+  const contenido = document.getElementById("contenidoPrincipal");
+  const toggleBtn = document.querySelector('.toggle-btn');
+
+  if (usuario) {
+    document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+    document.getElementById("rolUsuario").innerText = usuario.rol || "";
+  } else {
+    // NOTA: a diferencia de dashboard.html, aquí NO se redirige a la fuerza a
+    // login.html si no hay sesión — este archivo se sigue usando durante las
+    // pruebas del sistema. Cuando se migre a un login real (Firebase
+    // Authentication), esto debería volver a exigir sesión obligatoria.
+    document.getElementById("nombreUsuario").innerText = "Invitado";
+  }
+
+  window.toggleSidebar = function () {
+    sidebar.classList.toggle('active');
+    contenido.classList.toggle('sidebar-visible');
+  };
+
+  window.cerrarSesionYRedirigir = function () {
+    localStorage.removeItem("usuario");
+    window.location.href = "login.html";
+  };
+
+  function checkScreenSize() {
+    if (window.innerWidth <= 768) {
+      sidebar.classList.remove('active');
+      contenido.classList.remove('sidebar-visible');
+    } else {
+      sidebar.classList.add('active');
+      contenido.classList.add('sidebar-visible');
+    }
+    toggleBtn.style.display = "block";
+  }
+
+  window.addEventListener('resize', checkScreenSize);
+  checkScreenSize();
+}
+
 async function generarCodigoReserva() {
   const añoActual = new Date().getFullYear();
   const counterRef = db.collection("counters").doc(`reserva-${añoActual}`);
@@ -2072,6 +2234,11 @@ function actualizarTotales() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // NUEVO: inicializa el menú lateral de navegación (mismo comportamiento que
+  // ya tenía dashboard.html — usuario logueado, mostrar/ocultar según tamaño
+  // de pantalla).
+  inicializarMenuLateral();
+
   // NUEVO: inicia sesión anónima con Firebase para que Storage permita subir
   // los pasaportes (las reglas de seguridad exigen un usuario autenticado).
   // Esto es una solución intermedia — cuando se migre el login del sistema a
@@ -2396,7 +2563,8 @@ function cargarHistorialPagos() {
 }
 </script>
 
+</main>
+
 </body>
 </html>
-
 
