@@ -339,8 +339,15 @@
     <div style="display: flex; align-items: center; gap: 6px;">
       <label for="codigoBoletoIda" style="white-space: nowrap;">Código de Aerolínea:</label>
       <input type="text" id="codigoBoletoIda" placeholder="Ej. AUC5TG" style="min-width: 160px;">
+      <button type="button" onclick="agregarCodigoAerolineaAdicional()" title="Agregar otro código (para un pasajero con reserva separada)" style="padding: 4px 10px; font-size: 14px; background-color: #02535a; color: white; border: none; border-radius: 4px; cursor: pointer;">➕</button>
     </div>
   </div>
+
+  <!-- NUEVO: códigos de aerolínea adicionales, para cuando un pasajero se
+       suma a la reserva con un PNR distinto al del resto del grupo. Aplica
+       para toda la reserva (ida y regreso), ya que el código no cambia entre
+       tramos para una misma persona. -->
+  <div id="codigosAerolineaAdicionalesContainer" style="margin-top: 8px;"></div>
 
   <label for="infoVueloIda">Información del Vuelo de Ida</label>
   <textarea id="infoVueloIda" rows="3" placeholder="Ej. SJO → PTY → MDE, llegada 9:30 AM"></textarea>
@@ -1771,6 +1778,12 @@ async function guardarReserva() {
       nacionalidadTitular, generoTitular, pasaporteTitularURL,
       tiquetesVuelo,
       vueloIda, vueloRegreso,
+      // NUEVO: códigos de aerolínea adicionales, para pasajeros de esta misma
+      // reserva que quedaron con un PNR distinto al del resto del grupo.
+      codigosAerolineaAdicionales: Array.from(document.querySelectorAll(".fila-codigo-adicional")).map(fila => ({
+        codigo: fila.querySelector(".codigoAdicionalAerolinea")?.value || "",
+        nota: fila.querySelector(".notaCodigoAdicional")?.value || ""
+      })).filter(c => c.codigo.trim() !== ""),
       fechaReserva, destino, nombreDestino,
       total, abono, saldo, pagos, embajadora,
       vuelosIntermedios: [],
@@ -1817,8 +1830,6 @@ async function guardarReserva() {
         nacimiento: p.querySelector(".fechaNacimientoPasajero")?.value || "",
         nacionalidad: p.querySelector(".nacionalidadPasajero")?.value || "",
         genero: p.querySelector(".generoPasajero")?.value || "",
-        codigoAerolineaIda: p.querySelector(".codigoAerolineaIdaPasajero")?.value || "",
-        codigoAerolineaRegreso: p.querySelector(".codigoAerolineaRegresoPasajero")?.value || "",
         pasaporteURL
       });
     }
@@ -1909,6 +1920,25 @@ function cargarDesdeCotizacion() {
 // vuelo intermedio, y el <div> de apertura ahora sí cierra con </div> (antes cerraba
 // con un </section> que no correspondía).
 let vueloCounter = 1;
+// NUEVO: agrega una fila para un código de aerolínea adicional (cuando un
+// pasajero de la reserva queda con un PNR distinto al del resto del grupo).
+let contadorCodigoAdicional = 0;
+function agregarCodigoAerolineaAdicional(valorCodigo, valorNota) {
+  contadorCodigoAdicional++;
+  const container = document.getElementById("codigosAerolineaAdicionalesContainer");
+  const fila = document.createElement("div");
+  fila.className = "fila-codigo-adicional";
+  fila.style = "display: flex; align-items: center; gap: 6px; margin-top: 6px;";
+  fila.innerHTML = `
+    <label style="white-space: nowrap; font-weight: normal; margin-top:0;">Código adicional:</label>
+    <input type="text" class="codigoAdicionalAerolinea" placeholder="Ej. XY9Z12" style="min-width: 140px;" value="${valorCodigo || ''}">
+    <label style="white-space: nowrap; font-weight: normal; margin-top:0;">Para:</label>
+    <input type="text" class="notaCodigoAdicional" placeholder="Ej. Juan Pérez" style="min-width: 160px;" value="${valorNota || ''}">
+    <span onclick="this.parentElement.remove()" style="cursor:pointer; color:#b00020; font-weight:bold;" title="Quitar">❌</span>
+  `;
+  container.appendChild(fila);
+}
+
 function agregarVueloIntermedio() {
   const container = document.getElementById("vuelosIntermediosContainer");
   const html = `
@@ -2009,20 +2039,6 @@ function agregarPasajero() {
           <option value="Femenino">Femenino</option>
           <option value="Masculino">Masculino</option>
         </select>
-      </div>
-    </div>
-
-    <!-- NUEVO: código de aerolínea propio, para cuando este pasajero queda con
-         un PNR distinto al del titular (pasa cuando la aerolínea separa la
-         reserva). Se deja en blanco si comparte el mismo código del titular. -->
-    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px;">
-      <div style="flex: 1; min-width: 250px;">
-        <label>Código de Aerolínea Ida (solo si es distinto al del titular)</label>
-        <input type="text" class="codigoAerolineaIdaPasajero" placeholder="Dejar en blanco si comparte el del titular" style="width: 100%;">
-      </div>
-      <div style="flex: 1; min-width: 250px;">
-        <label>Código de Aerolínea Regreso (solo si es distinto al del titular)</label>
-        <input type="text" class="codigoAerolineaRegresoPasajero" placeholder="Dejar en blanco si comparte el del titular" style="width: 100%;">
       </div>
     </div>
 
@@ -2386,6 +2402,14 @@ async function cargarReservaExistente(codigo) {
 
     mostrarListaTiquetesVuelo(data.tiquetesVuelo || []);
 
+    // NUEVO: recrear las filas de códigos de aerolínea adicionales guardados
+    if (Array.isArray(data.codigosAerolineaAdicionales)) {
+      document.getElementById("codigosAerolineaAdicionalesContainer").innerHTML = "";
+      data.codigosAerolineaAdicionales.forEach(c => {
+        agregarCodigoAerolineaAdicional(c.codigo, c.nota);
+      });
+    }
+
     document.getElementById("cantidadAdultos").value = data.cantidadAdultos || 0;
     document.getElementById("cantidadNinos").value = data.cantidadNinos || 0;
     document.getElementById("cantidadBebes").value = data.cantidadBebes || 0;
@@ -2493,12 +2517,6 @@ async function cargarReservaExistente(codigo) {
 
           const genero = ult.querySelector(".generoPasajero");
           if (genero) genero.value = p.genero || "";
-
-          const codigoIdaPasajero = ult.querySelector(".codigoAerolineaIdaPasajero");
-          if (codigoIdaPasajero) codigoIdaPasajero.value = p.codigoAerolineaIda || "";
-
-          const codigoRegresoPasajero = ult.querySelector(".codigoAerolineaRegresoPasajero");
-          if (codigoRegresoPasajero) codigoRegresoPasajero.value = p.codigoAerolineaRegreso || "";
 
           if (p.pasaporteURL) {
             const contPasaportePasajero = ult.querySelector(".pasaportePasajeroActual");
