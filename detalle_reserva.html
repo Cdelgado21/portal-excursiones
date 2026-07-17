@@ -1817,6 +1817,8 @@ async function guardarReserva() {
         nacimiento: p.querySelector(".fechaNacimientoPasajero")?.value || "",
         nacionalidad: p.querySelector(".nacionalidadPasajero")?.value || "",
         genero: p.querySelector(".generoPasajero")?.value || "",
+        codigoAerolineaIda: p.querySelector(".codigoAerolineaIdaPasajero")?.value || "",
+        codigoAerolineaRegreso: p.querySelector(".codigoAerolineaRegresoPasajero")?.value || "",
         pasaporteURL
       });
     }
@@ -2007,6 +2009,20 @@ function agregarPasajero() {
           <option value="Femenino">Femenino</option>
           <option value="Masculino">Masculino</option>
         </select>
+      </div>
+    </div>
+
+    <!-- NUEVO: código de aerolínea propio, para cuando este pasajero queda con
+         un PNR distinto al del titular (pasa cuando la aerolínea separa la
+         reserva). Se deja en blanco si comparte el mismo código del titular. -->
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px;">
+      <div style="flex: 1; min-width: 250px;">
+        <label>Código de Aerolínea Ida (solo si es distinto al del titular)</label>
+        <input type="text" class="codigoAerolineaIdaPasajero" placeholder="Dejar en blanco si comparte el del titular" style="width: 100%;">
+      </div>
+      <div style="flex: 1; min-width: 250px;">
+        <label>Código de Aerolínea Regreso (solo si es distinto al del titular)</label>
+        <input type="text" class="codigoAerolineaRegresoPasajero" placeholder="Dejar en blanco si comparte el del titular" style="width: 100%;">
       </div>
     </div>
 
@@ -2478,6 +2494,12 @@ async function cargarReservaExistente(codigo) {
           const genero = ult.querySelector(".generoPasajero");
           if (genero) genero.value = p.genero || "";
 
+          const codigoIdaPasajero = ult.querySelector(".codigoAerolineaIdaPasajero");
+          if (codigoIdaPasajero) codigoIdaPasajero.value = p.codigoAerolineaIda || "";
+
+          const codigoRegresoPasajero = ult.querySelector(".codigoAerolineaRegresoPasajero");
+          if (codigoRegresoPasajero) codigoRegresoPasajero.value = p.codigoAerolineaRegreso || "";
+
           if (p.pasaporteURL) {
             const contPasaportePasajero = ult.querySelector(".pasaportePasajeroActual");
             if (contPasaportePasajero) {
@@ -2590,4 +2612,3 @@ function cargarHistorialPagos() {
 
 </body>
 </html>
-
