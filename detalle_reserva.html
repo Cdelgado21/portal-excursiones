@@ -1780,10 +1780,16 @@ async function guardarReserva() {
       vueloIda, vueloRegreso,
       // NUEVO: códigos de aerolínea adicionales, para pasajeros de esta misma
       // reserva que quedaron con un PNR distinto al del resto del grupo.
-      codigosAerolineaAdicionales: Array.from(document.querySelectorAll(".fila-codigo-adicional")).map(fila => ({
-        codigo: fila.querySelector(".codigoAdicionalAerolinea")?.value || "",
-        nota: fila.querySelector(".notaCodigoAdicional")?.value || ""
-      })).filter(c => c.codigo.trim() !== ""),
+      codigosAerolineaAdicionales: Array.from(document.querySelectorAll(".fila-codigo-adicional")).map(fila => {
+        const selectPara = fila.querySelector(".notaCodigoAdicional");
+        const nota = selectPara?.value === "__otro__"
+          ? (fila.querySelector(".notaCodigoAdicionalOtro")?.value || "")
+          : (selectPara?.value || "");
+        return {
+          codigo: fila.querySelector(".codigoAdicionalAerolinea")?.value || "",
+          nota
+        };
+      }).filter(c => c.codigo.trim() !== ""),
       fechaReserva, destino, nombreDestino,
       total, abono, saldo, pagos, embajadora,
       vuelosIntermedios: [],
@@ -1923,20 +1929,60 @@ let vueloCounter = 1;
 // NUEVO: agrega una fila para un código de aerolínea adicional (cuando un
 // pasajero de la reserva queda con un PNR distinto al del resto del grupo).
 let contadorCodigoAdicional = 0;
+
+// Junta el nombre del titular + el de cada tarjeta de pasajero agregada hasta el momento.
+function obtenerNombresPasajerosActuales() {
+  const nombres = [];
+  const nombreTitular = document.getElementById("nombreTitular")?.value?.trim();
+  if (nombreTitular) nombres.push(nombreTitular);
+  document.querySelectorAll(".nombrePasajero").forEach(input => {
+    const val = input.value.trim();
+    if (val) nombres.push(val);
+  });
+  return nombres;
+}
+
+// Vuelve a armar las opciones de TODOS los desplegables "Para" que ya existan,
+// sin perder lo que ya estuviera seleccionado en cada uno.
+function refrescarOpcionesCodigosAdicionales() {
+  const nombres = obtenerNombresPasajerosActuales();
+  document.querySelectorAll(".notaCodigoAdicional").forEach(select => {
+    const actual = select.value;
+    select.innerHTML = construirOpcionesPasajeros(nombres, actual);
+  });
+}
+
+function construirOpcionesPasajeros(nombres, seleccionado) {
+  let opciones = `<option value="">-- Seleccione pasajero --</option>`;
+  nombres.forEach(n => {
+    opciones += `<option value="${n}" ${n === seleccionado ? 'selected' : ''}>${n}</option>`;
+  });
+  const esOtro = seleccionado && !nombres.includes(seleccionado);
+  opciones += `<option value="__otro__" ${esOtro ? 'selected' : ''}>Otro (escribir nombre)</option>`;
+  return opciones;
+}
+
 function agregarCodigoAerolineaAdicional(valorCodigo, valorNota) {
   contadorCodigoAdicional++;
   const container = document.getElementById("codigosAerolineaAdicionalesContainer");
+  const nombres = obtenerNombresPasajerosActuales();
+  const esOtro = valorNota && !nombres.includes(valorNota);
+
   const fila = document.createElement("div");
   fila.className = "fila-codigo-adicional";
-  fila.style = "display: flex; align-items: center; gap: 6px; margin-top: 6px;";
+  fila.style = "display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap;";
   fila.innerHTML = `
     <label style="white-space: nowrap; font-weight: normal; margin-top:0;">Código adicional:</label>
     <input type="text" class="codigoAdicionalAerolinea" placeholder="Ej. XY9Z12" style="min-width: 140px;" value="${valorCodigo || ''}">
     <label style="white-space: nowrap; font-weight: normal; margin-top:0;">Para:</label>
-    <input type="text" class="notaCodigoAdicional" placeholder="Ej. Juan Pérez" style="min-width: 160px;" value="${valorNota || ''}">
+    <select class="notaCodigoAdicional" onchange="this.nextElementSibling.style.display = this.value === '__otro__' ? 'inline-block' : 'none';">
+      ${construirOpcionesPasajeros(nombres, valorNota || "")}
+    </select>
+    <input type="text" class="notaCodigoAdicionalOtro" placeholder="Escribir nombre" style="min-width: 160px; display:${esOtro ? 'inline-block' : 'none'};" value="${esOtro ? valorNota : ''}">
     <span onclick="this.parentElement.remove()" style="cursor:pointer; color:#b00020; font-weight:bold;" title="Quitar">❌</span>
   `;
   container.appendChild(fila);
+  refrescarOpcionesCodigosAdicionales();
 }
 
 function agregarVueloIntermedio() {
@@ -2053,6 +2099,12 @@ function agregarPasajero() {
   `;
 
   container.appendChild(pasajeroDiv);
+
+  // NUEVO: mantiene actualizados los desplegables "Para" de los códigos de
+  // aerolínea adicionales cada vez que se agrega un pasajero o se escribe/edita su nombre.
+  refrescarOpcionesCodigosAdicionales();
+  const inputNombrePasajero = pasajeroDiv.querySelector(".nombrePasajero");
+  inputNombrePasajero.addEventListener("input", refrescarOpcionesCodigosAdicionales);
 
   // NUEVO: cuando se selecciona la foto del pasaporte de este pasajero, se
   // intenta leer automáticamente con OCR y llenar sus campos.
@@ -2293,6 +2345,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ya tenía dashboard.html — usuario logueado, mostrar/ocultar según tamaño
   // de pantalla).
   inicializarMenuLateral();
+
+  // NUEVO: mantiene actualizado el desplegable "Para" de los códigos de
+  // aerolínea adicionales si se edita el nombre del titular.
+  document.getElementById("nombreTitular").addEventListener("input", refrescarOpcionesCodigosAdicionales);
 
   // NUEVO: inicia sesión anónima con Firebase para que Storage permita subir
   // los pasaportes (las reglas de seguridad exigen un usuario autenticado).
