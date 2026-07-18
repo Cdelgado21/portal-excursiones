@@ -234,7 +234,7 @@ input[type="text"],
 input[type="number"],
 input[type="date"] {
   border: 1px solid #ccc;
-  border-radius: 10px; /* más redondeado */
+  border-radius: 10px;
   padding: 8px 12px;
   font-size: 14px;
   outline: none;
@@ -242,6 +242,15 @@ input[type="date"] {
   width: 100%;
   box-sizing: border-box;
 }
+  /* NUEVO: aviso de factura electrónica */
+  .aviso-factura-electronica {
+    margin-top: 15px;
+    padding: 12px;
+    background: #fff8e6;
+    border: 1px solid #f0d999;
+    border-radius: 8px;
+    font-size: 14px;
+  }
   </style>
 </head>
 <body>
@@ -287,10 +296,19 @@ input[type="date"] {
   </tbody>
   <tfoot>
     <tr><td colspan="3" style="text-align:right;">Subtotal</td><td style="text-align:right;" id="subtotal">$0.00</td></tr>
-    <tr><td colspan="3" style="text-align:right;">IVA (0%)</td><td style="text-align:right;">$0.00</td></tr>
+    <tr><td colspan="3" style="text-align:right;" id="filaIvaTexto">IVA (0%)</td><td style="text-align:right;" id="filaIvaMonto">$0.00</td></tr>
     <tr><td colspan="3" style="text-align:right;"><strong>Total</strong></td><td style="text-align:right;" id="total"><strong>$0.00</strong></td></tr>
   </tfoot>
 </table>
+
+<!-- NUEVO: el IVA solo aplica si el cliente pide factura electrónica — se
+     cobra aparte del total normal de la reserva, no está incluido de por sí. -->
+<div class="aviso-factura-electronica">
+  <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+    <input type="checkbox" id="requiereFacturaElectronica" onchange="recalcularTotalesFactura()">
+    ¿El cliente requiere factura electrónica? Se agrega 13% de IVA al detalle de arriba (no afecta el total ya acordado con el cliente, que se sigue cobrando aparte).
+  </label>
+</div>
 
 <!-- Título y tabla de Pagos -->
 <h3 style="margin-top: 30px; color: #02535a;">Historial de Pagos</h3>
@@ -309,9 +327,9 @@ input[type="date"] {
   </tbody>
 </table>
   <div id="resumenFacturacion" style="margin-top:20px; text-align:right; font-weight:bold;">
-  <div>Total de la Reserva: <span id="totalReserva" style="color:#02535a;">$639.00</span></div>
-  <div>Pagos Aplicados: <span id="totalPagado" style="color:#5f9296;">$480.00</span></div>
-  <div>Saldo Restante: <span id="saldoRestante" style="color:#d9534f;">$159.00</span></div>
+  <div>Total de la Reserva: <span id="totalReserva" style="color:#02535a;">$0.00</span></div>
+  <div>Pagos Aplicados: <span id="totalPagado" style="color:#5f9296;">$0.00</span></div>
+  <div>Saldo Restante: <span id="saldoRestante" style="color:#d9534f;">$0.00</span></div>
 </div>
     <!-- Botones -->
     <div class="acciones">
@@ -389,7 +407,7 @@ input[type="date"] {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
     authDomain: "tours-460717.firebaseapp.com",
     projectId: "tours-460717",
-    storageBucket: "tours-460717.appspot.com",
+    storageBucket: "tours-460717.firebasestorage.app",
     messagingSenderId: "1000749333444",
     appId: "1:1000749333444:web:73437891b59a96b6a4c291"
   };
@@ -399,13 +417,34 @@ let data = {}
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  function formatearFecha(fechaISO) {
-  const fecha = new Date(fechaISO);
-  const dia = String(fecha.getDate()).padStart(2, '0');
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-  const año = fecha.getFullYear();
-  return `${dia}/${mes}/${año}`;
-}
+  // FIX: antes esta función asumía formato "YYYY-MM-DD" siempre. Como ya
+  // vimos en reservas.html, las fechas se han guardado en formatos mezclados
+  // a lo largo del año (con guiones y con barras) — ahora se reconocen ambos.
+  function parseFechaFlexible(str) {
+    if (!str) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return new Date(str + "T00:00:00");
+    }
+    const partes = String(str).split("/");
+    if (partes.length === 3) {
+      const [dia, mes, año] = partes.map(Number);
+      if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) {
+        return new Date(año, mes - 1, dia);
+      }
+    }
+    const intento = new Date(str);
+    return isNaN(intento.getTime()) ? null : intento;
+  }
+
+  function formatearFecha(fechaStr) {
+    const fecha = parseFechaFlexible(fechaStr);
+    if (!fecha) return "---";
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const año = fecha.getFullYear();
+    return `${dia}/${mes}/${año}`;
+  }
+
   // Función segura para insertar texto
   function setTexto(id, valor) {
     const elemento = document.getElementById(id);
@@ -419,151 +458,102 @@ const urlParams = new URLSearchParams(window.location.search);
 const reservaID = urlParams.get("reserva");
 
 if (reservaID) {
-  db.collection("reservas").doc(reservaID).get().then((doc) => {
+  db.collection("reservas").doc(reservaID).get().then(async (doc) => {
   if (doc.exists) {
-  const data = doc.data(); // Primero definís 'data'
-actualizarResumenFacturacion(data);
-    
+  const data = doc.data();
+  window.reservaActual = data;
+
   if (data.facturaGenerada) {
-  const campoFactura = document.getElementById("numeroFactura");
-  if (campoFactura) {
-    campoFactura.textContent = data.numeroFactura || "---";
+    const campoFactura = document.getElementById("numeroFactura");
+    if (campoFactura) {
+      campoFactura.textContent = data.numeroFactura || "---";
+    }
+    document.querySelector("button[onclick='guardarFactura()']").disabled = true;
   }
-  document.querySelector("button[onclick='guardarFactura()']").disabled = true;
-}
 
-  // Aquí sí ya podés usar 'data'
-  console.log("Data cargada:", data);
-  console.log("Precios:", data.pasajeros);
-  console.log("Destino:", data.destino);
-console.log("Adultos:", data.cantidadAdultos);
-console.log("Niños:", data.cantidadNinos);
-console.log("Bebés:", data.cantidadBebes);
+  setTexto("codigoReserva", reservaID);
+  setTexto("numeroFactura", data.numeroFactura || "---");
 
-console.log("Precio Adulto:", data.pasajeros?.precioAdulto);
-console.log("Precio Niño:", data.pasajeros?.precioNino);
-console.log("Precio Bebé:", data.pasajeros?.precioBebe);
-      // Formato local para fechas
-      const formatoLocal = { day: '2-digit', month: '2-digit', year: 'numeric' };
+  // FIX: antes, si faltaba el correo o teléfono del cliente, se rellenaba
+  // con datos reales de OTRO cliente (Yulliana Gómez) quemados en el código.
+  // Esto podía terminar enviando la factura de un cliente al correo de otro.
+  // Ahora, si falta el dato, simplemente queda en blanco ("---").
+  setTexto("nombreCliente", data.nombreTitular);
+  setTexto("correoCliente", data.correo);
+  setTexto("telefonoCliente", data.telefono);
 
-      // Datos generales
-      setTexto("codigoReserva", reservaID);
-    setTexto("numeroFactura", data.numeroFactura || "---");
-      // Datos del cliente
-      setTexto("nombreCliente", data.nombreTitular);
-      setTexto("correoCliente", data.correo || "yullianagomez@gmail.com");
-      setTexto("telefonoCliente", data.telefono || "85378012");
+  // FIX: fecha de emisión ahora pasa por el mismo parseo flexible que el
+  // resto del sistema, en vez de mostrar el valor guardado tal cual.
+  setTexto("fechaEmisionSpan", formatearFecha(data.fechaReserva));
 
-      // Fecha de emisión (ya viene lista)
-      setTexto("fechaEmisionSpan", data.fechaReserva);
-
-      // Fechas del vuelo (ida y regreso) con formato local
-      if (data.vueloIda && data.vueloIda.fecha) {
-        const fechaIda = new Date(data.vueloIda.fecha + 'T00:00:00');
-        document.getElementById("fechaIda").innerText = fechaIda.toLocaleDateString('es-CR', formatoLocal);
-      } else {
-        setTexto("fechaIda", "---");
-        setTexto("numeroFactura", "---"); // Por si aún no hay factura generada
-      }
-
-      if (data.vueloRegreso && data.vueloRegreso.fecha) {
-        const fechaRegreso = new Date(data.vueloRegreso.fecha + 'T00:00:00');
-        document.getElementById("fechaRegreso").innerText = fechaRegreso.toLocaleDateString('es-CR', formatoLocal);
-      } else {
-        setTexto("fechaRegreso", "---");
-      }
-
-      // Código del vuelo
-      setTexto("codigoVuelo", data.vueloIda?.codigo || "---");
-
-const adultos = Number(data.cantidadAdultos) || 0;
-const ninos   = Number(data.cantidadNinos)   || 0;
-const bebes   = Number(data.cantidadBebes)   || 0;
-
-// --- precios TOMADOS DEL DOCUMENTO DE LA RESERVA ---
-const precioAdulto = Number(data.precioAdulto) || 0;
-const precioNino   = Number(data.precioNino)   || 0;
-const precioBebe   = Number(data.precioBebe)   || 0;
-      
-// --- tabla ---
-const tabla    = document.getElementById("tablaArticulos");
-tabla.innerHTML = "";
-let subtotal    = 0;
-let detalleFactura = []; // ⬅️ Esto es nuevo
-
-function agregarFila(descripcion, precio, cantidad) {
-  if (cantidad > 0) {
-    const importe = precio * cantidad;
-    subtotal += importe;
-
-    // Mostrar en la tabla visual
-    tabla.insertAdjacentHTML("beforeend", `
-      <tr>
-        <td>${descripcion}</td>
-        <td style="text-align:right;">$${precio.toFixed(2)}</td>
-        <td style="text-align:center;">${cantidad}</td>
-        <td style="text-align:right;">$${importe.toFixed(2)}</td>
-      </tr>
-    `);
-
-    // Guardar en el array de detalle
-    detalleFactura.push({
-      desc: descripcion,
-      precio: precio,
-      cantidad: cantidad
-    });
+  if (data.vueloIda && data.vueloIda.fecha) {
+    setTexto("fechaIda", formatearFecha(data.vueloIda.fecha));
+  } else {
+    setTexto("fechaIda", "---");
   }
-}
 
-const nombreBonito = data.nombreDestino || 
-  (data.destino ? data.destino.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()) : "Destino no definido");
+  if (data.vueloRegreso && data.vueloRegreso.fecha) {
+    setTexto("fechaRegreso", formatearFecha(data.vueloRegreso.fecha));
+  } else {
+    setTexto("fechaRegreso", "---");
+  }
 
-agregarFila(`${nombreBonito} - Adultos`, precioAdulto, adultos);
-agregarFila(`${nombreBonito} - Niños`,   precioNino,   ninos);
-agregarFila(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
+  setTexto("codigoVuelo", data.vueloIda?.codigo || "---");
 
-// totales
-document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
-document.getElementById("total").textContent    = `$${subtotal.toFixed(2)}`;
-      const pagos = data.pagos || [];
-    listaDePagos = pagos; // Para usar en el modal
-const tablaPagos = document.getElementById("tablaTransaccionesBody");
-tablaPagos.innerHTML = "";
+  const adultos = Number(data.cantidadAdultos) || 0;
+  const ninos   = Number(data.cantidadNinos)   || 0;
+  const bebes   = Number(data.cantidadBebes)   || 0;
 
-if (pagos.length === 0) {
-  tablaPagos.innerHTML = `<tr><td colspan="5">No hay pagos registrados.</td></tr>`;
-} else {
-  pagos.forEach((pago, index) => {
-    tablaPagos.innerHTML += `
-      <tr>
-        <td>${index + 1}</td>
-        <td>$${Number(pago.monto || 0).toFixed(2)}</td>
-        <td>${pago.fecha ? formatearFecha(pago.fecha) : "-"}</td>
-        <td>${pago.metodo || "Sin especificar"}</td>
-        <td>${pago.nota || ""}</td>
-      </tr>
-    `;
-  });
-}
-    const totalAbonado = pagos.reduce((acc, pago) => acc + (parseFloat(pago.monto) || 0), 0);
-  
-  // Total de la reserva
-  const totalTexto = document.getElementById("total").textContent.replace(/[^0-9.]/g, '');
-  const totalReserva = parseFloat(totalTexto) || 0;
+  const precioAdulto = Number(data.precioAdulto) || 0;
+  const precioNino   = Number(data.precioNino)   || 0;
+  const precioBebe   = Number(data.precioBebe)   || 0;
 
-  // Calcular saldo
-  const saldoRestante = totalReserva - totalAbonado;
+  const tabla = document.getElementById("tablaArticulos");
+  tabla.innerHTML = "";
 
-// Mostrar saldo fuera de la tabla
-const saldoBox = document.getElementById("saldoRestanteBox");
-if (saldoBox) {
-  saldoBox.innerHTML = `
-    Saldo Restante: 
-    <span style="color:${saldoRestante > 0 ? '#d9534f' : '#02535a'};">
-      $${saldoRestante.toFixed(2)}
-    </span>
-  `;
-}
+  const nombreBonito = data.nombreDestino ||
+    (data.destino ? data.destino.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()) : "Destino no definido");
+
+  function agregarFilaArticulo(descripcion, precio, cantidad) {
+    if (cantidad > 0) {
+      const importe = precio * cantidad;
+      tabla.insertAdjacentHTML("beforeend", `
+        <tr>
+          <td>${descripcion}</td>
+          <td style="text-align:right;">$${precio.toFixed(2)}</td>
+          <td style="text-align:center;">${cantidad}</td>
+          <td style="text-align:right;">$${importe.toFixed(2)}</td>
+        </tr>
+      `);
+    }
+  }
+
+  agregarFilaArticulo(`${nombreBonito} - Adultos`, precioAdulto, adultos);
+  agregarFilaArticulo(`${nombreBonito} - Niños`,   precioNino,   ninos);
+  agregarFilaArticulo(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
+
+  // NUEVO: agrega los tours opcionales comprados como líneas de factura.
+  // La reserva solo guarda el NOMBRE del tour opcional elegido, así que hay
+  // que buscar su precio en el catálogo (colección "tours", mismo destino).
+  if (Array.isArray(data.toursOpcionales) && data.toursOpcionales.length > 0 && data.destino) {
+    try {
+      const tourDoc = await db.collection("tours").doc(data.destino).get();
+      if (tourDoc.exists) {
+        const catalogoOpcionales = tourDoc.data().tours_opcionales || [];
+        data.toursOpcionales.forEach(nombreElegido => {
+          const encontrado = catalogoOpcionales.find(o => o.nombre === nombreElegido);
+          const precio = encontrado ? Number(encontrado.precio) || 0 : 0;
+          agregarFilaArticulo(`Tour opcional: ${nombreElegido}`, precio, 1);
+        });
+      }
+    } catch (e) {
+      console.error("No se pudieron cargar los precios de tours opcionales:", e);
+    }
+  }
+
+  recalcularTotalesFactura();
+  actualizarResumenFacturacion(data);
+
   } else {
         alert("Reserva no encontrada: " + reservaID);
       }
@@ -575,10 +565,33 @@ if (saldoBox) {
 } else {
   alert("No se proporcionó un código de reserva.");
 }
+
+// NUEVO: recalcula Subtotal / IVA (si aplica) / Total a partir de las filas
+// que haya en la tabla de "Detalle de Factura" en ese momento — se llama al
+// cargar la página y cada vez que se marca/desmarca "factura electrónica".
+function recalcularTotalesFactura() {
+  const filas = document.querySelectorAll("#tablaArticulos tr");
+  let subtotal = 0;
+  filas.forEach(fila => {
+    const celdas = fila.querySelectorAll("td");
+    if (celdas.length === 4) {
+      subtotal += parseFloat(celdas[3].textContent.replace('$', '')) || 0;
+    }
+  });
+
+  const requiereFacturaElectronica = document.getElementById("requiereFacturaElectronica")?.checked;
+  const iva = requiereFacturaElectronica ? subtotal * 0.13 : 0;
+  const total = subtotal + iva;
+
+  document.getElementById("subtotal").textContent = `$${subtotal.toFixed(2)}`;
+  document.getElementById("filaIvaTexto").textContent = requiereFacturaElectronica ? "IVA (13%)" : "IVA (0%)";
+  document.getElementById("filaIvaMonto").textContent = `$${iva.toFixed(2)}`;
+  document.getElementById("total").innerHTML = `<strong>$${total.toFixed(2)}</strong>`;
+}
+
 let indexEditando = null;
 
 function toggleMenu(button) {
-  // Cierra todos los menús primero
   document.querySelectorAll('.menu-options').forEach(menu => {
     if (menu !== button.nextElementSibling) {
       menu.style.display = 'none';
@@ -610,7 +623,7 @@ async function mostrarTransaccionesModal() {
   const data = docRef.data();
   const transacciones = data.pagos || [];
 
-  renderizarTransaccionesModal(transacciones); // ✔️ se usa aquí
+  renderizarTransaccionesModal(transacciones);
 }
 
  
@@ -664,7 +677,6 @@ function guardarPago() {
 
     docRef.update({ pagos }).then(() => {
       cerrarModal("modalAgregarPago");
-      // 🔁 Actualizamos todos los componentes
       docRef.get().then((doc) => {
         const dataActualizada = doc.data();
         actualizarResumenFacturacion(dataActualizada);
@@ -680,7 +692,7 @@ function guardarPago() {
   document.getElementById("nuevaFecha").value = "";
   document.getElementById("nuevoMetodo").value = "";
   document.getElementById("nuevaNota").value = "";
-  document.getElementById("modalAgregarPago").style.display = "flex"; // <- corregido aquí
+  document.getElementById("modalAgregarPago").style.display = "flex";
 }
 function cerrarModalAgregaPago() {
   document.getElementById("modalAgregarPago").style.display = "none";
@@ -696,7 +708,6 @@ function eliminarPago(index) {
     pagos.splice(index, 1);
 
     docRef.update({ pagos }).then(() => {
-      // 🔁 Actualizamos todos los componentes
       docRef.get().then((doc) => {
         const dataActualizada = doc.data();
         actualizarResumenFacturacion(dataActualizada);
@@ -705,21 +716,24 @@ function eliminarPago(index) {
     });
   });
 }
-  async function obtenerNumeroFactura() {
-  const ref = db.collection("counters").doc("facturas");
 
+// FIX: antes había DOS funciones distintas para generar el número de
+// factura (obtenerNumeroFactura y generarNumeroFactura), cada una leyendo de
+// un lugar distinto de Firestore ("counters/facturas" vs "configuracion/factura").
+// Solo la segunda se usaba realmente — la primera era código muerto que
+// podía confundir a futuro. Se eliminó, y se dejó una sola función clara.
+async function generarNumeroFactura() {
+  const ref = db.collection("configuracion").doc("factura");
   const doc = await ref.get();
-  let ultimo = 0;
 
+  let numero = 1;
   if (doc.exists) {
-    ultimo = doc.data().ultimo || 0;
+    numero = (doc.data().contador || 0) + 1;
   }
 
-  const nuevo = ultimo + 1;
+  await ref.set({ contador: numero });
 
-  await ref.set({ ultimo: nuevo });
-
-  return nuevo.toString().padStart(3, '0'); // ejemplo: 001, 002, 003...
+  return numero.toString().padStart(3, '0');
 }
 
 function guardarFactura() {
@@ -739,16 +753,20 @@ function guardarFactura() {
       return;
     }
 
-    // ✅ Generar número de factura
     generarNumeroFactura().then((nuevoNumero) => {
+      // FIX: antes "usuarioFactura" siempre quedaba escrito como "Cristopher",
+      // sin importar quién generara la factura. Ahora toma el nombre del
+      // usuario con sesión activa (localStorage, el mismo mecanismo que ya
+      // usa el menú lateral) — hasta que exista un login real con Firebase
+      // Authentication, esto es lo más confiable que hay disponible.
+      const usuarioSesion = JSON.parse(localStorage.getItem("usuario") || "null");
       const datosActualizados = {
         numeroFactura: nuevoNumero,
         facturaGenerada: true,
         fechaFactura: new Date().toISOString(),
-        usuarioFactura: "Cristopher" // o toma desde auth si implementas login
+        usuarioFactura: usuarioSesion?.nombre || "Desconocido"
       };
 
-      // Actualizar reserva
       docRef.update(datosActualizados).then(() => {
         document.getElementById("numeroFactura").textContent = nuevoNumero;
         alert("✅Factura guardada exitosamente.");
@@ -758,22 +776,7 @@ function guardarFactura() {
   });
 }
 
-// ✅ Función para generar número incremental tipo 001, 002...
-async function generarNumeroFactura() {
-  const ref = db.collection("configuracion").doc("factura");
-  const doc = await ref.get();
-
-  let numero = 1;
-  if (doc.exists) {
-    numero = (doc.data().contador || 0) + 1;
-  }
-
-  // Guardar el nuevo contador
-  await ref.set({ contador: numero });
-
-  return numero.toString().padStart(3, '0'); // Ej: 001, 002, etc.
-}
-  function renderizarTransaccionesModal(transacciones) {
+function renderizarTransaccionesModal(transacciones) {
   const tbodyModal = document.getElementById("tablaTransaccionesModalBody");
   tbodyModal.innerHTML = "";
 
@@ -803,6 +806,11 @@ async function generarNumeroFactura() {
     tbodyModal.appendChild(fila);
   });
 }
+
+// FIX: esta función ya se encargaba de dibujar la tabla de "Historial de
+// Pagos" y el resumen — antes, ADEMÁS, el bloque de carga inicial volvía a
+// dibujar la misma tabla por su cuenta, duplicando el trabajo sin necesidad.
+// Ahora es la única responsable de esto.
 function actualizarResumenFacturacion(data) {
   const totalReserva = Number(data.total || 0);
   const pagos = data.pagos || [];
@@ -816,7 +824,6 @@ function actualizarResumenFacturacion(data) {
     <div>Saldo Restante: <span style="color:#d9534f;">$${saldoRestante.toFixed(2)}</span></div>
   `;
 
-  // ✅ También actualizamos la tabla principal de historial de pagos
   const tablaPagos = document.getElementById("tablaTransaccionesBody");
   tablaPagos.innerHTML = "";
 
@@ -836,12 +843,12 @@ function actualizarResumenFacturacion(data) {
     });
   }
 }
+
 async function generarFacturaPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   const colorVerde = "#02535a";
 
-  // Obtener código de reserva desde URL
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("reserva");
 
@@ -859,7 +866,6 @@ async function generarFacturaPDF() {
   const telefono = data.telefono || "";
   const pagos = data.pagos || [];
 
-  // 📦 Leer tabla del HTML para construir detalleFactura
   const filas = document.querySelectorAll("#tablaArticulos tr");
   const detalleFactura = [];
 
@@ -873,7 +879,8 @@ async function generarFacturaPDF() {
     }
   });
 
-  // 🖼️ Cargar imagen de fondo
+  const requiereFacturaElectronica = document.getElementById("requiereFacturaElectronica")?.checked;
+
   const img = new Image();
   img.src = "Facturacion.png";
 
@@ -881,17 +888,15 @@ async function generarFacturaPDF() {
     doc.addImage(img, 'PNG', 0, 0, 210, 297);
     doc.setFont("helvetica", "bold");
 
-    // 🔷 Encabezado
     doc.setFontSize(22);
     doc.setTextColor(colorVerde);
     doc.text("Factura de Reserva", 105, 28, { align: "center" });
-const numeroFactura = document.getElementById('numeroFactura').textContent;
+    const numeroFactura = document.getElementById('numeroFactura').textContent;
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     doc.text(`Código de Reserva: ${codigo}`, 105, 36, { align: "center" });
     doc.text(`Factura N°: ${numeroFactura}`, 105, 42, { align: "center" });
 
-    // 👤 Datos del cliente
     let yCliente = 55;
     doc.setTextColor(colorVerde);
     doc.setFontSize(14);
@@ -902,30 +907,17 @@ const numeroFactura = document.getElementById('numeroFactura').textContent;
     yCliente += 8;
     doc.text(nombreTitular, 20, yCliente);
     yCliente += 6;
-    doc.text(correo, 20, yCliente);
+    doc.text(correo || "---", 20, yCliente);
     yCliente += 6;
-    doc.text(telefono, 20, yCliente);
+    doc.text(telefono || "---", 20, yCliente);
 
-    // ✈️ Datos del viaje
     let yViaje = 55;
     doc.setTextColor(colorVerde);
     doc.setFontSize(12);
 
-    const formatearFecha = (fechaStr) => {
-      try {
-        const fecha = new Date(fechaStr);
-        const dia = String(fecha.getDate()).padStart(2, '0');
-        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-        const anio = fecha.getFullYear();
-        return `${dia}/${mes}/${anio}`;
-      } catch {
-        return "N/D";
-      }
-    };
-
     const fechaIda = formatearFecha(data.vueloIda?.fecha);
     const fechaRegreso = formatearFecha(data.vueloRegreso?.fecha);
-    const fechaReserva = data.fechaReserva || "N/D";
+    const fechaReserva = formatearFecha(data.fechaReserva);
 
     doc.text(`Fecha de Emisión: ${fechaReserva}`, 120, yViaje);
     yViaje += 8;
@@ -935,143 +927,143 @@ const numeroFactura = document.getElementById('numeroFactura').textContent;
     yViaje += 8;
     doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
 
-// Calcular la altura total dinámica
-const alturaDetalle = detalleFactura.length * 8;
-const alturaPagos = pagos.length > 0 ? pagos.length * 8 + 20 : 15;
-const alturaTotales = 15; // espacio para Totales/Pagos Aplicados/Saldo Restante
-const paddingVertical = 5; // margen superior e inferior extra
-const alturaTotal = 45 + alturaDetalle + alturaPagos + alturaTotales + paddingVertical;
+    const alturaDetalle = detalleFactura.length * 8;
+    const alturaPagos = pagos.length > 0 ? pagos.length * 8 + 20 : 15;
+    const alturaTotales = 15;
+    const paddingVertical = 5;
+    const alturaTotal = 45 + alturaDetalle + alturaPagos + alturaTotales + paddingVertical;
 
-// Dibujar rectángulo que envuelve todo
-doc.setFillColor(255, 255, 255); // blanco
-doc.roundedRect(15, 90, 180, alturaTotal, 5, 5, 'F'); // abarca todo el contenido
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(15, 90, 180, alturaTotal, 5, 5, 'F');
 
-let y = 100;
-doc.setFontSize(13);
-doc.setFont("helvetica", "bold");
-doc.setTextColor(colorVerde);
-doc.text("Detalle de Factura", 25, y);
-y += 10;
-doc.setDrawColor(200); // color gris claro
-doc.setLineWidth(0.2);
-doc.line(20, y - 5, 190, y - 5); // línea horizontal antes del título "Historial de Pagos"
-    
-// Encabezados
-doc.setFontSize(11);
-doc.setFont("helvetica", "bold");
-doc.setTextColor(0, 0, 0);
-doc.text("Descripción", 25, y);
-doc.text("Precio", 105, y, { align: 'right' });
-doc.text("Cantidad", 145, y, { align: 'right' });
-doc.text("Total", 187, y, { align: 'right' });
+    let y = 100;
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(colorVerde);
+    doc.text("Detalle de Factura", 25, y);
+    y += 10;
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.2);
+    doc.line(20, y - 5, 190, y - 5);
 
-y += 8;
-doc.setFont("helvetica", "normal");
-let totalFactura = 0;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("Descripción", 25, y);
+    doc.text("Precio", 105, y, { align: 'right' });
+    doc.text("Cantidad", 145, y, { align: 'right' });
+    doc.text("Total", 187, y, { align: 'right' });
 
-detalleFactura.forEach((item) => {
-  if (item.cantidad > 0) {
-    const total = item.precio * item.cantidad;
-    totalFactura += total;
+    y += 8;
+    doc.setFont("helvetica", "normal");
+    let subtotalFactura = 0;
 
-    doc.setTextColor(60, 60, 60);
-    doc.text(item.desc, 25, y);
-    doc.text(`$${item.precio.toFixed(2)}`, 105, y, { align: 'right' });
-    doc.text(`${item.cantidad}`, 145, y, { align: 'right' });
-    doc.text(`$${total.toFixed(2)}`, 187, y, { align: 'right' });
+    detalleFactura.forEach((item) => {
+      if (item.cantidad > 0) {
+        const total = item.precio * item.cantidad;
+        subtotalFactura += total;
 
+        doc.setTextColor(60, 60, 60);
+        doc.text(item.desc, 25, y);
+        doc.text(`$${item.precio.toFixed(2)}`, 105, y, { align: 'right' });
+        doc.text(`${item.cantidad}`, 145, y, { align: 'right' });
+        doc.text(`$${total.toFixed(2)}`, 187, y, { align: 'right' });
+
+        y += 6;
+      }
+    });
+
+    // NUEVO: línea de IVA si el cliente pidió factura electrónica
+    const ivaFactura = requiereFacturaElectronica ? subtotalFactura * 0.13 : 0;
+    const totalFactura = subtotalFactura + ivaFactura;
+
+    if (requiereFacturaElectronica) {
+      y += 4;
+      doc.setTextColor(60, 60, 60);
+      doc.text(`IVA (13%)`, 145, y, { align: 'right' });
+      doc.text(`$${ivaFactura.toFixed(2)}`, 187, y, { align: 'right' });
+      y += 6;
+    }
+
+    y += 4;
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(colorVerde);
+    doc.text(`Total: $${totalFactura.toFixed(2)}`, 187, y, { align: 'right' });
+
+    // NOTA: el total que se usa para calcular el saldo de la RESERVA sigue
+    // siendo el ya acordado con el cliente (data.total) — el IVA de la
+    // factura electrónica se cobra aparte, no se mezcla con este saldo.
+    const totalReserva = Number(data.total || 0);
+
+    y += 10;
+    doc.setFontSize(13);
+    doc.setTextColor(colorVerde);
+    doc.setFont("helvetica", "bold");
+    doc.text("Historial de Pagos", 25, y);
+    y += 10;
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.2);
+    doc.line(20, y - 5, 190, y - 5);
+
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Fecha", 30, y);
+    doc.text("Monto", 90, y);
+    doc.text("Método", 150, y);
     y += 6;
-  }
-});
 
-// Total final
-y += 4;
-doc.setFont("helvetica", "bold");
-doc.setTextColor(colorVerde);
-doc.text(`Total: $${totalFactura.toFixed(2)}`, 187, y, { align: 'right' });
+    doc.setFont("helvetica", "normal");
 
-    const totalReserva = detalleFactura.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+    if (pagos.length === 0) {
+      doc.text("No hay pagos registrados.", 30, y);
+      y += 6;
+    } else {
+      pagos.forEach((pago) => {
+        doc.text(formatearFecha(pago.fecha), 30, y);
+        doc.text(`$${Number(pago.monto || 0).toFixed(2)}`, 90, y);
+        doc.text(`${pago.metodo || "Sin especificar"}`, 150, y);
+        y += 6;
+      });
+    }
 
-// 📄 Historial de Pagos en estilo Detalle de Factura
-y += 10;
-doc.setFontSize(13);
-doc.setTextColor(colorVerde);
-doc.setFont("helvetica", "bold");
-doc.text("Historial de Pagos", 25, y);
-y += 10;
-doc.setDrawColor(200); // color gris claro
-doc.setLineWidth(0.2);
-doc.line(20, y - 5, 190, y - 5); // línea horizontal antes del título "Historial de Pagos"
-    
-// Encabezados
-doc.setFontSize(11);
-doc.setTextColor(0, 0, 0);
-doc.text("Fecha", 30, y);
-doc.text("Monto", 90, y);
-doc.text("Método", 150, y);
-y += 6;
-
-doc.setFont("helvetica", "normal");
-
-// Contenido de los pagos
-if (pagos.length === 0) {
-  doc.text("No hay pagos registrados.", 30, y);
-  y += 6;
-} else {
-  pagos.forEach((pago) => {
-    doc.text(formatearFecha(pago.fecha), 30, y);
-    doc.text(`$${pago.monto.toFixed(2)}`, 90, y);
-    doc.text(`${pago.metodo}`, 150, y);
-    y += 6;
-  });
-}
-
-
-    const pagosAplicados = pagos.reduce((sum, p) => sum + p.monto, 0);
+    const pagosAplicados = pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
     const saldo = totalReserva - pagosAplicados;
 
     y += 10;
-doc.setFontSize(13);
-doc.setTextColor(colorVerde);
-doc.setFont("helvetica", "bold");
-doc.text("Saldo de Factura", 25, y);
-y += 10;
-doc.setDrawColor(200); // color gris claro
-doc.setLineWidth(0.2);
-doc.line(20, y - 5, 190, y - 5); // línea horizontal antes del título "Historial de Pagos"
-    
-    // 📌 Resumen financiero
+    doc.setFontSize(13);
+    doc.setTextColor(colorVerde);
+    doc.setFont("helvetica", "bold");
+    doc.text("Saldo de Factura", 25, y);
+    y += 10;
+    doc.setDrawColor(200);
+    doc.setLineWidth(0.2);
+    doc.line(20, y - 5, 190, y - 5);
 
-  // Posición inicial (ajustá y según tu diseño)
-doc.setFontSize(11);
-doc.setFont("helvetica", "normal");
-doc.setTextColor(0, 0, 0);
-doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 25, y);
-y += 6;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 25, y);
+    y += 6;
 
-// Pagos Aplicados (color naranja)
-doc.setTextColor(0, 0, 0);
-doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 25, y);
-y += 6;
+    doc.setTextColor(0, 0, 0);
+    doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 25, y);
+    y += 6;
 
-// Saldo Restante (color rojo)
-doc.setFontSize(12);
-doc.setFont("helvetica", "bold");
-doc.setTextColor(colorVerde);
-doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 25, y);
-y += 6;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(colorVerde);
+    doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 25, y);
+    y += 6;
 
-// Restaurar color negro por si se usa más abajo
-doc.setTextColor(0, 0, 0);
-    
-    // 💾 Guardar PDF
+    doc.setTextColor(0, 0, 0);
+
     doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
   };
 }
 
   function generarPDFBase64() {
   return new Promise((resolve, reject) => {
-    const element = document.querySelector(".factura"); // Asegúrate que el contenedor principal de la factura tenga esta clase
+    const element = document.querySelector(".factura");
     const opt = {
       margin:       0.5,
       filename:     'factura.pdf',
@@ -1081,32 +1073,43 @@ doc.setTextColor(0, 0, 0);
     };
 
     html2pdf().set(opt).from(element).outputPdf('datauristring').then(function(pdfBase64) {
-      const base64 = pdfBase64.split(',')[1]; // eliminamos el encabezado "data:application/pdf;base64,"
+      const base64 = pdfBase64.split(',')[1];
       resolve(base64);
     }).catch(function(error) {
       reject(error);
     });
   });
 }
- async function enviarPorCorreo() {
+
+async function enviarPorCorreo() {
+  const destinatario = document.getElementById("correoCliente").textContent.trim();
+
+  // NUEVO: si el correo del cliente está vacío o sigue en "---" (porque la
+  // reserva no lo tiene guardado), se detiene el envío en vez de mandarlo a
+  // cualquier lado — antes de la corrección, esto pudo haber llegado al
+  // correo de otro cliente por el valor fijo que había en el código.
+  if (!destinatario || destinatario === "---") {
+    alert("⚠️ Esta reserva no tiene un correo de cliente guardado. Agrega el correo en la reserva antes de enviar la factura.");
+    return;
+  }
+
   try {
-    const base64PDF = await generarPDFBase64(); // Ya debés tener esta función
-    const destinatario = document.getElementById("correoCliente").textContent.trim();
-const urlWebApp = "https://proxy-correo.cris-delgado21.workers.dev/";
+    const base64PDF = await generarPDFBase64();
+    const urlWebApp = "https://proxy-correo.cris-delgado21.workers.dev/";
 
     const data = {
-  emailDestino: destinatario,  // 👈 ESTE CAMBIO es clave
-  asunto: "Factura de Reserva | Excursiones Delgado",
-  mensaje: "Gracias por viajar con nosotros. Adjunto encontrará su factura.",
-  archivoBase64: base64PDF,
-  nombreArchivo: "Factura_Reserva.pdf"
-};
+      emailDestino: destinatario,
+      asunto: "Factura de Reserva | Excursiones Delgado",
+      mensaje: "Gracias por viajar con nosotros. Adjunto encontrará su factura.",
+      archivoBase64: base64PDF,
+      nombreArchivo: "Factura_Reserva.pdf"
+    };
 
-   const response = await fetch(urlWebApp, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(data),
-});
+    const response = await fetch(urlWebApp, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
 
     const result = await response.text();
     alert(result);
@@ -1119,3 +1122,4 @@ const urlWebApp = "https://proxy-correo.cris-delgado21.workers.dev/";
 
 </body>
 </html>
+
