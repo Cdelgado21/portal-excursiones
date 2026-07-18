@@ -464,8 +464,6 @@
       <thead style="background: #02535a; color: white;">
         <tr>
           <th>Hotel</th>
-          <th>Check-in</th>
-          <th>Check-out</th>
           <th>Tipo de Habitación</th>
           <th>Cantidad</th>
           <th>Observaciones</th>
@@ -483,12 +481,6 @@
       <select id="modal_nombre_hotel" style="width:100%; margin-bottom:10px; padding:8px;">
         <option value="">Seleccione un hotel</option>
       </select>
-
-      <label>Hora Check-in</label>
-      <input type="text" id="modal_checkin" placeholder="Ej. 03:00 PM">
-
-      <label>Hora Check-out</label>
-      <input type="text" id="modal_checkout" placeholder="Ej. 01:00 PM">
 
       <label>Tipo de habitación</label>
       <select id="modal_tipoHabitacion_hotel" style="width:100%; margin-bottom:10px; padding:8px;">
@@ -1839,11 +1831,9 @@ async function guardarReserva() {
         const celdas = tr.querySelectorAll("td");
         return {
           nombre: celdas[0]?.innerText || "",
-          checkin: celdas[1]?.innerText || "",
-          checkout: celdas[2]?.innerText || "",
-          tipo: celdas[3]?.innerText || "",
-          cantidad: celdas[4]?.innerText || "",
-          observaciones: celdas[5]?.innerText || ""
+          tipo: celdas[1]?.innerText || "",
+          cantidad: celdas[2]?.innerText || "",
+          observaciones: celdas[3]?.innerText || ""
         };
       })
     };
@@ -2387,8 +2377,6 @@ function guardarHotelModal() {
     return;
   }
 
-  const checkIn = document.getElementById("modal_checkin").value;
-  const checkOut = document.getElementById("modal_checkout").value;
   const tipo = document.getElementById("modal_tipoHabitacion_hotel").value;
   const cantidad = document.getElementById("modal_cantidadHabitacion_hotel").value;
   const obs = document.getElementById("modal_observaciones_hotel").value;
@@ -2398,8 +2386,6 @@ function guardarHotelModal() {
 
   row.innerHTML = `
     <td>${hotel}</td>
-    <td>${checkIn}</td>
-    <td>${checkOut}</td>
     <td>${tipo}</td>
     <td>${cantidad}</td>
     <td>${obs || 'Sin observaciones'}</td>
@@ -2697,8 +2683,6 @@ async function cargarReservaExistente(codigo) {
           const row = document.createElement("tr");
           row.innerHTML = `
             <td>${h.nombre || ""}</td>
-            <td>${h.checkin || ""}</td>
-            <td>${h.checkout || ""}</td>
             <td>${h.tipo || ""}</td>
             <td>${h.cantidad || ""}</td>
             <td>${h.observaciones || "Sin observaciones"}</td>
@@ -2781,3 +2765,4 @@ function cargarHistorialPagos() {
 
 </body>
 </html>
+
