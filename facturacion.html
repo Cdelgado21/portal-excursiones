@@ -927,11 +927,10 @@ async function generarFacturaPDF() {
   doc.setFontSize(9);
   doc.setTextColor(110, 110, 110);
   const lineasNegocio = [
-    "Esparza Puntarenas 60201",
-    "CR",
-    "+506 61328183",
-    "cris.delgado21@gmail.com",
-    "Cristopher Delgado Naranjo : Cédula 207040582"
+    "Cristopher Delgado Naranjo, cédula 207040582",
+    "CANATUR Afiliado 5683",
+    "Empresa PYME, MEIC",
+    "Esparza, Puntarenas"
   ];
   lineasNegocio.forEach((linea, i) => {
     doc.text(linea, 15, 40 + i * 4.5);
@@ -1074,20 +1073,19 @@ async function generarFacturaPDF() {
     doc.text("*El IVA de factura electrónica se cobra aparte del saldo de la reserva.", 195, y, { align: "right" });
   }
 
-  // ---------- Mensaje de cierre y firma ----------
+  // ---------- Aviso legal (reemplaza el mensaje de agradecimiento) ----------
   y += 20;
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.setTextColor(120, 120, 120);
+  doc.text(
+    "Este documento es un comprobante interno de reserva y no constituye una factura electrónica autorizada por el Ministerio de Hacienda de Costa Rica. Aplican las políticas de cambios, cancelaciones y reembolsos informadas al momento de la reserva.",
+    15, y, { maxWidth: 180 }
+  );
+  y += 16;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(60, 60, 60);
-  doc.text(
-    `Muchas gracias por su compra, estamos seguros que la vamos a pasar muy bien... Para cualquier consulta +506 61328183`,
-    15, y, { maxWidth: 180 }
-  );
-  y += 12;
-  doc.text("Saludos", 15, y);
-  y += 12;
-  doc.text("Cristopher Delgado Naranjo", 15, y);
-  y += 5;
   doc.text("Excursiones Delgado", 15, y);
 
   // Número de página, igual que "1/1" en el ejemplo
