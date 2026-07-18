@@ -845,42 +845,212 @@ function actualizarResumenFacturacion(data) {
 }
 
 async function generarFacturaPDF() {
-  // NUEVO: en vez de recrear el diseño a mano con instrucciones de dibujo,
-  // el PDF ahora es una captura fiel de la misma página que ya se ve en
-  // pantalla (logo, colores, disposición) — usando html2pdf, que ya estaba
-  // cargado en el archivo para la función de "Enviar por correo".
+  // NUEVO: PDF dibujado de verdad con jsPDF (texto real, seleccionable, sin
+  // depender de una captura de pantalla), usando los mismos colores y campos
+  // que ya se ven en la página web — sin imagen de fondo decorativa.
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const colorVerde = [2, 83, 90]; // #02535a, mismo verde de toda la página
+
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("reserva");
-  const nombreTitular = document.getElementById("nombreCliente")?.textContent || "Titular";
 
-  // Oculta temporalmente los botones y el checkbox de factura electrónica
-  // (son controles para usar en pantalla, no deben salir impresos en el PDF).
-  const acciones = document.querySelector(".acciones");
-  const avisoFacturaElectronica = document.querySelector(".aviso-factura-electronica");
-  const displayAccionesOriginal = acciones ? acciones.style.display : "";
-  const displayAvisoOriginal = avisoFacturaElectronica ? avisoFacturaElectronica.style.display : "";
-  if (acciones) acciones.style.display = "none";
-  if (avisoFacturaElectronica) avisoFacturaElectronica.style.display = "none";
+  const docRef = firebase.firestore().collection("reservas").doc(codigo);
+  const docSnapshot = await docRef.get();
 
-  const element = document.querySelector(".factura");
-  const opt = {
-    margin: 0.4,
-    filename: `Factura N°${codigo} - ${nombreTitular}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-  };
-
-  try {
-    await html2pdf().set(opt).from(element).save();
-  } catch (e) {
-    console.error("Error al generar el PDF de la factura:", e);
-    alert("❌ Ocurrió un error al generar el PDF.");
-  } finally {
-    // Se restauran los botones y el checkbox, se hayan mostrado o no antes.
-    if (acciones) acciones.style.display = displayAccionesOriginal;
-    if (avisoFacturaElectronica) avisoFacturaElectronica.style.display = displayAvisoOriginal;
+  if (!docSnapshot.exists) {
+    alert("No se encontró la reserva.");
+    return;
   }
+
+  const data = docSnapshot.data();
+  const nombreTitular = data.nombreTitular || "Titular";
+  const correo = data.correo || "---";
+  const telefono = data.telefono || "---";
+  const pagos = data.pagos || [];
+  const numeroFactura = document.getElementById('numeroFactura').textContent;
+
+  const filas = document.querySelectorAll("#tablaArticulos tr");
+  const detalleFactura = [];
+  filas.forEach(fila => {
+    const celdas = fila.querySelectorAll("td");
+    if (celdas.length === 4) {
+      detalleFactura.push({
+        desc: celdas[0].innerText.trim(),
+        precio: parseFloat(celdas[1].innerText.replace('$', '').trim()) || 0,
+        cantidad: parseInt(celdas[2].innerText.trim()) || 0
+      });
+    }
+  });
+
+  const requiereFacturaElectronica = document.getElementById("requiereFacturaElectronica")?.checked;
+  const subtotalFactura = detalleFactura.reduce((s, i) => s + i.precio * i.cantidad, 0);
+  const ivaFactura = requiereFacturaElectronica ? subtotalFactura * 0.13 : 0;
+  const totalFactura = subtotalFactura + ivaFactura;
+
+  const pagosAplicados = pagos.reduce((s, p) => s + (Number(p.monto) || 0), 0);
+  const totalReserva = Number(data.total || 0);
+  const saldo = totalReserva - pagosAplicados;
+
+  // ---------- Logo (izquierda) y título (derecha) ----------
+  try {
+    const logoElement = document.querySelector('.encabezado img');
+    if (logoElement && logoElement.complete && logoElement.naturalWidth > 0) {
+      doc.addImage(logoElement, "PNG", 15, 12, 30, 30);
+    }
+  } catch (e) {
+    console.warn("No se pudo agregar el logo al PDF:", e);
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(20);
+  doc.setTextColor(...colorVerde);
+  doc.text("Factura de Reserva", 195, 20, { align: "right" });
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(51, 51, 51);
+  doc.text("Código de Reserva:", 150, 28, { align: "left" });
+  doc.setTextColor(...colorVerde);
+  doc.setFont("helvetica", "bold");
+  doc.text(codigo, 195, 28, { align: "right" });
+
+  doc.setTextColor(51, 51, 51);
+  doc.setFont("helvetica", "normal");
+  doc.text("Factura N°:", 150, 34, { align: "left" });
+  doc.setTextColor(...colorVerde);
+  doc.setFont("helvetica", "bold");
+  doc.text(numeroFactura, 195, 34, { align: "right" });
+
+  // ---------- Información del cliente / del viaje ----------
+  const yInfo = 55;
+  doc.setDrawColor(200, 200, 200);
+  doc.setFillColor(249, 249, 249);
+  doc.roundedRect(15, yInfo, 180, 38, 2, 2, "FD");
+
+  doc.setFontSize(8);
+  doc.setTextColor(95, 146, 150);
+  doc.text("FACTURAR A", 20, yInfo + 8);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(...colorVerde);
+  doc.text(nombreTitular, 20, yInfo + 15);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.text(correo, 20, yInfo + 21);
+  doc.text(telefono, 20, yInfo + 27);
+
+  function filaInfoViaje(etiqueta, valor, y) {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...colorVerde);
+    doc.text(`${etiqueta}:`, 110, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(valor || "---"), 145, y);
+  }
+
+  filaInfoViaje("Fecha de Emisión", formatearFecha(data.fechaReserva), yInfo + 9);
+  filaInfoViaje("Viaje Ida", formatearFecha(data.vueloIda?.fecha), yInfo + 16);
+  filaInfoViaje("Viaje Regreso", formatearFecha(data.vueloRegreso?.fecha), yInfo + 23);
+  filaInfoViaje("Código Vuelo", data.vueloIda?.codigo, yInfo + 30);
+
+  // ---------- Detalle de Factura ----------
+  let y = yInfo + 48;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(...colorVerde);
+  doc.text("Detalle de Factura", 15, y);
+  y += 5;
+
+  const filasTabla = detalleFactura.map(item => [
+    item.desc,
+    `$${item.precio.toFixed(2)}`,
+    String(item.cantidad),
+    `$${(item.precio * item.cantidad).toFixed(2)}`
+  ]);
+
+  const filasTotales = [
+    ["", "", "Subtotal", `$${subtotalFactura.toFixed(2)}`]
+  ];
+  if (requiereFacturaElectronica) {
+    filasTotales.push(["", "", "IVA (13%)", `$${ivaFactura.toFixed(2)}`]);
+  } else {
+    filasTotales.push(["", "", "IVA (0%)", "$0.00"]);
+  }
+  filasTotales.push(["", "", "Total", `$${totalFactura.toFixed(2)}`]);
+
+  doc.autoTable({
+    startY: y,
+    head: [["Artículo", "Precio", "Cantidad", "Importe"]],
+    body: filasTabla,
+    foot: filasTotales,
+    theme: "grid",
+    styles: { font: "helvetica", fontSize: 9.5, textColor: [30, 30, 30], cellPadding: 3, lineColor: [204, 204, 204] },
+    headStyles: { fillColor: [240, 240, 240], textColor: colorVerde, fontStyle: "bold" },
+    footStyles: { fillColor: [255, 255, 255], textColor: [30, 30, 30], fontStyle: "normal", lineWidth: 0.1 },
+    columnStyles: {
+      0: { cellWidth: 90 },
+      1: { cellWidth: 30, halign: "right" },
+      2: { cellWidth: 25, halign: "center" },
+      3: { cellWidth: 35, halign: "right" }
+    },
+    margin: { left: 15, right: 15 }
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+
+  // ---------- Historial de Pagos ----------
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(...colorVerde);
+  doc.text("Historial de Pagos", 15, y);
+  y += 5;
+
+  const filasPagos = pagos.length > 0
+    ? pagos.map((p, i) => [
+        String(i + 1),
+        `$${Number(p.monto || 0).toFixed(2)}`,
+        formatearFecha(p.fecha),
+        p.metodo || "Sin especificar",
+        p.nota || ""
+      ])
+    : [["-", "-", "-", "-", "No hay pagos registrados."]];
+
+  doc.autoTable({
+    startY: y,
+    head: [["Pago", "Monto", "Fecha", "Método", "Nota"]],
+    body: filasPagos,
+    theme: "grid",
+    styles: { font: "helvetica", fontSize: 9, textColor: [30, 30, 30], cellPadding: 3, lineColor: [204, 204, 204] },
+    headStyles: { fillColor: colorVerde, textColor: [255, 255, 255], fontStyle: "bold" },
+    margin: { left: 15, right: 15 }
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+
+  // ---------- Resumen final ----------
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...colorVerde);
+  doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 195, y, { align: "right" });
+  y += 6;
+  doc.setTextColor(95, 146, 150);
+  doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 195, y, { align: "right" });
+  y += 6;
+  doc.setTextColor(217, 83, 79);
+  doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 195, y, { align: "right" });
+
+  if (requiereFacturaElectronica) {
+    y += 8;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7.5);
+    doc.setTextColor(150, 150, 150);
+    doc.text("*El IVA de factura electrónica se cobra aparte del saldo de la reserva.", 195, y, { align: "right" });
+  }
+
+  doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
 }
 
   function generarPDFBase64() {
