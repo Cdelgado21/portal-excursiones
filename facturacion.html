@@ -845,251 +845,43 @@ function actualizarResumenFacturacion(data) {
 }
 
 async function generarFacturaPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const colorVerde = "#02535a";
-
+  // NUEVO: en vez de recrear el diseño a mano con instrucciones de dibujo,
+  // el PDF ahora es una captura fiel de la misma página que ya se ve en
+  // pantalla (logo, colores, disposición) — usando html2pdf, que ya estaba
+  // cargado en el archivo para la función de "Enviar por correo".
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("reserva");
+  const nombreTitular = document.getElementById("nombreCliente")?.textContent || "Titular";
 
-  const docRef = firebase.firestore().collection("reservas").doc(codigo);
-  const docSnapshot = await docRef.get();
+  // Oculta temporalmente los botones y el checkbox de factura electrónica
+  // (son controles para usar en pantalla, no deben salir impresos en el PDF).
+  const acciones = document.querySelector(".acciones");
+  const avisoFacturaElectronica = document.querySelector(".aviso-factura-electronica");
+  const displayAccionesOriginal = acciones ? acciones.style.display : "";
+  const displayAvisoOriginal = avisoFacturaElectronica ? avisoFacturaElectronica.style.display : "";
+  if (acciones) acciones.style.display = "none";
+  if (avisoFacturaElectronica) avisoFacturaElectronica.style.display = "none";
 
-  if (!docSnapshot.exists) {
-    alert("No se encontró la reserva.");
-    return;
-  }
+  const element = document.querySelector(".factura");
+  const opt = {
+    margin: 0.4,
+    filename: `Factura N°${codigo} - ${nombreTitular}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
 
-  const data = docSnapshot.data();
-  const nombreTitular = data.nombreTitular || "Titular";
-  const correo = data.correo || "---";
-  const telefono = data.telefono || "---";
-  const pagos = data.pagos || [];
-  const numeroFactura = document.getElementById('numeroFactura').textContent;
-
-  // Detalle de artículos: se lee de la tabla ya armada en pantalla (incluye
-  // Adultos/Niños/Bebés y Tours Opcionales con sus precios).
-  const filas = document.querySelectorAll("#tablaArticulos tr");
-  const detalleFactura = [];
-  filas.forEach(fila => {
-    const celdas = fila.querySelectorAll("td");
-    if (celdas.length === 4) {
-      detalleFactura.push({
-        desc: celdas[0].innerText.trim(),
-        precio: parseFloat(celdas[1].innerText.replace('$', '').trim()) || 0,
-        cantidad: parseInt(celdas[2].innerText.trim()) || 0
-      });
-    }
-  });
-
-  const requiereFacturaElectronica = document.getElementById("requiereFacturaElectronica")?.checked;
-  const subtotalFactura = detalleFactura.reduce((s, i) => s + i.precio * i.cantidad, 0);
-  const ivaFactura = requiereFacturaElectronica ? subtotalFactura * 0.13 : 0;
-  const totalFactura = subtotalFactura + ivaFactura;
-
-  const pagosAplicados = pagos.reduce((s, p) => s + (Number(p.monto) || 0), 0);
-  const totalReserva = Number(data.total || 0);
-  const saldo = totalReserva - pagosAplicados;
-
-  // NUEVO: Vencimiento = 15 días antes de la fecha del vuelo de ida.
-  let fechaVencimientoTexto = "---";
-  if (data.vueloIda?.fecha) {
-    const fechaIdaDate = parseFechaFlexible(data.vueloIda.fecha);
-    if (fechaIdaDate) {
-      const vencimiento = new Date(fechaIdaDate);
-      vencimiento.setDate(vencimiento.getDate() - 15);
-      fechaVencimientoTexto = formatearFecha(vencimiento.toISOString().split('T')[0]);
-    }
-  }
-  const fechaEmisionTexto = formatearFecha(new Date().toISOString().split('T')[0]);
-
-  // ==========================================
-  // NUEVO DISEÑO DE FACTURA — machote limpio (sin imagen de fondo)
-  // ==========================================
-
-  // ---------- Encabezado ----------
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(26);
-  doc.setTextColor(20, 20, 20);
-  doc.text("FACTURA", 15, 22);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(90, 90, 90);
-  const lineasNegocio = [
-    "Excursiones Delgado",
-    "Esparza, Puntarenas, Costa Rica",
-    "Cristopher Delgado Naranjo — Cédula 207040582",
-    "CANATUR Afiliado 5683",
-    "Empresa PYME, MEIC"
-  ];
-  lineasNegocio.forEach((linea, i) => {
-    doc.text(linea, 15, 32 + i * 5);
-  });
-
-  // Logo (reutiliza la imagen que ya está cargada en la página)
   try {
-    const logoElement = document.querySelector('.encabezado img');
-    if (logoElement && logoElement.complete && logoElement.naturalWidth > 0) {
-      doc.addImage(logoElement, "PNG", 155, 12, 40, 25);
-    }
+    await html2pdf().set(opt).from(element).save();
   } catch (e) {
-    console.warn("No se pudo agregar el logo al PDF:", e);
+    console.error("Error al generar el PDF de la factura:", e);
+    alert("❌ Ocurrió un error al generar el PDF.");
+  } finally {
+    // Se restauran los botones y el checkbox, se hayan mostrado o no antes.
+    if (acciones) acciones.style.display = displayAccionesOriginal;
+    if (avisoFacturaElectronica) avisoFacturaElectronica.style.display = displayAvisoOriginal;
   }
-
-  // ---------- Caja "Facturar a" / datos de factura ----------
-  const yCaja = 65;
-  doc.setDrawColor(220, 220, 220);
-  doc.roundedRect(15, yCaja, 180, 32, 2, 2);
-
-  doc.setFontSize(8);
-  doc.setTextColor(140, 140, 140);
-  doc.text("FACTURAR A", 20, yCaja + 8);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(20, 20, 20);
-  doc.text(nombreTitular, 20, yCaja + 16);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(90, 90, 90);
-  doc.text(correo, 20, yCaja + 22);
-  doc.text(telefono, 20, yCaja + 27);
-
-  function filaEtiquetaValor(etiqueta, valor, y) {
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(140, 140, 140);
-    doc.text(etiqueta, 120, y);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(20, 20, 20);
-    doc.text(String(valor || "---"), 190, y, { align: "right" });
-  }
-
-  filaEtiquetaValor("FACTURA NÚMERO", numeroFactura, yCaja + 8);
-  filaEtiquetaValor("EMITIDO", fechaEmisionTexto, yCaja + 17);
-  filaEtiquetaValor("VENCIMIENTO", fechaVencimientoTexto, yCaja + 26);
-
-  // ---------- Tabla de artículos ----------
-  const filasTabla = detalleFactura.map(item => [
-    item.desc,
-    `$${item.precio.toFixed(2)}`,
-    String(item.cantidad),
-    `$${(item.precio * item.cantidad).toFixed(2)}`
-  ]);
-
-  doc.autoTable({
-    startY: yCaja + 40,
-    head: [["ARTÍCULO", "PRECIO", "CANTIDAD", "IMPORTE"]],
-    body: filasTabla,
-    theme: "plain",
-    styles: { font: "helvetica", fontSize: 10, textColor: [30, 30, 30], cellPadding: 3 },
-    headStyles: { fillColor: [242, 242, 242], textColor: [90, 90, 90], fontStyle: "bold", fontSize: 8.5 },
-    columnStyles: {
-      0: { cellWidth: 90 },
-      1: { cellWidth: 30, halign: "right" },
-      2: { cellWidth: 25, halign: "center" },
-      3: { cellWidth: 35, halign: "right" }
-    },
-    margin: { left: 15, right: 15 }
-  });
-
-  let y = doc.lastAutoTable.finalY + 5;
-
-  // NUEVO: línea con las fechas del viaje y el código de reserva de la
-  // aerolínea — una sola vez debajo de la tabla completa (no repetida por
-  // cada línea de artículo, para que no se vea saturado).
-  if (data.vueloIda?.fecha || data.vueloIda?.codigo) {
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(8.5);
-    doc.setTextColor(120, 120, 120);
-    const fechaIdaTxt = formatearFecha(data.vueloIda?.fecha);
-    const fechaRegresoTxt = formatearFecha(data.vueloRegreso?.fecha);
-    doc.text(
-      `Viaje del ${fechaIdaTxt} al ${fechaRegresoTxt} — Código de reserva aerolínea: ${data.vueloIda?.codigo || "---"}`,
-      15, y
-    );
-    y += 8;
-  }
-
-  // ---------- Resumen (Subtotal / IVA / Total / Pagos / Adeudado) ----------
-  y += 4;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(90, 90, 90);
-  doc.text("Subtotal", 140, y);
-  doc.setTextColor(20, 20, 20);
-  doc.text(`$${subtotalFactura.toFixed(2)}`, 190, y, { align: "right" });
-  y += 6;
-
-  if (requiereFacturaElectronica) {
-    doc.setTextColor(90, 90, 90);
-    doc.text("IVA (13%)", 140, y);
-    doc.setTextColor(20, 20, 20);
-    doc.text(`$${ivaFactura.toFixed(2)}`, 190, y, { align: "right" });
-    y += 6;
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(90, 90, 90);
-  doc.text("Total", 140, y);
-  doc.setTextColor(20, 20, 20);
-  doc.text(`$${totalFactura.toFixed(2)}`, 190, y, { align: "right" });
-  y += 7;
-
-  doc.setFont("helvetica", "normal");
-  pagos.forEach(p => {
-    doc.setTextColor(90, 90, 90);
-    doc.text(`Pagado el ${formatearFecha(p.fecha)}`, 140, y);
-    doc.setTextColor(20, 20, 20);
-    doc.text(`$${Number(p.monto || 0).toFixed(2)}`, 190, y, { align: "right" });
-    y += 6;
-  });
-
-  y += 2;
-  doc.setDrawColor(210, 210, 210);
-  doc.line(120, y, 190, y);
-  y += 8;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.setTextColor(colorVerde);
-  doc.text("Importe adeudado", 140, y);
-  doc.text(`$${saldo.toFixed(2)}`, 190, y, { align: "right" });
-  y += 6;
-
-  // NOTA: el saldo se calcula sobre el total YA ACORDADO con el cliente
-  // (sin IVA) — el 13% de factura electrónica se cobra aparte, así que si
-  // está marcado el checkbox, se aclara para que no parezca un error.
-  if (requiereFacturaElectronica) {
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(7.5);
-    doc.setTextColor(150, 150, 150);
-    doc.text("*El IVA de factura electrónica se cobra aparte del saldo de la reserva.", 140, y, { align: "left", maxWidth: 50 });
-    y += 8;
-  }
-
-  // ---------- Mensaje de cierre ----------
-  y += 12;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(60, 60, 60);
-  doc.text("Muchas gracias por su compra, estamos seguros que la vamos a pasar muy bien.", 15, y);
-  y += 5;
-  doc.text("Para cualquier consulta: +506 61328183", 15, y);
-  y += 10;
-  doc.text("Saludos,", 15, y);
-  y += 10;
-  doc.setFont("helvetica", "bold");
-  doc.text("Cristopher Delgado Naranjo", 15, y);
-  y += 5;
-  doc.setFont("helvetica", "normal");
-  doc.text("Excursiones Delgado", 15, y);
-
-  doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
 }
-
 
   function generarPDFBase64() {
   return new Promise((resolve, reject) => {
@@ -1152,5 +944,6 @@ async function enviarPorCorreo() {
 
 </body>
 </html>
+
 
 
