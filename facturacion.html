@@ -845,12 +845,12 @@ function actualizarResumenFacturacion(data) {
 }
 
 async function generarFacturaPDF() {
-  // NUEVO: PDF dibujado de verdad con jsPDF (texto real, seleccionable, sin
-  // depender de una captura de pantalla), usando los mismos colores y campos
-  // que ya se ven en la página web — sin imagen de fondo decorativa.
+  // Diseño calcado del ejemplo "PRUEBA_638.pdf" que confirmaste: encabezado
+  // "FACTURA" en negro, datos del negocio, caja Facturar A / Factura Número-
+  // Emitido-Vencimiento, tabla con línea secundaria de fechas+código bajo
+  // cada artículo, resumen alineado a la derecha, y mensaje de cierre con firma.
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const colorVerde = [2, 83, 90]; // #02535a, mismo verde de toda la página
 
   const params = new URLSearchParams(window.location.search);
   const codigo = params.get("reserva");
@@ -892,163 +892,208 @@ async function generarFacturaPDF() {
   const totalReserva = Number(data.total || 0);
   const saldo = totalReserva - pagosAplicados;
 
-  // ---------- Logo (izquierda) y título (derecha) ----------
+  // Vencimiento = 15 días antes de la fecha del vuelo de ida.
+  let fechaVencimientoTexto = "---";
+  if (data.vueloIda?.fecha) {
+    const fechaIdaDate = parseFechaFlexible(data.vueloIda.fecha);
+    if (fechaIdaDate) {
+      const vencimiento = new Date(fechaIdaDate);
+      vencimiento.setDate(vencimiento.getDate() - 15);
+      fechaVencimientoTexto = formatearFecha(vencimiento.toISOString().split('T')[0]);
+    }
+  }
+  const fechaEmisionTexto = formatearFecha(new Date().toISOString().split('T')[0]);
+
+  // Línea secundaria (fechas del viaje + código de reserva de la aerolínea),
+  // igual que "DEL 15 AL 18 OCTUBRE//CODIGO RESERVA AWYNOM" en el ejemplo —
+  // se repite bajo cada artículo, tal como en el PDF de referencia.
+  let lineaSecundaria = "";
+  if (data.vueloIda?.fecha || data.vueloIda?.codigo) {
+    const fechaIdaTxt = formatearFecha(data.vueloIda?.fecha);
+    const fechaRegresoTxt = formatearFecha(data.vueloRegreso?.fecha);
+    lineaSecundaria = `DEL ${fechaIdaTxt} AL ${fechaRegresoTxt} // CÓDIGO RESERVA ${data.vueloIda?.codigo || "---"}`;
+  }
+
+  // ---------- Encabezado ----------
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.setTextColor(20, 20, 20);
+  doc.text("FACTURA", 15, 22);
+
+  doc.setFontSize(12);
+  doc.text("Excursiones Delgado", 15, 34);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(110, 110, 110);
+  const lineasNegocio = [
+    "Esparza Puntarenas 60201",
+    "CR",
+    "+506 61328183",
+    "cris.delgado21@gmail.com",
+    "Cristopher Delgado Naranjo : Cédula 207040582"
+  ];
+  lineasNegocio.forEach((linea, i) => {
+    doc.text(linea, 15, 40 + i * 4.5);
+  });
+
+  // Logo (arriba a la derecha, igual que en el ejemplo)
   try {
     const logoElement = document.querySelector('.encabezado img');
     if (logoElement && logoElement.complete && logoElement.naturalWidth > 0) {
-      doc.addImage(logoElement, "PNG", 15, 12, 30, 30);
+      doc.addImage(logoElement, "PNG", 150, 15, 45, 28);
     }
   } catch (e) {
     console.warn("No se pudo agregar el logo al PDF:", e);
   }
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.setTextColor(...colorVerde);
-  doc.text("Factura de Reserva", 195, 20, { align: "right" });
-
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(51, 51, 51);
-  doc.text("Código de Reserva:", 150, 28, { align: "left" });
-  doc.setTextColor(...colorVerde);
-  doc.setFont("helvetica", "bold");
-  doc.text(codigo, 195, 28, { align: "right" });
-
-  doc.setTextColor(51, 51, 51);
-  doc.setFont("helvetica", "normal");
-  doc.text("Factura N°:", 150, 34, { align: "left" });
-  doc.setTextColor(...colorVerde);
-  doc.setFont("helvetica", "bold");
-  doc.text(numeroFactura, 195, 34, { align: "right" });
-
-  // ---------- Información del cliente / del viaje ----------
-  const yInfo = 55;
-  doc.setDrawColor(200, 200, 200);
-  doc.setFillColor(249, 249, 249);
-  doc.roundedRect(15, yInfo, 180, 38, 2, 2, "FD");
+  // ---------- Caja Facturar A / Factura Número-Emitido-Vencimiento ----------
+  const yCaja = 72;
+  doc.setDrawColor(220, 220, 220);
+  doc.line(15, yCaja, 195, yCaja);
+  doc.line(15, yCaja + 34, 195, yCaja + 34);
 
   doc.setFontSize(8);
-  doc.setTextColor(95, 146, 150);
-  doc.text("FACTURAR A", 20, yInfo + 8);
+  doc.setTextColor(140, 140, 140);
+  doc.text("FACTURAR A", 15, yCaja + 10);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(12);
-  doc.setTextColor(...colorVerde);
-  doc.text(nombreTitular, 20, yInfo + 15);
+  doc.setTextColor(20, 20, 20);
+  doc.text(nombreTitular, 15, yCaja + 17);
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
-  doc.text(correo, 20, yInfo + 21);
-  doc.text(telefono, 20, yInfo + 27);
+  doc.setTextColor(90, 90, 90);
+  doc.text(correo, 15, yCaja + 23);
+  doc.text(telefono, 15, yCaja + 28);
 
-  function filaInfoViaje(etiqueta, valor, y) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(...colorVerde);
-    doc.text(`${etiqueta}:`, 110, y);
+  function filaEtiquetaValor(etiqueta, valor, y) {
+    doc.setFontSize(8.5);
     doc.setFont("helvetica", "normal");
-    doc.text(String(valor || "---"), 145, y);
+    doc.setTextColor(140, 140, 140);
+    doc.text(etiqueta, 150, y);
+    doc.setTextColor(20, 20, 20);
+    doc.text(String(valor || "---"), 195, y, { align: "right" });
   }
 
-  filaInfoViaje("Fecha de Emisión", formatearFecha(data.fechaReserva), yInfo + 9);
-  filaInfoViaje("Viaje Ida", formatearFecha(data.vueloIda?.fecha), yInfo + 16);
-  filaInfoViaje("Viaje Regreso", formatearFecha(data.vueloRegreso?.fecha), yInfo + 23);
-  filaInfoViaje("Código Vuelo", data.vueloIda?.codigo, yInfo + 30);
+  filaEtiquetaValor("FACTURA NÚMERO", numeroFactura, yCaja + 10);
+  filaEtiquetaValor("EMITIDO", fechaEmisionTexto, yCaja + 18);
+  filaEtiquetaValor("VENCIMIENTO", fechaVencimientoTexto, yCaja + 26);
 
-  // ---------- Detalle de Factura ----------
-  let y = yInfo + 48;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(...colorVerde);
-  doc.text("Detalle de Factura", 15, y);
-  y += 5;
-
+  // ---------- Tabla de artículos (con línea secundaria bajo cada uno) ----------
   const filasTabla = detalleFactura.map(item => [
-    item.desc,
+    "", // se dibuja a mano en didDrawCell, para poder poner 2 líneas de texto
     `$${item.precio.toFixed(2)}`,
     String(item.cantidad),
     `$${(item.precio * item.cantidad).toFixed(2)}`
   ]);
 
-  const filasTotales = [
-    ["", "", "Subtotal", `$${subtotalFactura.toFixed(2)}`]
-  ];
-  if (requiereFacturaElectronica) {
-    filasTotales.push(["", "", "IVA (13%)", `$${ivaFactura.toFixed(2)}`]);
-  } else {
-    filasTotales.push(["", "", "IVA (0%)", "$0.00"]);
-  }
-  filasTotales.push(["", "", "Total", `$${totalFactura.toFixed(2)}`]);
-
   doc.autoTable({
-    startY: y,
-    head: [["Artículo", "Precio", "Cantidad", "Importe"]],
+    startY: yCaja + 44,
+    head: [["ARTÍCULO", "PRECIO", "CANTIDAD", "IMPORTE"]],
     body: filasTabla,
-    foot: filasTotales,
-    theme: "grid",
-    styles: { font: "helvetica", fontSize: 9.5, textColor: [30, 30, 30], cellPadding: 3, lineColor: [204, 204, 204] },
-    headStyles: { fillColor: [240, 240, 240], textColor: colorVerde, fontStyle: "bold" },
-    footStyles: { fillColor: [255, 255, 255], textColor: [30, 30, 30], fontStyle: "normal", lineWidth: 0.1 },
+    theme: "plain",
+    styles: { font: "helvetica", fontSize: 9.5, textColor: [30, 30, 30], cellPadding: 3 },
+    headStyles: { fillColor: [242, 242, 242], textColor: [90, 90, 90], fontStyle: "bold", fontSize: 8.5 },
     columnStyles: {
       0: { cellWidth: 90 },
       1: { cellWidth: 30, halign: "right" },
       2: { cellWidth: 25, halign: "center" },
       3: { cellWidth: 35, halign: "right" }
     },
-    margin: { left: 15, right: 15 }
+    margin: { left: 15, right: 15 },
+    didParseCell: (dataCell) => {
+      if (dataCell.column.index === 0 && dataCell.section === "body") {
+        dataCell.cell.styles.minCellHeight = lineaSecundaria ? 14 : 8;
+      }
+    },
+    didDrawCell: (dataCell) => {
+      if (dataCell.column.index === 0 && dataCell.section === "body") {
+        const item = detalleFactura[dataCell.row.index];
+        if (!item) return;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(9.5);
+        doc.setTextColor(20, 20, 20);
+        doc.text(item.desc, dataCell.cell.x + 3, dataCell.cell.y + 6);
+        if (lineaSecundaria) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(7.5);
+          doc.setTextColor(140, 140, 140);
+          doc.text(lineaSecundaria, dataCell.cell.x + 3, dataCell.cell.y + 11);
+        }
+      }
+    }
   });
 
-  y = doc.lastAutoTable.finalY + 10;
+  let y = doc.lastAutoTable.finalY + 10;
 
-  // ---------- Historial de Pagos ----------
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(...colorVerde);
-  doc.text("Historial de Pagos", 15, y);
-  y += 5;
-
-  const filasPagos = pagos.length > 0
-    ? pagos.map((p, i) => [
-        String(i + 1),
-        `$${Number(p.monto || 0).toFixed(2)}`,
-        formatearFecha(p.fecha),
-        p.metodo || "Sin especificar",
-        p.nota || ""
-      ])
-    : [["-", "-", "-", "-", "No hay pagos registrados."]];
-
-  doc.autoTable({
-    startY: y,
-    head: [["Pago", "Monto", "Fecha", "Método", "Nota"]],
-    body: filasPagos,
-    theme: "grid",
-    styles: { font: "helvetica", fontSize: 9, textColor: [30, 30, 30], cellPadding: 3, lineColor: [204, 204, 204] },
-    headStyles: { fillColor: colorVerde, textColor: [255, 255, 255], fontStyle: "bold" },
-    margin: { left: 15, right: 15 }
-  });
-
-  y = doc.lastAutoTable.finalY + 10;
-
-  // ---------- Resumen final ----------
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(...colorVerde);
-  doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 195, y, { align: "right" });
-  y += 6;
-  doc.setTextColor(95, 146, 150);
-  doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 195, y, { align: "right" });
-  y += 6;
-  doc.setTextColor(217, 83, 79);
-  doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 195, y, { align: "right" });
+  // ---------- Resumen alineado a la derecha (sin bordes de tabla) ----------
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(90, 90, 90);
+  doc.text("Subtotal", 130, y);
+  doc.setTextColor(20, 20, 20);
+  doc.text(`$${subtotalFactura.toFixed(2)}`, 195, y, { align: "right" });
+  y += 7;
 
   if (requiereFacturaElectronica) {
-    y += 8;
+    doc.setTextColor(90, 90, 90);
+    doc.text("IVA (13%)", 130, y);
+    doc.setTextColor(20, 20, 20);
+    doc.text(`$${ivaFactura.toFixed(2)}`, 195, y, { align: "right" });
+    y += 7;
+  }
+
+  doc.setTextColor(90, 90, 90);
+  doc.text("Total", 130, y);
+  doc.setTextColor(20, 20, 20);
+  doc.text(`$${totalFactura.toFixed(2)}`, 195, y, { align: "right" });
+  y += 7;
+
+  pagos.forEach(p => {
+    doc.setTextColor(90, 90, 90);
+    doc.text(`Pagado el ${formatearFecha(p.fecha)}`, 130, y);
+    doc.setTextColor(20, 20, 20);
+    doc.text(`$${Number(p.monto || 0).toFixed(2)}`, 195, y, { align: "right" });
+    y += 7;
+  });
+
+  y += 6;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(20, 20, 20);
+  doc.text("Importe adeudado", 130, y);
+  doc.text(`$${saldo.toFixed(2)}`, 195, y, { align: "right" });
+
+  if (requiereFacturaElectronica) {
+    y += 6;
     doc.setFont("helvetica", "italic");
     doc.setFontSize(7.5);
     doc.setTextColor(150, 150, 150);
     doc.text("*El IVA de factura electrónica se cobra aparte del saldo de la reserva.", 195, y, { align: "right" });
   }
+
+  // ---------- Mensaje de cierre y firma ----------
+  y += 20;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(60, 60, 60);
+  doc.text(
+    `Muchas gracias por su compra, estamos seguros que la vamos a pasar muy bien... Para cualquier consulta +506 61328183`,
+    15, y, { maxWidth: 180 }
+  );
+  y += 12;
+  doc.text("Saludos", 15, y);
+  y += 12;
+  doc.text("Cristopher Delgado Naranjo", 15, y);
+  y += 5;
+  doc.text("Excursiones Delgado", 15, y);
+
+  // Número de página, igual que "1/1" en el ejemplo
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text("1/1", 195, 287, { align: "right" });
 
   doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
 }
