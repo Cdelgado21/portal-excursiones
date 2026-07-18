@@ -108,6 +108,13 @@
       font-size: 24px;
       cursor: pointer;
     }
+    /* NUEVO: aviso visual de que el nivel de experiencia solo aplica a salidas individuales */
+    .aviso-nivel {
+      font-weight: normal;
+      font-size: 13px;
+      color: #777;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
@@ -115,13 +122,33 @@
     <h2>Detalle del Tour</h2>
 
     <label>Nombre del tour</label>
-    <input type="text" id="nombre" />
+    <input type="text" id="nombre" placeholder="Ej. Guatemala, o Guatemala Confort" />
+
+    <!-- NUEVO: distinción entre salida grupal (fecha fija, catálogo compartido)
+         y salida individual (personalizada, con 3 niveles de experiencia:
+         Flash / Esencial / Confort). -->
+    <label>Tipo de Salida</label>
+    <select id="tipoSalida" onchange="actualizarVisibilidadNivel()">
+      <option value="Grupal">Grupal</option>
+      <option value="Individual">Individual</option>
+    </select>
+
+    <div id="contenedorNivel">
+      <label>Nivel de Experiencia</label>
+      <select id="nivel">
+        <option value="">-- Seleccione --</option>
+        <option value="Flash">Flash</option>
+        <option value="Esencial">Esencial</option>
+        <option value="Confort">Confort</option>
+      </select>
+      <div class="aviso-nivel">Solo aplica para salidas Individuales — cada nivel se guarda como un tour independiente en el catálogo.</div>
+    </div>
 
     <label>Duración</label>
-    <input type="text" id="duracion" />
+    <input type="text" id="duracion" placeholder="Ej. 5 días y 4 noches" />
 
-    <label>Precio Adulto</label>
-    <input type="number" id="precio_adulto" />
+    <label>Precio Adulto <span style="font-weight:normal; font-size: 13px; color:#777;">(precio de referencia "desde" — el precio real de cada reserva se ajusta a mano según fecha/costo del vuelo)</span></label>
+    <input type="number" id="precio_adulto" placeholder="Ej. 649 (mínimo 2 personas, si aplica)" />
 
     <label>Precio Niño</label>
     <input type="number" id="precio_nino" />
@@ -130,13 +157,13 @@
     <input type="number" id="precio_bebe" />
 
     <label>Incluye</label>
-    <textarea id="incluye"></textarea>
+    <textarea id="incluye" placeholder="Ej. Traslado aeropuerto-hotel-aeropuerto, hospedaje con desayuno incluido"></textarea>
 
     <label>No Incluye</label>
     <textarea id="no_incluye"></textarea>
 
     <label>Itinerario</label>
-    <textarea id="itinerario_tours"></textarea>
+    <textarea id="itinerario_tours" placeholder="Ej. Tour Zoológico La Aurora, Tour de Pueblos (City Tour Antigua), Tour a Panajachel y el lago Atitlán, 1 día libre"></textarea>
 
     <label>Hoteles</label>
     <table>
@@ -197,7 +224,17 @@
 
     const params = new URLSearchParams(window.location.search);
   const tourId = params.get("id");
-    
+
+  // NUEVO: muestra/oculta el campo de Nivel según el Tipo de Salida elegido.
+  function actualizarVisibilidadNivel() {
+    const tipo = document.getElementById("tipoSalida").value;
+    const contenedor = document.getElementById("contenedorNivel");
+    contenedor.style.display = tipo === "Individual" ? "block" : "none";
+    if (tipo !== "Individual") {
+      document.getElementById("nivel").value = "";
+    }
+  }
+
 function guardarTour() {
   const hoteles = [];
   document.querySelectorAll("#hotelesContainer tr").forEach(tr => {
@@ -214,8 +251,20 @@ function guardarTour() {
     if (nombre) opcionales.push({ nombre, descripcion, precio });
   });
 
+  const tipoSalida = document.getElementById("tipoSalida").value;
+  const nivel = tipoSalida === "Individual" ? document.getElementById("nivel").value : "";
+
+  // NUEVO: si es Individual, exige elegir un nivel — para no dejar un tour
+  // "Individual" sin nivel de experiencia asociado.
+  if (tipoSalida === "Individual" && !nivel) {
+    alert("⚠️ Selecciona el Nivel de Experiencia (Flash, Esencial o Confort) para una salida Individual.");
+    return;
+  }
+
   const data = {
     nombre: document.getElementById("nombre").value,
+    tipoSalida,
+    nivel,
     duracion: document.getElementById("duracion").value,
     precio_adulto: parseFloat(document.getElementById("precio_adulto").value),
     precio_nino: parseFloat(document.getElementById("precio_nino").value),
@@ -247,6 +296,9 @@ if (tourId) {
       document.getElementById("hotelesContainer").innerHTML = "";
 document.getElementById("opcionalesContainer").innerHTML = "";
       document.getElementById("nombre").value = t.nombre || "";
+      document.getElementById("tipoSalida").value = t.tipoSalida || "Grupal";
+      document.getElementById("nivel").value = t.nivel || "";
+      actualizarVisibilidadNivel();
       document.getElementById("duracion").value = t.duracion || "";
       document.getElementById("precio_adulto").value = t.precio_adulto || "";
       document.getElementById("precio_nino").value = t.precio_nino || "";
@@ -264,7 +316,11 @@ document.getElementById("opcionalesContainer").innerHTML = "";
     }).catch(err => {
       console.error("Error al cargar tour:", err);
     });
-  }
+} else {
+  // NUEVO: tour nuevo (sin id) — asegura que el campo Nivel arranque oculto
+  // hasta que se elija "Individual".
+  actualizarVisibilidadNivel();
+}
 
   function agregarHotel(nombre, info) {
     const fila = document.createElement("tr");
