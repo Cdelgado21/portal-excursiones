@@ -423,6 +423,25 @@
   <h2 onclick="toggleSeccion(this)" style="background-color: #02535a; color: white; padding: 10px; border-radius: 8px; cursor:pointer; user-select:none;">Itinerario de Tours <span class="flecha-colapsable" style="float:right;">▼</span></h2>
 
   <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
+    <div style="flex: 1; min-width: 200px;">
+      <label><strong>Tipo de Salida</strong></label>
+      <select id="tipoSalidaReserva" onchange="alCambiarTipoSalida()" style="width: 100%; padding: 8px;">
+        <option value="Grupal">Grupal</option>
+        <option value="Individual">Individual</option>
+      </select>
+    </div>
+    <div id="contenedorNivelReserva" style="flex: 1; min-width: 200px; display:none;">
+      <label><strong>Nivel de Experiencia</strong></label>
+      <select id="nivelReserva" onchange="filtrarYPoblarDestinos()" style="width: 100%; padding: 8px;">
+        <option value="">-- Todos --</option>
+        <option value="Flash">Flash</option>
+        <option value="Esencial">Esencial</option>
+        <option value="Confort">Confort</option>
+      </select>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
     <div style="flex: 1; min-width: 250px;">
       <label><strong>Destino</strong></label>
       <select id="destino" onchange="cargarInfoTour(this.value)" style="width: 100%; padding: 8px;">
@@ -2213,22 +2232,70 @@ function agregarEquipaje() {
   document.getElementById("uso_equipaje").value = "";
 }
 
+// NUEVO: guarda el catálogo completo de tours en memoria (una sola consulta a
+// Firebase), para poder filtrar por Tipo de Salida / Nivel sin volver a
+// consultar cada vez que el agente cambia el filtro.
 async function cargarDestinos() {
   try {
     const ref = db.collection("tours");
     const snapshot = await ref.get();
-    const select = document.getElementById("destino");
+    window.catalogoTours = [];
 
     snapshot.forEach(doc => {
       const data = doc.data();
-      const opt = document.createElement("option");
-      opt.value = doc.id;
-      opt.textContent = data.nombre || doc.id;
-      select.appendChild(opt);
+      window.catalogoTours.push({
+        id: doc.id,
+        nombre: data.nombre || doc.id,
+        // Los tours creados antes de este cambio no tienen "tipoSalida" — se
+        // tratan como "Grupal" (así funcionaban antes de que existiera esta distinción).
+        tipoSalida: data.tipoSalida || "Grupal",
+        nivel: data.nivel || ""
+      });
     });
+
+    filtrarYPoblarDestinos();
   } catch (e) {
     console.error("Error al cargar destinos:", e);
   }
+}
+
+// NUEVO: vuelve a llenar el <select> de Destino según el Tipo de Salida y
+// Nivel elegidos, usando el catálogo ya cargado en memoria.
+function filtrarYPoblarDestinos() {
+  const tipoSalida = document.getElementById("tipoSalidaReserva").value;
+  const nivel = document.getElementById("nivelReserva").value;
+  const select = document.getElementById("destino");
+  const valorAnterior = select.value;
+
+  const filtrados = (window.catalogoTours || []).filter(t => {
+    if (t.tipoSalida !== tipoSalida) return false;
+    if (tipoSalida === "Individual" && nivel && t.nivel !== nivel) return false;
+    return true;
+  });
+
+  select.innerHTML = "<option value=''>Seleccione un destino</option>";
+  filtrados.forEach(t => {
+    const opt = document.createElement("option");
+    opt.value = t.id;
+    opt.textContent = t.tipoSalida === "Individual" && t.nivel ? `${t.nombre} (${t.nivel})` : t.nombre;
+    select.appendChild(opt);
+  });
+
+  // Si el destino que ya estaba elegido sigue disponible con el nuevo filtro, se conserva.
+  if (filtrados.some(t => t.id === valorAnterior)) {
+    select.value = valorAnterior;
+  }
+}
+
+// NUEVO: muestra/oculta el selector de Nivel según el Tipo de Salida, y
+// refresca la lista de destinos.
+function alCambiarTipoSalida() {
+  const tipoSalida = document.getElementById("tipoSalidaReserva").value;
+  document.getElementById("contenedorNivelReserva").style.display = tipoSalida === "Individual" ? "block" : "none";
+  if (tipoSalida !== "Individual") {
+    document.getElementById("nivelReserva").value = "";
+  }
+  filtrarYPoblarDestinos();
 }
 
 async function cargarInfoTour(destinoId) {
@@ -2438,6 +2505,18 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("correoTitular").value = data.correo || "";
     document.getElementById("telefonoTitular").value = data.telefono || "";
     document.getElementById("equipaje").value = data.equipaje || "";
+
+    // NUEVO: detecta el Tipo de Salida / Nivel del tour ya guardado en esta
+    // reserva, y ajusta esos selectores ANTES de fijar el destino — si no,
+    // el filtro podría esconder la opción porque no coincide con el filtro
+    // por defecto (Grupal).
+    const tourGuardado = (window.catalogoTours || []).find(t => t.id === data.destino);
+    if (tourGuardado) {
+      document.getElementById("tipoSalidaReserva").value = tourGuardado.tipoSalida;
+      document.getElementById("contenedorNivelReserva").style.display = tourGuardado.tipoSalida === "Individual" ? "block" : "none";
+      document.getElementById("nivelReserva").value = tourGuardado.nivel || "";
+      filtrarYPoblarDestinos();
+    }
     document.getElementById("destino").value = data.destino || "";
     document.getElementById("totalGeneral").value = data.total?.toFixed(2) || "0.00";
 
