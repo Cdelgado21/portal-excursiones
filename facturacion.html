@@ -846,7 +846,7 @@ function actualizarResumenFacturacion(data) {
 
 async function generarFacturaPDF() {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
   const colorVerde = "#02535a";
 
   const params = new URLSearchParams(window.location.search);
@@ -862,204 +862,234 @@ async function generarFacturaPDF() {
 
   const data = docSnapshot.data();
   const nombreTitular = data.nombreTitular || "Titular";
-  const correo = data.correo || "";
-  const telefono = data.telefono || "";
+  const correo = data.correo || "---";
+  const telefono = data.telefono || "---";
   const pagos = data.pagos || [];
+  const numeroFactura = document.getElementById('numeroFactura').textContent;
 
+  // Detalle de artículos: se lee de la tabla ya armada en pantalla (incluye
+  // Adultos/Niños/Bebés y Tours Opcionales con sus precios).
   const filas = document.querySelectorAll("#tablaArticulos tr");
   const detalleFactura = [];
-
   filas.forEach(fila => {
     const celdas = fila.querySelectorAll("td");
     if (celdas.length === 4) {
-      const descripcion = celdas[0].innerText.trim();
-      const precio = parseFloat(celdas[1].innerText.replace('$', '').trim());
-      const cantidad = parseInt(celdas[2].innerText.trim());
-      detalleFactura.push({ desc: descripcion, precio, cantidad });
+      detalleFactura.push({
+        desc: celdas[0].innerText.trim(),
+        precio: parseFloat(celdas[1].innerText.replace('$', '').trim()) || 0,
+        cantidad: parseInt(celdas[2].innerText.trim()) || 0
+      });
     }
   });
 
   const requiereFacturaElectronica = document.getElementById("requiereFacturaElectronica")?.checked;
+  const subtotalFactura = detalleFactura.reduce((s, i) => s + i.precio * i.cantidad, 0);
+  const ivaFactura = requiereFacturaElectronica ? subtotalFactura * 0.13 : 0;
+  const totalFactura = subtotalFactura + ivaFactura;
 
-  const img = new Image();
-  img.src = "Facturacion.png";
+  const pagosAplicados = pagos.reduce((s, p) => s + (Number(p.monto) || 0), 0);
+  const totalReserva = Number(data.total || 0);
+  const saldo = totalReserva - pagosAplicados;
 
-  img.onload = () => {
-    doc.addImage(img, 'PNG', 0, 0, 210, 297);
+  // NUEVO: Vencimiento = 15 días antes de la fecha del vuelo de ida.
+  let fechaVencimientoTexto = "---";
+  if (data.vueloIda?.fecha) {
+    const fechaIdaDate = parseFechaFlexible(data.vueloIda.fecha);
+    if (fechaIdaDate) {
+      const vencimiento = new Date(fechaIdaDate);
+      vencimiento.setDate(vencimiento.getDate() - 15);
+      fechaVencimientoTexto = formatearFecha(vencimiento.toISOString().split('T')[0]);
+    }
+  }
+  const fechaEmisionTexto = formatearFecha(new Date().toISOString().split('T')[0]);
+
+  // ==========================================
+  // NUEVO DISEÑO DE FACTURA — machote limpio (sin imagen de fondo)
+  // ==========================================
+
+  // ---------- Encabezado ----------
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(26);
+  doc.setTextColor(20, 20, 20);
+  doc.text("FACTURA", 15, 22);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(90, 90, 90);
+  const lineasNegocio = [
+    "Excursiones Delgado",
+    "Esparza, Puntarenas, Costa Rica",
+    "Cristopher Delgado Naranjo — Cédula 207040582",
+    "CANATUR Afiliado 5683",
+    "Empresa PYME, MEIC"
+  ];
+  lineasNegocio.forEach((linea, i) => {
+    doc.text(linea, 15, 32 + i * 5);
+  });
+
+  // Logo (reutiliza la imagen que ya está cargada en la página)
+  try {
+    const logoElement = document.querySelector('.encabezado img');
+    if (logoElement && logoElement.complete && logoElement.naturalWidth > 0) {
+      doc.addImage(logoElement, "PNG", 155, 12, 40, 25);
+    }
+  } catch (e) {
+    console.warn("No se pudo agregar el logo al PDF:", e);
+  }
+
+  // ---------- Caja "Facturar a" / datos de factura ----------
+  const yCaja = 65;
+  doc.setDrawColor(220, 220, 220);
+  doc.roundedRect(15, yCaja, 180, 32, 2, 2);
+
+  doc.setFontSize(8);
+  doc.setTextColor(140, 140, 140);
+  doc.text("FACTURAR A", 20, yCaja + 8);
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(20, 20, 20);
+  doc.text(nombreTitular, 20, yCaja + 16);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(90, 90, 90);
+  doc.text(correo, 20, yCaja + 22);
+  doc.text(telefono, 20, yCaja + 27);
+
+  function filaEtiquetaValor(etiqueta, valor, y) {
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(140, 140, 140);
+    doc.text(etiqueta, 120, y);
     doc.setFont("helvetica", "bold");
+    doc.setTextColor(20, 20, 20);
+    doc.text(String(valor || "---"), 190, y, { align: "right" });
+  }
 
-    doc.setFontSize(22);
-    doc.setTextColor(colorVerde);
-    doc.text("Factura de Reserva", 105, 28, { align: "center" });
-    const numeroFactura = document.getElementById('numeroFactura').textContent;
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Código de Reserva: ${codigo}`, 105, 36, { align: "center" });
-    doc.text(`Factura N°: ${numeroFactura}`, 105, 42, { align: "center" });
+  filaEtiquetaValor("FACTURA NÚMERO", numeroFactura, yCaja + 8);
+  filaEtiquetaValor("EMITIDO", fechaEmisionTexto, yCaja + 17);
+  filaEtiquetaValor("VENCIMIENTO", fechaVencimientoTexto, yCaja + 26);
 
-    let yCliente = 55;
-    doc.setTextColor(colorVerde);
-    doc.setFontSize(14);
-    doc.text("Factura a:", 20, yCliente);
+  // ---------- Tabla de artículos ----------
+  const filasTabla = detalleFactura.map(item => [
+    item.desc,
+    `$${item.precio.toFixed(2)}`,
+    String(item.cantidad),
+    `$${(item.precio * item.cantidad).toFixed(2)}`
+  ]);
 
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    yCliente += 8;
-    doc.text(nombreTitular, 20, yCliente);
-    yCliente += 6;
-    doc.text(correo || "---", 20, yCliente);
-    yCliente += 6;
-    doc.text(telefono || "---", 20, yCliente);
+  doc.autoTable({
+    startY: yCaja + 40,
+    head: [["ARTÍCULO", "PRECIO", "CANTIDAD", "IMPORTE"]],
+    body: filasTabla,
+    theme: "plain",
+    styles: { font: "helvetica", fontSize: 10, textColor: [30, 30, 30], cellPadding: 3 },
+    headStyles: { fillColor: [242, 242, 242], textColor: [90, 90, 90], fontStyle: "bold", fontSize: 8.5 },
+    columnStyles: {
+      0: { cellWidth: 90 },
+      1: { cellWidth: 30, halign: "right" },
+      2: { cellWidth: 25, halign: "center" },
+      3: { cellWidth: 35, halign: "right" }
+    },
+    margin: { left: 15, right: 15 }
+  });
 
-    let yViaje = 55;
-    doc.setTextColor(colorVerde);
-    doc.setFontSize(12);
+  let y = doc.lastAutoTable.finalY + 5;
 
-    const fechaIda = formatearFecha(data.vueloIda?.fecha);
-    const fechaRegreso = formatearFecha(data.vueloRegreso?.fecha);
-    const fechaReserva = formatearFecha(data.fechaReserva);
-
-    doc.text(`Fecha de Emisión: ${fechaReserva}`, 120, yViaje);
-    yViaje += 8;
-    doc.text(`Viaje Ida: ${fechaIda}`, 120, yViaje);
-    yViaje += 8;
-    doc.text(`Viaje Regreso: ${fechaRegreso}`, 120, yViaje);
-    yViaje += 8;
-    doc.text(`Código Vuelo: ${data.vueloIda?.codigo || "N/D"}`, 120, yViaje);
-
-    const alturaDetalle = detalleFactura.length * 8;
-    const alturaPagos = pagos.length > 0 ? pagos.length * 8 + 20 : 15;
-    const alturaTotales = 15;
-    const paddingVertical = 5;
-    const alturaTotal = 45 + alturaDetalle + alturaPagos + alturaTotales + paddingVertical;
-
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(15, 90, 180, alturaTotal, 5, 5, 'F');
-
-    let y = 100;
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(colorVerde);
-    doc.text("Detalle de Factura", 25, y);
-    y += 10;
-    doc.setDrawColor(200);
-    doc.setLineWidth(0.2);
-    doc.line(20, y - 5, 190, y - 5);
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(0, 0, 0);
-    doc.text("Descripción", 25, y);
-    doc.text("Precio", 105, y, { align: 'right' });
-    doc.text("Cantidad", 145, y, { align: 'right' });
-    doc.text("Total", 187, y, { align: 'right' });
-
+  // NUEVO: línea con las fechas del viaje y el código de reserva de la
+  // aerolínea — una sola vez debajo de la tabla completa (no repetida por
+  // cada línea de artículo, para que no se vea saturado).
+  if (data.vueloIda?.fecha || data.vueloIda?.codigo) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8.5);
+    doc.setTextColor(120, 120, 120);
+    const fechaIdaTxt = formatearFecha(data.vueloIda?.fecha);
+    const fechaRegresoTxt = formatearFecha(data.vueloRegreso?.fecha);
+    doc.text(
+      `Viaje del ${fechaIdaTxt} al ${fechaRegresoTxt} — Código de reserva aerolínea: ${data.vueloIda?.codigo || "---"}`,
+      15, y
+    );
     y += 8;
-    doc.setFont("helvetica", "normal");
-    let subtotalFactura = 0;
+  }
 
-    detalleFactura.forEach((item) => {
-      if (item.cantidad > 0) {
-        const total = item.precio * item.cantidad;
-        subtotalFactura += total;
+  // ---------- Resumen (Subtotal / IVA / Total / Pagos / Adeudado) ----------
+  y += 4;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(90, 90, 90);
+  doc.text("Subtotal", 140, y);
+  doc.setTextColor(20, 20, 20);
+  doc.text(`$${subtotalFactura.toFixed(2)}`, 190, y, { align: "right" });
+  y += 6;
 
-        doc.setTextColor(60, 60, 60);
-        doc.text(item.desc, 25, y);
-        doc.text(`$${item.precio.toFixed(2)}`, 105, y, { align: 'right' });
-        doc.text(`${item.cantidad}`, 145, y, { align: 'right' });
-        doc.text(`$${total.toFixed(2)}`, 187, y, { align: 'right' });
-
-        y += 6;
-      }
-    });
-
-    // NUEVO: línea de IVA si el cliente pidió factura electrónica
-    const ivaFactura = requiereFacturaElectronica ? subtotalFactura * 0.13 : 0;
-    const totalFactura = subtotalFactura + ivaFactura;
-
-    if (requiereFacturaElectronica) {
-      y += 4;
-      doc.setTextColor(60, 60, 60);
-      doc.text(`IVA (13%)`, 145, y, { align: 'right' });
-      doc.text(`$${ivaFactura.toFixed(2)}`, 187, y, { align: 'right' });
-      y += 6;
-    }
-
-    y += 4;
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(colorVerde);
-    doc.text(`Total: $${totalFactura.toFixed(2)}`, 187, y, { align: 'right' });
-
-    // NOTA: el total que se usa para calcular el saldo de la RESERVA sigue
-    // siendo el ya acordado con el cliente (data.total) — el IVA de la
-    // factura electrónica se cobra aparte, no se mezcla con este saldo.
-    const totalReserva = Number(data.total || 0);
-
-    y += 10;
-    doc.setFontSize(13);
-    doc.setTextColor(colorVerde);
-    doc.setFont("helvetica", "bold");
-    doc.text("Historial de Pagos", 25, y);
-    y += 10;
-    doc.setDrawColor(200);
-    doc.setLineWidth(0.2);
-    doc.line(20, y - 5, 190, y - 5);
-
-    doc.setFontSize(11);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Fecha", 30, y);
-    doc.text("Monto", 90, y);
-    doc.text("Método", 150, y);
+  if (requiereFacturaElectronica) {
+    doc.setTextColor(90, 90, 90);
+    doc.text("IVA (13%)", 140, y);
+    doc.setTextColor(20, 20, 20);
+    doc.text(`$${ivaFactura.toFixed(2)}`, 190, y, { align: "right" });
     y += 6;
+  }
 
-    doc.setFont("helvetica", "normal");
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(90, 90, 90);
+  doc.text("Total", 140, y);
+  doc.setTextColor(20, 20, 20);
+  doc.text(`$${totalFactura.toFixed(2)}`, 190, y, { align: "right" });
+  y += 7;
 
-    if (pagos.length === 0) {
-      doc.text("No hay pagos registrados.", 30, y);
-      y += 6;
-    } else {
-      pagos.forEach((pago) => {
-        doc.text(formatearFecha(pago.fecha), 30, y);
-        doc.text(`$${Number(pago.monto || 0).toFixed(2)}`, 90, y);
-        doc.text(`${pago.metodo || "Sin especificar"}`, 150, y);
-        y += 6;
-      });
-    }
-
-    const pagosAplicados = pagos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
-    const saldo = totalReserva - pagosAplicados;
-
-    y += 10;
-    doc.setFontSize(13);
-    doc.setTextColor(colorVerde);
-    doc.setFont("helvetica", "bold");
-    doc.text("Saldo de Factura", 25, y);
-    y += 10;
-    doc.setDrawColor(200);
-    doc.setLineWidth(0.2);
-    doc.line(20, y - 5, 190, y - 5);
-
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Total de la Reserva: $${totalReserva.toFixed(2)}`, 25, y);
+  doc.setFont("helvetica", "normal");
+  pagos.forEach(p => {
+    doc.setTextColor(90, 90, 90);
+    doc.text(`Pagado el ${formatearFecha(p.fecha)}`, 140, y);
+    doc.setTextColor(20, 20, 20);
+    doc.text(`$${Number(p.monto || 0).toFixed(2)}`, 190, y, { align: "right" });
     y += 6;
+  });
 
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Pagos Aplicados: $${pagosAplicados.toFixed(2)}`, 25, y);
-    y += 6;
+  y += 2;
+  doc.setDrawColor(210, 210, 210);
+  doc.line(120, y, 190, y);
+  y += 8;
 
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(colorVerde);
-    doc.text(`Saldo Restante: $${saldo.toFixed(2)}`, 25, y);
-    y += 6;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.setTextColor(colorVerde);
+  doc.text("Importe adeudado", 140, y);
+  doc.text(`$${saldo.toFixed(2)}`, 190, y, { align: "right" });
+  y += 6;
 
-    doc.setTextColor(0, 0, 0);
+  // NOTA: el saldo se calcula sobre el total YA ACORDADO con el cliente
+  // (sin IVA) — el 13% de factura electrónica se cobra aparte, así que si
+  // está marcado el checkbox, se aclara para que no parezca un error.
+  if (requiereFacturaElectronica) {
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7.5);
+    doc.setTextColor(150, 150, 150);
+    doc.text("*El IVA de factura electrónica se cobra aparte del saldo de la reserva.", 140, y, { align: "left", maxWidth: 50 });
+    y += 8;
+  }
 
-    doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
-  };
+  // ---------- Mensaje de cierre ----------
+  y += 12;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(60, 60, 60);
+  doc.text("Muchas gracias por su compra, estamos seguros que la vamos a pasar muy bien.", 15, y);
+  y += 5;
+  doc.text("Para cualquier consulta: +506 61328183", 15, y);
+  y += 10;
+  doc.text("Saludos,", 15, y);
+  y += 10;
+  doc.setFont("helvetica", "bold");
+  doc.text("Cristopher Delgado Naranjo", 15, y);
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.text("Excursiones Delgado", 15, y);
+
+  doc.save(`Factura N°${codigo} - ${nombreTitular}.pdf`);
 }
+
 
   function generarPDFBase64() {
   return new Promise((resolve, reject) => {
@@ -1122,4 +1152,5 @@ async function enviarPorCorreo() {
 
 </body>
 </html>
+
 
