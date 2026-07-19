@@ -940,7 +940,7 @@ async function construirDocumentoFactura() {
   try {
     const logoElement = document.querySelector('.encabezado img');
     if (logoElement && logoElement.complete && logoElement.naturalWidth > 0) {
-      doc.addImage(logoElement, "PNG", 150, 15, 45, 28);
+      doc.addImage(logoElement, "PNG", 130, 10, 65, 40);
     }
   } catch (e) {
     console.warn("No se pudo agregar el logo al PDF:", e);
@@ -1153,6 +1153,4 @@ async function enviarPorCorreo() {
 
 </body>
 </html>
-
-
 
