@@ -203,6 +203,10 @@
     <a class="btn-historicas" href="reservas_historicas.html">🕓 Ver reservas históricas</a>
   </div>
 
+  <!-- NUEVO: buscador — filtra la tabla mientras se escribe, sin volver a
+       consultar Firebase (los datos ya están cargados en la página). -->
+  <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()" style="width: 100%; max-width: 500px; padding: 10px 14px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px; font-size: 15px; box-sizing: border-box;">
+
   <p class="contador" id="contador"></p>
 
   <table id="tablaReservas">
@@ -323,7 +327,35 @@
           texto += ` (${contadorSinFecha} sin fecha de viaje registrada — revisar)`;
         }
         contadorEl.textContent = texto;
+        window.textoContadorOriginal = texto; // para restaurar al borrar el buscador
       });
+    }
+
+    // NUEVO: filtra las filas ya cargadas en la tabla según lo que se
+    // escriba en el buscador — compara contra todo el texto visible de la
+    // fila (código, nombre, teléfono, correo, destino), sin distinguir
+    // mayúsculas/minúsculas ni acentos.
+    function normalizarTexto(str) {
+      return (str || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function filtrarTablaReservas() {
+      const termino = normalizarTexto(document.getElementById("buscadorReservas").value);
+      const filas = document.querySelectorAll("#tablaReservas tbody tr");
+      let visibles = 0;
+
+      filas.forEach(fila => {
+        const coincide = normalizarTexto(fila.textContent).includes(termino);
+        fila.style.display = coincide ? "" : "none";
+        if (coincide) visibles++;
+      });
+
+      const contador = document.getElementById("contador");
+      if (termino && contador) {
+        contador.textContent = `${visibles} resultado(s) para "${document.getElementById("buscadorReservas").value}"`;
+      } else if (contador) {
+        contador.textContent = window.textoContadorOriginal || "";
+      }
     }
 
     function eliminarReserva(id) {
