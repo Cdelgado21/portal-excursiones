@@ -11,11 +11,121 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
+  /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
+  .toggle-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    font-size: 24px;
+    background: white;
+    color: #02535a;
+    border: none;
+    border-radius: 50%;
+    padding: 8px 12px;
+    z-index: 1100;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 250px;
+    height: 100%;
+    background-color: #02535a;
+    color: white;
+    padding: 20px;
+    transform: translateX(-250px);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+  }
+  .sidebar.active {
+    transform: translateX(0);
+  }
+  .sidebar .user-info {
+    text-align: center;
+    margin-bottom: 20px;
+    margin-top: 40px;
+  }
+  .sidebar .user-info .avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+  }
+  .sidebar .user-info h3 {
+    font-size: 1rem;
+    margin: 0;
+    color: white;
+  }
+  .sidebar .user-info small {
+    font-size: 0.8rem;
+    color: #f4f7f8;
+  }
+  .nav-links {
+    list-style: none;
+    padding: 0;
+  }
+  .nav-links li a {
+    background-color: #f4f7f8;
+    color: #02535a;
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    margin-bottom: 8px;
+    font-weight: bold;
+  }
+  .nav-links li a:hover {
+    background-color: #e0e0e0;
+  }
+  .nav-links li a.activo {
+    background-color: #ffb703;
+    color: #02535a;
+  }
+  .nav-links .icon {
+    margin-right: 10px;
+    font-size: 1.2rem;
+  }
+  main#contenidoPrincipal {
+    margin-left: 0;
+    padding: 20px 20px 20px 70px;
+    transition: margin-left 0.3s ease;
+    box-sizing: border-box;
+  }
+  main#contenidoPrincipal.sidebar-visible {
+    margin-left: 250px;
+    padding-left: 20px;
+  }
+  @media screen and (max-width: 768px) {
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 0;
+      padding-left: 70px;
+    }
+  }
+  /* NUEVO: botón para volver al detalle de la reserva */
+  .btn-volver {
+    display: inline-block;
+    margin-bottom: 15px;
+    padding: 8px 16px;
+    background-color: #02535a;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .btn-volver:hover {
+    background-color: #036a6d;
+  }
+
   body {
     font-family: Arial, sans-serif;
     background: #f0f7f7;
     margin: 0;
-    padding: 20px;
+    padding: 0;
   }
 
   .factura {
@@ -254,6 +364,34 @@ input[type="date"] {
   </style>
 </head>
 <body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html" class="activo"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+
+  <!-- NUEVO: volver al detalle de esta misma reserva, usando el código que
+       ya viene en la URL (?reserva=ED-002-2026) -->
+  <a href="#" id="btnVolverReserva" class="btn-volver">◀ Volver al Detalle de Reserva</a>
+
   <div class="factura">
     <!-- Encabezado -->
     <div class="encabezado">
@@ -456,6 +594,54 @@ let data = {}
 // Obtener el ID de la reserva desde la URL
 const urlParams = new URLSearchParams(window.location.search);
 const reservaID = urlParams.get("reserva");
+
+// NUEVO: el botón "Volver al Detalle de Reserva" usa el mismo código de
+// reserva que ya viene en esta URL, para llevar de vuelta exactamente a esa
+// reserva (no a la lista general).
+const btnVolver = document.getElementById("btnVolverReserva");
+if (btnVolver) {
+  btnVolver.href = reservaID ? `detalle_reserva.html?codigo=${reservaID}` : "reservas.html";
+}
+
+// NUEVO: menú lateral de navegación (igual que dashboard.html)
+function inicializarMenuLateral() {
+  const usuario = JSON.parse(localStorage.getItem("usuario"));
+  const sidebar = document.getElementById("sidebar");
+  const contenido = document.getElementById("contenidoPrincipal");
+  const toggleBtn = document.querySelector('.toggle-btn');
+
+  if (usuario) {
+    document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+    document.getElementById("rolUsuario").innerText = usuario.rol || "";
+  } else {
+    document.getElementById("nombreUsuario").innerText = "Invitado";
+  }
+
+  window.toggleSidebar = function () {
+    sidebar.classList.toggle('active');
+    contenido.classList.toggle('sidebar-visible');
+  };
+
+  window.cerrarSesionYRedirigir = function () {
+    localStorage.removeItem("usuario");
+    window.location.href = "login.html";
+  };
+
+  function checkScreenSize() {
+    if (window.innerWidth <= 768) {
+      sidebar.classList.remove('active');
+      contenido.classList.remove('sidebar-visible');
+    } else {
+      sidebar.classList.add('active');
+      contenido.classList.add('sidebar-visible');
+    }
+    toggleBtn.style.display = "block";
+  }
+
+  window.addEventListener('resize', checkScreenSize);
+  checkScreenSize();
+}
+inicializarMenuLateral();
 
 if (reservaID) {
   db.collection("reservas").doc(reservaID).get().then(async (doc) => {
@@ -940,7 +1126,7 @@ async function construirDocumentoFactura() {
   try {
     const logoElement = document.querySelector('.encabezado img');
     if (logoElement && logoElement.complete && logoElement.naturalWidth > 0) {
-      doc.addImage(logoElement, "PNG", 130, 10, 65, 40);
+      doc.addImage(logoElement, "PNG", 108, 6, 87, 53);
     }
   } catch (e) {
     console.warn("No se pudo agregar el logo al PDF:", e);
@@ -1151,6 +1337,7 @@ async function enviarPorCorreo() {
 }
 </script>
 
+</main>
+
 </body>
 </html>
-
