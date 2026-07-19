@@ -310,6 +310,7 @@
             <td>${formatearFechaVisible(data.fechaReserva)}</td>
             <td class="acciones">
               <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
+              <button class="editar-btn" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
               <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
             </td>
           `;
@@ -382,4 +383,3 @@
   </main>
 </body>
 </html>
-
