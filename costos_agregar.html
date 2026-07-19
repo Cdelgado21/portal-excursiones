@@ -7,11 +7,118 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
+    /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+      max-width: 700px;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+      padding-left: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+        padding-left: 70px;
+      }
+    }
+    .btn-volver {
+      display: inline-block;
+      margin-bottom: 15px;
+      padding: 8px 16px;
+      background-color: #02535a;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .btn-volver:hover {
+      background-color: #036a6d;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f7f7;
       color: #02535a;
-      padding: 20px;
+      margin: 0;
+      padding: 0;
     }
     h2 {
       background-color: #02535a;
@@ -30,6 +137,7 @@
       border-radius: 6px;
       border: 1px solid #ccc;
       margin-top: 5px;
+      box-sizing: border-box;
     }
     .btn {
       margin-top: 20px;
@@ -46,10 +154,47 @@
       font-size: 18px;
       font-weight: bold;
     }
+    .aviso-existente {
+      margin-top: 15px;
+      padding: 10px 14px;
+      background: #eaf5f0;
+      border: 1px solid #b6ddc9;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: normal;
+    }
   </style>
 </head>
 <body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html" class="activo" style="background-color:#ffb703;"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+
+  <a href="#" id="btnVolverReserva" class="btn-volver">◀ Volver al Detalle de Reserva</a>
+
   <h2>💼 Costos Proyectados</h2>
+
+  <div id="avisoExistente" class="aviso-existente" style="display:none;"></div>
 
   <label>Código de Reserva</label>
   <input type="text" id="codigoReserva" readonly />
@@ -84,6 +229,8 @@
 
   <button class="btn" onclick="guardarCostos()">Guardar Costos</button>
 
+  </main>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -97,6 +244,55 @@
     const codigo = params.get("reserva");
     document.getElementById("codigoReserva").value = codigo;
 
+    // NUEVO: menú lateral y botón de volver (mismo mecanismo que en las demás páginas).
+    function inicializarMenuLateral() {
+      const usuario = JSON.parse(localStorage.getItem("usuario"));
+      const sidebar = document.getElementById("sidebar");
+      const contenido = document.getElementById("contenidoPrincipal");
+      const toggleBtn = document.querySelector('.toggle-btn');
+
+      if (usuario) {
+        document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+        document.getElementById("rolUsuario").innerText = usuario.rol || "";
+      } else {
+        document.getElementById("nombreUsuario").innerText = "Invitado";
+      }
+
+      window.toggleSidebar = function () {
+        sidebar.classList.toggle('active');
+        contenido.classList.toggle('sidebar-visible');
+      };
+
+      window.cerrarSesionYRedirigir = function () {
+        localStorage.removeItem("usuario");
+        window.location.href = "login.html";
+      };
+
+      function checkScreenSize() {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('active');
+          contenido.classList.remove('sidebar-visible');
+        } else {
+          sidebar.classList.add('active');
+          contenido.classList.add('sidebar-visible');
+        }
+        toggleBtn.style.display = "block";
+      }
+
+      window.addEventListener('resize', checkScreenSize);
+      checkScreenSize();
+    }
+    inicializarMenuLateral();
+
+    const btnVolver = document.getElementById("btnVolverReserva");
+    if (btnVolver) {
+      btnVolver.href = codigo ? `detalle_reserva.html?codigo=${codigo}` : "reservas.html";
+    }
+
+    // NUEVO: guarda lo que ya existía en costos_reservas (si lo hay) para no
+    // perder el estado ni el desglose_real al guardar de nuevo.
+    let datosExistentesCostos = null;
+
     async function precargarDatosReserva() {
       if (!codigo) return;
       try {
@@ -104,7 +300,7 @@
         if (!doc.exists) return;
 
         const data = doc.data();
-        const venta = parseFloat(data.total || 0); // ✅ Se define aquí
+        const venta = parseFloat(data.total || 0);
         document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
         document.getElementById("ventaTotal").value = venta;
 
@@ -138,6 +334,28 @@
           ${advertencia}
         `;
 
+        // FIX: antes esta página NUNCA revisaba si ya existían costos guardados
+        // para esta reserva — cada vez que la abrías para corregir algo, los
+        // campos de costos aparecían en blanco, aunque ya los hubieras
+        // llenado antes. Ahora, si ya existe un documento en "costos_reservas",
+        // se precargan sus valores.
+        const docCostos = await db.collection("costos_reservas").doc(codigo).get();
+        if (docCostos.exists) {
+          datosExistentesCostos = docCostos.data();
+          const desglose = datosExistentesCostos.desglose_proyectado || {};
+          document.getElementById("costoBoletos").value = desglose.boletos || "";
+          document.getElementById("costoHospedaje").value = desglose.hospedaje || "";
+          document.getElementById("costoOperador").value = desglose.operador || "";
+          document.getElementById("costoTours").value = desglose.tours || "";
+          document.getElementById("montoComision").value = desglose.comision || "";
+
+          const tieneReal = datosExistentesCostos.desglose_real && Object.keys(datosExistentesCostos.desglose_real).length > 0;
+          const aviso = document.getElementById("avisoExistente");
+          aviso.style.display = "block";
+          aviso.innerHTML = `📋 Ya existen costos guardados para esta reserva (estado: <strong>${datosExistentesCostos.estado || "Proyectado"}</strong>).`
+            + (tieneReal ? " Esta reserva ya tiene costos <strong>reales</strong> registrados — se van a conservar al guardar." : "");
+        }
+
         calcularGanancia();
       } catch (e) {
         console.error("Error al obtener reserva:", e);
@@ -145,62 +363,69 @@
     }
 
     function calcularGanancia() {
-  const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-  const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
-  const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
-  const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
-  const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-  const comision = parseFloat(document.getElementById("montoComision").value) || 0;
+      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+      const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
+      const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
+      const tours = parseFloat(document.getElementById("costoTours").value) || 0;
+      const comision = parseFloat(document.getElementById("montoComision").value) || 0;
 
-  const totalCostos = boletos + hospedaje + operador + tours + comision;
-  const ganancia = venta - totalCostos;
+      const totalCostos = boletos + hospedaje + operador + tours + comision;
+      const ganancia = venta - totalCostos;
 
-  document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
-}
+      document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
+    }
 
-  async function guardarCostos() {
-  const fechaViaje = document.getElementById("fechaViaje").value;
-  const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-  const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
-  const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
-  const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
-  const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-const comision = parseFloat(document.getElementById("montoComision").value) || 0;
-  const ganancia = parseFloat(document.getElementById("gananciaProyectada").textContent) || 0;
+    async function guardarCostos() {
+      const fechaViaje = document.getElementById("fechaViaje").value;
+      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+      const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
+      const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
+      const tours = parseFloat(document.getElementById("costoTours").value) || 0;
+      const comision = parseFloat(document.getElementById("montoComision").value) || 0;
+      const ganancia = venta - (boletos + hospedaje + operador + tours + comision);
 
-  if (!fechaViaje || !codigo) {
-    alert("Debe ingresar la fecha de viaje y un código válido.");
-    return;
-  }
+      if (!fechaViaje || !codigo) {
+        alert("Debe ingresar la fecha de viaje y un código válido.");
+        return;
+      }
 
-  try {
-    await db.collection("costos_reservas").doc(codigo).set({
-      codigo,
-      fecha_viaje: fechaViaje,
-      venta_total: venta,
-      estado: "Proyectado",
-      creado_el: new Date(),
-      actualizado_el: new Date(),
-      desglose_proyectado: {
-        boletos,
-        hospedaje,
-        operador,
-        tours,
-        comision,
-        ganancia
-      },
-      desglose_real: {}
-    });
-    alert("✅ Costos guardados correctamente.");
-    // 👉 Redirigir al panel de costos
-    window.location.href = "panel_costos.html";
-  } catch (error) {
-    console.error("❌ Error al guardar:", error);
-    alert("Ocurrió un error al guardar los datos.");
-  }
-}
+      try {
+        // FIX: antes se usaba .set({...}) reemplazando TODO el documento,
+        // incluyendo "desglose_real: {}" fijo — eso borraba cualquier costo
+        // real que ya se hubiera registrado (ej. desde panel_costos.html)
+        // cada vez que alguien corregía algo aquí. Ahora se conserva lo que
+        // ya existía (desglose_real, estado, fecha de creación original) y
+        // solo se actualiza el desglose proyectado.
+        await db.collection("costos_reservas").doc(codigo).set({
+          codigo,
+          fecha_viaje: fechaViaje,
+          venta_total: venta,
+          estado: datosExistentesCostos?.estado || "Proyectado",
+          creado_el: datosExistentesCostos?.creado_el || new Date(),
+          actualizado_el: new Date(),
+          desglose_proyectado: {
+            boletos,
+            hospedaje,
+            operador,
+            tours,
+            comision,
+            ganancia
+          },
+          desglose_real: datosExistentesCostos?.desglose_real || {}
+        }, { merge: true });
+
+        alert("✅ Costos guardados correctamente.");
+        window.location.href = "panel_costos.html";
+      } catch (error) {
+        console.error("❌ Error al guardar:", error);
+        alert("Ocurrió un error al guardar los datos.");
+      }
+    }
 
     window.addEventListener("DOMContentLoaded", precargarDatosReserva);
   </script>
 </body>
 </html>
+
