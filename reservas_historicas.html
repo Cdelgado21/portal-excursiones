@@ -202,6 +202,8 @@
     <a class="btn-volver" href="reservas.html">◀ Ver reservas activas</a>
   </div>
 
+  <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()" style="width: 100%; max-width: 500px; padding: 10px 14px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px; font-size: 15px; box-sizing: border-box;">
+
   <p class="contador" id="contador"></p>
 
   <table id="tablaReservas">
@@ -305,6 +307,7 @@
             <td>${formatearFechaVisible(data.fechaReserva)}</td>
             <td class="acciones">
               <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
+              <button class="editar-btn" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
               <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
             </td>
           `;
@@ -313,7 +316,33 @@
 
         document.getElementById("contador").textContent =
           `${contador} reserva${contador === 1 ? '' : 's'} histórica${contador === 1 ? '' : 's'}`;
+        window.textoContadorOriginal = document.getElementById("contador").textContent;
       });
+    }
+
+    // NUEVO: filtra las filas ya cargadas en la tabla según lo que se
+    // escriba en el buscador — mismo mecanismo que en reservas.html.
+    function normalizarTexto(str) {
+      return (str || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function filtrarTablaReservas() {
+      const termino = normalizarTexto(document.getElementById("buscadorReservas").value);
+      const filas = document.querySelectorAll("#tablaReservas tbody tr");
+      let visibles = 0;
+
+      filas.forEach(fila => {
+        const coincide = normalizarTexto(fila.textContent).includes(termino);
+        fila.style.display = coincide ? "" : "none";
+        if (coincide) visibles++;
+      });
+
+      const contadorEl = document.getElementById("contador");
+      if (termino && contadorEl) {
+        contadorEl.textContent = `${visibles} resultado(s) para "${document.getElementById("buscadorReservas").value}"`;
+      } else if (contadorEl) {
+        contadorEl.textContent = window.textoContadorOriginal || "";
+      }
     }
 
     function eliminarReserva(id) {
@@ -373,3 +402,4 @@
   </main>
 </body>
 </html>
+
