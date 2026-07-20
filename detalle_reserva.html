@@ -2693,7 +2693,8 @@ async function generarPaginasComprobante(datos) {
     doc.setFontSize(9.5);
     doc.setTextColor(40, 40, 40);
     textoMultilinea.split("\n").map(l => l.trim()).filter(Boolean).forEach(item => {
-      const lineasItem = doc.splitTextToSize(`•  ${item}`, anchoUtil - 4);
+      const itemLimpio = item.replace(/^[•\-\*]+\s*/, "");
+      const lineasItem = doc.splitTextToSize(`•  ${itemLimpio}`, anchoUtil - 4);
       lineasItem.forEach((l, i) => {
         asegurarEspacio(5);
         doc.text(l, margen + (i > 0 ? 8 : 0), y);
@@ -2734,6 +2735,7 @@ async function generarPaginasComprobante(datos) {
   const diasItinerario = parsearItinerarioPorDias(datos.itinerario);
   if (diasItinerario.length > 0) {
     titulo("Itinerario de Viaje");
+    asegurarEspacio(35);
     doc.autoTable({
       startY: y,
       margin: { left: margen, right: margen },
@@ -2741,8 +2743,7 @@ async function generarPaginasComprobante(datos) {
       body: [diasItinerario.map(d => d.texto)],
       theme: "plain",
       headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold", halign: "center" },
-      styles: { fontSize: 8, cellPadding: 2.5, halign: "center", valign: "top" },
-      didDrawPage: () => dibujarFondoInterior(doc)
+      styles: { fontSize: 8, cellPadding: 2.5, halign: "center", valign: "top" }
     });
     y = doc.lastAutoTable.finalY + 5;
     parrafo("El itinerario de viaje es referencial y puede variar por razones de fuerza mayor, cambios en la programación aérea, condiciones meteorológicas, situaciones logísticas, o cualquier eventualidad que pueda afectar el desarrollo normal de la operación.", 8);
@@ -2768,6 +2769,7 @@ async function generarPaginasComprobante(datos) {
     ],
     ["Otros cargos (si aplica)", "", "", "", "", "-"]
   ];
+  asegurarEspacio(40);
   doc.autoTable({
     startY: y,
     margin: { left: margen, right: margen },
@@ -2777,8 +2779,7 @@ async function generarPaginasComprobante(datos) {
     theme: "plain",
     headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold", fontSize: 8 },
     footStyles: { fillColor: [224, 247, 250], textColor: COLOR_MARCA, fontStyle: "bold" },
-    styles: { fontSize: 8.5, cellPadding: 2.5 },
-    didDrawPage: () => dibujarFondoInterior(doc)
+    styles: { fontSize: 8.5, cellPadding: 2.5 }
   });
   y = doc.lastAutoTable.finalY + 5;
   parrafo("Las tarifas están expresadas en dólares americanos y son aplicables únicamente en las siguientes formas de pago: efectivo, transferencia o depósito bancario.", 8);
@@ -2808,6 +2809,7 @@ async function generarPaginasComprobante(datos) {
       filasPagos.push([i + 1, "-", "-", "-", "-", "-"]);
     }
   }
+  asegurarEspacio(20 + filasAMostrar * 7);
   doc.autoTable({
     startY: y,
     margin: { left: margen, right: margen },
@@ -2815,8 +2817,7 @@ async function generarPaginasComprobante(datos) {
     body: filasPagos,
     theme: "plain",
     headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold", fontSize: 7.5 },
-    styles: { fontSize: 8.5, cellPadding: 2.5 },
-    didDrawPage: () => dibujarFondoInterior(doc)
+    styles: { fontSize: 8.5, cellPadding: 2.5 }
   });
   y = doc.lastAutoTable.finalY + 5;
   parrafo("El saldo restante debe de estar cancelado 15 días antes del viaje. En caso de que el cliente no cumpla con lo estipulado, la agencia hará un recordatorio y de no ponerse al día se realizará la anulación de los servicios contratados en su totalidad, cobrando hasta el 100% de lo abonado por concepto de penalidad, sin que pueda solicitarse de ninguna manera su devolución.", 8);
@@ -2988,4 +2989,3 @@ async function enviarComprobantePorCorreo() {
 
 </body>
 </html>
-
