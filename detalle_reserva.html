@@ -9,6 +9,9 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
   <style>
     /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html,
@@ -192,6 +195,9 @@
   </style>
 </head>
 <body>
+
+<img id="fondoPortadaComprobante" src="fondo_portada_comprobante.png" style="display:none;">
+<img id="fondoInteriorComprobante" src="fondo_interior_comprobante.png" style="display:none;">
 
 <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
 
@@ -634,9 +640,6 @@ const codigoReservaExistente = params.get("codigo");
 // NUEVO: LECTURA AUTOMÁTICA DE PASAPORTE (OCR)
 // ==========================================
 
-// Nombres de nacionalidad para los códigos de país más comunes en la agencia.
-// Si el código no está en esta lista, se deja el código tal cual (ej. "XYZ")
-// para que el usuario lo corrija manualmente.
 const NACIONALIDADES_MRZ = {
   CRI: "Costarricense", USA: "Estadounidense", MEX: "Mexicana", COL: "Colombiana",
   PAN: "Panameña", GTM: "Guatemalteca", HND: "Hondureña", SLV: "Salvadoreña",
@@ -646,7 +649,6 @@ const NACIONALIDADES_MRZ = {
   DEU: "Alemana", ITA: "Italiana"
 };
 
-// Envía la imagen a Google Cloud Vision y devuelve todo el texto detectado.
 async function extraerTextoPasaporte(archivo) {
   const base64 = await new Promise((resolve, reject) => {
     const lector = new FileReader();
@@ -673,7 +675,6 @@ async function extraerTextoPasaporte(archivo) {
   return datos.responses?.[0]?.fullTextAnnotation?.text || "";
 }
 
-// Convierte una fecha del formato MRZ (AAMMDD) a formato de input date (YYYY-MM-DD).
 function convertirFechaMRZ(aammdd, esFechaNacimiento) {
   if (!/^\d{6}$/.test(aammdd)) return "";
   const aa = parseInt(aammdd.substring(0, 2));
@@ -681,19 +682,14 @@ function convertirFechaMRZ(aammdd, esFechaNacimiento) {
   const dd = aammdd.substring(4, 6);
   let año;
   if (esFechaNacimiento) {
-    // Regla estándar de pasaportes: si el año de 2 dígitos es mayor al actual,
-    // asumimos que es de 1900s; si no, de 2000s. (ej. hoy "26": "30" -> 1930, "10" -> 2010)
     const añoActualCorto = new Date().getFullYear() % 100;
     año = aa > añoActualCorto ? 1900 + aa : 2000 + aa;
   } else {
-    // Los vencimientos de pasaporte siempre son fechas futuras/recientes -> 2000s
     año = 2000 + aa;
   }
   return `${año}-${mm}-${dd}`;
 }
 
-// Busca las 2 líneas de la MRZ (zona de lectura mecánica, al pie del pasaporte)
-// dentro del texto detectado, y extrae los datos según el estándar TD3.
 function parsearMRZPasaporte(textoCompleto) {
   const lineas = textoCompleto
     .split("\n")
@@ -705,7 +701,7 @@ function parsearMRZPasaporte(textoCompleto) {
   const linea1 = lineas[lineas.length - 2].padEnd(44, "<").substring(0, 44);
   const linea2 = lineas[lineas.length - 1].padEnd(44, "<").substring(0, 44);
 
-  if (linea1[0] !== "P") return null; // no coincide con un pasaporte tipo TD3
+  if (linea1[0] !== "P") return null;
 
   const partesNombre = linea1.substring(5).split("<<");
   const apellido = (partesNombre[0] || "").replace(/</g, " ").trim();
@@ -725,12 +721,8 @@ function parsearMRZPasaporte(textoCompleto) {
   };
 }
 
-// Función principal: procesa el archivo seleccionado y llena los campos indicados.
-// "campos" es un objeto con referencias a los elementos del formulario a llenar.
-// "contenedorMensaje" es el <div> donde se muestra el estado ("Leyendo...", etc.)
 async function procesarOCRPasaporte(archivo, campos, contenedorMensaje) {
   if (!archivo || !archivo.type.startsWith("image/")) {
-    // El OCR solo aplica a imágenes (no a PDF, que no siempre es una foto legible del MRZ)
     return;
   }
   if (!VISION_API_KEY || VISION_API_KEY === "TU_API_KEY_AQUI") {
@@ -778,10 +770,6 @@ async function procesarOCRPasaporte(archivo, campos, contenedorMensaje) {
 
 // ==========================================
 // NUEVO: LECTURA AUTOMÁTICA DE COMPROBANTE DE VUELO (OCR + patrones)
-// A diferencia del pasaporte (que tiene un formato mundial estandarizado, el MRZ),
-// los comprobantes de vuelo NO tienen un formato único — cada aerolínea arma el
-// suyo distinto. Por eso esto es "mejor esfuerzo": busca patrones típicos
-// (número de vuelo, fechas, nombre de aerolínea, ruta) y siempre debe revisarse.
 // ==========================================
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
@@ -792,8 +780,6 @@ const AEROLINEAS_CONOCIDAS = {
   "COPA": "Copa Airlines",
   "VOLARIS": "Volaris",
   "WINGO": "Wingo",
-  // NUEVO: Wingo opera legalmente como "Aero República S.A." — su nombre no
-  // siempre aparece literal en el comprobante, solo el del operador real.
   "AERO REPUBLICA": "Wingo",
   "AERO REPÚBLICA": "Wingo"
 };
@@ -804,7 +790,6 @@ const MESES_TEXTO = {
   OCT: "10", NOV: "11", DIC: "12", DEC: "12"
 };
 
-// Renderiza UNA página específica de un PDF (ya abierto con pdf.js) como imagen base64.
 async function renderizarPaginaPDFaBase64(pdf, numeroPagina) {
   const pagina = await pdf.getPage(numeroPagina);
   const viewport = pagina.getViewport({ scale: 2 });
@@ -815,7 +800,6 @@ async function renderizarPaginaPDFaBase64(pdf, numeroPagina) {
   return canvas.toDataURL("image/png").split(",")[1];
 }
 
-// Convierte un archivo de imagen normal (no PDF) a base64.
 async function archivoImagenABase64(archivo) {
   return await new Promise((resolve, reject) => {
     const lector = new FileReader();
@@ -841,12 +825,6 @@ async function llamarVisionOCR(base64) {
   return datos.responses?.[0]?.fullTextAnnotation?.text || "";
 }
 
-// FIX: antes solo se leía la primera página del PDF. Comprobantes como la
-// impresión de un correo de Gmail pueden tener el itinerario de ida en una
-// página y el de regreso en otra — por eso el vuelo de regreso nunca se
-// detectaba en esos casos. Ahora se procesan hasta 3 páginas y se junta todo
-// el texto antes de buscar los datos (límite para no hacerlo demasiado lento
-// ni gastar cuota de Google Vision de más en documentos muy largos).
 async function extraerTextoDocumento(archivo) {
   if (archivo.type !== "application/pdf") {
     const base64 = await archivoImagenABase64(archivo);
@@ -874,18 +852,10 @@ function detectarAerolinea(texto) {
   return "";
 }
 
-// NUEVO: busca el código de confirmación/reserva de la aerolínea. Cada
-// aerolínea usa su propia frase para esto (Copa: "Id de Orden", Avianca:
-// "Booking ref", otras: "Localizador", "PNR", "Código de reserva") — se
-// prueban varias en orden hasta encontrar una que calce.
 function extraerCodigoReservaAerolinea(texto) {
   const patrones = [
     /Id\s+de\s+Orden\s*[:\n]?\s*([A-Z0-9]{5,8})/i,
     /Booking\s*ref(?:erence)?\.?\s*[:\n]?\s*([A-Z0-9]{5,8})/i,
-    // FIX: el relleno opcional (nombre de aerolínea antes del código, ej.
-    // "Volaris") ahora solo acepta letras — antes usaba \w+ (letras Y dígitos),
-    // lo que podía "comerse" por error el código de reserva mismo cuando no
-    // había dos puntos claros de por medio (ej. "Código de reserva\n5Z11QI").
     /C[oó]digo\s+de\s+reserva(?:ci[oó]n)?(?:\s+[A-Za-zÁÉÍÓÚáéíóú]+)?\s*[:\n]?\s*([A-Z0-9]{5,8})/i,
     /Localizador\s*[:\n]?\s*([A-Z0-9]{5,8})/i,
     /\bPNR\s*[:\n]?\s*([A-Z0-9]{5,8})/i
@@ -906,22 +876,18 @@ function extraerFechasDelTexto(texto) {
     fechas.push({ fecha: `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`, index: m.index });
   }
 
-  // Formato "Día Mes Año" (ej. "13 Julio 2026")
   const regexDiaMes = /\b(\d{1,2})\s+([A-ZÁÉÍÓÚ]{3,9})\.?\s+(\d{4})\b/gi;
   while ((m = regexDiaMes.exec(texto)) !== null) {
     const mm = MESES_TEXTO[m[2].substring(0, 3).toUpperCase()];
     if (mm) fechas.push({ fecha: `${m[3]}-${mm}-${m[1].padStart(2, "0")}`, index: m.index });
   }
 
-  // NUEVO: formato "Mes Día, Año" (ej. "Agosto 6, 2026" — el que usan los
-  // comprobantes de Copa Airlines). Antes solo se reconocía el orden inverso.
   const regexMesDia = /\b([A-ZÁÉÍÓÚ]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})\b/gi;
   while ((m = regexMesDia.exec(texto)) !== null) {
     const mm = MESES_TEXTO[m[1].substring(0, 3).toUpperCase()];
     if (mm) fechas.push({ fecha: `${m[3]}-${mm}-${m[2].padStart(2, "0")}`, index: m.index });
   }
 
-  // NUEVO: formato compacto sin espacios (ej. "31May2026" — el que usa Avianca)
   const regexCompacta = /\b(\d{1,2})([A-Za-z]{3})(\d{4})\b/g;
   while ((m = regexCompacta.exec(texto)) !== null) {
     const mm = MESES_TEXTO[m[2].toUpperCase()];
@@ -936,9 +902,6 @@ function extraerVuelosDelTexto(texto) {
   const vuelos = [];
   let m;
   while ((m = regexVuelo.exec(texto)) !== null) {
-    // NUEVO: filtra falsos positivos típicos de números de tarjeta enmascarados
-    // (ej. "CAXXXXXXXXXXXX6312" — las últimas "XX" + 4 dígitos calzan con el
-    // mismo patrón que un número de vuelo real).
     const antes = texto.substring(Math.max(0, m.index - 3), m.index);
     if (m[1] === "XX" || /X{2,}$/.test(antes)) continue;
     vuelos.push({ numero: `${m[1]}${m[2]}`, index: m.index });
@@ -946,9 +909,6 @@ function extraerVuelosDelTexto(texto) {
   return vuelos;
 }
 
-// NUEVO: respaldo para aerolíneas como Volaris, que en su comprobante escriben
-// solo el número de vuelo sin letras pegadas (ej. "Vuelo: 4062" en vez de
-// "Y4 4062"). Se busca la etiqueta "Vuelo"/"Flight" seguida de dígitos.
 function extraerVuelosPorEtiqueta(texto) {
   const regex = /(?:Vuelo|Flight|N[uú]mero de Vuelo)\s*[:\-]?\s*(\d{2,4})\b/gi;
   const vuelos = [];
@@ -959,9 +919,6 @@ function extraerVuelosPorEtiqueta(texto) {
   return vuelos;
 }
 
-// Busca códigos de aeropuerto de 3 letras entre paréntesis, como en
-// "SAN JOSE(SJO) - PANAMA CITY(PTY)" — formato común en comprobantes con
-// nombre de ciudad completo. Empareja códigos consecutivos como origen->destino.
 function extraerTramosDesdeParentesis(texto) {
   const codigos = [];
   const regex = /\(([A-Z]{3})\)/g;
@@ -971,18 +928,12 @@ function extraerTramosDesdeParentesis(texto) {
   }
   const tramos = [];
   for (let i = 0; i < codigos.length - 1; i++) {
-    // FIX: cuando el mismo comprobante repite el trayecto varias veces (una
-    // vez arriba como resumen, otra vez abajo con el desglose de precios), al
-    // emparejar códigos consecutivos se puede formar un tramo "basura" entre
-    // el final de una mención y el inicio de la siguiente, con el mismo
-    // código repetido dos veces (ej. "...MDE) ... (MDE)..." = MDE->MDE). Se descarta.
     if (codigos[i].codigo === codigos[i + 1].codigo) continue;
     tramos.push({ origen: codigos[i].codigo, destino: codigos[i + 1].codigo, index: codigos[i + 1].index });
   }
   return tramos;
 }
 
-// Formato alterno: códigos pegados uno al otro, como "SJO → PTY" o "SJO-PTY".
 function extraerTramosDesdeGuiones(texto) {
   const regex = /\b([A-Z]{3})\s*(?:[-→>]{1,2})\s*([A-Z]{3})\b/g;
   const tramos = [];
@@ -993,12 +944,6 @@ function extraerTramosDesdeGuiones(texto) {
   return tramos;
 }
 
-// NUEVO: último respaldo — algunos comprobantes (ej. Volaris) muestran el
-// código de cada aeropuerto SOLO en su propia línea, con el nombre completo
-// de la ciudad y la flecha en líneas aparte (el OCR los separa así aunque en
-// el diseño visual se vean lado a lado). Se buscan líneas que sean
-// EXACTAMENTE 3 letras mayúsculas, y se emparejan si están razonablemente
-// cerca una de otra (menos de 400 caracteres de distancia en el texto).
 function extraerTramosDesdeLineasSueltas(texto) {
   const lineas = texto.split("\n");
   const codigos = [];
@@ -1013,39 +958,27 @@ function extraerTramosDesdeLineasSueltas(texto) {
   const tramos = [];
   for (let i = 0; i < codigos.length - 1; i++) {
     if (codigos[i].codigo === codigos[i + 1].codigo) continue;
-    if (codigos[i + 1].index - codigos[i].index > 400) continue; // demasiado lejos, no es la misma ruta
+    if (codigos[i + 1].index - codigos[i].index > 400) continue;
     tramos.push({ origen: codigos[i].codigo, destino: codigos[i + 1].codigo, index: codigos[i + 1].index });
   }
   return tramos;
 }
 
-// NUEVO: diccionario de nombres de ciudad/aeropuerto -> código IATA de 3
-// letras. Para comprobantes que no traen el código corto en ningún lado (como
-// el de Avianca, que solo escribe "SAN JOSE JUAN SANTAMARIA" completo).
-// ⚠️ Esta lista NO cubre todos los aeropuertos del mundo (son miles) — es una
-// selección amplia de los destinos más comunes de Latinoamérica, el Caribe,
-// EE.UU. y Europa. Si aparece un destino nuevo que no está aquí, avísame
-// para agregarlo. Para ciudades con más de un aeropuerto (ej. Buenos Aires,
-// Río de Janeiro, São Paulo) se usó el aeropuerto internacional principal.
 const CIUDADES_A_CODIGO = {
-  // Costa Rica
   "SAN JOSE": "SJO", "SAN JOSÉ": "SJO",
   "LIBERIA": "LIR",
-  // Centroamérica
   "GUATEMALA CITY": "GUA", "GUATEMALA": "GUA",
   "PANAMA CITY": "PTY", "PANAMA": "PTY", "PANAMÁ": "PTY",
   "MANAGUA": "MGA",
   "SAN SALVADOR": "SAL",
   "TEGUCIGALPA": "TGU",
   "BELIZE CITY": "BZE", "BELICE": "BZE",
-  // México
   "MEXICO CITY": "MEX", "CIUDAD DE MEXICO": "MEX", "CIUDAD DE MÉXICO": "MEX",
   "CANCUN": "CUN", "CANCÚN": "CUN",
   "GUADALAJARA": "GDL",
   "MONTERREY": "MTY",
   "LOS CABOS": "SJD", "CABO SAN LUCAS": "SJD",
   "PUERTO VALLARTA": "PVR",
-  // Caribe
   "SANTO DOMINGO": "SDQ",
   "PUNTA CANA": "PUJ",
   "SAN JUAN": "SJU",
@@ -1055,14 +988,12 @@ const CIUDADES_A_CODIGO = {
   "MONTEGO BAY": "MBJ",
   "KINGSTON": "KIN",
   "NASSAU": "NAS",
-  // Colombia
   "BOGOTA": "BOG", "BOGOTÁ": "BOG",
   "MEDELLIN": "MDE", "MEDELLÍN": "MDE",
   "CARTAGENA": "CTG",
   "CALI": "CLO",
   "BARRANQUILLA": "BAQ",
   "SAN ANDRES": "ADZ", "SAN ANDRÉS": "ADZ",
-  // Resto de Sudamérica
   "QUITO": "UIO",
   "GUAYAQUIL": "GYE",
   "LIMA": "LIM",
@@ -1079,7 +1010,6 @@ const CIUDADES_A_CODIGO = {
   "RIO DE JANEIRO": "GIG", "RÍO DE JANEIRO": "GIG",
   "SAO PAULO": "GRU", "SÃO PAULO": "GRU",
   "SANTIAGO": "SCL", "SANTIAGO DE CHILE": "SCL",
-  // Estados Unidos y Canadá
   "MIAMI": "MIA",
   "NUEVA YORK": "JFK", "NEW YORK": "JFK",
   "LOS ANGELES": "LAX",
@@ -1089,7 +1019,6 @@ const CIUDADES_A_CODIGO = {
   "ATLANTA": "ATL",
   "CHICAGO": "ORD",
   "TORONTO": "YYZ",
-  // Europa
   "MADRID": "MAD",
   "BARCELONA": "BCN",
   "PARIS": "CDG", "PARÍS": "CDG",
@@ -1098,12 +1027,10 @@ const CIUDADES_A_CODIGO = {
   "FRANKFURT": "FRA",
   "ROMA": "FCO",
   "LISBOA": "LIS"
-
 };
 
 function extraerTramosDesdeCiudades(texto) {
   const textoUpper = texto.toUpperCase();
-  // Nombres largos primero, para que "GUATEMALA CITY" no quede opacado por "GUATEMALA".
   const nombres = Object.keys(CIUDADES_A_CODIGO).sort((a, b) => b.length - a.length);
 
   const encontrados = [];
@@ -1117,8 +1044,6 @@ function extraerTramosDesdeCiudades(texto) {
   });
   encontrados.sort((a, b) => a.index - b.index);
 
-  // Fusiona menciones muy cercanas del mismo código (ej. el nombre de la
-  // ciudad aparece dos veces seguidas, una vez completo y otra abreviado).
   const codigosUnicos = [];
   encontrados.forEach(e => {
     const anterior = codigosUnicos[codigosUnicos.length - 1];
@@ -1136,29 +1061,16 @@ function extraerTramosDesdeCiudades(texto) {
 
 function extraerTramosDelTexto(texto) {
   const porParentesis = extraerTramosDesdeParentesis(texto);
-  if (porParentesis.length >= 2) return porParentesis; // formato con ciudad completa detectado
-  // FIX: se cambió el orden — antes probaba "guiones" antes que "líneas sueltas".
-  // Eso causaba que menciones repetidas en secciones ajenas al itinerario (ej.
-  // "SJO - GUA: No Asignado" en la lista de asientos por pasajero) se detectaran
-  // como si fueran el encabezado real del vuelo, a veces en el orden equivocado
-  // (ida/regreso invertidos). Las "líneas sueltas" (el código grande y solo en
-  // su propia línea) corresponden al encabezado real del itinerario, así que
-  // se prueban primero.
+  if (porParentesis.length >= 2) return porParentesis;
   const porLineasSueltas = extraerTramosDesdeLineasSueltas(texto);
   if (porLineasSueltas.length >= 1) return porLineasSueltas;
-  // NUEVO: respaldo por nombre de ciudad conocido (ej. comprobantes de Avianca).
   const porCiudades = extraerTramosDesdeCiudades(texto);
   if (porCiudades.length >= 1) return porCiudades;
   return extraerTramosDesdeGuiones(texto);
 }
 
-// Junta todo lo detectado en "segmentos" de vuelo (uno por cada número de vuelo
-// encontrado), asociando la fecha y el tramo (origen/destino) más cercanos en el texto.
 function detectarSegmentosDeVuelo(texto) {
   const fechas = extraerFechasDelTexto(texto);
-  // Prioridad: número de vuelo CON letras de aerolínea pegadas (más confiable,
-  // ej. "CM343"). Si no se encuentra ninguno, se usa el respaldo por etiqueta
-  // "Vuelo:"/"Flight:" (formato de Volaris, sin letras pegadas al número).
   const vuelosConLetras = extraerVuelosDelTexto(texto);
   const vuelos = vuelosConLetras.length > 0 ? vuelosConLetras : extraerVuelosPorEtiqueta(texto);
   const tramos = extraerTramosDelTexto(texto);
@@ -1170,11 +1082,6 @@ function detectarSegmentosDeVuelo(texto) {
     );
   }
 
-  // NUEVO: si NO se encontró ningún número de vuelo (ni por letras ni por
-  // etiqueta) — comprobantes como el de Wingo que no lo incluyen en absoluto —
-  // se arma un segmento por cada ruta encontrada, dejando el número de vuelo
-  // en blanco. Así al menos la aerolínea, el código de reserva y las fechas/
-  // rutas sí se completan, en vez de detenerse por completo.
   if (vuelos.length === 0 && tramos.length > 0) {
     const vistosSinNumero = new Set();
     const segmentosSinNumero = [];
@@ -1212,16 +1119,9 @@ function detectarSegmentosDeVuelo(texto) {
     }
   });
 
-  // Sort estable: si no hay fecha, se conserva el orden en que aparecen en el
-  // documento (que normalmente ya sigue el orden cronológico ida -> regreso).
   return segmentos.sort((a, b) => (a.fecha || "9999").localeCompare(b.fecha || "9999"));
 }
 
-// Agrupa los segmentos en "trayectos" (ida / regreso), usando en orden de
-// confianza: 1) comparación de origen/destino (la más confiable, no depende
-// de que el OCR haya leído bien la fecha), 2) cercanía de fechas, 3) si no hay
-// ninguna señal, se asume que es un trayecto NUEVO (más seguro que fundirlo
-// como escala y que el regreso "desaparezca" sin que nadie lo note).
 function agruparSegmentosEnTrayectos(segmentos) {
   const grupos = [];
   segmentos.forEach(seg => {
@@ -1243,8 +1143,6 @@ function agruparSegmentosEnTrayectos(segmentos) {
         ultimoGrupo.push(seg);
         return;
       }
-      // Si el tramo no encaja con ninguno de los dos patrones esperados, se
-      // sigue evaluando por fecha en vez de adivinar.
     }
 
     if (seg.fecha && anterior.fecha) {
@@ -1257,7 +1155,7 @@ function agruparSegmentosEnTrayectos(segmentos) {
       return;
     }
 
-    grupos.push([seg]); // sin ruta ni fecha confiable -> trayecto nuevo, más seguro
+    grupos.push([seg]);
   });
   return grupos;
 }
@@ -1268,8 +1166,6 @@ function interpretarItinerarioVuelos(texto) {
   const trayectos = agruparSegmentosEnTrayectos(segmentos);
 
   const trayectoIda = trayectos[0] || null;
-  // Si hay más de 2 trayectos (ej. multi-destino), se ignoran los intermedios
-  // y se toma el último como regreso — es un caso raro que igual requiere revisión manual.
   const trayectoRegreso = trayectos.length > 1 ? trayectos[trayectos.length - 1] : null;
 
   return {
@@ -1282,8 +1178,6 @@ function interpretarItinerarioVuelos(texto) {
   };
 }
 
-// Agrega una escala usando el campo "Vuelo Intermedio" que ya existe en el
-// formulario (compartido para escalas de ida y de regreso).
 function agregarEscalaDetectada(segmento, etiqueta, codigoReservaAerolinea) {
   agregarVueloIntermedio();
   const tarjetas = document.querySelectorAll("#vuelosIntermediosContainer > div");
@@ -1301,9 +1195,6 @@ function agregarEscalaDetectada(segmento, etiqueta, codigoReservaAerolinea) {
   if (campoCodigo && codigoReservaAerolinea) campoCodigo.value = codigoReservaAerolinea;
 }
 
-// Dibuja la lista acumulada de comprobantes de vuelo guardados en la reserva
-// (el "expediente" — cada uno con su nombre, fecha de subida, link para verlo
-// y un botón para eliminarlo).
 window.tiquetesVueloActuales = [];
 function mostrarListaTiquetesVuelo(lista) {
   window.tiquetesVueloActuales = Array.isArray(lista) ? lista : [];
@@ -1323,9 +1214,6 @@ function mostrarListaTiquetesVuelo(lista) {
   contenedor.innerHTML = `<strong>Comprobantes guardados:</strong><ul style="margin:6px 0 0 20px; padding:0;">${filas}</ul>`;
 }
 
-// NUEVO: elimina un comprobante — borra el archivo real de Storage y quita la
-// referencia guardada en la reserva. Requiere que la reserva ya tenga código
-// (es decir, que ya se haya guardado al menos una vez).
 async function eliminarTiqueteVuelo(indice) {
   const codigo = window.codigoActualReserva || codigoReservaExistente;
   if (!codigo) {
@@ -1355,10 +1243,6 @@ async function eliminarTiqueteVuelo(indice) {
   }
 }
 
-// NUEVO: detecta menciones de equipaje en el comprobante (objeto personal,
-// maleta de mano, maleta documentada) y arma líneas para el resumen. Como
-// estos datos se repiten idénticos por cada pasajero en el comprobante, se
-// toma cada combinación una sola vez (no se suma por pasajero).
 function extraerEquipajeDelTexto(texto) {
   const resultados = [];
   const vistos = new Set();
@@ -1394,11 +1278,6 @@ function extraerEquipajeDelTexto(texto) {
   return resultados;
 }
 
-// NUEVO: respaldo cuando el comprobante NO detalla el equipaje explícitamente,
-// pero sí menciona una tarifa/clase conocida cuya política de equipaje ya
-// sabemos (dato que confirmó Cristopher, no viene escrito en el comprobante).
-// ⚠️ Esto es una REGLA DE NEGOCIO, no un dato leído directamente — si Avianca
-// o Copa cambian su política de equipaje, hay que actualizar esto a mano.
 const POLITICAS_EQUIPAJE_AVIANCA = {
   BASIC: "1 artículo personal por persona (sin equipaje de mano ni de bodega incluido)",
   LIGHT: "1 maleta de mano + 1 artículo personal por persona",
@@ -1454,10 +1333,6 @@ async function procesarOCRTiquete(archivo) {
 
     let piezas = [`✅ Vuelo de ida detectado${resultado.ida.numero ? ` (${resultado.ida.numero})` : ' (sin número de vuelo en el comprobante)'}`];
 
-    // NUEVO: si no se encontró ruta, se avisa explícitamente — así el campo
-    // "Información del Vuelo" no se queda con datos viejos de otra prueba sin
-    // que nadie se dé cuenta (este comprobante no tenía códigos de aeropuerto
-    // de 3 letras en ningún lado para poder armar la ruta).
     if (!resultado.ida.ruta) {
       piezas.push(`(sin ruta detectada — revisa que "Información del Vuelo de Ida" no tenga datos de una prueba anterior)`);
     }
@@ -1494,9 +1369,6 @@ async function procesarOCRTiquete(archivo) {
       piezas.push(`⚠️ Se detectaron ${resultado.trayectosDetectados} trayectos distintos — parece un itinerario multi-destino, revisa con más cuidado de lo usual`);
     }
 
-    // NUEVO: detecta y agrega el equipaje mencionado en el comprobante al
-    // resumen (sin borrar lo que ya hubiera escrito antes). Si no se encontró
-    // nada explícito, se intenta inferir por la política de tarifa conocida.
     let lineasEquipaje = extraerEquipajeDelTexto(texto);
     let equipajeEsInferido = false;
     if (lineasEquipaje.length === 0) {
@@ -1525,13 +1397,6 @@ async function procesarOCRTiquete(archivo) {
   }
 }
 
-
-// ==========================================
-// NUEVO: MENÚ LATERAL DE NAVEGACIÓN (igual que dashboard.html)
-// ==========================================
-// NUEVO: colapsa o expande una sección completa al hacer clic en su
-// encabezado — oculta/muestra todos los elementos hermanos dentro del mismo
-// <section>, sin necesidad de reestructurar el HTML de cada bloque.
 function toggleSeccion(encabezado) {
   const seccion = encabezado.closest('section');
   const hijos = Array.from(seccion.children).filter(el => el !== encabezado);
@@ -1555,10 +1420,6 @@ function inicializarMenuLateral() {
     document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
     document.getElementById("rolUsuario").innerText = usuario.rol || "";
   } else {
-    // NOTA: a diferencia de dashboard.html, aquí NO se redirige a la fuerza a
-    // login.html si no hay sesión — este archivo se sigue usando durante las
-    // pruebas del sistema. Cuando se migre a un login real (Firebase
-    // Authentication), esto debería volver a exigir sesión obligatoria.
     document.getElementById("nombreUsuario").innerText = "Invitado";
   }
 
@@ -1605,9 +1466,6 @@ async function generarCodigoReserva() {
 
 async function guardarReserva() {
   try {
-    // ==========================================
-    // PASO 1: Capturar todos los valores del formulario (sin efectos secundarios)
-    // ==========================================
     const nombreTitular = document.getElementById("nombreTitular").value || "";
     const cedula = document.getElementById("cedulaTitular").value || "";
     const correo = document.getElementById("correoTitular").value || "";
@@ -1648,30 +1506,16 @@ async function guardarReserva() {
       descripcion: document.getElementById("infoVueloRegreso")?.value || ""
     };
 
-    // ==========================================
-    // PASO 2: TODAS las validaciones ANTES de generar código o crear registros.
-    // FIX: antes, estas validaciones corrían DESPUÉS de gastar un código de
-    // reserva y crear un documento en costos_reservas. Si la validación fallaba,
-    // el código quedaba "quemado" y el registro en costos_reservas huérfano —
-    // esto explica los huecos ED-006, ED-008, ED-009 en la numeración.
-    // ==========================================
     if (!nombreTitular.trim()) {
       alert("⚠️ El nombre del titular es obligatorio.");
       return;
     }
 
-    // NUEVO: obligatorio para que la cantidad de personas se calcule bien en
-    // la tabla de reservas (ver el bug que corregimos: sin esto, salía "-").
     if (cantidadAdultos < 1) {
       alert("⚠️ Debes indicar al menos 1 adulto en \"Cantidad de Adultos\" (aunque el titular viaje solo).");
       return;
     }
 
-    // NUEVO: si es una reserva NUEVA (no existe código todavía) y la fecha del
-    // vuelo de ida ya pasó, se bloquea el guardado — no tiene sentido crear una
-    // reserva nueva para un viaje que ya ocurrió. Si es una reserva EXISTENTE
-    // que se está corrigiendo (ej. actualizar un pago de un viaje ya realizado),
-    // no se bloquea, para no estorbar correcciones legítimas.
     const fechaIdaIngresada = document.getElementById("fechaIda").value;
     if (!codigoReservaExistente && fechaIdaIngresada) {
       const hoySinHora = new Date();
@@ -1687,9 +1531,6 @@ async function guardarReserva() {
       return;
     }
 
-    // FIX: el pasaporte YA NO es obligatorio (ej. reservas hechas solo con cédula
-    // mientras el cliente tramita su pasaporte). Si se deja en blanco, se pide
-    // confirmación en vez de bloquear el guardado.
     if (vencimientoPasaporteTitular && new Date(vencimientoPasaporteTitular) < new Date()) {
       alert("⚠️ El pasaporte ya venció. Por favor verifica el dato antes de guardar.");
       return;
@@ -1713,11 +1554,8 @@ async function guardarReserva() {
       }
     }
 
-    // NUEVO: la cantidad total del desglose (Adultos + Niños + Bebés) debe
-    // coincidir exactamente con "titular + tarjetas de pasajero agregadas" —
-    // así el conteo de personas siempre es consistente en toda la reserva.
     const totalDesglose = cantidadAdultos + cantidadNinos + cantidadBebes;
-    const totalPasajerosReal = 1 + tarjetasPasajero.length; // 1 = el titular
+    const totalPasajerosReal = 1 + tarjetasPasajero.length;
     if (totalDesglose !== totalPasajerosReal) {
       alert(
         `⚠️ La cantidad de personas no coincide.\n\n` +
@@ -1728,9 +1566,6 @@ async function guardarReserva() {
       return;
     }
 
-    // ==========================================
-    // PASO 3: Validado todo — ahora sí se genera/obtiene el código
-    // ==========================================
     let codigo = codigoReservaExistente;
     let numero = null;
     let año = new Date().getFullYear();
@@ -1750,17 +1585,8 @@ async function guardarReserva() {
 
     let datosExistentes = await db.collection("reservas").doc(codigo).get();
     datosExistentes = datosExistentes.exists ? datosExistentes.data() : {};
-    // FIX: antes, si no había fechaReserva guardada, se rellenaba sola con la
-    // fecha de HOY (el día en que se guardaba, no una fecha real del viaje) —
-    // por eso aparecían reservas con "fecha de viaje" = el día que alguien
-    // hizo una prueba, sin relación con ningún vuelo real. Ahora se sincroniza
-    // con la fecha real del Vuelo de Ida que se llenó en el formulario.
     let fechaReserva = fechaIdaIngresada || datosExistentes?.fechaReserva || "";
 
-    // NUEVO: subir pasaporte del titular a Firebase Storage si se seleccionó
-    // un archivo nuevo. Si no se seleccionó ninguno, se conserva el que ya
-    // existía (para no borrar un pasaporte ya subido al simplemente editar
-    // otro campo de la reserva).
     let pasaporteTitularURL = datosExistentes?.pasaporteTitularURL || "";
     const archivoPasaporteTitular = document.getElementById("pasaporteTitularFile")?.files[0];
     if (archivoPasaporteTitular) {
@@ -1770,9 +1596,6 @@ async function guardarReserva() {
     }
     const pasajerosExistentes = datosExistentes?.pasajeros || [];
 
-    // NUEVO: si se seleccionó un comprobante de vuelo, se sube a Storage y se
-    // AGREGA al expediente acumulado (no reemplaza los anteriores — cada
-    // comprobante subido en el tiempo queda guardado con su fecha).
     let tiquetesVuelo = datosExistentes?.tiquetesVuelo || [];
     const archivoTiqueteVuelo = document.getElementById("tiqueteVueloFile")?.files[0];
     if (archivoTiqueteVuelo) {
@@ -1795,9 +1618,6 @@ async function guardarReserva() {
       actualizado_el: new Date()
     });
 
-    // ==========================================
-    // PASO 4: Construir objeto final y guardar la reserva
-    // ==========================================
     const datos = {
       codigo, numero, año,
       nombreTitular, cedula, correo, telefono,
@@ -1805,8 +1625,6 @@ async function guardarReserva() {
       nacionalidadTitular, generoTitular, pasaporteTitularURL,
       tiquetesVuelo,
       vueloIda, vueloRegreso,
-      // NUEVO: códigos de aerolínea adicionales, para pasajeros de esta misma
-      // reserva que quedaron con un PNR distinto al del resto del grupo.
       codigosAerolineaAdicionales: Array.from(document.querySelectorAll(".fila-codigo-adicional")).map(fila => {
         const selectPara = fila.querySelector(".notaCodigoAdicional");
         const nota = selectPara?.value === "__otro__"
@@ -1838,9 +1656,6 @@ async function guardarReserva() {
       })
     };
 
-    // NUEVO: sube el pasaporte de cada pasajero acompañante si se seleccionó un
-    // archivo nuevo en su tarjeta; si no, conserva el que ya tenía guardado.
-    // Se usa un ciclo for (no forEach) porque necesitamos "await" para cada subida.
     const tarjetasPasajeroParaGuardar = document.querySelectorAll(".tarjeta-pasajero");
     for (let i = 0; i < tarjetasPasajeroParaGuardar.length; i++) {
       const p = tarjetasPasajeroParaGuardar[i];
@@ -1865,9 +1680,6 @@ async function guardarReserva() {
       });
     }
 
-    // FIX: antes buscaba #aerolineaIda / #fechaIda / #vueloIda (IDs duplicados con
-    // los del "Vuelo de Ida" principal). Ahora usa clases propias para cada vuelo
-    // intermedio (ver agregarVueloIntermedio más abajo).
     document.querySelectorAll("#vuelosIntermediosContainer > div").forEach(vuelo => {
       datos.vuelosIntermedios.push({
         aerolinea: vuelo.querySelector(".aerolineaIntermedio")?.value || "",
@@ -1881,9 +1693,6 @@ async function guardarReserva() {
     await db.collection("reservas").doc(codigo).set(datos);
     alert("✅ Reserva guardada correctamente como " + codigo);
 
-    // Refresca la lista visible del expediente y limpia el campo de archivo,
-    // para que si guardas de nuevo sin subir otro comprobante, no se duplique
-    // el mismo archivo en el expediente.
     mostrarListaTiquetesVuelo(tiquetesVuelo);
     document.getElementById("tiqueteVueloFile").value = "";
     document.getElementById("tiqueteVueloMensaje").innerHTML = "";
@@ -1919,9 +1728,6 @@ function calcularTotalGeneral() {
   }
 }
 
-// FIX: apuntaba a la colección "cotizaciones", que no existe en Firestore.
-// Las colecciones reales son "cotizacionformal" y "solicitud_cotizaciones".
-// Se usa "cotizacionformal" porque tiene los mismos campos que se muestran aquí.
 function cargarDesdeCotizacion() {
   const codigo = document.getElementById('codigoCotizacion').value.trim();
   const contenedor = document.getElementById("infoCotizacion");
@@ -1946,16 +1752,9 @@ function cargarDesdeCotizacion() {
   });
 }
 
-// FIX: usaba los mismos IDs que el "Vuelo de Ida" principal (id="aerolineaIda", etc.),
-// lo cual es HTML inválido (IDs duplicados). Ahora usa clases exclusivas para cada
-// vuelo intermedio, y el <div> de apertura ahora sí cierra con </div> (antes cerraba
-// con un </section> que no correspondía).
 let vueloCounter = 1;
-// NUEVO: agrega una fila para un código de aerolínea adicional (cuando un
-// pasajero de la reserva queda con un PNR distinto al del resto del grupo).
 let contadorCodigoAdicional = 0;
 
-// Junta el nombre del titular + el de cada tarjeta de pasajero agregada hasta el momento.
 function obtenerNombresPasajerosActuales() {
   const nombres = [];
   const nombreTitular = document.getElementById("nombreTitular")?.value?.trim();
@@ -1967,8 +1766,6 @@ function obtenerNombresPasajerosActuales() {
   return nombres;
 }
 
-// Vuelve a armar las opciones de TODOS los desplegables "Para" que ya existan,
-// sin perder lo que ya estuviera seleccionado en cada uno.
 function refrescarOpcionesCodigosAdicionales() {
   const nombres = obtenerNombresPasajerosActuales();
   document.querySelectorAll(".notaCodigoAdicional").forEach(select => {
@@ -2125,14 +1922,10 @@ function agregarPasajero() {
 
   container.appendChild(pasajeroDiv);
 
-  // NUEVO: mantiene actualizados los desplegables "Para" de los códigos de
-  // aerolínea adicionales cada vez que se agrega un pasajero o se escribe/edita su nombre.
   refrescarOpcionesCodigosAdicionales();
   const inputNombrePasajero = pasajeroDiv.querySelector(".nombrePasajero");
   inputNombrePasajero.addEventListener("input", refrescarOpcionesCodigosAdicionales);
 
-  // NUEVO: cuando se selecciona la foto del pasaporte de este pasajero, se
-  // intenta leer automáticamente con OCR y llenar sus campos.
   const inputPasaportePasajero = pasajeroDiv.querySelector(".pasaportePasajeroFile");
   inputPasaportePasajero.addEventListener("change", function () {
     const archivo = this.files[0];
@@ -2222,9 +2015,6 @@ function agregarEquipaje() {
   document.getElementById("uso_equipaje").value = "";
 }
 
-// NUEVO: guarda el catálogo completo de tours en memoria (una sola consulta a
-// Firebase), para poder filtrar por Tipo de Salida / Nivel sin volver a
-// consultar cada vez que el agente cambia el filtro.
 async function cargarDestinos() {
   try {
     const ref = db.collection("tours");
@@ -2236,8 +2026,6 @@ async function cargarDestinos() {
       window.catalogoTours.push({
         id: doc.id,
         nombre: data.nombre || doc.id,
-        // Los tours creados antes de este cambio no tienen "tipoSalida" — se
-        // tratan como "Grupal" (así funcionaban antes de que existiera esta distinción).
         tipoSalida: data.tipoSalida || "Grupal",
         nivel: data.nivel || ""
       });
@@ -2249,8 +2037,6 @@ async function cargarDestinos() {
   }
 }
 
-// NUEVO: vuelve a llenar el <select> de Destino según el Tipo de Salida y
-// Nivel elegidos, usando el catálogo ya cargado en memoria.
 function filtrarYPoblarDestinos() {
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
   const nivel = document.getElementById("nivelReserva").value;
@@ -2271,14 +2057,11 @@ function filtrarYPoblarDestinos() {
     select.appendChild(opt);
   });
 
-  // Si el destino que ya estaba elegido sigue disponible con el nuevo filtro, se conserva.
   if (filtrados.some(t => t.id === valorAnterior)) {
     select.value = valorAnterior;
   }
 }
 
-// NUEVO: muestra/oculta el selector de Nivel según el Tipo de Salida, y
-// refresca la lista de destinos.
 function alCambiarTipoSalida() {
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
   document.getElementById("contenedorNivelReserva").style.display = tipoSalida === "Individual" ? "block" : "none";
@@ -2410,19 +2193,10 @@ function actualizarTotales() {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // NUEVO: inicializa el menú lateral de navegación (mismo comportamiento que
-  // ya tenía dashboard.html — usuario logueado, mostrar/ocultar según tamaño
-  // de pantalla).
   inicializarMenuLateral();
 
-  // NUEVO: mantiene actualizado el desplegable "Para" de los códigos de
-  // aerolínea adicionales si se edita el nombre del titular.
   document.getElementById("nombreTitular").addEventListener("input", refrescarOpcionesCodigosAdicionales);
 
-  // NUEVO: inicia sesión anónima con Firebase para que Storage permita subir
-  // los pasaportes (las reglas de seguridad exigen un usuario autenticado).
-  // Esto es una solución intermedia — cuando se migre el login del sistema a
-  // Firebase Authentication real, esto se puede reemplazar.
   try {
     await firebase.auth().signInAnonymously();
   } catch (e) {
@@ -2436,8 +2210,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.cerrarModalHotel = cerrarModalHotel;
   window.guardarHotelModal = guardarHotelModal;
 
-  // NUEVO: cuando se selecciona la foto del pasaporte del titular, se intenta
-  // leer automáticamente con OCR y llenar los campos correspondientes.
   document.getElementById("pasaporteTitularFile").addEventListener("change", function () {
     const archivo = this.files[0];
     if (!archivo) return;
@@ -2451,8 +2223,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, document.getElementById("pasaporteTitularActual"));
   });
 
-  // NUEVO: cuando se selecciona el comprobante de vuelo, se intenta leer y
-  // autocompletar el itinerario de vuelos automáticamente.
   document.getElementById("tiqueteVueloFile").addEventListener("change", function () {
     const archivo = this.files[0];
     if (!archivo) return;
@@ -2492,10 +2262,6 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("telefonoTitular").value = data.telefono || "";
     document.getElementById("equipaje").value = data.equipaje || "";
 
-    // NUEVO: detecta el Tipo de Salida / Nivel del tour ya guardado en esta
-    // reserva, y ajusta esos selectores ANTES de fijar el destino — si no,
-    // el filtro podría esconder la opción porque no coincide con el filtro
-    // por defecto (Grupal).
     const tourGuardado = (window.catalogoTours || []).find(t => t.id === data.destino);
     if (tourGuardado) {
       document.getElementById("tipoSalidaReserva").value = tourGuardado.tipoSalida;
@@ -2539,7 +2305,6 @@ async function cargarReservaExistente(codigo) {
 
     mostrarListaTiquetesVuelo(data.tiquetesVuelo || []);
 
-    // NUEVO: recrear las filas de códigos de aerolínea adicionales guardados
     if (Array.isArray(data.codigosAerolineaAdicionales)) {
       document.getElementById("codigosAerolineaAdicionalesContainer").innerHTML = "";
       data.codigosAerolineaAdicionales.forEach(c => {
@@ -2566,8 +2331,6 @@ async function cargarReservaExistente(codigo) {
       });
     }
 
-    // FIX: antes se volvía a pedir el mismo documento a Firebase con otro nombre
-    // de variable (docRef / reservaData). Reutilizamos "data", que ya lo tenemos.
     const pagos = data.pagos || [];
 
     window.listaPagos = [];
@@ -2692,7 +2455,6 @@ async function cargarReservaExistente(codigo) {
       }
     }
 
-    // FIX: usa las clases nuevas en vez de los IDs duplicados.
     if (Array.isArray(data.vuelosIntermedios)) {
       data.vuelosIntermedios.forEach(v => {
         agregarVueloIntermedio();
@@ -2765,4 +2527,3 @@ function cargarHistorialPagos() {
 
 </body>
 </html>
-
