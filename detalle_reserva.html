@@ -14,9 +14,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 
   <style>
-    /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html,
-       para que se vea consistente en todo el sistema y se pueda pasar de
-       un módulo a otro sin tener que volver siempre al panel principal). */
     .toggle-btn {
       position: fixed;
       top: 20px;
@@ -290,7 +287,6 @@
     </div>
   </div>
 
-  <!-- NUEVO: adjuntar foto/escaneo del pasaporte del titular -->
   <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px;">
     <div style="flex: 1; min-width: 250px;">
       <label for="pasaporteTitularFile">Foto/Escaneo del Pasaporte (opcional)</label>
@@ -302,9 +298,6 @@
 
 <section>
   <h3 onclick="toggleSeccion(this)" style="cursor:pointer; user-select:none;">Pasajeros <span class="flecha-colapsable" style="float:right;">▼</span></h3>
-  <!-- FIX: antes había un <div id="pasajerosContainer"> duplicado (uno aquí y otro
-       después del botón). Como agregarPasajero() usa getElementById, siempre agregaba
-       en este primero, y el segundo quedaba como código muerto. Se eliminó el duplicado. -->
   <div id="pasajerosContainer"></div>
   <button onclick="agregarPasajero()">Agregar Pasajero</button>
 </section>
@@ -312,7 +305,6 @@
 <section>
   <h2 onclick="toggleSeccion(this)" style="cursor:pointer; user-select:none;">Itinerario de Vuelos <span class="flecha-colapsable" style="float:right;">▼</span></h2>
 
-  <!-- NUEVO: adjuntar comprobante de vuelo (PDF o imagen) para autocompletar -->
   <div style="margin-bottom: 20px; padding: 12px; background: #f0f7f7; border-radius: 8px;">
     <label for="tiqueteVueloFile">Adjuntar comprobante de vuelo (PDF o imagen) para autocompletar</label>
     <input type="file" id="tiqueteVueloFile" accept="image/*,application/pdf">
@@ -349,10 +341,6 @@
     </div>
   </div>
 
-  <!-- NUEVO: códigos de aerolínea adicionales, para cuando un pasajero se
-       suma a la reserva con un PNR distinto al del resto del grupo. Aplica
-       para toda la reserva (ida y regreso), ya que el código no cambia entre
-       tramos para una misma persona. -->
   <div id="codigosAerolineaAdicionalesContainer" style="margin-top: 8px;"></div>
 
   <label for="infoVueloIda">Información del Vuelo de Ida</label>
@@ -585,6 +573,9 @@
 
     <div style="text-align: right; margin-top: 20px;">
       <a id="btnFacturar" href="#" target="_blank" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none; display: inline-block;">📄 Ver Factura</a>
+      <a id="btnDescargarComprobante" href="#" onclick="descargarComprobante(); return false;" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none; margin-left: 10px;">📄 Descargar Comprobante</a>
+      <a id="btnEnviarComprobante" href="#" onclick="enviarComprobantePorCorreo(); return false;" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none; margin-left: 10px;">✉️ Enviar Comprobante</a>
+      <div id="comprobanteMensaje" style="margin-top:8px; font-size: 0.85rem;"></div>
     </div>
   </section>
 </section>
@@ -592,9 +583,6 @@
 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; margin-top: 20px;">
   <div style="flex: 1; min-width: 250px;">
     <label>Embajadora Responsable</label>
-    <!-- NOTA: esta lista sigue "quemada" en el HTML (Fase 4 - Finanzas/Comisiones
-         se encargará de conectarla a la colección usuarios donde rol == "Embajador"
-         para que se actualice sola). Por ahora se deja igual para no romper nada. -->
     <select id="embajadora" class="campoInput">
       <option value="">Seleccione</option>
       <option value="Yare">Yare</option>
@@ -627,18 +615,10 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-// NUEVO: clave de Google Cloud Vision para leer datos del pasaporte automáticamente.
-// IMPORTANTE: reemplaza "TU_API_KEY_AQUI" por la clave real que vas a generar en
-// Google Cloud Console. Debe estar restringida por referrer HTTP a tu dominio
-// (ver instrucciones que te di aparte) para que nadie más pueda usarla.
 const VISION_API_KEY = "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8";
 
 const params = new URLSearchParams(window.location.search);
 const codigoReservaExistente = params.get("codigo");
-
-// ==========================================
-// NUEVO: LECTURA AUTOMÁTICA DE PASAPORTE (OCR)
-// ==========================================
 
 const NACIONALIDADES_MRZ = {
   CRI: "Costarricense", USA: "Estadounidense", MEX: "Mexicana", COL: "Colombiana",
@@ -767,10 +747,6 @@ async function procesarOCRPasaporte(archivo, campos, contenedorMensaje) {
     }
   }
 }
-
-// ==========================================
-// NUEVO: LECTURA AUTOMÁTICA DE COMPROBANTE DE VUELO (OCR + patrones)
-// ==========================================
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
@@ -1701,6 +1677,8 @@ async function guardarReserva() {
     document.getElementById("btnCostos").style.display = "inline-block";
     document.getElementById("btnFacturar").href = `facturacion.html?reserva=${codigo}`;
     document.getElementById("btnFacturar").style.display = "inline-block";
+    document.getElementById("btnDescargarComprobante").style.display = "inline-block";
+    document.getElementById("btnEnviarComprobante").style.display = "inline-block";
   } catch (e) {
     console.error("Error al guardar reserva:", e);
     alert("❌ Ocurrió un error al guardar la reserva.");
@@ -1910,7 +1888,6 @@ function agregarPasajero() {
       </div>
     </div>
 
-    <!-- NUEVO: adjuntar foto/escaneo del pasaporte de este pasajero -->
     <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px;">
       <div style="flex: 1; min-width: 250px;">
         <label>Foto/Escaneo del Pasaporte (opcional)</label>
@@ -2243,6 +2220,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("btnCostos").style.display = "inline-block";
     document.getElementById("btnFacturar").href = `facturacion.html?reserva=${codigo}`;
     document.getElementById("btnFacturar").style.display = "inline-block";
+    document.getElementById("btnDescargarComprobante").style.display = "inline-block";
+    document.getElementById("btnEnviarComprobante").style.display = "inline-block";
   }
 });
 
@@ -2520,6 +2499,377 @@ function cargarHistorialPagos() {
 
   const btn = document.getElementById("btnFacturar");
   if (btn) btn.style.display = "inline-block";
+}
+
+// ==========================================
+// NUEVO: COMPROBANTE DE RESERVA (PDF + envío por correo)
+// ==========================================
+
+const WORKER_COMPROBANTE_URL = "https://proxy-comprobante.cris-delgado21.workers.dev";
+
+const COLOR_MARCA = [2, 83, 90]; // #02535a
+
+function formatearFechaComprobante(fecha) {
+  if (!fecha) return "";
+  const f = new Date(fecha);
+  if (isNaN(f.getTime())) return fecha;
+  return f.toLocaleDateString("es-CR");
+}
+
+async function obtenerDatosReservaActual() {
+  const codigo = window.codigoActualReserva || codigoReservaExistente;
+  if (!codigo) {
+    alert("⚠️ Primero guarda la reserva antes de generar el comprobante.");
+    return null;
+  }
+  const doc = await db.collection("reservas").doc(codigo).get();
+  if (!doc.exists) {
+    alert("❌ No se encontró la reserva guardada.");
+    return null;
+  }
+  return { codigo, ...doc.data() };
+}
+
+function dibujarFondoInterior(doc) {
+  const anchoP = doc.internal.pageSize.getWidth();
+  const altoP = doc.internal.pageSize.getHeight();
+  const imgFondo = document.getElementById("fondoInteriorComprobante");
+  doc.addImage(imgFondo, "PNG", 0, 0, anchoP, altoP);
+}
+
+async function generarPaginasComprobante(datos) {
+  const doc = new jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+  const anchoP = doc.internal.pageSize.getWidth();
+  const altoP = doc.internal.pageSize.getHeight();
+  const margen = 18;
+  const anchoUtil = anchoP - margen * 2;
+
+  const imgPortada = document.getElementById("fondoPortadaComprobante");
+  doc.addImage(imgPortada, "PNG", 0, 0, anchoP, altoP);
+
+  doc.addPage();
+  dibujarFondoInterior(doc);
+  let y = 45;
+
+  function asegurarEspacio(alto) {
+    if (y + alto > altoP - 30) {
+      doc.addPage();
+      dibujarFondoInterior(doc);
+      y = 30;
+    }
+  }
+
+  function titulo(texto) {
+    asegurarEspacio(14);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...COLOR_MARCA);
+    doc.text(texto, margen, y);
+    y += 3;
+    doc.setDrawColor(...COLOR_MARCA);
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(margen, y, anchoP - margen, y);
+    doc.setLineDashPattern([], 0);
+    y += 8;
+  }
+
+  function linea(etiqueta, valor) {
+    if (!valor) return;
+    asegurarEspacio(6);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...COLOR_MARCA);
+    doc.text(`${etiqueta}:`, margen, y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(40, 40, 40);
+    doc.text(String(valor), margen + 48, y);
+    y += 6;
+  }
+
+  titulo("Confirmación de Reserva");
+  linea("Código de reserva", datos.codigo);
+  linea("Fecha de reserva", formatearFechaComprobante(datos.fechaReserva));
+  linea("Destino", datos.nombreDestino || datos.destino);
+  linea("Duración", datos.duracion);
+  y += 4;
+
+  titulo("Datos del Titular");
+  linea("Nombre", datos.nombreTitular);
+  linea("Cédula/Pasaporte", datos.cedula);
+  linea("Correo", datos.correo);
+  linea("Teléfono", datos.telefono);
+  y += 4;
+
+  if (Array.isArray(datos.pasajeros) && datos.pasajeros.length > 0) {
+    titulo("Pasajeros Acompañantes");
+    doc.autoTable({
+      startY: y,
+      margin: { left: margen, right: margen },
+      head: [["Nombre", "Cédula/Pasaporte", "Nacionalidad"]],
+      body: datos.pasajeros.map(p => [p.nombre || "", p.documento || "", p.nacionalidad || ""]),
+      theme: "plain",
+      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
+      styles: { fontSize: 9, cellPadding: 2 },
+      didDrawPage: () => dibujarFondoInterior(doc)
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  titulo("Itinerario de Vuelos");
+  if (datos.vueloIda && datos.vueloIda.aerolinea) {
+    linea("Vuelo de ida", `${datos.vueloIda.aerolinea} ${datos.vueloIda.vuelo || ""} — ${formatearFechaComprobante(datos.vueloIda.fecha)}`);
+    linea("Ruta", datos.vueloIda.descripcion);
+    linea("Código de reserva aerolínea", datos.vueloIda.codigo);
+  }
+  (datos.vuelosIntermedios || []).forEach(v => {
+    if ((v.descripcion || "").includes("Escala de ida")) {
+      linea("Escala", `${v.aerolinea || ""} ${v.vuelo || ""} — ${v.descripcion}`);
+    }
+  });
+  if (datos.vueloRegreso && datos.vueloRegreso.aerolinea) {
+    linea("Vuelo de regreso", `${datos.vueloRegreso.aerolinea} ${datos.vueloRegreso.vuelo || ""} — ${formatearFechaComprobante(datos.vueloRegreso.fecha)}`);
+    linea("Ruta", datos.vueloRegreso.descripcion);
+  }
+  (datos.vuelosIntermedios || []).forEach(v => {
+    if ((v.descripcion || "").includes("Escala de regreso")) {
+      linea("Escala", `${v.aerolinea || ""} ${v.vuelo || ""} — ${v.descripcion}`);
+    }
+  });
+  if (datos.equipaje) {
+    asegurarEspacio(14);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...COLOR_MARCA);
+    doc.text("Equipaje:", margen, y);
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(40, 40, 40);
+    const lineasEquipaje = doc.splitTextToSize(datos.equipaje, anchoUtil);
+    doc.text(lineasEquipaje, margen, y);
+    y += lineasEquipaje.length * 5 + 4;
+  }
+  y += 4;
+
+  if (Array.isArray(datos.hoteles) && datos.hoteles.length > 0) {
+    titulo("Hospedaje");
+    doc.autoTable({
+      startY: y,
+      margin: { left: margen, right: margen },
+      head: [["Hotel", "Habitación", "Cant.", "Observaciones"]],
+      body: datos.hoteles.map(h => [h.nombre || "", h.tipo || "", h.cantidad || "", h.observaciones || ""]),
+      theme: "plain",
+      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
+      styles: { fontSize: 9, cellPadding: 2 },
+      didDrawPage: () => dibujarFondoInterior(doc)
+    });
+    y = doc.lastAutoTable.finalY + 8;
+  }
+
+  if (datos.itinerario) {
+    titulo("Itinerario del Viaje");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(40, 40, 40);
+    const lineasItin = doc.splitTextToSize(datos.itinerario, anchoUtil);
+    lineasItin.forEach(l => {
+      asegurarEspacio(6);
+      doc.text(l, margen, y);
+      y += 5;
+    });
+    y += 4;
+  }
+
+  if (Array.isArray(datos.toursOpcionales) && datos.toursOpcionales.length > 0) {
+    titulo("Tours Opcionales Incluidos");
+    datos.toursOpcionales.forEach(t => {
+      asegurarEspacio(6);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9.5);
+      doc.setTextColor(40, 40, 40);
+      doc.text(`• ${t}`, margen, y);
+      y += 6;
+    });
+    y += 4;
+  }
+
+  titulo("Resumen de Tarifas");
+  const filasTarifas = [];
+  if (datos.cantidadAdultos > 0) filasTarifas.push(["Adultos", datos.cantidadAdultos, `$${Number(datos.precioAdulto || 0).toFixed(2)}`, `$${(datos.cantidadAdultos * (datos.precioAdulto || 0)).toFixed(2)}`]);
+  if (datos.cantidadNinos > 0) filasTarifas.push(["Niños", datos.cantidadNinos, `$${Number(datos.precioNino || 0).toFixed(2)}`, `$${(datos.cantidadNinos * (datos.precioNino || 0)).toFixed(2)}`]);
+  if (datos.cantidadBebes > 0) filasTarifas.push(["Bebés", datos.cantidadBebes, `$${Number(datos.precioBebe || 0).toFixed(2)}`, `$${(datos.cantidadBebes * (datos.precioBebe || 0)).toFixed(2)}`]);
+  doc.autoTable({
+    startY: y,
+    margin: { left: margen, right: margen },
+    head: [["Concepto", "Cantidad", "Precio Unit.", "Subtotal"]],
+    body: filasTarifas,
+    foot: [["", "", "Total General", `$${Number(datos.total || 0).toFixed(2)}`]],
+    theme: "plain",
+    headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
+    footStyles: { fillColor: [224, 247, 250], textColor: COLOR_MARCA, fontStyle: "bold" },
+    styles: { fontSize: 9.5, cellPadding: 2.5 },
+    didDrawPage: () => dibujarFondoInterior(doc)
+  });
+  y = doc.lastAutoTable.finalY + 8;
+
+  titulo("Historial de Pagos");
+  const pagos = datos.pagos || [];
+  if (pagos.length > 0) {
+    doc.autoTable({
+      startY: y,
+      margin: { left: margen, right: margen },
+      head: [["Fecha", "Método", "Monto", "Nota"]],
+      body: pagos.map(p => [formatearFechaComprobante(p.fecha), p.metodo || "", `$${Number(p.monto || 0).toFixed(2)}`, p.nota || "—"]),
+      theme: "plain",
+      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
+      styles: { fontSize: 9, cellPadding: 2 },
+      didDrawPage: () => dibujarFondoInterior(doc)
+    });
+    y = doc.lastAutoTable.finalY + 6;
+  } else {
+    asegurarEspacio(6);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9.5);
+    doc.text("No hay pagos registrados.", margen, y);
+    y += 8;
+  }
+  linea("Saldo pendiente", `$${Number((datos.total || 0) - (datos.abono || 0)).toFixed(2)}`);
+  y += 4;
+
+  titulo("Contacto de la Agencia");
+  linea("WhatsApp", "6132-8183");
+  linea("Agencia", "Excursiones Delgado");
+  y += 4;
+
+  titulo("Políticas");
+  const textoPoliticas = "Este comprobante confirma tu reserva con Excursiones Delgado. Los cambios o cancelaciones están sujetos a las políticas de cada proveedor (aerolínea, hotel, operador turístico) — consulta con tu agente antes de gestionar cualquier cambio. Verifica que todos los datos personales y de vuelo coincidan exactamente con tu pasaporte antes de viajar.";
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(40, 40, 40);
+  const lineasPoliticas = doc.splitTextToSize(textoPoliticas, anchoUtil);
+  lineasPoliticas.forEach(l => {
+    asegurarEspacio(5);
+    doc.text(l, margen, y);
+    y += 4.5;
+  });
+
+  return doc;
+}
+
+async function descargarTiqueteComoBytes(tiquete) {
+  const respuesta = await fetch(tiquete.url);
+  const blob = await respuesta.blob();
+  return await blob.arrayBuffer();
+}
+
+async function fusionarComprobanteConBoletos(pdfJsPDF, tiquetesVuelo) {
+  const { PDFDocument } = PDFLib;
+  const bytesComprobante = pdfJsPDF.output("arraybuffer");
+  const pdfFinal = await PDFDocument.load(bytesComprobante);
+
+  for (const tiquete of tiquetesVuelo || []) {
+    try {
+      const bytes = await descargarTiqueteComoBytes(tiquete);
+      const esImagen = /\.(png|jpe?g)$/i.test(tiquete.nombre || "") || (tiquete.url || "").match(/\.(png|jpe?g)/i);
+
+      if (esImagen) {
+        const paginaNueva = pdfFinal.addPage();
+        const { width, height } = paginaNueva.getSize();
+        let imagenEmbebida;
+        try {
+          imagenEmbebida = await pdfFinal.embedPng(bytes);
+        } catch (e) {
+          imagenEmbebida = await pdfFinal.embedJpg(bytes);
+        }
+        const escala = Math.min(width / imagenEmbebida.width, height / imagenEmbebida.height) * 0.9;
+        const anchoFinal = imagenEmbebida.width * escala;
+        const altoFinal = imagenEmbebida.height * escala;
+        paginaNueva.drawImage(imagenEmbebida, {
+          x: (width - anchoFinal) / 2,
+          y: (height - altoFinal) / 2,
+          width: anchoFinal,
+          height: altoFinal
+        });
+      } else {
+        const pdfTiquete = await PDFDocument.load(bytes);
+        const paginasCopiadas = await pdfFinal.copyPages(pdfTiquete, pdfTiquete.getPageIndices());
+        paginasCopiadas.forEach(p => pdfFinal.addPage(p));
+      }
+    } catch (e) {
+      console.error(`No se pudo anexar el comprobante de vuelo "${tiquete.nombre}":`, e);
+    }
+  }
+
+  return await pdfFinal.save();
+}
+
+async function construirComprobanteCompleto(datos) {
+  const pdfJsPDF = await generarPaginasComprobante(datos);
+  return await fusionarComprobanteConBoletos(pdfJsPDF, datos.tiquetesVuelo || []);
+}
+
+async function descargarComprobante() {
+  const mensajeEl = document.getElementById("comprobanteMensaje");
+  mensajeEl.innerHTML = `<span style="color:#555;">⏳ Generando comprobante...</span>`;
+  try {
+    const datos = await obtenerDatosReservaActual();
+    if (!datos) { mensajeEl.innerHTML = ""; return; }
+
+    const bytesFinal = await construirComprobanteCompleto(datos);
+    const blob = new Blob([bytesFinal], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const enlace = document.createElement("a");
+    enlace.href = url;
+    enlace.download = `Comprobante_${datos.codigo}.pdf`;
+    document.body.appendChild(enlace);
+    enlace.click();
+    document.body.removeChild(enlace);
+    URL.revokeObjectURL(url);
+    mensajeEl.innerHTML = `<span style="color:#0a7a2f;">✅ Comprobante descargado.</span>`;
+  } catch (e) {
+    console.error("Error al generar el comprobante:", e);
+    mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo generar el comprobante.</span>`;
+  }
+}
+
+async function enviarComprobantePorCorreo() {
+  const mensajeEl = document.getElementById("comprobanteMensaje");
+  try {
+    const datos = await obtenerDatosReservaActual();
+    if (!datos) return;
+
+    if (!datos.correo) {
+      alert("⚠️ Esta reserva no tiene correo del cliente guardado. Agrégalo en 'Información del Titular' y guarda la reserva antes de enviar el comprobante.");
+      return;
+    }
+
+    mensajeEl.innerHTML = `<span style="color:#555;">⏳ Generando y enviando comprobante...</span>`;
+
+    const bytesFinal = await construirComprobanteCompleto(datos);
+    const base64Final = btoa(new Uint8Array(bytesFinal).reduce((data, byte) => data + String.fromCharCode(byte), ""));
+
+    const respuesta = await fetch(WORKER_COMPROBANTE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        correoDestino: datos.correo,
+        nombreTitular: datos.nombreTitular,
+        codigo: datos.codigo,
+        pdfBase64: base64Final
+      })
+    });
+
+    const resultado = await respuesta.json().catch(() => ({}));
+
+    if (!respuesta.ok || resultado.error) {
+      throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
+    }
+
+    mensajeEl.innerHTML = `<span style="color:#0a7a2f;">✅ Comprobante enviado a ${datos.correo}.</span>`;
+  } catch (e) {
+    console.error("Error al enviar el comprobante:", e);
+    mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo enviar el comprobante. Revisa la consola (F12) para más detalle.</span>`;
+  }
 }
 </script>
 
