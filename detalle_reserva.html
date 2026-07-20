@@ -2503,17 +2503,96 @@ function cargarHistorialPagos() {
 
 // ==========================================
 // NUEVO: COMPROBANTE DE RESERVA (PDF + envío por correo)
+// Estructura calcada del comprobante que se arma manualmente hoy.
 // ==========================================
 
 const WORKER_COMPROBANTE_URL = "https://proxy-comprobante.cris-delgado21.workers.dev";
 
 const COLOR_MARCA = [2, 83, 90]; // #02535a
 
+// Datos fijos de la agencia (van igual en todos los comprobantes).
+const AGENCIA_CEDULA_JURIDICA = "2-0704-0582";
+const AGENCIA_CANATUR = "5683";
+const AGENCIA_TELEFONO = "+506 6132 8183";
+const AGENCIA_CORREO = "boletosexcursionesdelgado@gmail.com";
+const AGENCIA_POLITICAS_URL = "https://drive.google.com/file/d/1nxAoLjiflZGLnV4j9gsV0e_iVpUaFwrI/view?usp=sharing";
+
+const MESES_LARGO = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
 function formatearFechaComprobante(fecha) {
   if (!fecha) return "";
   const f = new Date(fecha);
   if (isNaN(f.getTime())) return fecha;
   return f.toLocaleDateString("es-CR");
+}
+
+// Arma el texto "Del 10 al 14 Julio 2026" (o con dos meses si el viaje cruza de mes)
+// a partir de la fecha del vuelo de ida y de regreso.
+function formatearRangoFechas(fechaIda, fechaRegreso) {
+  if (!fechaIda) return "";
+  const dIda = new Date(fechaIda + "T00:00:00");
+  if (isNaN(dIda.getTime())) return "";
+  const dRegreso = fechaRegreso ? new Date(fechaRegreso + "T00:00:00") : null;
+
+  if (!dRegreso || isNaN(dRegreso.getTime())) {
+    return `${dIda.getDate()} de ${MESES_LARGO[dIda.getMonth()]} ${dIda.getFullYear()}`;
+  }
+  if (dIda.getMonth() === dRegreso.getMonth() && dIda.getFullYear() === dRegreso.getFullYear()) {
+    return `Del ${dIda.getDate()} al ${dRegreso.getDate()} de ${MESES_LARGO[dIda.getMonth()]} ${dIda.getFullYear()}`;
+  }
+  return `Del ${dIda.getDate()} de ${MESES_LARGO[dIda.getMonth()]} al ${dRegreso.getDate()} de ${MESES_LARGO[dRegreso.getMonth()]} ${dRegreso.getFullYear()}`;
+}
+
+// "2 adultos, 1 niño" — a partir de las cantidades ya guardadas en la reserva.
+function obtenerResumenPasajeros(datos) {
+  const partes = [];
+  if (datos.cantidadAdultos > 0) partes.push(`${datos.cantidadAdultos} adulto${datos.cantidadAdultos > 1 ? "s" : ""}`);
+  if (datos.cantidadNinos > 0) partes.push(`${datos.cantidadNinos} niño${datos.cantidadNinos > 1 ? "s" : ""}`);
+  if (datos.cantidadBebes > 0) partes.push(`${datos.cantidadBebes} bebé${datos.cantidadBebes > 1 ? "s" : ""}`);
+  return partes.join(", ");
+}
+
+// "Hotel Obo, Medellín" — primer hotel agregado + ciudad (tomada del nombre del destino,
+// quitando el "(Nivel)" que se le agrega a los tours Individual).
+function obtenerHotelPrincipal(datos) {
+  const hotel = (datos.hoteles || [])[0];
+  if (!hotel || !hotel.nombre) return "";
+  const ciudad = (datos.nombreDestino || "").split(" (")[0].trim();
+  return ciudad ? `${hotel.nombre}, ${ciudad}` : hotel.nombre;
+}
+
+// Convierte el texto libre de "Itinerario" (una línea por día, ej. "Día 1 Llegada a Medellín")
+// en un arreglo [{numero, texto}, ...] para armar la tabla por columnas, igual que en el
+// comprobante manual. Si una línea no empieza con "Día N", se pega al día anterior detectado.
+function parsearItinerarioPorDias(texto) {
+  if (!texto) return [];
+  const lineas = texto.split("\n").map(l => l.trim()).filter(Boolean);
+  const dias = [];
+  lineas.forEach(linea => {
+    const m = /^D[ií]a\s*(\d+)\s*[:.\-]?\s*(.*)$/i.exec(linea);
+    if (m) {
+      dias.push({ numero: m[1], texto: m[2].trim() });
+    } else if (dias.length > 0) {
+      dias[dias.length - 1].texto += " " + linea;
+    }
+  });
+  return dias;
+}
+
+// Trae incluye/no_incluye directamente del tour en Firestore (detalle_reserva.html hoy no
+// guarda esos campos dentro de la reserva, así que se leen en el momento de generar el PDF).
+async function obtenerIncluyeDelTour(destinoId) {
+  if (!destinoId) return { incluye: "", no_incluye: "" };
+  try {
+    const doc = await db.collection("tours").doc(destinoId).get();
+    if (doc.exists) {
+      const d = doc.data();
+      return { incluye: d.incluye || "", no_incluye: d.no_incluye || "" };
+    }
+  } catch (e) {
+    console.error("No se pudo cargar incluye/no incluye del tour:", e);
+  }
+  return { incluye: "", no_incluye: "" };
 }
 
 async function obtenerDatosReservaActual() {
@@ -2544,6 +2623,8 @@ async function generarPaginasComprobante(datos) {
   const margen = 18;
   const anchoUtil = anchoP - margen * 2;
 
+  const { incluye, no_incluye } = await obtenerIncluyeDelTour(datos.destino);
+
   const imgPortada = document.getElementById("fondoPortadaComprobante");
   doc.addImage(imgPortada, "PNG", 0, 0, anchoP, altoP);
 
@@ -2562,9 +2643,9 @@ async function generarPaginasComprobante(datos) {
   function titulo(texto) {
     asegurarEspacio(14);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
+    doc.setFontSize(12);
     doc.setTextColor(...COLOR_MARCA);
-    doc.text(texto, margen, y);
+    doc.text(texto.toUpperCase(), anchoP / 2, y, { align: "center" });
     y += 3;
     doc.setDrawColor(...COLOR_MARCA);
     doc.setLineDashPattern([1, 1], 0);
@@ -2586,172 +2667,202 @@ async function generarPaginasComprobante(datos) {
     y += 6;
   }
 
-  titulo("Confirmación de Reserva");
-  linea("Código de reserva", datos.codigo);
-  linea("Fecha de reserva", formatearFechaComprobante(datos.fechaReserva));
-  linea("Destino", datos.nombreDestino || datos.destino);
-  linea("Duración", datos.duracion);
-  y += 4;
-
-  titulo("Datos del Titular");
-  linea("Nombre", datos.nombreTitular);
-  linea("Cédula/Pasaporte", datos.cedula);
-  linea("Correo", datos.correo);
-  linea("Teléfono", datos.telefono);
-  y += 4;
-
-  if (Array.isArray(datos.pasajeros) && datos.pasajeros.length > 0) {
-    titulo("Pasajeros Acompañantes");
-    doc.autoTable({
-      startY: y,
-      margin: { left: margen, right: margen },
-      head: [["Nombre", "Cédula/Pasaporte", "Nacionalidad"]],
-      body: datos.pasajeros.map(p => [p.nombre || "", p.documento || "", p.nacionalidad || ""]),
-      theme: "plain",
-      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
-      styles: { fontSize: 9, cellPadding: 2 },
-      didDrawPage: () => dibujarFondoInterior(doc)
+  // Párrafo normal, con salto de línea automático según el ancho útil de la página.
+  function parrafo(texto, tamano) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(tamano || 9);
+    doc.setTextColor(40, 40, 40);
+    const lineas = doc.splitTextToSize(texto, anchoUtil);
+    lineas.forEach(l => {
+      asegurarEspacio(4.6);
+      doc.text(l, margen, y);
+      y += 4.6;
     });
-    y = doc.lastAutoTable.finalY + 8;
   }
 
-  titulo("Itinerario de Vuelos");
-  if (datos.vueloIda && datos.vueloIda.aerolinea) {
-    linea("Vuelo de ida", `${datos.vueloIda.aerolinea} ${datos.vueloIda.vuelo || ""} — ${formatearFechaComprobante(datos.vueloIda.fecha)}`);
-    linea("Ruta", datos.vueloIda.descripcion);
-    linea("Código de reserva aerolínea", datos.vueloIda.codigo);
-  }
-  (datos.vuelosIntermedios || []).forEach(v => {
-    if ((v.descripcion || "").includes("Escala de ida")) {
-      linea("Escala", `${v.aerolinea || ""} ${v.vuelo || ""} — ${v.descripcion}`);
-    }
-  });
-  if (datos.vueloRegreso && datos.vueloRegreso.aerolinea) {
-    linea("Vuelo de regreso", `${datos.vueloRegreso.aerolinea} ${datos.vueloRegreso.vuelo || ""} — ${formatearFechaComprobante(datos.vueloRegreso.fecha)}`);
-    linea("Ruta", datos.vueloRegreso.descripcion);
-  }
-  (datos.vuelosIntermedios || []).forEach(v => {
-    if ((v.descripcion || "").includes("Escala de regreso")) {
-      linea("Escala", `${v.aerolinea || ""} ${v.vuelo || ""} — ${v.descripcion}`);
-    }
-  });
-  if (datos.equipaje) {
-    asegurarEspacio(14);
+  // Título + lista de viñetas a partir de un texto con una línea por ítem.
+  function listaConViñetas(etiqueta, textoMultilinea) {
+    if (!textoMultilinea) return;
+    asegurarEspacio(8);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(...COLOR_MARCA);
-    doc.text("Equipaje:", margen, y);
+    doc.text(etiqueta, margen, y);
     y += 6;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9.5);
     doc.setTextColor(40, 40, 40);
-    const lineasEquipaje = doc.splitTextToSize(datos.equipaje, anchoUtil);
-    doc.text(lineasEquipaje, margen, y);
-    y += lineasEquipaje.length * 5 + 4;
+    textoMultilinea.split("\n").map(l => l.trim()).filter(Boolean).forEach(item => {
+      const lineasItem = doc.splitTextToSize(`•  ${item}`, anchoUtil - 4);
+      lineasItem.forEach((l, i) => {
+        asegurarEspacio(5);
+        doc.text(l, margen + (i > 0 ? 8 : 0), y);
+        y += 5;
+      });
+    });
+    y += 3;
   }
+
+  // ===== CONFIRMACIÓN DE RESERVA =====
+  titulo("Confirmación de Reserva");
+  linea("Código de reserva", datos.codigo);
+  linea("Destino", (datos.nombreDestino || datos.destino || "").split(" (")[0]);
+  linea("Fechas", formatearRangoFechas(datos.vueloIda?.fecha, datos.vueloRegreso?.fecha));
+  linea("Pasajeros", obtenerResumenPasajeros(datos));
+  linea("Hotel", obtenerHotelPrincipal(datos));
+  linea("Paquete contratado", datos.nombreDestino);
+  linea("Tours adicionales incluidos", (datos.toursOpcionales || []).join(", ") || "------");
   y += 4;
 
-  if (Array.isArray(datos.hoteles) && datos.hoteles.length > 0) {
-    titulo("Hospedaje");
+  // ===== DETALLE DEL CLIENTE =====
+  titulo("Detalle del Cliente");
+  linea("Nombre del Cliente", datos.nombreTitular);
+  linea("Cédula/Pasaporte", datos.cedula);
+  linea("Teléfono", datos.telefono);
+  linea("Correo", datos.correo);
+  y += 4;
+
+  // ===== INCLUYE EN EL PAQUETE =====
+  if (incluye || no_incluye) {
+    titulo("Incluye en el Paquete");
+    listaConViñetas("Incluye:", incluye);
+    listaConViñetas("No incluye:", no_incluye);
+    y += 2;
+  }
+
+  // ===== ITINERARIO DE VIAJE (tabla por día) =====
+  const diasItinerario = parsearItinerarioPorDias(datos.itinerario);
+  if (diasItinerario.length > 0) {
+    titulo("Itinerario de Viaje");
     doc.autoTable({
       startY: y,
       margin: { left: margen, right: margen },
-      head: [["Hotel", "Habitación", "Cant.", "Observaciones"]],
-      body: datos.hoteles.map(h => [h.nombre || "", h.tipo || "", h.cantidad || "", h.observaciones || ""]),
+      head: [diasItinerario.map(d => `Día ${d.numero}`)],
+      body: [diasItinerario.map(d => d.texto)],
       theme: "plain",
-      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
-      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold", halign: "center" },
+      styles: { fontSize: 8, cellPadding: 2.5, halign: "center", valign: "top" },
       didDrawPage: () => dibujarFondoInterior(doc)
     });
-    y = doc.lastAutoTable.finalY + 8;
-  }
-
-  if (datos.itinerario) {
-    titulo("Itinerario del Viaje");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9.5);
-    doc.setTextColor(40, 40, 40);
-    const lineasItin = doc.splitTextToSize(datos.itinerario, anchoUtil);
-    lineasItin.forEach(l => {
-      asegurarEspacio(6);
-      doc.text(l, margen, y);
-      y += 5;
-    });
+    y = doc.lastAutoTable.finalY + 5;
+    parrafo("El itinerario de viaje es referencial y puede variar por razones de fuerza mayor, cambios en la programación aérea, condiciones meteorológicas, situaciones logísticas, o cualquier eventualidad que pueda afectar el desarrollo normal de la operación.", 8);
     y += 4;
   }
 
-  if (Array.isArray(datos.toursOpcionales) && datos.toursOpcionales.length > 0) {
-    titulo("Tours Opcionales Incluidos");
-    datos.toursOpcionales.forEach(t => {
-      asegurarEspacio(6);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9.5);
-      doc.setTextColor(40, 40, 40);
-      doc.text(`• ${t}`, margen, y);
-      y += 6;
-    });
-    y += 4;
-  }
-
+  // ===== RESUMEN DE TARIFAS =====
   titulo("Resumen de Tarifas");
-  const filasTarifas = [];
-  if (datos.cantidadAdultos > 0) filasTarifas.push(["Adultos", datos.cantidadAdultos, `$${Number(datos.precioAdulto || 0).toFixed(2)}`, `$${(datos.cantidadAdultos * (datos.precioAdulto || 0)).toFixed(2)}`]);
-  if (datos.cantidadNinos > 0) filasTarifas.push(["Niños", datos.cantidadNinos, `$${Number(datos.precioNino || 0).toFixed(2)}`, `$${(datos.cantidadNinos * (datos.precioNino || 0)).toFixed(2)}`]);
-  if (datos.cantidadBebes > 0) filasTarifas.push(["Bebés", datos.cantidadBebes, `$${Number(datos.precioBebe || 0).toFixed(2)}`, `$${(datos.cantidadBebes * (datos.precioBebe || 0)).toFixed(2)}`]);
+  const nombrePaquete = (datos.nombreDestino || "Paquete").split(" (")[0];
+  const precioMostrar = datos.precioAdulto ? `$${Number(datos.precioAdulto).toFixed(2)} Adultos` : "";
+  const filasTarifas = [
+    [
+      nombrePaquete,
+      datos.cantidadAdultos || "",
+      datos.cantidadNinos || "",
+      datos.cantidadBebes || "",
+      precioMostrar,
+      `$${Number(datos.total || 0).toFixed(2)}`
+    ],
+    [
+      (datos.toursOpcionales || []).length > 0 ? `Tours adicionales (${datos.toursOpcionales.join(", ")})` : "Tours adicionales",
+      "", "", "", "", "-"
+    ],
+    ["Otros cargos (si aplica)", "", "", "", "", "-"]
+  ];
   doc.autoTable({
     startY: y,
     margin: { left: margen, right: margen },
-    head: [["Concepto", "Cantidad", "Precio Unit.", "Subtotal"]],
+    head: [["Descripción", "Adultos", "Niños", "Bebés", "Precio unitario (USD)", "Subtotal (USD)"]],
     body: filasTarifas,
-    foot: [["", "", "Total General", `$${Number(datos.total || 0).toFixed(2)}`]],
+    foot: [["", "", "", "", "Total General", `$${Number(datos.total || 0).toFixed(2)}`]],
     theme: "plain",
-    headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
+    headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold", fontSize: 8 },
     footStyles: { fillColor: [224, 247, 250], textColor: COLOR_MARCA, fontStyle: "bold" },
-    styles: { fontSize: 9.5, cellPadding: 2.5 },
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
     didDrawPage: () => dibujarFondoInterior(doc)
   });
-  y = doc.lastAutoTable.finalY + 8;
+  y = doc.lastAutoTable.finalY + 5;
+  parrafo("Las tarifas están expresadas en dólares americanos y son aplicables únicamente en las siguientes formas de pago: efectivo, transferencia o depósito bancario.", 8);
+  parrafo("La tarifa no incluye IVA. Si requiere factura, por favor confirmar a su asesor.", 8);
+  y += 4;
 
-  titulo("Historial de Pagos");
+  // ===== HISTORIAL DE PAGOS REALIZADOS =====
+  titulo("Historial de Pagos Realizados");
   const pagos = datos.pagos || [];
-  if (pagos.length > 0) {
-    doc.autoTable({
-      startY: y,
-      margin: { left: margen, right: margen },
-      head: [["Fecha", "Método", "Monto", "Nota"]],
-      body: pagos.map(p => [formatearFechaComprobante(p.fecha), p.metodo || "", `$${Number(p.monto || 0).toFixed(2)}`, p.nota || "—"]),
-      theme: "plain",
-      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
-      styles: { fontSize: 9, cellPadding: 2 },
-      didDrawPage: () => dibujarFondoInterior(doc)
-    });
-    y = doc.lastAutoTable.finalY + 6;
-  } else {
-    asegurarEspacio(6);
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(9.5);
-    doc.text("No hay pagos registrados.", margen, y);
-    y += 8;
+  const totalReserva = Number(datos.total || 0);
+  let saldoCorrido = totalReserva;
+  const filasPagos = [];
+  const filasAMostrar = Math.max(pagos.length, 3);
+  for (let i = 0; i < filasAMostrar; i++) {
+    const p = pagos[i];
+    if (p) {
+      saldoCorrido -= Number(p.monto || 0);
+      filasPagos.push([
+        i + 1,
+        formatearFechaComprobante(p.fecha),
+        `$${Number(p.monto || 0).toFixed(2)}`,
+        p.metodo || "-",
+        p.nota || "-",
+        `$${saldoCorrido.toFixed(2)}`
+      ]);
+    } else {
+      filasPagos.push([i + 1, "-", "-", "-", "-", "-"]);
+    }
   }
-  linea("Saldo pendiente", `$${Number((datos.total || 0) - (datos.abono || 0)).toFixed(2)}`);
+  doc.autoTable({
+    startY: y,
+    margin: { left: margen, right: margen },
+    head: [["#", "Fecha de Pago", "Monto Abonado", "Método de Pago", "Cuenta Bancaria y T.C.", "Saldo Restante"]],
+    body: filasPagos,
+    theme: "plain",
+    headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold", fontSize: 7.5 },
+    styles: { fontSize: 8.5, cellPadding: 2.5 },
+    didDrawPage: () => dibujarFondoInterior(doc)
+  });
+  y = doc.lastAutoTable.finalY + 5;
+  parrafo("El saldo restante debe de estar cancelado 15 días antes del viaje. En caso de que el cliente no cumpla con lo estipulado, la agencia hará un recordatorio y de no ponerse al día se realizará la anulación de los servicios contratados en su totalidad, cobrando hasta el 100% de lo abonado por concepto de penalidad, sin que pueda solicitarse de ninguna manera su devolución.", 8);
   y += 4;
 
+  // ===== CONTACTO DE LA AGENCIA =====
   titulo("Contacto de la Agencia");
-  linea("WhatsApp", "6132-8183");
-  linea("Agencia", "Excursiones Delgado");
+  parrafo("Excursiones Delgado / Cristopher Delgado Naranjo", 9.5);
+  parrafo(`Cédula Persona Física: ${AGENCIA_CEDULA_JURIDICA}`, 9.5);
+  parrafo(`Inscritos a CANATUR #${AGENCIA_CANATUR}`, 9.5);
+  parrafo("Empresa Certificada por el Ministerio de Economía y Comercio", 9.5);
+  parrafo(AGENCIA_TELEFONO, 9.5);
+  parrafo(AGENCIA_CORREO, 9.5);
+  parrafo("Agencia de viajes 100% costarricense", 9.5);
   y += 4;
 
-  titulo("Políticas");
-  const textoPoliticas = "Este comprobante confirma tu reserva con Excursiones Delgado. Los cambios o cancelaciones están sujetos a las políticas de cada proveedor (aerolínea, hotel, operador turístico) — consulta con tu agente antes de gestionar cualquier cambio. Verifica que todos los datos personales y de vuelo coincidan exactamente con tu pasaporte antes de viajar.";
+  // ===== REQUISITOS, CONDICIONES Y POLÍTICAS DE VIAJE =====
+  titulo("Requisitos, Condiciones y Políticas de Viaje");
+  parrafo("Todos los pasajeros deben verificar si situación migratoria, la misma se debe de encontrar al día (Salidas para menores, pensiones alimenticias, entre otros). Excursiones Delgado no se hace responsable en caso de impedimentos de salidas afueras del país. En caso de que se dé un impedimento de salida por parte del cliente, automáticamente se dará razón por la pérdida económica del paquete turístico el cual no puede ser abonado para futuros viajes.");
+  y += 2;
+  parrafo("Verificar requisitos migratorios: según sea su nacionalidad puede requerir tramitar Visa y contar con vacunas, consulte con su asesor.");
+  y += 2;
+  parrafo("Para formalizar la reservación es requisito facilitar copia legible del pasaporte de cada pasajero, con los datos de emisión y expiración. En caso de no contar con dicho documento, Excursiones Delgado no se hará responsable de los inconvenientes ocasionados por errores o falta de veracidad de sus datos personales.");
+  y += 2;
+  parrafo("Viajar con pasaporte vigente: Todo pasaporte debe tener vigencia, de al menos 6 meses antes de la fecha de salida y es responsabilidad de cada pasajero.");
+  y += 2;
+  parrafo("No hay selección de asientos (Son asignados por la aerolínea durante el check in). En caso de que los pasajeros quieran escoger asientos pueden darse un costo adicional.");
+  y += 2;
+  parrafo("Al realizar esta reserva, usted acepta nuestras políticas y condiciones de viaje, así como los términos de cancelación, reembolso y documentación migratoria. Dichas políticas pueden consultarse en:");
+  asegurarEspacio(5);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
+  doc.setTextColor(2, 90, 180);
+  doc.textWithLink("Políticas y Condiciones de Excursiones Delgado.", margen, y, { url: AGENCIA_POLITICAS_URL });
   doc.setTextColor(40, 40, 40);
-  const lineasPoliticas = doc.splitTextToSize(textoPoliticas, anchoUtil);
-  lineasPoliticas.forEach(l => {
-    asegurarEspacio(5);
-    doc.text(l, margen, y);
-    y += 4.5;
-  });
+  y += 6;
+  parrafo("Excursiones Delgado no se hace responsable por impedimentos de salida, causas de fuerza mayor u otros factores externos a la operación de la agencia.");
+  y += 4;
+
+  // ===== AVISO PREVIO A LOS BOLETOS ADJUNTOS =====
+  if (Array.isArray(datos.tiquetesVuelo) && datos.tiquetesVuelo.length > 0) {
+    titulo("Comprobante de Adquisición de Boletos Aéreos");
+    parrafo("En la siguiente página puede observar los tiquetes adquiridos de su reserva, por favor confirmar los nombres, destino y fechas.");
+    y += 2;
+    parrafo("Además, aparece el código de reserva, donde usted puede corroborar la reserva ante la aerolínea.");
+  }
 
   return doc;
 }
@@ -2877,3 +2988,4 @@ async function enviarComprobantePorCorreo() {
 
 </body>
 </html>
+
