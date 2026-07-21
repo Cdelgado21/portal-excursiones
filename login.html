@@ -151,6 +151,13 @@
     }
   }
 
+  // NUEVO: si venimos de un cierre de sesión automático por inactividad
+  // (topbar.js redirige aquí con ?motivo=inactividad), se lo avisamos.
+  const parametrosURL = new URLSearchParams(window.location.search);
+  if (parametrosURL.get("motivo") === "inactividad") {
+    alert("Tu sesión se cerró automáticamente por 30 minutos de inactividad. Vuelve a iniciar sesión.");
+  }
+
   document.getElementById('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const email = document.getElementById('correo').value.trim();
@@ -168,15 +175,21 @@
         return;
       }
 
-      const usuario = query.docs[0].data();
+      const documentoUsuario = query.docs[0];
+      const usuario = documentoUsuario.data();
 
       if (usuario.estado !== "Activo") {
         alert("El usuario no está activo.");
         return;
       }
 
-      // Guarda los datos del usuario si deseas
-      localStorage.setItem("usuario", JSON.stringify(usuario));
+      // FIX: antes solo se guardaban los campos del documento (nombre, rol,
+      // correo, etc.), pero nunca el ID del documento en Firestore. Sin ese
+      // ID no hay forma confiable de saber a quién subirle la foto de perfil
+      // ni a quién avisarle cuando le cambian el rol — ahora se guarda junto
+      // con el resto de los datos.
+      const usuarioConId = { id: documentoUsuario.id, ...usuario };
+      localStorage.setItem("usuario", JSON.stringify(usuarioConId));
 
      const nombre = usuario.nombre || email;
 const modal = document.getElementById("modal-bienvenida");
@@ -197,3 +210,5 @@ setTimeout(() => {
     }
   });
 </script>
+</body>
+</html>
