@@ -1,0 +1,252 @@
+/* ==========================================
+   BARRA SUPERIOR (topbar.css)
+   Se agrega a cada página con:
+   <link rel="stylesheet" href="topbar.css">
+   Empuja hacia abajo el menú lateral y el contenido que ya existen en cada
+   página, para que no queden tapados por esta barra nueva.
+   ========================================== */
+
+:root {
+  --topbar-altura: 56px;
+}
+
+#barraSuperiorSIED {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: var(--topbar-altura);
+  background-color: #02535a;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  box-sizing: border-box;
+  z-index: 1300;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  font-family: Arial, sans-serif;
+}
+
+#barraSuperiorSIED .titulo-sistema {
+  font-weight: bold;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Empuja el menú lateral y el contenido existentes, para que no queden
+   tapados por esta barra nueva. Se usa !important porque cada página ya
+   trae sus propias reglas para .sidebar / .toggle-btn / main
+   definidas en un <style> propio, y esta hoja se carga aparte. */
+.sidebar {
+  top: var(--topbar-altura) !important;
+  height: calc(100% - var(--topbar-altura)) !important;
+}
+.toggle-btn {
+  top: calc(var(--topbar-altura) + 20px) !important;
+}
+main {
+  padding-top: calc(var(--topbar-altura) + 20px) !important;
+  box-sizing: border-box;
+}
+
+/* ---------- Campana de notificaciones ---------- */
+#barraSuperiorSIED .campana-container {
+  position: relative;
+  margin-right: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+#barraSuperiorSIED .campana-icono {
+  font-size: 20px;
+}
+#barraSuperiorSIED .campana-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  background: #d9534f;
+  color: white;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 1px 6px;
+  display: none;
+}
+
+#panelNotificaciones {
+  display: none;
+  position: absolute;
+  top: 38px;
+  right: -10px;
+  background: white;
+  color: #333;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  width: 320px;
+  max-height: 360px;
+  overflow-y: auto;
+  z-index: 1400;
+}
+#panelNotificaciones .notificacion-item {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eee;
+  font-size: 13.5px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+#panelNotificaciones .notificacion-item:last-child {
+  border-bottom: none;
+}
+#panelNotificaciones .notificacion-item:hover {
+  background: #f4f7f8;
+}
+#panelNotificaciones .notificacion-item.no-leida {
+  background: #eaf6f6;
+  font-weight: bold;
+}
+#panelNotificaciones .notificacion-fecha {
+  display: block;
+  font-size: 11px;
+  font-weight: normal;
+  color: #888;
+  margin-top: 3px;
+}
+#panelNotificaciones .notificacion-vacia {
+  padding: 20px;
+  text-align: center;
+  color: #888;
+  font-size: 13.5px;
+}
+
+/* ---------- Usuario / avatar ---------- */
+#barraSuperiorSIED .usuario-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+#barraSuperiorSIED .usuario-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white;
+  background: rgba(255,255,255,0.2);
+}
+#barraSuperiorSIED .usuario-datos {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+#barraSuperiorSIED .usuario-nombre {
+  font-weight: bold;
+  font-size: 13.5px;
+  white-space: nowrap;
+}
+#barraSuperiorSIED .usuario-rol {
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+#menuUsuarioDesplegable {
+  display: none;
+  position: absolute;
+  top: 46px;
+  right: 0;
+  background: white;
+  color: #333;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  min-width: 190px;
+  z-index: 1400;
+  overflow: hidden;
+}
+#menuUsuarioDesplegable button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 11px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #02535a;
+}
+#menuUsuarioDesplegable button:hover {
+  background: #f4f7f8;
+}
+
+/* ---------- Modal de editar perfil ---------- */
+#modalEditarPerfil {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+#modalEditarPerfil .modal-contenido {
+  background: white;
+  padding: 25px;
+  border-radius: 10px;
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  font-family: Arial, sans-serif;
+}
+#modalEditarPerfil .modal-contenido h3 {
+  color: #02535a;
+  margin-top: 0;
+}
+#modalEditarPerfil .preview-avatar {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 10px auto;
+  display: block;
+  border: 2px solid #02535a;
+}
+#modalEditarPerfil input[type="file"] {
+  margin: 12px auto;
+  display: block;
+  font-size: 13px;
+}
+#modalEditarPerfil .aviso-modal {
+  font-size: 12px;
+  color: #a35b00;
+  margin-top: 6px;
+}
+#modalEditarPerfil .acciones-modal {
+  margin-top: 15px;
+  text-align: right;
+}
+#modalEditarPerfil .acciones-modal button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-left: 8px;
+  font-weight: bold;
+}
+#modalEditarPerfil .btn-guardar {
+  background: #02535a;
+  color: white;
+}
+#modalEditarPerfil .btn-cancelar {
+  background: #ccc;
+  color: #333;
+}
+
+@media screen and (max-width: 560px) {
+  #barraSuperiorSIED .titulo-sistema { display: none; }
+  #barraSuperiorSIED .usuario-nombre,
+  #barraSuperiorSIED .usuario-rol { display: none; }
+  #panelNotificaciones { width: 90vw; right: -60px; }
+}
