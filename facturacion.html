@@ -444,7 +444,7 @@ input[type="date"] {
 <div class="aviso-factura-electronica">
   <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
     <input type="checkbox" id="requiereFacturaElectronica" onchange="recalcularTotalesFactura()">
-    ¿El cliente requiere factura electrónica? Se agrega 13% de IVA al detalle de arriba (no afecta el total ya acordado con el cliente, que se sigue cobrando aparte).
+    ¿El cliente requiere factura electrónica? Se agrega 13% de IVA al detalle de arriba, y el saldo restante de abajo se recalcula para incluirlo.
   </label>
 </div>
 
@@ -738,7 +738,6 @@ if (reservaID) {
   }
 
   recalcularTotalesFactura();
-  actualizarResumenFacturacion(data);
 
   } else {
         alert("Reserva no encontrada: " + reservaID);
@@ -773,6 +772,16 @@ function recalcularTotalesFactura() {
   document.getElementById("filaIvaTexto").textContent = requiereFacturaElectronica ? "IVA (13%)" : "IVA (0%)";
   document.getElementById("filaIvaMonto").textContent = `$${iva.toFixed(2)}`;
   document.getElementById("total").innerHTML = `<strong>$${total.toFixed(2)}</strong>`;
+
+  // NUEVO: el resumen de abajo (Total de la Reserva / Saldo Restante) se
+  // mantenía siempre calculado sobre el total original de la reserva, sin
+  // importar si se marcaba "factura electrónica" — así que el saldo nunca
+  // reflejaba el 13% de IVA agregado arriba. Ahora se le pasa el total ya
+  // calculado (con o sin IVA, según el checkbox) para que quede consistente
+  // con lo que muestra la tabla de Detalle de Factura.
+  if (window.reservaActual) {
+    actualizarResumenFacturacion(window.reservaActual, total);
+  }
 }
 
 let indexEditando = null;
@@ -865,6 +874,7 @@ function guardarPago() {
       cerrarModal("modalAgregarPago");
       docRef.get().then((doc) => {
         const dataActualizada = doc.data();
+        window.reservaActual = dataActualizada;
         actualizarResumenFacturacion(dataActualizada);
         renderizarTransaccionesModal(dataActualizada.pagos || []);
       });
@@ -896,6 +906,7 @@ function eliminarPago(index) {
     docRef.update({ pagos }).then(() => {
       docRef.get().then((doc) => {
         const dataActualizada = doc.data();
+        window.reservaActual = dataActualizada;
         actualizarResumenFacturacion(dataActualizada);
         renderizarTransaccionesModal(dataActualizada.pagos || []);
       });
@@ -997,8 +1008,20 @@ function renderizarTransaccionesModal(transacciones) {
 // Pagos" y el resumen — antes, ADEMÁS, el bloque de carga inicial volvía a
 // dibujar la misma tabla por su cuenta, duplicando el trabajo sin necesidad.
 // Ahora es la única responsable de esto.
-function actualizarResumenFacturacion(data) {
-  const totalReserva = Number(data.total || 0);
+// NUEVO: acepta un segundo parámetro opcional "totalOverride" — el total ya
+// calculado en recalcularTotalesFactura() (que incluye el 13% de IVA si el
+// checkbox de factura electrónica está marcado). Si no viene (ej. cuando se
+// llama después de agregar/editar/eliminar un pago), se recalcula aquí mismo
+// con la misma lógica, para que el saldo nunca se quede desactualizado.
+function actualizarResumenFacturacion(data, totalOverride) {
+  let totalReserva;
+  if (typeof totalOverride === "number") {
+    totalReserva = totalOverride;
+  } else {
+    const requiereFacturaElectronica = document.getElementById("requiereFacturaElectronica")?.checked;
+    totalReserva = Number(data.total || 0) * (requiereFacturaElectronica ? 1.13 : 1);
+  }
+
   const pagos = data.pagos || [];
 
   let pagosAplicados = pagos.reduce((sum, pago) => sum + Number(pago.monto || 0), 0);
@@ -1075,8 +1098,10 @@ async function construirDocumentoFactura() {
   const totalFactura = subtotalFactura + ivaFactura;
 
   const pagosAplicados = pagos.reduce((s, p) => s + (Number(p.monto) || 0), 0);
-  const totalReserva = Number(data.total || 0);
-  const saldo = totalReserva - pagosAplicados;
+  // NUEVO: el saldo del PDF ahora se calcula sobre totalFactura (que ya incluye el 13%
+  // de IVA cuando corresponde) en vez de sobre data.total sin IVA — antes quedaba
+  // desactualizado igual que el resumen en pantalla.
+  const saldo = totalFactura - pagosAplicados;
 
   // Vencimiento = 15 días antes de la fecha del vuelo de ida.
   let fechaVencimientoTexto = "---";
@@ -1251,14 +1276,6 @@ async function construirDocumentoFactura() {
   doc.text("Importe adeudado", 130, y);
   doc.text(`$${saldo.toFixed(2)}`, 195, y, { align: "right" });
 
-  if (requiereFacturaElectronica) {
-    y += 6;
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(7.5);
-    doc.setTextColor(150, 150, 150);
-    doc.text("*El IVA de factura electrónica se cobra aparte del saldo de la reserva.", 195, y, { align: "right" });
-  }
-
   // ---------- Aviso legal (reemplaza el mensaje de agradecimiento) ----------
   y += 20;
   doc.setFont("helvetica", "italic");
@@ -1341,3 +1358,4 @@ async function enviarPorCorreo() {
 
 </body>
 </html>
+
