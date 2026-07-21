@@ -2877,11 +2877,165 @@ async function descargarTiqueteComoBytes(tiquete) {
   return await blob.arrayBuffer();
 }
 
+// ==========================================
+// NUEVO: TAPADO AUTOMÁTICO DEL PRECIO INTERNO EN LOS BOLETOS ADJUNTOS
+// El comprobante que recibe el cliente no debe mostrar lo que la agencia pagó por el
+// boleto. Esto usa el mismo Vision OCR que ya se usa para leer comprobantes de vuelo,
+// pero pidiendo las coordenadas de cada bloque de texto (no solo el texto plano) para
+// ubicar dónde empieza la sección de pago/tarifa y tapar desde ahí hacia abajo.
+// ⚠️ Es "mejor esfuerzo": no todos los formatos de aerolínea traen estas palabras
+// exactas, así que Cristopher debe revisar visualmente el PDF final antes de enviarlo,
+// sobre todo con aerolíneas que no se hayan probado todavía.
+// ==========================================
+
+const MARCADORES_PRECIO_TIQUETE = [
+  "PAYMENT DETAILS", "FARE DETAILS", "FARE CALCULATION", "TOTAL AMOUNT",
+  "FORM OF PAYMENT", "ENDORSEMENTS", "TAXES:", "CC CA", "FARE:",
+  "DETALLES DE PAGO", "TARIFA:", "MONTO TOTAL", "PRECIO TOTAL", "FORMA DE PAGO"
+];
+
+// Igual que llamarVisionOCR, pero devuelve la anotación completa (con coordenadas de
+// cada bloque de texto) en vez de solo el texto plano.
+async function llamarVisionOCRConCoordenadas(base64) {
+  const respuesta = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      requests: [{
+        image: { content: base64 },
+        features: [{ type: "DOCUMENT_TEXT_DETECTION" }]
+      }]
+    })
+  });
+  const datos = await respuesta.json();
+  if (datos.error) throw new Error(datos.error.message || "Error desconocido de Google Vision");
+  return datos.responses?.[0]?.fullTextAnnotation || null;
+}
+
+// Recorre los bloques de texto detectados y devuelve la coordenada Y (en píxeles, desde
+// arriba de la imagen) donde empieza el bloque más alto que contenga alguna palabra clave
+// de precio/pago. Si no encuentra ninguna, devuelve null (no se tapa nada en esa página).
+function encontrarInicioZonaPrecio(fullTextAnnotation) {
+  if (!fullTextAnnotation || !Array.isArray(fullTextAnnotation.pages)) return null;
+  let mejorY = null;
+  fullTextAnnotation.pages.forEach(pagina => {
+    (pagina.blocks || []).forEach(bloque => {
+      const textoBloque = (bloque.paragraphs || [])
+        .map(p => (p.words || []).map(w => (w.symbols || []).map(s => s.text).join("")).join(" "))
+        .join(" ")
+        .toUpperCase();
+      const tieneMarcador = MARCADORES_PRECIO_TIQUETE.some(m => textoBloque.includes(m));
+      if (!tieneMarcador) return;
+      const vertices = bloque.boundingBox?.vertices || [];
+      const ys = vertices.map(v => v.y || 0).filter(v => v > 0 || vertices.length);
+      if (ys.length === 0) return;
+      const yMin = Math.min(...ys);
+      if (mejorY === null || yMin < mejorY) mejorY = yMin;
+    });
+  });
+  return mejorY;
+}
+
+// Renderiza una página de PDF a imagen (para el OCR) y devuelve también el tamaño real
+// del canvas usado, necesario para convertir coordenadas de píxel a coordenadas de página.
+async function renderizarPaginaPDFaImagenConTamano(pdf, numeroPagina) {
+  const pagina = await pdf.getPage(numeroPagina);
+  const viewport = pagina.getViewport({ scale: 2 });
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await pagina.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+  return {
+    base64: canvas.toDataURL("image/png").split(",")[1],
+    anchoPixeles: canvas.width,
+    altoPixeles: canvas.height
+  };
+}
+
+// Lee el ancho y alto reales de una imagen (para boletos que se adjuntaron como foto).
+async function obtenerDimensionesImagen(bytes) {
+  const blob = new Blob([bytes]);
+  const url = URL.createObjectURL(blob);
+  try {
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve({ ancho: img.naturalWidth, alto: img.naturalHeight });
+      img.onerror = reject;
+      img.src = url;
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// Tapa con un rectángulo blanco la parte de una página de pdf-lib que va desde
+// "fraccionDesdeArriba" (0 = tope de la página, 1 = fondo) hacia abajo.
+function taparDesdeFraccion(pagina, fraccionDesdeArriba) {
+  const { width, height } = pagina.getSize();
+  const yCorte = height * (1 - fraccionDesdeArriba); // convierte a coordenada PDF (0 = abajo)
+  pagina.drawRectangle({
+    x: 0,
+    y: 0,
+    width,
+    height: yCorte,
+    color: PDFLib.rgb(1, 1, 1)
+  });
+}
+
+// Intenta tapar la zona de precio de un boleto en PDF, página por página (hasta 3, igual
+// que el límite ya usado para el OCR de lectura). Devuelve true si logró tapar al menos
+// una zona, false si no encontró ninguna (para poder avisarle a Cristopher que revise a mano).
+async function taparPrecioEnPaginasPDF(bytesOriginales, paginasCopiadas) {
+  let tapoAlgo = false;
+  const bytesParaOCR = bytesOriginales.slice(0); // copia aparte: pdf.js puede consumir el buffer
+  const pdfParaOCR = await pdfjsLib.getDocument({ data: bytesParaOCR }).promise;
+  const totalPaginas = Math.min(pdfParaOCR.numPages, paginasCopiadas.length, 3);
+
+  for (let i = 0; i < totalPaginas; i++) {
+    try {
+      const { base64, altoPixeles } = await renderizarPaginaPDFaImagenConTamano(pdfParaOCR, i + 1);
+      const anotacion = await llamarVisionOCRConCoordenadas(base64);
+      const yInicioPrecio = encontrarInicioZonaPrecio(anotacion);
+      if (yInicioPrecio !== null) {
+        const fraccion = yInicioPrecio / altoPixeles;
+        taparDesdeFraccion(paginasCopiadas[i], fraccion);
+        tapoAlgo = true;
+      }
+    } catch (e) {
+      console.error(`No se pudo analizar la página ${i + 1} del boleto para tapar el precio:`, e);
+    }
+  }
+  return tapoAlgo;
+}
+
+// Igual que la anterior, pero para boletos adjuntados como foto/imagen (una sola "página").
+async function taparPrecioEnImagen(bytesImagen, paginaDestino, xImagen, yImagen, anchoImagen, altoImagen) {
+  const dimensiones = await obtenerDimensionesImagen(bytesImagen);
+  const base64 = btoa(new Uint8Array(bytesImagen).reduce((data, byte) => data + String.fromCharCode(byte), ""));
+  const anotacion = await llamarVisionOCRConCoordenadas(base64);
+  const yInicioPrecio = encontrarInicioZonaPrecio(anotacion);
+  if (yInicioPrecio === null) return false;
+
+  const fraccionDesdeArriba = yInicioPrecio / dimensiones.alto;
+  // yCorte: altura desde la base de la imagen dibujada hasta donde empieza el precio.
+  const yCorte = yImagen + altoImagen * (1 - fraccionDesdeArriba);
+  paginaDestino.drawRectangle({
+    x: xImagen,
+    y: yImagen,
+    width: anchoImagen,
+    height: Math.max(yCorte - yImagen, 0),
+    color: PDFLib.rgb(1, 1, 1)
+  });
+  return true;
+}
+
 async function fusionarComprobanteConBoletos(pdfJsPDF, tiquetesVuelo) {
   const { PDFDocument } = PDFLib;
   const bytesComprobante = pdfJsPDF.output("arraybuffer");
   const pdfFinal = await PDFDocument.load(bytesComprobante);
   const errores = [];
+  const avisos = [];
+  const hayVisionConfigurada = VISION_API_KEY && VISION_API_KEY !== "TU_API_KEY_AQUI";
 
   for (const tiquete of tiquetesVuelo || []) {
     try {
@@ -2900,16 +3054,33 @@ async function fusionarComprobanteConBoletos(pdfJsPDF, tiquetesVuelo) {
         const escala = Math.min(width / imagenEmbebida.width, height / imagenEmbebida.height) * 0.9;
         const anchoFinal = imagenEmbebida.width * escala;
         const altoFinal = imagenEmbebida.height * escala;
-        paginaNueva.drawImage(imagenEmbebida, {
-          x: (width - anchoFinal) / 2,
-          y: (height - altoFinal) / 2,
-          width: anchoFinal,
-          height: altoFinal
-        });
+        const xImagen = (width - anchoFinal) / 2;
+        const yImagen = (height - altoFinal) / 2;
+        paginaNueva.drawImage(imagenEmbebida, { x: xImagen, y: yImagen, width: anchoFinal, height: altoFinal });
+
+        if (hayVisionConfigurada) {
+          try {
+            const tapado = await taparPrecioEnImagen(bytes, paginaNueva, xImagen, yImagen, anchoFinal, altoFinal);
+            if (!tapado) avisos.push(`${tiquete.nombre}: no se detectó ninguna zona de precio para tapar — revísalo a mano`);
+          } catch (e) {
+            console.error(`No se pudo tapar el precio de "${tiquete.nombre}":`, e);
+            avisos.push(`${tiquete.nombre}: no se pudo revisar automáticamente si tiene precio visible — revísalo a mano`);
+          }
+        }
       } else {
         const pdfTiquete = await PDFDocument.load(bytes);
         const paginasCopiadas = await pdfFinal.copyPages(pdfTiquete, pdfTiquete.getPageIndices());
         paginasCopiadas.forEach(p => pdfFinal.addPage(p));
+
+        if (hayVisionConfigurada) {
+          try {
+            const tapoAlgo = await taparPrecioEnPaginasPDF(bytes, paginasCopiadas);
+            if (!tapoAlgo) avisos.push(`${tiquete.nombre}: no se detectó ninguna zona de precio para tapar — revísalo a mano`);
+          } catch (e) {
+            console.error(`No se pudo tapar el precio de "${tiquete.nombre}":`, e);
+            avisos.push(`${tiquete.nombre}: no se pudo revisar automáticamente si tiene precio visible — revísalo a mano`);
+          }
+        }
       }
     } catch (e) {
       // NUEVO: la causa más común de que esto falle en silencio es que el bucket de
@@ -2920,13 +3091,14 @@ async function fusionarComprobanteConBoletos(pdfJsPDF, tiquetesVuelo) {
     }
   }
 
-  return { bytes: await pdfFinal.save(), errores };
+  return { bytes: await pdfFinal.save(), errores, avisos };
 }
 
 async function construirComprobanteCompleto(datos) {
   const pdfJsPDF = await generarPaginasComprobante(datos);
   return await fusionarComprobanteConBoletos(pdfJsPDF, datos.tiquetesVuelo || []);
 }
+
 
 async function descargarComprobante() {
   const mensajeEl = document.getElementById("comprobanteMensaje");
@@ -2935,7 +3107,7 @@ async function descargarComprobante() {
     const datos = await obtenerDatosReservaActual();
     if (!datos) { mensajeEl.innerHTML = ""; return; }
 
-    const { bytes: bytesFinal, errores } = await construirComprobanteCompleto(datos);
+    const { bytes: bytesFinal, errores, avisos } = await construirComprobanteCompleto(datos);
     const blob = new Blob([bytesFinal], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const enlace = document.createElement("a");
@@ -2946,8 +3118,12 @@ async function descargarComprobante() {
     document.body.removeChild(enlace);
     URL.revokeObjectURL(url);
 
-    if (errores.length > 0) {
-      mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ Comprobante descargado, pero no se pudo adjuntar: ${errores.join("; ")}. Revisa la consola (F12) para más detalle.</span>`;
+    const partesMensaje = [];
+    if (errores.length > 0) partesMensaje.push(`no se pudo adjuntar: ${errores.join("; ")}`);
+    if (avisos.length > 0) partesMensaje.push(`revisa a mano antes de enviarlo — ${avisos.join("; ")}`);
+
+    if (partesMensaje.length > 0) {
+      mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ Comprobante descargado, pero ${partesMensaje.join(". ")}.</span>`;
     } else {
       mensajeEl.innerHTML = `<span style="color:#0a7a2f;">✅ Comprobante descargado.</span>`;
     }
@@ -2970,7 +3146,19 @@ async function enviarComprobantePorCorreo() {
 
     mensajeEl.innerHTML = `<span style="color:#555;">⏳ Generando y enviando comprobante...</span>`;
 
-    const { bytes: bytesFinal, errores } = await construirComprobanteCompleto(datos);
+    const { bytes: bytesFinal, errores, avisos } = await construirComprobanteCompleto(datos);
+
+    if (avisos.length > 0) {
+      const continuar = confirm(
+        `⚠️ No se pudo confirmar que el precio del boleto quedó tapado en:\n\n${avisos.join("\n")}\n\n` +
+        `Revisa el PDF con cuidado antes de mandarlo. ¿Enviar de todas formas?`
+      );
+      if (!continuar) {
+        mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ Envío cancelado — descarga el comprobante y revísalo antes de enviarlo manualmente.</span>`;
+        return;
+      }
+    }
+
     const base64Final = btoa(new Uint8Array(bytesFinal).reduce((data, byte) => data + String.fromCharCode(byte), ""));
 
     const respuesta = await fetch(WORKER_COMPROBANTE_URL, {
@@ -3006,4 +3194,3 @@ async function enviarComprobantePorCorreo() {
 
 </body>
 </html>
-
