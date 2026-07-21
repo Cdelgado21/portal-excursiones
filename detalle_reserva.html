@@ -308,8 +308,32 @@
   <div style="margin-bottom: 20px; padding: 12px; background: #f0f7f7; border-radius: 8px;">
     <label for="tiqueteVueloFile">Adjuntar comprobante de vuelo (PDF o imagen) para autocompletar</label>
     <input type="file" id="tiqueteVueloFile" accept="image/*,application/pdf">
+    <button type="button" id="btnAbrirEditorTiquete" style="display:none; margin-top:8px; font-size: 13px; padding: 6px 12px;" onclick="abrirEditorTiquete()">🖊️ Tapar precio antes de guardar</button>
     <div id="tiqueteVueloMensaje" style="margin-top:6px; font-size: 0.85rem;"></div>
     <div id="tiquetesVueloLista" style="margin-top:10px; font-size: 0.85rem;"></div>
+  </div>
+
+  <!-- NUEVO: editor manual para tapar el precio del boleto antes de guardarlo. Se abre
+       automáticamente al seleccionar un archivo, pero también se puede reabrir con el
+       botón de arriba mientras no se haya guardado la reserva. -->
+  <div id="modalEditorTiquete" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:white; padding:20px; border-radius:12px; max-width:95vw; max-height:92vh; overflow:auto; position:relative;">
+      <h3 style="margin-top:0; color:#02535a;">Tapar precio del boleto antes de guardar</h3>
+      <p style="font-size:0.85rem; color:#555; margin-top:-8px;">Clic y arrastra sobre la zona del precio para taparla con un recuadro blanco. Puedes tapar varias zonas y en varias páginas.</p>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; flex-wrap:wrap;">
+        <button type="button" onclick="editorPaginaAnterior()">⬅️ Anterior</button>
+        <span id="editorPaginaIndicador" style="font-weight:bold; color:#02535a;">Página 1 de 1</span>
+        <button type="button" onclick="editorPaginaSiguiente()">Siguiente ➡️</button>
+        <button type="button" onclick="editorDeshacerRecuadro()" style="background:#b00020;">↩️ Deshacer último recuadro</button>
+      </div>
+      <div style="border:1px solid #ccc; overflow:auto; max-height:65vh; background:#eee;">
+        <canvas id="canvasEditorTiquete" style="cursor:crosshair; display:block; touch-action:none;"></canvas>
+      </div>
+      <div style="margin-top:15px; text-align:right;">
+        <button type="button" onclick="cerrarEditorTiquete(false)" style="background:#ccc; color:#333;">Cancelar</button>
+        <button type="button" onclick="cerrarEditorTiquete(true)" style="background:#0a7a2f;">💾 Guardar cambios</button>
+      </div>
+    </div>
   </div>
 
   <h3>Vuelo de Ida</h3>
@@ -1373,6 +1397,265 @@ async function procesarOCRTiquete(archivo) {
   }
 }
 
+// ==========================================
+// NUEVO: EDITOR MANUAL PARA TAPAR EL PRECIO DEL BOLETO
+// Reemplaza la dependencia del OCR automático (que no siempre encuentra la zona de
+// precio) por control manual: Cristopher dibuja el recuadro sobre el precio y esa
+// versión — no la original — es la que se sube a Storage y se pega al comprobante.
+// ==========================================
+
+window.editorTiqueteState = {
+  tipo: null,              // "pdf" | "imagen"
+  pdfDoc: null,             // documento cargado con pdf.js (para renderizar)
+  paginaActual: 1,
+  totalPaginas: 1,
+  imagenElemento: null,     // <img> cargada, cuando el boleto es una foto
+  recuadrosPorPagina: {},   // { numeroPagina: [{x,y,width,height}, ...] } en coordenadas de canvas
+  escalaRender: 1,          // factor entre el canvas mostrado y el tamaño real (puntos PDF o píxeles de imagen)
+  arrastrando: false,
+  inicioX: 0,
+  inicioY: 0,
+  rectLive: null,
+  canvasBase: document.createElement("canvas"), // página/imagen ya renderizada, sin recuadros (para redibujar rápido)
+  archivoOriginal: null,
+  bytesOriginales: null
+};
+
+async function abrirEditorTiquete() {
+  const input = document.getElementById("tiqueteVueloFile");
+  const archivo = input.files[0];
+  if (!archivo) {
+    alert("⚠️ Primero selecciona un archivo de boleto.");
+    return;
+  }
+
+  const estado = window.editorTiqueteState;
+  estado.archivoOriginal = archivo;
+  estado.recuadrosPorPagina = {};
+  estado.paginaActual = 1;
+
+  const bytes = await archivo.arrayBuffer();
+  estado.bytesOriginales = bytes;
+
+  if (archivo.type === "application/pdf") {
+    estado.tipo = "pdf";
+    estado.pdfDoc = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
+    estado.totalPaginas = estado.pdfDoc.numPages;
+  } else {
+    estado.tipo = "imagen";
+    const blob = new Blob([bytes], { type: archivo.type });
+    const url = URL.createObjectURL(blob);
+    estado.imagenElemento = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = url;
+    });
+    URL.revokeObjectURL(url);
+    estado.totalPaginas = 1;
+  }
+
+  document.getElementById("modalEditorTiquete").style.display = "flex";
+  await editorRenderizarPagina(1);
+}
+
+async function editorRenderizarPagina(numero) {
+  const estado = window.editorTiqueteState;
+  estado.paginaActual = numero;
+  document.getElementById("editorPaginaIndicador").textContent = `Página ${numero} de ${estado.totalPaginas}`;
+
+  const canvasVisible = document.getElementById("canvasEditorTiquete");
+  const anchoMaximo = Math.min(window.innerWidth * 0.85, 850);
+
+  if (estado.tipo === "pdf") {
+    const pagina = await estado.pdfDoc.getPage(numero);
+    const viewportBase = pagina.getViewport({ scale: 1 });
+    const escala = anchoMaximo / viewportBase.width;
+    const viewport = pagina.getViewport({ scale: escala });
+    estado.escalaRender = escala;
+
+    estado.canvasBase.width = viewport.width;
+    estado.canvasBase.height = viewport.height;
+    await pagina.render({ canvasContext: estado.canvasBase.getContext("2d"), viewport }).promise;
+  } else {
+    const img = estado.imagenElemento;
+    const escala = Math.min(anchoMaximo / img.naturalWidth, 1);
+    estado.escalaRender = escala;
+    estado.canvasBase.width = img.naturalWidth * escala;
+    estado.canvasBase.height = img.naturalHeight * escala;
+    estado.canvasBase.getContext("2d").drawImage(img, 0, 0, estado.canvasBase.width, estado.canvasBase.height);
+  }
+
+  canvasVisible.width = estado.canvasBase.width;
+  canvasVisible.height = estado.canvasBase.height;
+  editorRedibujar();
+}
+
+function editorRedibujar() {
+  const estado = window.editorTiqueteState;
+  const canvas = document.getElementById("canvasEditorTiquete");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(estado.canvasBase, 0, 0);
+
+  const recuadros = estado.recuadrosPorPagina[estado.paginaActual] || [];
+  [...recuadros, estado.rectLive].filter(Boolean).forEach(r => {
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.fillRect(r.x, r.y, r.width, r.height);
+    ctx.strokeStyle = "#b00020";
+    ctx.setLineDash([4, 3]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(r.x, r.y, r.width, r.height);
+    ctx.setLineDash([]);
+  });
+}
+
+function inicializarEditorTiquete() {
+  const canvas = document.getElementById("canvasEditorTiquete");
+  const estado = window.editorTiqueteState;
+
+  function coordenadasDesdeEvento(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  canvas.addEventListener("pointerdown", e => {
+    const { x, y } = coordenadasDesdeEvento(e);
+    estado.arrastrando = true;
+    estado.inicioX = x;
+    estado.inicioY = y;
+  });
+
+  canvas.addEventListener("pointermove", e => {
+    if (!estado.arrastrando) return;
+    const { x, y } = coordenadasDesdeEvento(e);
+    estado.rectLive = {
+      x: Math.min(x, estado.inicioX),
+      y: Math.min(y, estado.inicioY),
+      width: Math.abs(x - estado.inicioX),
+      height: Math.abs(y - estado.inicioY)
+    };
+    editorRedibujar();
+  });
+
+  canvas.addEventListener("pointerup", () => {
+    if (!estado.arrastrando) return;
+    estado.arrastrando = false;
+    if (estado.rectLive && estado.rectLive.width > 4 && estado.rectLive.height > 4) {
+      if (!estado.recuadrosPorPagina[estado.paginaActual]) estado.recuadrosPorPagina[estado.paginaActual] = [];
+      estado.recuadrosPorPagina[estado.paginaActual].push(estado.rectLive);
+    }
+    estado.rectLive = null;
+    editorRedibujar();
+  });
+
+  canvas.addEventListener("pointerleave", () => {
+    estado.arrastrando = false;
+    estado.rectLive = null;
+    editorRedibujar();
+  });
+}
+
+function editorPaginaAnterior() {
+  const estado = window.editorTiqueteState;
+  if (estado.paginaActual > 1) editorRenderizarPagina(estado.paginaActual - 1);
+}
+
+function editorPaginaSiguiente() {
+  const estado = window.editorTiqueteState;
+  if (estado.paginaActual < estado.totalPaginas) editorRenderizarPagina(estado.paginaActual + 1);
+}
+
+function editorDeshacerRecuadro() {
+  const estado = window.editorTiqueteState;
+  const lista = estado.recuadrosPorPagina[estado.paginaActual];
+  if (lista && lista.length > 0) lista.pop();
+  editorRedibujar();
+}
+
+// Convierte los recuadros dibujados (en coordenadas de canvas) al archivo final: para PDF
+// los "quema" como rectángulos blancos con pdf-lib; para imagen, los pinta directo sobre
+// un canvas a la resolución original. El archivo resultante reemplaza al del input de
+// archivo, para que lo que se suba a Storage sea la versión ya tapada.
+async function cerrarEditorTiquete(guardar) {
+  const estado = window.editorTiqueteState;
+  const modal = document.getElementById("modalEditorTiquete");
+
+  if (!guardar) {
+    modal.style.display = "none";
+    return;
+  }
+
+  const totalRecuadros = Object.values(estado.recuadrosPorPagina).reduce((sum, arr) => sum + arr.length, 0);
+  if (totalRecuadros === 0) {
+    const continuar = confirm("No dibujaste ningún recuadro para tapar. ¿Guardar el boleto tal cual, sin tapar nada?");
+    if (!continuar) return;
+    modal.style.display = "none";
+    return;
+  }
+
+  try {
+    let archivoFinal;
+
+    if (estado.tipo === "pdf") {
+      const { PDFDocument, rgb } = PDFLib;
+      const pdfDoc = await PDFDocument.load(estado.bytesOriginales.slice(0));
+      const paginas = pdfDoc.getPages();
+
+      Object.keys(estado.recuadrosPorPagina).forEach(numeroPaginaStr => {
+        const numeroPagina = parseInt(numeroPaginaStr);
+        const pagina = paginas[numeroPagina - 1];
+        if (!pagina) return;
+        const alturaPaginaPts = pagina.getHeight();
+        estado.recuadrosPorPagina[numeroPaginaStr].forEach(r => {
+          const xPts = r.x / estado.escalaRender;
+          const anchoPts = r.width / estado.escalaRender;
+          const yTopPts = r.y / estado.escalaRender;
+          const altoPts = r.height / estado.escalaRender;
+          const yPts = alturaPaginaPts - yTopPts - altoPts;
+          pagina.drawRectangle({ x: xPts, y: yPts, width: anchoPts, height: altoPts, color: rgb(1, 1, 1) });
+        });
+      });
+
+      const bytesFinal = await pdfDoc.save();
+      archivoFinal = new File([bytesFinal], estado.archivoOriginal.name, { type: "application/pdf" });
+    } else {
+      const img = estado.imagenElemento;
+      const canvasFinal = document.createElement("canvas");
+      canvasFinal.width = img.naturalWidth;
+      canvasFinal.height = img.naturalHeight;
+      const ctxFinal = canvasFinal.getContext("2d");
+      ctxFinal.drawImage(img, 0, 0);
+
+      const recuadros = estado.recuadrosPorPagina[1] || [];
+      recuadros.forEach(r => {
+        ctxFinal.fillStyle = "#ffffff";
+        ctxFinal.fillRect(
+          r.x / estado.escalaRender,
+          r.y / estado.escalaRender,
+          r.width / estado.escalaRender,
+          r.height / estado.escalaRender
+        );
+      });
+
+      const blobFinal = await new Promise(resolve => canvasFinal.toBlob(resolve, estado.archivoOriginal.type || "image/png"));
+      archivoFinal = new File([blobFinal], estado.archivoOriginal.name, { type: estado.archivoOriginal.type || "image/png" });
+    }
+
+    const dt = new DataTransfer();
+    dt.items.add(archivoFinal);
+    document.getElementById("tiqueteVueloFile").files = dt.files;
+
+    document.getElementById("tiqueteVueloMensaje").innerHTML =
+      `<span style="color:#0a7a2f;">✅ Precio tapado manualmente en ${totalRecuadros} zona(s) — esta es la versión que se va a guardar al darle "Guardar Reserva".</span>`;
+
+    modal.style.display = "none";
+  } catch (e) {
+    console.error("Error al guardar los cambios del editor de boleto:", e);
+    alert("❌ No se pudo aplicar el tapado. Intenta de nuevo.");
+  }
+}
+
 function toggleSeccion(encabezado) {
   const seccion = encabezado.closest('section');
   const hijos = Array.from(seccion.children).filter(el => el !== encabezado);
@@ -2204,7 +2487,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const archivo = this.files[0];
     if (!archivo) return;
     procesarOCRTiquete(archivo);
+    document.getElementById("btnAbrirEditorTiquete").style.display = "inline-block";
+    abrirEditorTiquete();
   });
+
+  inicializarEditorTiquete();
 
   document.querySelectorAll('.autoresize').forEach(textarea => {
     textarea.addEventListener('input', () => autoResizeTextarea(textarea));
@@ -3194,3 +3481,4 @@ async function enviarComprobantePorCorreo() {
 
 </body>
 </html>
+
