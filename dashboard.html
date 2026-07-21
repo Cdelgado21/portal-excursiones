@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dashboard - Excursiones Delgado</title>
+  <!-- NUEVO: esta página no tenía Firebase inicializado — se agrega aquí,
+       igual que en el resto del sistema, para que topbar.js (barra superior
+       con usuario, foto de perfil y notificaciones) pueda funcionar. -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
   <style>
     * { box-sizing: border-box; }
 
@@ -261,6 +268,17 @@
   </main>
 
   <script>
+    // NUEVO: misma configuración de Firebase que usa el resto del sistema.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.firebasestorage.app",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+    };
+    firebase.initializeApp(firebaseConfig);
+
     const usuario = JSON.parse(localStorage.getItem("usuario"));
     const sidebar = document.getElementById("sidebar");
     const main = document.getElementById("contenido");
@@ -299,5 +317,8 @@
     window.addEventListener('resize', checkScreenSize);
     window.addEventListener('load', checkScreenSize);
   </script>
+  <!-- NUEVO: barra superior compartida — siempre al final, después de que
+       Firebase ya quedó inicializado arriba. -->
+  <script src="topbar.js"></script>
 </body>
 </html>
