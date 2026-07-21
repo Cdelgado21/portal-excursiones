@@ -443,7 +443,7 @@ input[type="date"] {
      cobra aparte del total normal de la reserva, no está incluido de por sí. -->
 <div class="aviso-factura-electronica">
   <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-    <input type="checkbox" id="requiereFacturaElectronica" onchange="recalcularTotalesFactura()">
+    <input type="checkbox" id="requiereFacturaElectronica" onchange="actualizarCheckboxFacturaElectronica()">
     ¿El cliente requiere factura electrónica? Se agrega 13% de IVA al detalle de arriba, y el saldo restante de abajo se recalcula para incluirlo.
   </label>
 </div>
@@ -686,6 +686,14 @@ if (reservaID) {
 
   setTexto("codigoVuelo", data.vueloIda?.codigo || "---");
 
+  // NUEVO: el checkbox de factura electrónica ahora sí se guarda en la reserva
+  // (ver actualizarCheckboxFacturaElectronica), así que al recargar la página
+  // debe reflejar lo que ya se había elegido, en vez de empezar desmarcado.
+  const checkboxFacturaElectronica = document.getElementById("requiereFacturaElectronica");
+  if (checkboxFacturaElectronica) {
+    checkboxFacturaElectronica.checked = !!data.requiereFacturaElectronica;
+  }
+
   const adultos = Number(data.cantidadAdultos) || 0;
   const ninos   = Number(data.cantidadNinos)   || 0;
   const bebes   = Number(data.cantidadBebes)   || 0;
@@ -749,6 +757,26 @@ if (reservaID) {
     });
 } else {
   alert("No se proporcionó un código de reserva.");
+}
+
+// NUEVO: guarda de inmediato en la reserva si el cliente pide factura
+// electrónica o no — antes esta elección solo vivía en el checkbox de la
+// pantalla y se perdía al recargar, porque nada la guardaba en Firestore.
+// Se guarda apenas cambia el checkbox, sin esperar a "Guardar Factura" (que
+// además queda bloqueado una vez generada la factura, pero el checkbox debe
+// poder seguir reflejando el estado real).
+function actualizarCheckboxFacturaElectronica() {
+  recalcularTotalesFactura();
+
+  const reservaId = new URLSearchParams(window.location.search).get("reserva");
+  if (!reservaId) return;
+
+  const marcado = document.getElementById("requiereFacturaElectronica").checked;
+  db.collection("reservas").doc(reservaId).update({ requiereFacturaElectronica: marcado })
+    .then(() => {
+      if (window.reservaActual) window.reservaActual.requiereFacturaElectronica = marcado;
+    })
+    .catch(e => console.error("No se pudo guardar la preferencia de factura electrónica:", e));
 }
 
 // NUEVO: recalcula Subtotal / IVA (si aplica) / Total a partir de las filas
@@ -961,7 +989,8 @@ function guardarFactura() {
         numeroFactura: nuevoNumero,
         facturaGenerada: true,
         fechaFactura: new Date().toISOString(),
-        usuarioFactura: usuarioSesion?.nombre || "Desconocido"
+        usuarioFactura: usuarioSesion?.nombre || "Desconocido",
+        requiereFacturaElectronica: document.getElementById("requiereFacturaElectronica")?.checked || false
       };
 
       docRef.update(datosActualizados).then(() => {
@@ -1358,4 +1387,5 @@ async function enviarPorCorreo() {
 
 </body>
 </html>
+
 
