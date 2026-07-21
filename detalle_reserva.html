@@ -2870,6 +2870,9 @@ async function generarPaginasComprobante(datos) {
 
 async function descargarTiqueteComoBytes(tiquete) {
   const respuesta = await fetch(tiquete.url);
+  if (!respuesta.ok) {
+    throw new Error(`HTTP ${respuesta.status} al descargar el archivo`);
+  }
   const blob = await respuesta.blob();
   return await blob.arrayBuffer();
 }
@@ -2878,6 +2881,7 @@ async function fusionarComprobanteConBoletos(pdfJsPDF, tiquetesVuelo) {
   const { PDFDocument } = PDFLib;
   const bytesComprobante = pdfJsPDF.output("arraybuffer");
   const pdfFinal = await PDFDocument.load(bytesComprobante);
+  const errores = [];
 
   for (const tiquete of tiquetesVuelo || []) {
     try {
@@ -2908,11 +2912,15 @@ async function fusionarComprobanteConBoletos(pdfJsPDF, tiquetesVuelo) {
         paginasCopiadas.forEach(p => pdfFinal.addPage(p));
       }
     } catch (e) {
+      // NUEVO: la causa más común de que esto falle en silencio es que el bucket de
+      // Firebase Storage no tenga configurado CORS para el dominio del sitio — el
+      // navegador bloquea el fetch() aunque el archivo sí exista y sea público.
       console.error(`No se pudo anexar el comprobante de vuelo "${tiquete.nombre}":`, e);
+      errores.push(`${tiquete.nombre || "un comprobante"} (${e.message || e})`);
     }
   }
 
-  return await pdfFinal.save();
+  return { bytes: await pdfFinal.save(), errores };
 }
 
 async function construirComprobanteCompleto(datos) {
@@ -2927,7 +2935,7 @@ async function descargarComprobante() {
     const datos = await obtenerDatosReservaActual();
     if (!datos) { mensajeEl.innerHTML = ""; return; }
 
-    const bytesFinal = await construirComprobanteCompleto(datos);
+    const { bytes: bytesFinal, errores } = await construirComprobanteCompleto(datos);
     const blob = new Blob([bytesFinal], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const enlace = document.createElement("a");
@@ -2937,7 +2945,12 @@ async function descargarComprobante() {
     enlace.click();
     document.body.removeChild(enlace);
     URL.revokeObjectURL(url);
-    mensajeEl.innerHTML = `<span style="color:#0a7a2f;">✅ Comprobante descargado.</span>`;
+
+    if (errores.length > 0) {
+      mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ Comprobante descargado, pero no se pudo adjuntar: ${errores.join("; ")}. Revisa la consola (F12) para más detalle.</span>`;
+    } else {
+      mensajeEl.innerHTML = `<span style="color:#0a7a2f;">✅ Comprobante descargado.</span>`;
+    }
   } catch (e) {
     console.error("Error al generar el comprobante:", e);
     mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo generar el comprobante.</span>`;
@@ -2957,7 +2970,7 @@ async function enviarComprobantePorCorreo() {
 
     mensajeEl.innerHTML = `<span style="color:#555;">⏳ Generando y enviando comprobante...</span>`;
 
-    const bytesFinal = await construirComprobanteCompleto(datos);
+    const { bytes: bytesFinal, errores } = await construirComprobanteCompleto(datos);
     const base64Final = btoa(new Uint8Array(bytesFinal).reduce((data, byte) => data + String.fromCharCode(byte), ""));
 
     const respuesta = await fetch(WORKER_COMPROBANTE_URL, {
@@ -2977,7 +2990,11 @@ async function enviarComprobantePorCorreo() {
       throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
     }
 
-    mensajeEl.innerHTML = `<span style="color:#0a7a2f;">✅ Comprobante enviado a ${datos.correo}.</span>`;
+    if (errores.length > 0) {
+      mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ Comprobante enviado a ${datos.correo}, pero sin adjuntar: ${errores.join("; ")}.</span>`;
+    } else {
+      mensajeEl.innerHTML = `<span style="color:#0a7a2f;">✅ Comprobante enviado a ${datos.correo}.</span>`;
+    }
   } catch (e) {
     console.error("Error al enviar el comprobante:", e);
     mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo enviar el comprobante. Revisa la consola (F12) para más detalle.</span>`;
@@ -2989,3 +3006,4 @@ async function enviarComprobantePorCorreo() {
 
 </body>
 </html>
+
