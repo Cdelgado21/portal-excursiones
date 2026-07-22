@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - Excursiones Delgado</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       background-color: #f4f7f8;
@@ -129,10 +129,10 @@
 </div>
 <script>
   const firebaseConfig = {
-    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
     authDomain: "tours-460717.firebaseapp.com",
     projectId: "tours-460717",
-    storageBucket: "tours-460717.appspot.com",
+    storageBucket: "tours-460717.firebasestorage.app",
     messagingSenderId: "1000749333444",
     appId: "1:1000749333444:web:73437891b59a96b6a4c291"
   };
@@ -151,62 +151,79 @@
     }
   }
 
-  // NUEVO: si venimos de un cierre de sesión automático por inactividad
-  // (topbar.js redirige aquí con ?motivo=inactividad), se lo avisamos.
+  // NUEVO: si venimos de un cierre de sesión automático (por inactividad,
+  // o porque auth-guard.js detectó que no había sesión real), avisamos.
   const parametrosURL = new URLSearchParams(window.location.search);
-  if (parametrosURL.get("motivo") === "inactividad") {
+  const motivo = parametrosURL.get("motivo");
+  if (motivo === "inactividad") {
     alert("Tu sesión se cerró automáticamente por 30 minutos de inactividad. Vuelve a iniciar sesión.");
+  } else if (motivo === "sesion_requerida") {
+    alert("Necesitas iniciar sesión para entrar ahí.");
+  } else if (motivo === "usuario_inactivo") {
+    alert("Tu usuario está marcado como inactivo. Contacta a un administrador.");
+  } else if (motivo === "usuario_no_encontrado") {
+    alert("Tu cuenta no tiene un perfil configurado en el sistema. Contacta a un administrador.");
   }
 
+  // FIX DE SEGURIDAD: antes, el login comparaba la contraseña escrita
+  // directamente contra el campo "clave" guardado en texto plano en
+  // Firestore — cualquiera que pudiera leer la colección "usuarios" (o que
+  // encontrara mal configuradas las reglas de Firestore) veía la contraseña
+  // de todos tal cual. Ahora la validación pasa por Firebase Authentication
+  // real: la contraseña nunca se guarda ni se compara a mano, Firebase se
+  // encarga de eso de forma segura. El documento en Firestore
+  // (usuarios/{uid}, usando el mismo UID que Firebase Authentication) solo
+  // guarda datos de perfil (nombre, rol, estado) — nunca la contraseña.
   document.getElementById('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const email = document.getElementById('correo').value.trim();
     const password = document.getElementById('clave').value.trim();
 
-
     try {
-      const query = await db.collection("usuarios")
-        .where("correo", "==", email)
-        .where("clave", "==", password)
-        .get();
+      const credencial = await firebase.auth().signInWithEmailAndPassword(email, password);
+      const uid = credencial.user.uid;
 
-      if (query.empty) {
-        alert("Correo o contraseña incorrectos.");
+      const docUsuario = await db.collection("usuarios").doc(uid).get();
+
+      if (!docUsuario.exists) {
+        alert("Tu cuenta no tiene un perfil configurado en el sistema. Contacta a un administrador.");
+        await firebase.auth().signOut();
         return;
       }
 
-      const documentoUsuario = query.docs[0];
-      const usuario = documentoUsuario.data();
+      const usuario = docUsuario.data();
 
       if (usuario.estado !== "Activo") {
         alert("El usuario no está activo.");
+        await firebase.auth().signOut();
         return;
       }
 
-      // FIX: antes solo se guardaban los campos del documento (nombre, rol,
-      // correo, etc.), pero nunca el ID del documento en Firestore. Sin ese
-      // ID no hay forma confiable de saber a quién subirle la foto de perfil
-      // ni a quién avisarle cuando le cambian el rol — ahora se guarda junto
-      // con el resto de los datos.
-      const usuarioConId = { id: documentoUsuario.id, ...usuario };
+      const usuarioConId = { id: uid, ...usuario };
       localStorage.setItem("usuario", JSON.stringify(usuarioConId));
 
-     const nombre = usuario.nombre || email;
-const modal = document.getElementById("modal-bienvenida");
-modal.textContent = `¡Bienvenido ${nombre}!`;
-modal.style.display = "block";
-setTimeout(() => {
-  modal.style.display = "none";
-  if (usuario.rol === "Administrador") {
-    window.location.href = "dashboard.html";
-  } else {
-    window.location.href = "menu.html";
-  }
-}, 2000);
+      const nombre = usuario.nombre || email;
+      const modal = document.getElementById("modal-bienvenida");
+      modal.textContent = `¡Bienvenido ${nombre}!`;
+      modal.style.display = "block";
+      setTimeout(() => {
+        modal.style.display = "none";
+        if (usuario.rol === "Administrador") {
+          window.location.href = "dashboard.html";
+        } else {
+          window.location.href = "menu.html";
+        }
+      }, 2000);
 
-      } catch (error) {
+    } catch (error) {
       console.error("Error al iniciar sesión:", error);
-      alert("Ocurrió un error al validar tus datos.");
+      if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
+        alert("Correo o contraseña incorrectos.");
+      } else if (error.code === "auth/too-many-requests") {
+        alert("Demasiados intentos fallidos. Espera un momento antes de volver a intentar.");
+      } else {
+        alert("Ocurrió un error al validar tus datos.");
+      }
     }
   });
 </script>
