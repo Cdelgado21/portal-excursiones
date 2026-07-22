@@ -8,6 +8,7 @@
        igual que en el resto del sistema, para que topbar.js (barra superior
        con usuario, foto de perfil y notificaciones) pueda funcionar. -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <link rel="stylesheet" href="topbar.css">
@@ -320,5 +321,9 @@
   <!-- NUEVO: barra superior compartida — siempre al final, después de que
        Firebase ya quedó inicializado arriba. -->
   <script src="topbar.js"></script>
+  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
+       de confiar solo en lo que diga localStorage. Va al final para que
+       "gane" sobre cualquier función de cerrar sesión que ya exista arriba. -->
+  <script src="auth-guard.js"></script>
 </body>
 </html>
