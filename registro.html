@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestión de Usuarios</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       background-color: #f4f7f8;
@@ -111,12 +111,12 @@
 <body>
   <div class="container">
     <h1>Gestión de Usuarios</h1>
-    <button onclick="toggleModal()" class="btn-agregar">Agregar Usuario</button>
+    <button onclick="abrirModalNuevoUsuario()" class="btn-agregar">Agregar Usuario</button>
 
     <!-- Modal -->
     <div id="modalForm" class="modal">
       <div class="modal-content">
-        <h2>Nuevo Usuario</h2>
+        <h2 id="tituloModalUsuario">Nuevo Usuario</h2>
         <form id="formulario">
           <input type="hidden" id="usuarioId">
           <input type="text" id="nombre" placeholder="Nombre">
@@ -125,7 +125,10 @@
           <input type="text" id="telefono" placeholder="Teléfono">
           <input type="email" id="correo" placeholder="Correo electrónico">
           <input type="text" id="pasaporte" placeholder="N° Pasaporte">
-          <input type="password" id="clave" placeholder="Contraseña">
+          <input type="password" id="contrasenaNueva" placeholder="Contraseña (solo para usuario nuevo)" autocomplete="new-password">
+          <div id="avisoContrasenaEdicion" style="display:none; background:#eef6f6; border:1px solid #cfe3e4; border-radius:8px; padding:10px 12px; margin-top:-10px; margin-bottom:15px; font-size:13px; color:#02535a;">
+            ℹ️ Editando un usuario existente — la contraseña no se toca aquí (ese campo se ignora). Para cambiarla, hazlo directo en Firebase Authentication.
+          </div>
           <select id="rol">
             <option value="Cotizaciones">Cotizaciones</option>
             <option value="Reservas">Reservas</option>
@@ -150,7 +153,6 @@
             <th>Fecha Nac.</th>
             <th>Teléfono</th>
             <th>Correo</th>
-            <th>Clave</th>
             <th>Pasaporte</th>
             <th>Rol</th>
             <th>Estado</th>
@@ -165,10 +167,10 @@
 
   <script>
     const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
       projectId: "tours-460717",
-      storageBucket: "tours-460717.firebaseapp.com",
+      storageBucket: "tours-460717.firebasestorage.app",
       messagingSenderId: "1000749333444",
       appId: "1:1000749333444:web:73437891b59a96b6a4c291"
     };
@@ -176,57 +178,144 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
 
+    // NUEVO: URL de la Cloud Function "administrarUsuario" — reemplaza este
+    // valor por la URL real que te dé Google Cloud al terminar de
+    // desplegarla (algo como https://administrar-usuario-XXXXXXXXXX.us-central1.run.app).
+    const URL_FUNCION_ADMINISTRAR_USUARIO = "https://administrar-usuario-1000749333444.us-central1.run.app";
+
+    // Llama a la Cloud Function adjuntando el token de sesión real del
+    // Administrador que está usando el sistema — la función verifica ese
+    // token del lado del servidor antes de hacer cualquier cosa.
+    async function llamarAdministrarUsuario(datos) {
+      const usuarioActual = auth.currentUser;
+      if (!usuarioActual) {
+        throw new Error("No hay sesión activa.");
+      }
+      const idToken = await usuarioActual.getIdToken();
+
+      const respuesta = await fetch(URL_FUNCION_ADMINISTRAR_USUARIO, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify(datos)
+      });
+
+      const resultado = await respuesta.json().catch(() => ({}));
+
+      if (!respuesta.ok || resultado.error) {
+        throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
+      }
+
+      return resultado;
+    }
+
     const form = document.getElementById('formulario');
     const tabla = document.getElementById('tablaUsuarios');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const datos = {
-        nombre: form.nombre.value,
-        apellidos: form.apellidos.value,
-        fechaNacimiento: form.fechaNacimiento.value,
-        telefono: form.telefono.value,
-        correo: form.correo.value,
-        pasaporte: form.pasaporte.value,
-        clave: form.clave.value || '123456', // valor por defecto si queda vacío
-        rol: form.rol.value,
-        estado: 'Activo',
-        fechaRegistro: new Date().toLocaleDateString("es-CR", { day: '2-digit', month: '2-digit', year: 'numeric' })
-      };
-
       const id = form.usuarioId.value;
-     try {
-  if (id) {
-  // NUEVO: antes de guardar, se compara el rol que tenía guardado el
-  // usuario contra el rol nuevo que se está por guardar. Si cambió, se
-  // deja una notificación para que esa persona la vea la próxima vez que
-  // entre (la barra superior — topbar.js — la muestra en la campana).
-  const docActual = await db.collection('usuarios').doc(id).get();
-  const rolAnterior = docActual.exists ? docActual.data().rol : null;
 
-  await db.collection('usuarios').doc(id).update(datos);
+      // ---------- Editar un usuario existente ----------
+      // Sigue escribiendo directo en Firestore — ya está protegido por las
+      // reglas de seguridad (solo un Administrador puede hacerlo). No toca
+      // la contraseña ni la cuenta de acceso para nada.
+      if (id) {
+        const datos = {
+          nombre: form.nombre.value,
+          apellidos: form.apellidos.value,
+          fechaNacimiento: form.fechaNacimiento.value,
+          telefono: form.telefono.value,
+          correo: form.correo.value,
+          pasaporte: form.pasaporte.value,
+          rol: form.rol.value,
+          estado: 'Activo',
+          fechaRegistro: new Date().toLocaleDateString("es-CR", { day: '2-digit', month: '2-digit', year: 'numeric' })
+        };
 
-  if (rolAnterior && rolAnterior !== datos.rol) {
-    await db.collection('notificaciones').add({
-      destinatarioId: id,
-      mensaje: `Tu rol cambió de "${rolAnterior}" a "${datos.rol}".`,
-      leido: false,
-      fecha: firebase.firestore.FieldValue.serverTimestamp()
+        try {
+          // NUEVO: antes de guardar, se compara el rol que tenía guardado el
+          // usuario contra el rol nuevo que se está por guardar. Si cambió,
+          // se deja una notificación para que esa persona la vea la próxima
+          // vez que entre (la barra superior — topbar.js — la muestra en la
+          // campana).
+          const docActual = await db.collection('usuarios').doc(id).get();
+          const rolAnterior = docActual.exists ? docActual.data().rol : null;
+
+          await db.collection('usuarios').doc(id).update(datos);
+
+          if (rolAnterior && rolAnterior !== datos.rol) {
+            await db.collection('notificaciones').add({
+              destinatarioId: id,
+              mensaje: `Tu rol cambió de "${rolAnterior}" a "${datos.rol}".`,
+              leido: false,
+              fecha: firebase.firestore.FieldValue.serverTimestamp()
+            });
+          }
+
+          form.reset();
+          form.usuarioId.value = '';
+          toggleModal();
+          cargarUsuarios();
+        } catch (error) {
+          console.error("Error al guardar el usuario:", error);
+          alert("Error: " + error.message);
+        }
+        return;
+      }
+
+      // ---------- Crear un usuario NUEVO ----------
+      // NUEVO: esto ya no escribe directo a Firestore — pasa por la Cloud
+      // Function "administrarUsuario", que crea la cuenta real de acceso en
+      // Firebase Authentication Y el documento de Firestore juntos, en la
+      // misma operación, para que nunca queden desincronizados.
+      const contrasena = form.contrasenaNueva.value.trim();
+      if (!contrasena || contrasena.length < 6) {
+        alert("Escribe una contraseña de al menos 6 caracteres para el usuario nuevo.");
+        return;
+      }
+      if (!form.correo.value.trim()) {
+        alert("El correo es obligatorio para crear el acceso del usuario nuevo.");
+        return;
+      }
+
+      try {
+        await llamarAdministrarUsuario({
+          accion: 'crear',
+          correo: form.correo.value.trim(),
+          contrasena,
+          nombre: form.nombre.value,
+          apellidos: form.apellidos.value,
+          fechaNacimiento: form.fechaNacimiento.value,
+          telefono: form.telefono.value,
+          pasaporte: form.pasaporte.value,
+          rol: form.rol.value
+        });
+
+        alert("✅ Usuario creado correctamente, con su acceso real ya configurado.");
+        form.reset();
+        toggleModal();
+        cargarUsuarios();
+      } catch (error) {
+        console.error("Error al crear el usuario:", error);
+        alert("❌ Error al crear el usuario: " + (error.message || error));
+      }
     });
-  }
-} else {
-  await db.collection('usuarios').add(datos);
-  alert("Usuario registrado correctamente.");
-}
-  form.reset();
-  form.usuarioId.value = '';
-  toggleModal();
-  cargarUsuarios();
-} catch (error) {
-  console.error("Error al guardar el usuario:", error);
-  alert("Error: " + error.message);
-}
-}); 
+
+    // NUEVO: prepara el modal para un usuario NUEVO (limpia cualquier dato
+    // que hubiera quedado de una edición anterior, y muestra el campo de
+    // contraseña en vez del aviso de edición).
+    function abrirModalNuevoUsuario() {
+      form.reset();
+      form.usuarioId.value = '';
+      document.getElementById('tituloModalUsuario').textContent = 'Nuevo Usuario';
+      document.getElementById('contrasenaNueva').style.display = 'block';
+      document.getElementById('avisoContrasenaEdicion').style.display = 'none';
+      toggleModal();
+    }
+
     function toggleModal() {
       const modal = document.getElementById('modalForm');
       modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
@@ -238,9 +327,19 @@
       cargarUsuarios();
     }
 
+    // NUEVO: en vez de borrar solo el documento de Firestore (lo que dejaba
+    // la cuenta de acceso real viva para siempre en Authentication), esto
+    // pasa por la Cloud Function que borra las dos cosas juntas.
     async function eliminarUsuario(docId) {
-      await db.collection('usuarios').doc(docId).delete();
-      cargarUsuarios();
+      if (!confirm("¿Seguro que quieres eliminar este usuario? Esto borra también su acceso al sistema — no se puede deshacer.")) return;
+
+      try {
+        await llamarAdministrarUsuario({ accion: 'eliminar', uid: docId });
+        cargarUsuarios();
+      } catch (error) {
+        console.error("Error al eliminar el usuario:", error);
+        alert("❌ Error al eliminar el usuario: " + (error.message || error));
+      }
     }
 
     async function cargarUsuarios() {
@@ -256,7 +355,6 @@
           <td>${fechaFormateada}</td>
           <td>${u.telefono}</td>
           <td>${u.correo}</td>
-          <td>${u.clave || '-'}</td>
           <td>${u.pasaporte || ''}</td>
           <td>${u.rol}</td>
           <td class="acciones">
@@ -282,14 +380,19 @@
         form.fechaNacimiento.value = u.fechaNacimiento;
         form.telefono.value = u.telefono;
         form.correo.value = u.correo;
-        form.clave.value = u.clave;
         form.pasaporte.value = u.pasaporte || '';
         form.rol.value = u.rol;
+        document.getElementById('tituloModalUsuario').textContent = 'Editar Usuario';
+        document.getElementById('contrasenaNueva').style.display = 'none';
+        document.getElementById('avisoContrasenaEdicion').style.display = 'block';
         toggleModal();
       }
     }
 
     window.onload = cargarUsuarios;
   </script>
+  <!-- NUEVO: esta página no tenía NINGUNA verificación de sesión antes —
+       cualquiera con la URL podía entrar directo a gestionar usuarios. -->
+  <script src="auth-guard.js"></script>
 </body>
 </html>
