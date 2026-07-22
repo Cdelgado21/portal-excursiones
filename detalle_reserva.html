@@ -2457,12 +2457,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.getElementById("nombreTitular").addEventListener("input", refrescarOpcionesCodigosAdicionales);
 
-  try {
-    await firebase.auth().signInAnonymously();
-  } catch (e) {
-    console.error("No se pudo iniciar sesión anónima:", e);
-  }
-
   await cargarDestinos();
   window.listaPagos = window.listaPagos || [];
   document.getElementById("btnAgregarVuelo").addEventListener("click", agregarVueloIntermedio);
@@ -3478,6 +3472,10 @@ async function enviarComprobantePorCorreo() {
 </script>
 
 </main>
+
+<!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez de
+     confiar solo en lo que dijera localStorage. -->
+<script src="auth-guard.js"></script>
 
 </body>
 </html>
