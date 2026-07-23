@@ -3,49 +3,192 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Excursiones Delgado</title>
+  <title>Excursiones Delgado — Sistema Integral</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
+    * { box-sizing: border-box; }
+
     body {
-      background-color: #f4f7f8;
-      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      font-family: Arial, sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ---------- Portada ---------- */
+    .portada {
+      position: relative;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-    }
-    .login-container {
-      background-color: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
       text-align: center;
+      padding: 40px 20px;
+      background: radial-gradient(circle at 20% 20%, #0a6b73 0%, #02535a 45%, #013840 100%);
+      color: white;
+      overflow: hidden;
     }
-    h1 {
-      color: #02535a;
+
+    /* Decoración: líneas punteadas + avión, al estilo de las portadas que ya
+       usa la agencia en sus comprobantes — todo dibujado con CSS/SVG, sin
+       depender de ninguna imagen aparte. */
+    .portada svg.decoracion {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0.55;
+      pointer-events: none;
+    }
+    .portada .mapa-fondo {
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 26px 26px;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .portada-contenido {
+      position: relative;
+      z-index: 2;
+      max-width: 780px;
+    }
+
+    .eslogan-superior {
+      font-family: 'Brush Script MT', cursive;
+      color: #ffb703;
+      font-size: 1.6rem;
       margin-bottom: 10px;
+      display: block;
     }
-    p.subtitle {
-      color: #555;
-      margin-bottom: 20px;
+
+    .titulo-portada {
+      font-size: clamp(2.2rem, 6vw, 4.2rem);
+      font-weight: 900;
+      line-height: 1.1;
+      margin: 0 0 18px;
+      text-shadow: 0 4px 18px rgba(0,0,0,0.35);
     }
+
+    .subtitulo-portada {
+      font-size: clamp(1rem, 2.4vw, 1.3rem);
+      color: #e6f2f2;
+      margin-bottom: 40px;
+      font-weight: 300;
+    }
+
+    .logo-portada {
+      width: 200px;
+      max-width: 60vw;
+      filter: drop-shadow(0 6px 14px rgba(0,0,0,0.3));
+    }
+
+    /* ---------- Botón "Iniciar Sesión" (esquina superior) ---------- */
+    .btn-iniciar-sesion-top {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 500;
+      background: white;
+      color: #02535a;
+      border: none;
+      padding: 12px 26px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      transition: transform 0.15s ease;
+    }
+    .btn-iniciar-sesion-top:hover {
+      transform: translateY(-2px);
+    }
+
+    /* ---------- Panel de login tipo "push" (se desliza desde la derecha) ---------- */
+    .overlay-login {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 20, 22, 0.55);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 900;
+    }
+    .overlay-login.activo {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .panel-login {
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 100%;
+      max-width: 420px;
+      background: white;
+      z-index: 950;
+      transform: translateX(100%);
+      transition: transform 0.35s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 40px 36px;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.25);
+      overflow-y: auto;
+    }
+    .panel-login.activo {
+      transform: translateX(0);
+    }
+
+    .btn-cerrar-panel {
+      position: absolute;
+      top: 18px;
+      right: 20px;
+      background: none;
+      border: none;
+      font-size: 26px;
+      color: #999;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .btn-cerrar-panel:hover {
+      color: #02535a;
+    }
+
+    .panel-login .logo {
+      width: 130px;
+      margin: 0 auto 20px;
+      display: block;
+    }
+
+    .panel-login h1 {
+      color: #02535a;
+      margin-bottom: 4px;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    .panel-login p.subtitle {
+      color: #666;
+      margin-bottom: 26px;
+      text-align: center;
+      font-size: 0.95rem;
+    }
+
     .input-group {
       position: relative;
     }
-    input {
-      width: calc(100% - 24px);
+    .panel-login input {
+      width: 100%;
       padding: 12px;
-      margin: 10px auto;
+      margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 6px;
       display: block;
+      font-size: 15px;
     }
     .toggle-password {
       position: absolute;
@@ -54,53 +197,94 @@
       transform: translateY(-50%);
       cursor: pointer;
     }
-    .login-container button {
+    .panel-login button[type="submit"] {
       background-color: #02535a;
       color: white;
-      padding: 12px;
+      padding: 13px;
       border: none;
       width: 100%;
       border-radius: 6px;
       cursor: pointer;
-      margin-top: 10px;
+      margin-top: 12px;
+      font-size: 15px;
+      font-weight: bold;
     }
-    button:hover {
+    .panel-login button[type="submit"]:hover {
       background-color: #037177;
-    }
-    .logo {
-      width: 180px;
-      margin-bottom: 20px;
     }
     .forgot-password {
       display: block;
-      margin-top: 10px;
+      margin-top: 12px;
       font-size: 0.9em;
       color: #02535a;
       text-decoration: none;
+      text-align: center;
     }
     .forgot-password:hover {
       text-decoration: underline;
     }
-    .welcome-msg {
-      margin-top: 10px;
-      color: #02535a;
-      font-weight: bold;
+
+    /* ---------- Modal de bienvenida (tras iniciar sesión) ---------- */
+    #modal-bienvenida {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #02535a;
+      color: white;
+      padding: 25px 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+      z-index: 1000;
+      text-align: center;
+      font-size: 1.1rem;
+      max-width: 90vw;
     }
+
     @media screen and (max-width: 480px) {
-      .login-container {
-        padding: 20px;
-      }
-      input {
-        width: 100%;
+      .panel-login {
+        max-width: 100%;
+        padding: 30px 24px;
       }
     }
   </style>
 </head>
 <body>
-  <div class="login-container">
+
+  <!-- ---------- Portada ---------- -->
+  <div class="portada">
+    <div class="mapa-fondo"></div>
+    <svg class="decoracion" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 80 650 C 250 600, 350 500, 300 400" stroke="white" stroke-width="2" stroke-dasharray="6 8" fill="none" opacity="0.5"/>
+      <circle cx="300" cy="400" r="7" fill="white" opacity="0.7"/>
+      <path d="M 950 120 C 1050 180, 1120 260, 1080 340" stroke="white" stroke-width="2" stroke-dasharray="6 8" fill="none" opacity="0.5"/>
+      <circle cx="1080" cy="340" r="7" fill="white" opacity="0.7"/>
+      <g transform="translate(140,90) rotate(-20)" opacity="0.6">
+        <path d="M0 10 L36 0 L40 6 L14 14 L20 24 L10 22 L0 10 Z" fill="white"/>
+      </g>
+      <g transform="translate(980 620) rotate(140)" opacity="0.5">
+        <path d="M0 10 L36 0 L40 6 L14 14 L20 24 L10 22 L0 10 Z" fill="white"/>
+      </g>
+    </svg>
+
+    <div class="portada-contenido">
+      <span class="eslogan-superior">Oficialmente somos los que convierten tus sueños en destinos</span>
+      <h1 class="titulo-portada">Tu aventura comienza aquí</h1>
+      <p class="subtitulo-portada">Sistema Integral de Excursiones Delgado</p>
+      <img src="LOGO SIED.JPG" alt="Logo Excursiones Delgado" class="logo-portada">
+    </div>
+  </div>
+
+  <!-- ---------- Botón fijo arriba a la derecha ---------- -->
+  <button class="btn-iniciar-sesion-top" onclick="abrirPanelLogin()">Iniciar Sesión</button>
+
+  <!-- ---------- Panel de login (se desliza desde la derecha) ---------- -->
+  <div class="overlay-login" id="overlayLogin" onclick="cerrarPanelLogin()"></div>
+  <div class="panel-login" id="panelLogin">
+    <button type="button" class="btn-cerrar-panel" onclick="cerrarPanelLogin()">&times;</button>
     <img src="LOGO SIED.JPG" alt="Logo Excursiones Delgado" class="logo">
     <h1>Sistema Integral</h1>
-    <p class="subtitle">"Expertos en Aventuras"</p>
     <form id="loginForm">
       <input type="email" id="correo" placeholder="Correo electrónico" required>
       <div class="input-group">
@@ -112,21 +296,10 @@
       <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
       <button type="submit">Iniciar Sesión</button>
     </form>
-    <div id="modal-bienvenida" style="
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #02535a;
-  color: white;
-  padding: 25px 30px;
-  border-radius: 12px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
-  z-index: 1000;
-  text-align: center;
-  font-size: 1.1rem;">
-</div>
+  </div>
+
+  <div id="modal-bienvenida"></div>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -138,6 +311,18 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+
+  // NUEVO: abre/cierra el panel de login "tipo push" que se desliza desde
+  // la derecha, en vez de mostrar el formulario siempre visible.
+  function abrirPanelLogin() {
+    document.getElementById("panelLogin").classList.add("activo");
+    document.getElementById("overlayLogin").classList.add("activo");
+    document.getElementById("correo").focus();
+  }
+  function cerrarPanelLogin() {
+    document.getElementById("panelLogin").classList.remove("activo");
+    document.getElementById("overlayLogin").classList.remove("activo");
+  }
 
   function togglePassword() {
     const passwordInput = document.getElementById('clave');
@@ -152,13 +337,16 @@
   }
 
   // NUEVO: si venimos de un cierre de sesión automático (por inactividad,
-  // o porque auth-guard.js detectó que no había sesión real), avisamos.
+  // o porque auth-guard.js detectó que no había sesión real), avisamos y
+  // abrimos el panel de una vez para que no tenga que buscar el botón.
   const parametrosURL = new URLSearchParams(window.location.search);
   const motivo = parametrosURL.get("motivo");
   if (motivo === "inactividad") {
     alert("Tu sesión se cerró automáticamente por 30 minutos de inactividad. Vuelve a iniciar sesión.");
+    abrirPanelLogin();
   } else if (motivo === "sesion_requerida") {
     alert("Necesitas iniciar sesión para entrar ahí.");
+    abrirPanelLogin();
   } else if (motivo === "usuario_inactivo") {
     alert("Tu usuario está marcado como inactivo. Contacta a un administrador.");
   } else if (motivo === "usuario_no_encontrado") {
@@ -204,7 +392,7 @@
 
       const nombre = usuario.nombre || email;
       const modal = document.getElementById("modal-bienvenida");
-      modal.textContent = `¡Bienvenido ${nombre}!`;
+      modal.textContent = `¡Bienvenido/a ${nombre}!`;
       modal.style.display = "block";
       setTimeout(() => {
         modal.style.display = "none";
