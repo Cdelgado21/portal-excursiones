@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reservas Activas - Excursiones Delgado</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
   <style>
     /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
     .toggle-btn {
@@ -227,10 +229,17 @@
     </tbody>
   </table>
   <script>
+    // FIX: firebaseConfig estaba incompleto (le faltaban storageBucket,
+    // messagingSenderId y appId) y tenía la misma apiKey mal escrita que
+    // encontramos antes en login.html/registro.html — se corrige aquí para
+    // que quede igual a la configuración real usada en el resto del sistema.
     const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.firebasestorage.app",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -413,5 +422,10 @@
   </script>
 
   </main>
+  <script src="topbar.js"></script>
+  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
+       de confiar solo en lo que dijera localStorage. -->
+  <script src="auth-guard.js"></script>
 </body>
 </html>
+
