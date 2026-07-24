@@ -4,7 +4,108 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel Principal | Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
   <style>
+    /* NUEVO: menú lateral de navegación (mismo estilo que el resto del
+       sistema) — esta página nunca lo había tenido, ni siquiera cargaba
+       Firebase. */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links li a.activo {
+      background-color: #ffb703;
+      color: #02535a;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+      padding-left: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+        padding-left: 70px;
+      }
+    }
+
     body {
       font-family: Arial, sans-serif;
       background-color: #eaf4f4;
@@ -16,6 +117,7 @@
       color: white;
       text-align: center;
       padding: 1rem 0;
+      border-radius: 10px;
     }
     .container {
       max-width: 900px;
@@ -52,11 +154,34 @@
   </style>
 </head>
 <body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+
   <header>
     <h1>Panel Principal</h1>
     <p>Plataforma de Servicios Integrales - Excursiones Delgado</p>
   </header>
-
   <div class="container">
     <div class="modules">
       <a class="module" href="reservas.html">🧾 Reservas</a>
@@ -66,9 +191,69 @@
       <a class="module" href="configuracion.html">⚙️ Configuración</a>
     </div>
   </div>
-
   <footer>
     <p>&copy; 2025 Excursiones Delgado. Todos los derechos reservados.</p>
   </footer>
+
+  </main>
+
+  <script>
+    // NUEVO: firebaseConfig completo — esta página no tenía Firebase
+    // inicializado en absoluto, así que auth-guard.js no podía funcionar aquí.
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.firebasestorage.app",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+    };
+    firebase.initializeApp(firebaseConfig);
+
+    // NUEVO: menú lateral de navegación (igual que el resto del sistema)
+    function inicializarMenuLateral() {
+      const usuario = JSON.parse(localStorage.getItem("usuario"));
+      const sidebar = document.getElementById("sidebar");
+      const contenido = document.getElementById("contenidoPrincipal");
+      const toggleBtn = document.querySelector('.toggle-btn');
+
+      if (usuario) {
+        document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+        document.getElementById("rolUsuario").innerText = usuario.rol || "";
+      } else {
+        document.getElementById("nombreUsuario").innerText = "Invitado";
+      }
+
+      window.toggleSidebar = function () {
+        sidebar.classList.toggle('active');
+        contenido.classList.toggle('sidebar-visible');
+      };
+
+      window.cerrarSesionYRedirigir = function () {
+        localStorage.removeItem("usuario");
+        window.location.href = "login.html";
+      };
+
+      function checkScreenSize() {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('active');
+          contenido.classList.remove('sidebar-visible');
+        } else {
+          sidebar.classList.add('active');
+          contenido.classList.add('sidebar-visible');
+        }
+        toggleBtn.style.display = "block";
+      }
+
+      window.addEventListener('resize', checkScreenSize);
+      checkScreenSize();
+    }
+
+    inicializarMenuLateral();
+  </script>
+  <script src="topbar.js"></script>
+  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
+       de confiar solo en lo que dijera localStorage. -->
+  <script src="auth-guard.js"></script>
 </body>
 </html>
