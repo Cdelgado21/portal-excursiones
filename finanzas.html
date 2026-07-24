@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finanzas - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
+  <style>
+    /* Menú lateral — mismo estilo que el resto del sistema. */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links li a.activo {
+      background-color: #ffb703;
+      color: #02535a;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+      padding-left: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+        padding-left: 70px;
+      }
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      margin: 0;
+      padding: 0;
+      color: #02535a;
+    }
+    h2 {
+      color: #02535a;
+      margin-bottom: 5px;
+    }
+    .subtitulo {
+      color: #5f9296;
+      margin-top: 0;
+      margin-bottom: 25px;
+      font-size: 0.95rem;
+    }
+
+    .tarjetas {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    .tarjeta {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 6px solid #02535a;
+    }
+    .tarjeta.cobrar { border-left-color: #c0392b; }
+    .tarjeta.pagar { border-left-color: #e07d3c; }
+    .tarjeta.proyectada { border-left-color: #f39c12; }
+    .tarjeta.real { border-left-color: #1b9e3c; }
+    .tarjeta .etiqueta {
+      font-size: 0.85rem;
+      color: #5f9296;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .tarjeta .monto {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-top: 6px;
+      color: #02535a;
+    }
+    .tarjeta .detalle {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .seccion {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 30px;
+    }
+    .seccion h3 {
+      margin-top: 0;
+      color: #02535a;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      font-size: 0.9rem;
+    }
+    th {
+      background-color: #02535a;
+      color: white;
+    }
+    tr:hover { background-color: #f7fbfb; }
+    .cifra-positiva { color: #1b9e3c; font-weight: bold; }
+    .cifra-alerta { color: #c0392b; font-weight: bold; }
+    .aviso-sin-costos {
+      color: #a35b00;
+      font-size: 0.82rem;
+    }
+    .btn-panel-costos {
+      display: inline-block;
+      margin-top: 4px;
+      background-color: #02535a;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    .btn-panel-costos:hover { background-color: #036a6d; }
+    .vacio {
+      text-align: center;
+      color: #999;
+      padding: 20px;
+      font-size: 0.9rem;
+    }
+    .enlace-fila {
+      color: #02535a;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .enlace-fila:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="finanzas.html" class="activo"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+
+  <h2>💰 Panel Financiero</h2>
+  <p class="subtitulo">Vista general de dinero por cobrar, por pagar, y ganancia — calculada en vivo a partir de tus reservas.</p>
+
+  <div class="tarjetas">
+    <div class="tarjeta cobrar">
+      <div class="etiqueta">Por cobrar (reservas activas)</div>
+      <div class="monto" id="tarjetaPorCobrar">$0.00</div>
+      <div class="detalle" id="detallePorCobrar">calculando...</div>
+    </div>
+    <div class="tarjeta pagar">
+      <div class="etiqueta">Costos por cubrir (activas)</div>
+      <div class="monto" id="tarjetaPorPagar">$0.00</div>
+      <div class="detalle" id="detallePorPagar">calculando...</div>
+    </div>
+    <div class="tarjeta proyectada">
+      <div class="etiqueta">Ganancia proyectada (activas)</div>
+      <div class="monto" id="tarjetaGananciaProyectada">$0.00</div>
+      <div class="detalle">reservas todavía sin cerrar</div>
+    </div>
+    <div class="tarjeta real">
+      <div class="etiqueta">Ganancia real acumulada</div>
+      <div class="monto" id="tarjetaGananciaReal">$0.00</div>
+      <div class="detalle" id="detalleGananciaReal">reservas ya cerradas</div>
+    </div>
+  </div>
+
+  <div class="seccion">
+    <h3>🗓️ Próximos viajes (30 días)</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Ordenado por fecha de viaje — para ver de un vistazo qué hay que cobrar y pagar pronto.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Titular</th>
+          <th>Fecha de viaje</th>
+          <th>Por cobrar</th>
+          <th>Costo total</th>
+          <th>Ganancia</th>
+        </tr>
+      </thead>
+      <tbody id="tablaProximosViajes"></tbody>
+    </table>
+    <div id="avisoSinProximos" class="vacio" style="display:none;">No hay viajes con fecha en los próximos 30 días.</div>
+  </div>
+
+  <div class="seccion">
+    <h3>📋 Detalle y edición de costos</h3>
+    <p style="font-size:0.85rem; color:#666;">Para editar los costos reales de una reserva, marcar una reserva como cerrada, o ver el historial completo, usa el panel de costos.</p>
+    <a href="panel_costos.html" class="btn-panel-costos">Abrir Panel de Costos completo →</a>
+  </div>
+
+  </main>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.firebasestorage.app",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // Mismo parseo flexible de fechas que ya usa reservas.html — la fecha de
+  // viaje se ha guardado con formatos distintos a lo largo del tiempo
+  // ("2025-06-08" con guiones, o "16/7/2026" con barras).
+  function parseFechaReserva(str) {
+    if (!str) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return new Date(str + "T00:00:00");
+    }
+    const partes = str.split("/");
+    if (partes.length === 3) {
+      const [dia, mes, año] = partes.map(Number);
+      if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) {
+        return new Date(año, mes - 1, dia);
+      }
+    }
+    return null;
+  }
+
+  function formatearFechaVisible(fecha) {
+    if (!fecha) return '-';
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const año = fecha.getFullYear();
+    return `${dia}/${mes}/${año}`;
+  }
+
+  function formatoMoneda(valor) {
+    return `$${(valor || 0).toFixed(2)}`;
+  }
+
+  async function cargarPanelFinanciero() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const en30Dias = new Date(hoy);
+    en30Dias.setDate(en30Dias.getDate() + 30);
+
+    // ---------- 1. RESERVAS: por cobrar, calculado en vivo ----------
+    // NUEVO: el saldo se calcula aquí mismo (total - suma de pagos), sin
+    // confiar en el campo "saldo" guardado en la reserva — ese campo queda
+    // desactualizado en cuanto se registra un pago nuevo desde
+    // facturacion.html, así que usarlo directo daría cifras viejas.
+    const reservasSnap = await db.collection("reservas").get();
+    let totalPorCobrar = 0;
+    let cantidadConSaldo = 0;
+    const reservasPorCodigo = {};
+
+    reservasSnap.forEach(doc => {
+      const data = doc.data();
+      const fecha = parseFechaReserva(data.fechaReserva);
+      const esActiva = !fecha || fecha >= hoy;
+      if (!esActiva) return; // las reservas ya viajadas no cuentan como "por cobrar" activo
+
+      const total = Number(data.total || 0);
+      const pagado = (data.pagos || []).reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+      const saldo = total - pagado;
+
+      reservasPorCodigo[doc.id] = {
+        titular: data.nombreTitular || '-',
+        fecha,
+        saldo
+      };
+
+      if (saldo > 0.01) {
+        totalPorCobrar += saldo;
+        cantidadConSaldo++;
+      }
+    });
+
+    document.getElementById("tarjetaPorCobrar").textContent = formatoMoneda(totalPorCobrar);
+    document.getElementById("detallePorCobrar").textContent =
+      `${cantidadConSaldo} reserva${cantidadConSaldo === 1 ? '' : 's'} con saldo pendiente`;
+
+    // ---------- 2. COSTOS: por pagar, ganancia proyectada y real ----------
+    // Mismo criterio que panel_costos.html: usa el costo REAL si ya se
+    // registró, y si no, el PROYECTADO como mejor estimado disponible.
+    const costosSnap = await db.collection("costos_reservas").get();
+    let totalPorPagar = 0;
+    let cantidadActivasConCostos = 0;
+    let gananciaProyectada = 0;
+    let gananciaReal = 0;
+    let cantidadCerradas = 0;
+    const costosPorCodigo = {};
+
+    costosSnap.forEach(doc => {
+      const data = doc.data();
+      const codigo = data.codigo;
+      const cerrada = data.estado === "Cerrado";
+
+      const proy = data.desglose_proyectado || {};
+      const real = data.desglose_real || {};
+      const usarReal = Object.keys(real).length > 0;
+      const fuente = usarReal ? real : proy;
+
+      const boletos = Number(fuente.boletos || 0);
+      const hospedaje = Number(fuente.hospedaje || 0);
+      const operador = Number(fuente.operador || 0);
+      const tours = Number(fuente.tours || 0);
+      const comision = Number(fuente.comision || 0);
+      const costoTotal = boletos + hospedaje + operador + tours + comision;
+      const venta = Number(data.venta_total || 0);
+      const ganancia = venta - costoTotal;
+
+      costosPorCodigo[codigo] = { costoTotal, ganancia, tieneCostos: true };
+
+      if (cerrada) {
+        gananciaReal += ganancia;
+        cantidadCerradas++;
+      } else {
+        totalPorPagar += costoTotal;
+        gananciaProyectada += ganancia;
+        cantidadActivasConCostos++;
+      }
+    });
+
+    document.getElementById("tarjetaPorPagar").textContent = formatoMoneda(totalPorPagar);
+    document.getElementById("detallePorPagar").textContent =
+      `${cantidadActivasConCostos} reserva${cantidadActivasConCostos === 1 ? '' : 's'} con costos registrados`;
+    document.getElementById("tarjetaGananciaProyectada").textContent = formatoMoneda(gananciaProyectada);
+    document.getElementById("tarjetaGananciaReal").textContent = formatoMoneda(gananciaReal);
+    document.getElementById("detalleGananciaReal").textContent =
+      `${cantidadCerradas} reserva${cantidadCerradas === 1 ? '' : 's'} cerrada${cantidadCerradas === 1 ? '' : 's'}`;
+
+    // ---------- 3. Próximos viajes (30 días) ----------
+    const proximos = Object.entries(reservasPorCodigo)
+      .filter(([codigo, r]) => r.fecha && r.fecha >= hoy && r.fecha <= en30Dias)
+      .sort((a, b) => a[1].fecha - b[1].fecha);
+
+    const tabla = document.getElementById("tablaProximosViajes");
+    tabla.innerHTML = "";
+
+    if (proximos.length === 0) {
+      document.getElementById("avisoSinProximos").style.display = "block";
+    } else {
+      proximos.forEach(([codigo, r]) => {
+        const costos = costosPorCodigo[codigo];
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
+          <td>${r.titular}</td>
+          <td>${formatearFechaVisible(r.fecha)}</td>
+          <td class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(r.saldo)}</td>
+          <td>${costos ? formatoMoneda(costos.costoTotal) : `<span class="aviso-sin-costos">⚠️ sin costos — <a class="enlace-fila" href="costos_agregar.html?reserva=${codigo}">agregar</a></span>`}</td>
+          <td class="${costos ? (costos.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta') : ''}">${costos ? formatoMoneda(costos.ganancia) : '-'}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  // Menú lateral de navegación (igual que el resto del sistema)
+  function inicializarMenuLateral() {
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const sidebar = document.getElementById("sidebar");
+    const contenido = document.getElementById("contenidoPrincipal");
+    const toggleBtn = document.querySelector('.toggle-btn');
+
+    if (usuario) {
+      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+      document.getElementById("rolUsuario").innerText = usuario.rol || "";
+    } else {
+      document.getElementById("nombreUsuario").innerText = "Invitado";
+    }
+
+    window.toggleSidebar = function () {
+      sidebar.classList.toggle('active');
+      contenido.classList.toggle('sidebar-visible');
+    };
+
+    window.cerrarSesionYRedirigir = function () {
+      localStorage.removeItem("usuario");
+      window.location.href = "login.html";
+    };
+
+    function checkScreenSize() {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('active');
+        contenido.classList.remove('sidebar-visible');
+      } else {
+        sidebar.classList.add('active');
+        contenido.classList.add('sidebar-visible');
+      }
+      toggleBtn.style.display = "block";
+    }
+
+    window.addEventListener('resize', checkScreenSize);
+    checkScreenSize();
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    inicializarMenuLateral();
+    cargarPanelFinanciero();
+  });
+</script>
+  <script src="topbar.js"></script>
+  <!-- Verificación real de sesión (Firebase Authentication). -->
+  <script src="auth-guard.js"></script>
+</body>
+</html>
