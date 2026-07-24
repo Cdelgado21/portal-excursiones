@@ -293,7 +293,7 @@
           <img id="eyeIcon" src="https://cdn-icons-png.flaticon.com/512/709/709612.png" width="20" alt="Mostrar">
         </span>
       </div>
-      <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+      <a href="#" id="linkOlvideContrasena" class="forgot-password" onclick="recuperarContrasena(); return false;">¿Olvidaste tu contraseña?</a>
       <button type="submit">Iniciar Sesión</button>
     </form>
   </div>
@@ -362,6 +362,40 @@
   // encarga de eso de forma segura. El documento en Firestore
   // (usuarios/{uid}, usando el mismo UID que Firebase Authentication) solo
   // guarda datos de perfil (nombre, rol, estado) — nunca la contraseña.
+  // NUEVO: "¿Olvidaste tu contraseña?" ahora funciona de verdad — usa el
+  // sistema de recuperación de Firebase Authentication, que le manda a la
+  // persona un correo con un enlace para elegir una contraseña nueva. Nadie
+  // del equipo (ni tú) llega a ver ni a manejar la contraseña en el proceso.
+  async function recuperarContrasena() {
+    const email = document.getElementById('correo').value.trim();
+
+    if (!email) {
+      alert("Primero escribe tu correo en el campo de arriba, y luego dale clic aquí de nuevo.");
+      document.getElementById('correo').focus();
+      return;
+    }
+
+    try {
+      await firebase.auth().sendPasswordResetEmail(email);
+      // NOTA DE SEGURIDAD: el mensaje es el mismo exista o no esa cuenta —
+      // así nadie puede usar este formulario para "adivinar" qué correos
+      // están registrados en el sistema (esto se llama evitar la
+      // "enumeración de usuarios").
+      alert(`Si ${email} tiene una cuenta en el sistema, te llegará un correo con instrucciones para elegir una contraseña nueva. Revisa también la carpeta de spam.`);
+    } catch (error) {
+      console.error("Error al enviar el correo de recuperación:", error);
+      if (error.code === "auth/invalid-email") {
+        alert("Ese correo no tiene un formato válido. Revísalo e intenta de nuevo.");
+      } else if (error.code === "auth/too-many-requests") {
+        alert("Se hicieron demasiados intentos seguidos. Espera un momento antes de volver a intentar.");
+      } else {
+        // Mismo mensaje genérico también en caso de error, por la misma
+        // razón de seguridad explicada arriba (no revelar si la cuenta existe).
+        alert(`Si ${email} tiene una cuenta en el sistema, te llegará un correo con instrucciones para elegir una contraseña nueva. Revisa también la carpeta de spam.`);
+      }
+    }
+  }
+
   document.getElementById('loginForm').addEventListener('submit', async function (e) {
     e.preventDefault();
     const email = document.getElementById('correo').value.trim();
