@@ -4,11 +4,116 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Detalle de Cotización</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link rel="stylesheet" href="topbar.css">
   <style>
+    /* NUEVO: menú lateral de navegación (mismo estilo que el resto del
+       sistema) — esta página nunca lo había tenido. */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links li a.activo {
+      background-color: #ffb703;
+      color: #02535a;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+      padding-left: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+        padding-left: 70px;
+      }
+    }
+
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f7f7;
-      padding: 20px;
+      padding: 0;
+      margin: 0;
     }
     h1 {
       color: #02535a;
@@ -31,6 +136,7 @@
       margin-top: 4px;
       border: 1px solid #ccc;
       border-radius: 5px;
+      box-sizing: border-box;
     }
     section {
       margin-bottom: 30px;
@@ -66,33 +172,39 @@ body, input, textarea, select, button {
   font-family: 'Segoe UI', sans-serif;
   font-size: 15px;
 }
-<script>
-function ajustarAlturaTextareas() {
-  document.querySelectorAll("textarea").forEach(textarea => {
-    const ajustar = () => {
-      textarea.style.height = "auto";
-      textarea.style.height = textarea.scrollHeight + "px";
-    };
-    ajustar(); // al cargar
-    textarea.addEventListener("input", ajustar); // al escribir
-  });
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  ajustarAlturaTextareas(); // se ejecuta después de que se renderiza todo
-});
-
-</script>
   </style>
 </head>
 <body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html" class="activo"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
 
   <h1 id="titulo-cotizacion">Detalle de Cotización</h1>
 
   <section>
     <h2>Información de la Solicitud</h2>
     <label>Teléfono</label>
-    <input id="telefono" ></textarea>
+    <input id="telefono">
 
     <label>Destino</label>
     <select id="destino" onchange="cargarDatosDelTour()"></select>
@@ -116,7 +228,7 @@ window.addEventListener("DOMContentLoaded", () => {
   <section>
     <h2>Información del Tour</h2>
     <label>Duración</label>
-    <input id="duracion" ></textarea>
+    <input id="duracion">
 
     <label>Incluye</label>
     <textarea id="incluye" ></textarea>
@@ -218,16 +330,14 @@ window.addEventListener("DOMContentLoaded", () => {
 <img id="fondoPagina2" src="fondooficio.png" style="display:none" crossorigin="anonymous">
 <img id="fondoPaginaFinal" src="FINALCUENTASRRSS.PNG" style="display:none" crossorigin="anonymous">
 
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
- <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  </main>
+
 <script>
 
+  // FIX: apiKey tenía el mismo typo que ya encontramos en otros archivos
+  // (le faltaba una "r") — corregida para que coincida con la real.
   const firebaseConfig = {
-    apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
     authDomain: "tours-460717.firebaseapp.com",
     projectId: "tours-460717",
 storageBucket: "tours-460717.firebasestorage.app", // ← ¡Esto es importante!
@@ -339,8 +449,12 @@ const hotelSelect = document.getElementById("hotel");
   }
 function ajustarAlturaTextareas() {
   document.querySelectorAll("textarea").forEach(textarea => {
-    textarea.style.height = "auto";
-    textarea.style.height = textarea.scrollHeight + "px";
+    const ajustar = () => {
+      textarea.style.height = "auto";
+      textarea.style.height = textarea.scrollHeight + "px";
+    };
+    ajustar();
+    textarea.addEventListener("input", ajustar);
   });
 }
 function rellenarCampos(data) {
@@ -745,10 +859,52 @@ const pdfBlob = doc.output("blob");
 doc.save(`Cotización ${codigo}.pdf`);
 }
 
+// NUEVO: menú lateral de navegación (igual que el resto del sistema)
+function inicializarMenuLateral() {
+  const usuario = JSON.parse(localStorage.getItem("usuario"));
+  const sidebar = document.getElementById("sidebar");
+  const contenido = document.getElementById("contenidoPrincipal");
+  const toggleBtn = document.querySelector('.toggle-btn');
 
+  if (usuario) {
+    document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+    document.getElementById("rolUsuario").innerText = usuario.rol || "";
+  } else {
+    document.getElementById("nombreUsuario").innerText = "Invitado";
+  }
+
+  window.toggleSidebar = function () {
+    sidebar.classList.toggle('active');
+    contenido.classList.toggle('sidebar-visible');
+  };
+
+  window.cerrarSesionYRedirigir = function () {
+    localStorage.removeItem("usuario");
+    window.location.href = "login.html";
+  };
+
+  function checkScreenSize() {
+    if (window.innerWidth <= 768) {
+      sidebar.classList.remove('active');
+      contenido.classList.remove('sidebar-visible');
+    } else {
+      sidebar.classList.add('active');
+      contenido.classList.add('sidebar-visible');
+    }
+    toggleBtn.style.display = "block";
+  }
+
+  window.addEventListener('resize', checkScreenSize);
+  checkScreenSize();
+}
+inicializarMenuLateral();
 
 window.onload = cargarDatosIniciales;
   </script>
+  <script src="topbar.js"></script>
+  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
+       de confiar solo en lo que dijera localStorage. -->
+  <script src="auth-guard.js"></script>
 
 </body>
 </html>
