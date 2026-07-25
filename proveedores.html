@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proveedores - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
+  <style>
+    /* Menú lateral de navegación (mismo estilo que el resto del sistema) */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links li a.activo {
+      background-color: #ffb703;
+      color: #02535a;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+      padding-left: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+        padding-left: 70px;
+      }
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f7f7;
+      margin: 0;
+      padding: 0;
+      color: #02535a;
+    }
+    h1 {
+      text-align: center;
+      background-color: #02535a;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .barra-acciones {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    input[type="search"] {
+      flex: 1;
+      min-width: 220px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    select.filtro {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button.btn-agregar {
+      background-color: #02535a;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+    th {
+      background-color: #5f9296;
+      color: white;
+    }
+    tr:hover { background-color: #f5f5f5; }
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: bold;
+    }
+    .badge-activo { background: #e0f5e0; color: #1b6e1b; }
+    .badge-inactivo { background: #f0f0f0; color: #888; }
+    .btn-fila {
+      background-color: #f49859;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+      margin-right: 5px;
+      font-size: 0.85rem;
+    }
+    .btn-fila.eliminar { background-color: #c0392b; }
+    #modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    #modalContent {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 480px;
+    }
+    #modalContent label {
+      display: block;
+      font-weight: bold;
+      margin-top: 12px;
+      font-size: 0.9rem;
+    }
+    #modalContent input, #modalContent select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+    #modalContent .botones {
+      margin-top: 20px;
+      text-align: right;
+    }
+    #modalContent .botones button {
+      padding: 9px 18px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    .btn-guardar-modal { background: #02535a; color: white; }
+    .btn-cancelar-modal { background: #ccc; color: #333; }
+    .vacio { text-align: center; color: #999; padding: 20px; }
+  </style>
+</head>
+<body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="proveedores.html" class="activo"><span class="icon">🏷️</span>Proveedores</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+
+  <h1>Proveedores</h1>
+
+  <div class="barra-acciones">
+    <input type="search" id="buscador" placeholder="🔍 Buscar por nombre...">
+    <select class="filtro" id="filtroDestino"><option value="">Todos los destinos</option></select>
+    <select class="filtro" id="filtroCategoria">
+      <option value="">Todas las categorías</option>
+      <option value="Hospedaje">Hospedaje</option>
+      <option value="Tours">Tours</option>
+      <option value="Traslados">Traslados</option>
+      <option value="Comisión">Comisión</option>
+      <option value="Otro">Otro</option>
+    </select>
+    <button class="btn-agregar" onclick="abrirModal()">➕ Nuevo Proveedor</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Destino</th>
+        <th>Categoría</th>
+        <th>Estado</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody id="tablaProveedores"></tbody>
+  </table>
+  <div id="avisoVacio" class="vacio" style="display:none;">No hay proveedores que coincidan con la búsqueda.</div>
+
+  <div id="modal">
+    <div id="modalContent">
+      <h3 id="tituloModal">Nuevo Proveedor</h3>
+      <input type="hidden" id="proveedorId">
+
+      <label>Nombre</label>
+      <input type="text" id="campoNombre" placeholder="Ej. Hotel Obo">
+
+      <label>Destino</label>
+      <select id="campoDestino">
+        <option value="">Todos los destinos (no depende de un destino específico)</option>
+      </select>
+
+      <label>Categoría</label>
+      <select id="campoCategoria">
+        <option value="Hospedaje">Hospedaje</option>
+        <option value="Tours">Tours</option>
+        <option value="Traslados">Traslados</option>
+        <option value="Comisión">Comisión</option>
+        <option value="Otro">Otro</option>
+      </select>
+
+      <label>Estado</label>
+      <select id="campoActivo">
+        <option value="true">Activo</option>
+        <option value="false">Inactivo</option>
+      </select>
+
+      <div class="botones">
+        <button class="btn-cancelar-modal" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-guardar-modal" onclick="guardarProveedor()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  </main>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.firebasestorage.app",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  let proveedores = [];
+  let destinosDisponibles = [];
+
+  // Los destinos vienen del catálogo de tours (tours.nombre) — así el
+  // destino de un proveedor siempre coincide exactamente con el destino de
+  // una reserva real, sin tener que escribirlo distinto cada vez.
+  async function cargarDestinosDisponibles() {
+    const snap = await db.collection("tours").get();
+    const nombres = new Set();
+    snap.forEach(doc => {
+      const nombre = doc.data().nombre;
+      if (nombre) nombres.add(nombre);
+    });
+    destinosDisponibles = Array.from(nombres).sort();
+
+    const filtro = document.getElementById("filtroDestino");
+    const campo = document.getElementById("campoDestino");
+    destinosDisponibles.forEach(d => {
+      filtro.innerHTML += `<option value="${d}">${d}</option>`;
+      campo.innerHTML += `<option value="${d}">${d}</option>`;
+    });
+  }
+
+  async function cargarProveedores() {
+    const snap = await db.collection("proveedores").orderBy("nombre").get();
+    proveedores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderizarTabla();
+  }
+
+  function renderizarTabla() {
+    const texto = document.getElementById("buscador").value.toLowerCase();
+    const destino = document.getElementById("filtroDestino").value;
+    const categoria = document.getElementById("filtroCategoria").value;
+
+    const filtrados = proveedores.filter(p => {
+      if (texto && !p.nombre.toLowerCase().includes(texto)) return false;
+      if (destino && p.destino !== destino) return false;
+      if (categoria && p.categoria !== categoria) return false;
+      return true;
+    });
+
+    const tabla = document.getElementById("tablaProveedores");
+    tabla.innerHTML = "";
+
+    if (filtrados.length === 0) {
+      document.getElementById("avisoVacio").style.display = "block";
+      return;
+    }
+    document.getElementById("avisoVacio").style.display = "none";
+
+    filtrados.forEach(p => {
+      const fila = document.createElement("tr");
+      const activo = p.activo !== false;
+      fila.innerHTML = `
+        <td>${p.nombre}</td>
+        <td>${p.destino || '<span style="color:#999;">Todos los destinos</span>'}</td>
+        <td>${p.categoria || '-'}</td>
+        <td><span class="badge ${activo ? 'badge-activo' : 'badge-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
+        <td>
+          <button class="btn-fila" onclick="editarProveedor('${p.id}')">✏️ Editar</button>
+          <button class="btn-fila eliminar" onclick="eliminarProveedor('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')">🗑️ Eliminar</button>
+        </td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
+
+  function abrirModal() {
+    document.getElementById("tituloModal").textContent = "Nuevo Proveedor";
+    document.getElementById("proveedorId").value = "";
+    document.getElementById("campoNombre").value = "";
+    document.getElementById("campoDestino").value = "";
+    document.getElementById("campoCategoria").value = "Hospedaje";
+    document.getElementById("campoActivo").value = "true";
+    document.getElementById("modal").style.display = "flex";
+  }
+
+  function editarProveedor(id) {
+    const p = proveedores.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById("tituloModal").textContent = "Editar Proveedor";
+    document.getElementById("proveedorId").value = p.id;
+    document.getElementById("campoNombre").value = p.nombre || "";
+    document.getElementById("campoDestino").value = p.destino || "";
+    document.getElementById("campoCategoria").value = p.categoria || "Hospedaje";
+    document.getElementById("campoActivo").value = p.activo === false ? "false" : "true";
+    document.getElementById("modal").style.display = "flex";
+  }
+
+  function cerrarModal() {
+    document.getElementById("modal").style.display = "none";
+  }
+
+  async function guardarProveedor() {
+    const id = document.getElementById("proveedorId").value;
+    const nombre = document.getElementById("campoNombre").value.trim();
+    const destino = document.getElementById("campoDestino").value;
+    const categoria = document.getElementById("campoCategoria").value;
+    const activo = document.getElementById("campoActivo").value === "true";
+
+    if (!nombre) {
+      alert("Por favor escribe el nombre del proveedor.");
+      return;
+    }
+
+    const datos = { nombre, destino, categoria, activo };
+
+    try {
+      if (id) {
+        await db.collection("proveedores").doc(id).update(datos);
+      } else {
+        datos.creado_el = new Date();
+        await db.collection("proveedores").add(datos);
+      }
+      cerrarModal();
+      await cargarProveedores();
+      alert("✅ Proveedor guardado correctamente.");
+    } catch (e) {
+      console.error("Error al guardar proveedor:", e);
+      alert("❌ No se pudo guardar el proveedor.");
+    }
+  }
+
+  async function eliminarProveedor(id, nombre) {
+    if (!confirm(`¿Eliminar al proveedor "${nombre}"? Esto no borra los costos ya guardados que lo mencionan, solo lo quita de la lista para nuevas selecciones.`)) return;
+    try {
+      await db.collection("proveedores").doc(id).delete();
+      await cargarProveedores();
+    } catch (e) {
+      console.error("Error al eliminar proveedor:", e);
+      alert("❌ No se pudo eliminar.");
+    }
+  }
+
+  document.getElementById("buscador").addEventListener("input", renderizarTabla);
+  document.getElementById("filtroDestino").addEventListener("change", renderizarTabla);
+  document.getElementById("filtroCategoria").addEventListener("change", renderizarTabla);
+
+  // Menú lateral de navegación (igual que el resto del sistema)
+  function inicializarMenuLateral() {
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const sidebar = document.getElementById("sidebar");
+    const contenido = document.getElementById("contenidoPrincipal");
+    const toggleBtn = document.querySelector('.toggle-btn');
+
+    if (usuario) {
+      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+      document.getElementById("rolUsuario").innerText = usuario.rol || "";
+    } else {
+      document.getElementById("nombreUsuario").innerText = "Invitado";
+    }
+
+    window.toggleSidebar = function () {
+      sidebar.classList.toggle('active');
+      contenido.classList.toggle('sidebar-visible');
+    };
+
+    window.cerrarSesionYRedirigir = function () {
+      localStorage.removeItem("usuario");
+      window.location.href = "login.html";
+    };
+
+    function checkScreenSize() {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('active');
+        contenido.classList.remove('sidebar-visible');
+      } else {
+        sidebar.classList.add('active');
+        contenido.classList.add('sidebar-visible');
+      }
+      toggleBtn.style.display = "block";
+    }
+
+    window.addEventListener('resize', checkScreenSize);
+    checkScreenSize();
+  }
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    inicializarMenuLateral();
+    await cargarDestinosDisponibles();
+    await cargarProveedores();
+  });
+</script>
+  <script src="topbar.js"></script>
+  <!-- Verificación real de sesión (Firebase Authentication). -->
+  <script src="auth-guard.js"></script>
+</body>
+</html>
