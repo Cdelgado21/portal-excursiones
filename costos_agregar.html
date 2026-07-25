@@ -223,6 +223,7 @@
       <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
       <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
       <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
       <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
       <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
     </ul>
@@ -414,12 +415,18 @@
   // NUEVO: en vez de escribir el proveedor a mano cada vez, se elige de una
   // lista guardada en Firestore ("proveedores") — así "Hotel Obo" siempre se
   // escribe exactamente igual, y luego se puede sumar correctamente cuánto
-  // se le debe/pagó a cada uno en el módulo de Finanzas.
+  // se le debe/pagó a cada uno en el módulo de Finanzas. Además, cada
+  // proveedor tiene un destino asociado (gestionado en proveedores.html),
+  // así que aquí se agrupan primero los que coinciden con el destino de
+  // esta reserva.
   let listaProveedores = [];
+  let destinoActualReserva = "";
+
+  const ETIQUETA_CATEGORIA = { hospedaje: "Hospedaje", traslados: "Traslados", tours: "Tours", comision: "Comisión" };
 
   async function cargarProveedores() {
     const snap = await db.collection("proveedores").orderBy("nombre").get();
-    listaProveedores = snap.docs.map(d => ({ id: d.id, nombre: d.data().nombre }));
+    listaProveedores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     poblarTodosLosSelectsDeProveedor();
   }
 
@@ -427,9 +434,35 @@
     CATEGORIAS.forEach(cat => {
       const select = document.getElementById(nombreSelect(cat.clave));
       const valorActual = select.value;
-      select.innerHTML = `<option value="">-- Seleccione --</option>` +
-        listaProveedores.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("") +
-        `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
+      const etiqueta = ETIQUETA_CATEGORIA[cat.clave];
+
+      // Solo se listan proveedores activos, de esta categoría (o sin
+      // categoría asignada, por si vienen de antes de tener este campo).
+      const relevantes = listaProveedores.filter(p =>
+        p.activo !== false && (!p.categoria || p.categoria === etiqueta)
+      );
+
+      const deEsteDestino = relevantes.filter(p => destinoActualReserva && p.destino === destinoActualReserva);
+      const universales = relevantes.filter(p => !p.destino);
+      const otros = relevantes.filter(p => p.destino && p.destino !== destinoActualReserva);
+
+      function opciones(lista) {
+        return lista.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("");
+      }
+
+      let html = `<option value="">-- Seleccione --</option>`;
+      if (deEsteDestino.length > 0) {
+        html += `<optgroup label="Proveedores de ${destinoActualReserva}">${opciones(deEsteDestino)}</optgroup>`;
+      }
+      if (universales.length > 0) {
+        html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
+      }
+      if (otros.length > 0) {
+        html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
+      }
+      html += `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
+
+      select.innerHTML = html;
       if (valorActual && valorActual !== "__nuevo__") select.value = valorActual;
     });
   }
@@ -447,9 +480,20 @@
     const yaExiste = listaProveedores.some(p => p.nombre.toLowerCase() === nombreLimpio.toLowerCase());
 
     if (!yaExiste) {
+      // NUEVO: se etiqueta automático con el destino de esta reserva y la
+      // categoría del campo desde el que se agregó — se puede ajustar
+      // después desde la hoja de Proveedores si hace falta.
+      const claveCategoria = CATEGORIAS.find(c => document.getElementById(nombreSelect(c.clave)) === select)?.clave;
+      const nuevoProveedor = {
+        nombre: nombreLimpio,
+        destino: destinoActualReserva || "",
+        categoria: ETIQUETA_CATEGORIA[claveCategoria] || "Otro",
+        activo: true,
+        creado_el: new Date()
+      };
       try {
-        await db.collection("proveedores").add({ nombre: nombreLimpio, creado_el: new Date() });
-        listaProveedores.push({ nombre: nombreLimpio });
+        await db.collection("proveedores").add(nuevoProveedor);
+        listaProveedores.push(nuevoProveedor);
         listaProveedores.sort((a, b) => a.nombre.localeCompare(b.nombre));
       } catch (e) {
         console.error("Error al guardar el proveedor nuevo:", e);
@@ -510,6 +554,18 @@
       `;
 
       const docCostos = await db.collection("costos_reservas").doc(codigo).get();
+
+      // NUEVO: busca el nombre real del destino de esta reserva (a partir
+      // del catálogo de tours) para poder mostrar primero los proveedores
+      // asociados a ese destino.
+      if (data.destino) {
+        try {
+          const tourDoc = await db.collection("tours").doc(data.destino).get();
+          if (tourDoc.exists) destinoActualReserva = tourDoc.data().nombre || "";
+        } catch (e) {
+          console.error("No se pudo obtener el destino de la reserva:", e);
+        }
+      }
 
       // NUEVO: se carga la lista de proveedores ANTES de intentar
       // preseleccionar uno — si se hiciera al revés, el <select> todavía no
@@ -659,3 +715,4 @@
   <script src="auth-guard.js"></script>
 </body>
 </html>
+
