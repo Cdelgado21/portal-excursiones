@@ -446,6 +446,7 @@
       <select id="tipoSalidaReserva" onchange="alCambiarTipoSalida()" style="width: 100%; padding: 8px;">
         <option value="Grupal">Grupal</option>
         <option value="Individual">Individual</option>
+        <option value="Personalizado">Personalizado</option>
       </select>
     </div>
     <div id="contenedorNivelReserva" style="flex: 1; min-width: 200px; display:none;">
@@ -460,15 +461,37 @@
   </div>
 
   <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
-    <div style="flex: 1; min-width: 250px;">
+    <div style="flex: 1; min-width: 250px;" id="contenedorDestinoCatalogo">
       <label><strong>Destino</strong></label>
       <select id="destino" onchange="cargarInfoTour(this.value)" style="width: 100%; padding: 8px;">
         <option value="">Seleccione un destino</option>
       </select>
     </div>
+    <!-- NUEVO: para salidas Personalizadas no hay un tour del catálogo del
+         cual sacar el destino — se escribe a mano. -->
+    <div style="flex: 1; min-width: 250px; display:none;" id="contenedorDestinoPersonalizado">
+      <label><strong>Destino</strong></label>
+      <input type="text" id="destinoPersonalizado" placeholder="Ej. Cartagena a medida" style="width: 100%; padding: 8px;">
+    </div>
     <div style="flex: 1; min-width: 250px;">
       <label><strong>Duración</strong></label>
       <input id="duracion" readonly placeholder="Ej. 5 días y 4 noches" style="width: 100%; padding: 8px;">
+    </div>
+  </div>
+
+  <!-- NUEVO: Incluye / No incluye escritos a mano — solo aplica a
+       Personalizado, ya que en Grupal e Individual esta información vive en
+       el catálogo de tours (tours.html), no se repite aquí. -->
+  <div id="contenedorIncluyePersonalizado" style="display:none; margin-top: 15px;">
+    <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+      <div style="flex: 1; min-width: 250px;">
+        <label><strong>Incluye</strong></label>
+        <textarea id="incluyePersonalizado" rows="4" placeholder="Ej. Traslado aeropuerto-hotel-aeropuerto, hospedaje con desayuno incluido" style="width: 100%; padding: 8px;"></textarea>
+      </div>
+      <div style="flex: 1; min-width: 250px;">
+        <label><strong>No incluye</strong></label>
+        <textarea id="no_incluyePersonalizado" rows="4" style="width: 100%; padding: 8px;"></textarea>
+      </div>
     </div>
   </div>
 
@@ -525,14 +548,18 @@
     <textarea id="itinerario" rows="4" placeholder="Ej. Día 1 Llegada..." style="width: 100%; padding: 8px;"></textarea>
   </div>
 
-  <div style="margin-top: 30px;">
-    <label style="font-weight: bold;">Tours Opcionales</label>
-    <div id="toursOpcionalesLista" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;"></div>
-  </div>
+  <!-- NUEVO: Tours Opcionales no aplica a salidas Personalizadas — se oculta
+       todo este bloque en ese caso. -->
+  <div id="contenedorToursOpcionales">
+    <div style="margin-top: 30px;">
+      <label style="font-weight: bold;">Tours Opcionales</label>
+      <div id="toursOpcionalesLista" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;"></div>
+    </div>
 
-  <div style="margin-top: 15px;">
-    <label><strong>Observaciones sobre Tours Opcionales</strong></label>
-    <textarea id="obs_tours_opcionales" rows="2" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente." style="width: 100%; padding: 8px;"></textarea>
+    <div style="margin-top: 15px;">
+      <label><strong>Observaciones sobre Tours Opcionales</strong></label>
+      <textarea id="obs_tours_opcionales" rows="2" placeholder="Ej: Solo adultos harán el tour de Nápoles. Niños no participan en parapente." style="width: 100%; padding: 8px;"></textarea>
+    </div>
   </div>
 </section>
 
@@ -1733,9 +1760,16 @@ async function guardarReserva() {
     const vencimientoPasaporteTitular = document.getElementById("vencimientoPasaporteTitular").value || "";
     const nacionalidadTitular = document.getElementById("nacionalidadTitular").value || "";
     const generoTitular = document.getElementById("generoTitular").value || "";
-    const destino = document.getElementById("destino").value || "";
+    const tipoSalidaActual = document.getElementById("tipoSalidaReserva").value;
+    // NUEVO: en Personalizado no hay tour del catálogo — "destino" (el ID)
+    // queda vacío, y el nombre a mostrar sale del campo escrito a mano.
+    const destino = tipoSalidaActual === "Personalizado" ? "" : (document.getElementById("destino").value || "");
     const destinoSelect = document.getElementById("destino");
-    const nombreDestino = destinoSelect.options[destinoSelect.selectedIndex]?.text || "";
+    const nombreDestino = tipoSalidaActual === "Personalizado"
+      ? (document.getElementById("destinoPersonalizado").value || "")
+      : (destinoSelect.options[destinoSelect.selectedIndex]?.text || "");
+    const incluyePersonalizado = tipoSalidaActual === "Personalizado" ? (document.getElementById("incluyePersonalizado").value || "") : "";
+    const no_incluyePersonalizado = tipoSalidaActual === "Personalizado" ? (document.getElementById("no_incluyePersonalizado").value || "") : "";
     const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
     const pagos = window.listaPagos || [];
     const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
@@ -1895,6 +1929,8 @@ async function guardarReserva() {
         };
       }).filter(c => c.codigo.trim() !== ""),
       fechaReserva, destino, nombreDestino,
+      tipoSalidaReserva: tipoSalidaActual,
+      incluyePersonalizado, no_incluyePersonalizado,
       total, abono, saldo, pagos, embajadora,
       vuelosIntermedios: [],
       pasajeros: [],
@@ -2328,7 +2364,24 @@ function alCambiarTipoSalida() {
   if (tipoSalida !== "Individual") {
     document.getElementById("nivelReserva").value = "";
   }
-  filtrarYPoblarDestinos();
+
+  // NUEVO: alterna entre el flujo normal (destino del catálogo) y el flujo
+  // Personalizado (todo escrito a mano, sin tour asociado).
+  const esPersonalizado = tipoSalida === "Personalizado";
+  document.getElementById("contenedorDestinoCatalogo").style.display = esPersonalizado ? "none" : "block";
+  document.getElementById("contenedorDestinoPersonalizado").style.display = esPersonalizado ? "block" : "none";
+  document.getElementById("contenedorIncluyePersonalizado").style.display = esPersonalizado ? "block" : "none";
+  document.getElementById("contenedorToursOpcionales").style.display = esPersonalizado ? "none" : "block";
+  document.getElementById("duracion").readOnly = esPersonalizado ? false : true;
+
+  if (esPersonalizado) {
+    // Sin tour del catálogo detrás, así que se limpia lo que hubiera quedado
+    // cargado de un destino anterior.
+    document.getElementById("destino").value = "";
+    document.getElementById("toursOpcionalesLista").innerHTML = "";
+  } else {
+    filtrarYPoblarDestinos();
+  }
 }
 
 async function cargarInfoTour(destinoId) {
@@ -2378,8 +2431,38 @@ function autoResizeTextarea(textarea) {
 }
 
 function abrirModalHotel() {
-  const destinoSeleccionado = document.getElementById("destino").value;
+  const tipoSalida = document.getElementById("tipoSalidaReserva").value;
   const selectHotel = document.getElementById("modal_nombre_hotel");
+
+  // NUEVO: en Personalizado no hay un solo tour del cual sacar la lista de
+  // hoteles — se combinan los hoteles de TODOS los tours del catálogo, sin
+  // repetidos, para seguir eligiendo de una lista conocida.
+  if (tipoSalida === "Personalizado") {
+    selectHotel.innerHTML = "<option value=''>Cargando hoteles...</option>";
+    db.collection("tours").get().then(snapshot => {
+      const nombresVistos = new Set();
+      selectHotel.innerHTML = "<option value=''>Seleccione un hotel</option>";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        (data.hoteles || []).forEach(hotel => {
+          const nombre = hotel.nombre || hotel;
+          if (!nombre || nombresVistos.has(nombre)) return;
+          nombresVistos.add(nombre);
+          const opt = document.createElement("option");
+          opt.value = nombre;
+          opt.textContent = nombre;
+          selectHotel.appendChild(opt);
+        });
+      });
+      if (nombresVistos.size === 0) {
+        selectHotel.innerHTML = "<option value=''>No hay hoteles guardados en el catálogo todavía</option>";
+      }
+    });
+    document.getElementById("modalHotel").style.display = "flex";
+    return;
+  }
+
+  const destinoSeleccionado = document.getElementById("destino").value;
 
   if (!destinoSeleccionado) {
     alert("Por favor selecciona un destino antes de agregar un hotel.");
@@ -2522,14 +2605,26 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("telefonoTitular").value = data.telefono || "";
     document.getElementById("equipaje").value = data.equipaje || "";
 
-    const tourGuardado = (window.catalogoTours || []).find(t => t.id === data.destino);
-    if (tourGuardado) {
-      document.getElementById("tipoSalidaReserva").value = tourGuardado.tipoSalida;
-      document.getElementById("contenedorNivelReserva").style.display = tourGuardado.tipoSalida === "Individual" ? "block" : "none";
-      document.getElementById("nivelReserva").value = tourGuardado.nivel || "";
-      filtrarYPoblarDestinos();
+    // NUEVO: si la reserva fue guardada como Personalizado, no hay tour del
+    // catálogo del cual reconocer el tipo de salida (data.destino queda
+    // vacío) — se restaura directo desde el campo tipoSalidaReserva guardado,
+    // junto con el destino, incluye y no incluye escritos a mano.
+    if (data.tipoSalidaReserva === "Personalizado") {
+      document.getElementById("tipoSalidaReserva").value = "Personalizado";
+      alCambiarTipoSalida();
+      document.getElementById("destinoPersonalizado").value = data.nombreDestino || "";
+      document.getElementById("incluyePersonalizado").value = data.incluyePersonalizado || "";
+      document.getElementById("no_incluyePersonalizado").value = data.no_incluyePersonalizado || "";
+    } else {
+      const tourGuardado = (window.catalogoTours || []).find(t => t.id === data.destino);
+      if (tourGuardado) {
+        document.getElementById("tipoSalidaReserva").value = tourGuardado.tipoSalida;
+        document.getElementById("contenedorNivelReserva").style.display = tourGuardado.tipoSalida === "Individual" ? "block" : "none";
+        document.getElementById("nivelReserva").value = tourGuardado.nivel || "";
+        filtrarYPoblarDestinos();
+      }
+      document.getElementById("destino").value = data.destino || "";
     }
-    document.getElementById("destino").value = data.destino || "";
     document.getElementById("totalGeneral").value = data.total?.toFixed(2) || "0.00";
 
     if (data.vueloIda) {
@@ -2862,7 +2957,16 @@ function parsearItinerarioPorDias(texto) {
 
 // Trae incluye/no_incluye directamente del tour en Firestore (detalle_reserva.html hoy no
 // guarda esos campos dentro de la reserva, así que se leen en el momento de generar el PDF).
-async function obtenerIncluyeDelTour(destinoId) {
+async function obtenerIncluyeDelTour(destinoId, datosReserva) {
+  // NUEVO: en una reserva Personalizada no hay tour del catálogo — el
+  // incluye/no incluye se toma directo de lo que se escribió a mano en la
+  // propia reserva.
+  if (datosReserva?.tipoSalidaReserva === "Personalizado") {
+    return {
+      incluye: datosReserva.incluyePersonalizado || "",
+      no_incluye: datosReserva.no_incluyePersonalizado || ""
+    };
+  }
   if (!destinoId) return { incluye: "", no_incluye: "" };
   try {
     const doc = await db.collection("tours").doc(destinoId).get();
@@ -2904,7 +3008,7 @@ async function generarPaginasComprobante(datos) {
   const margen = 18;
   const anchoUtil = anchoP - margen * 2;
 
-  const { incluye, no_incluye } = await obtenerIncluyeDelTour(datos.destino);
+  const { incluye, no_incluye } = await obtenerIncluyeDelTour(datos.destino, datos);
 
   const imgPortada = document.getElementById("fondoPortadaComprobante");
   doc.addImage(imgPortada, "PNG", 0, 0, anchoP, altoP);
@@ -3479,4 +3583,3 @@ async function enviarComprobantePorCorreo() {
 
 </body>
 </html>
-
