@@ -244,8 +244,9 @@
   <div class="container">
     <h2>Detalle del Tour</h2>
 
-    <label>Nombre del tour</label>
-    <input type="text" id="nombre" placeholder="Ej. Guatemala, o Guatemala Confort" />
+    <label>Destino</label>
+    <input type="text" id="nombre" placeholder="Ej. Medellín — solo el lugar, sin el nivel (el nivel se elige aparte, abajo)" />
+    <div style="font-size:13px; color:#777; margin-top:-4px;">Si ya existe un tour con este mismo destino, usa exactamente el mismo texto (ej. siempre "Medellín", nunca "medellin" o "Medellín, Colombia") para que las variantes queden agrupadas juntas en el catálogo.</div>
 
     <!-- NUEVO: distinción entre salida grupal (fecha fija, catálogo compartido)
          y salida individual (personalizada, con 3 niveles de experiencia:
@@ -410,14 +411,36 @@ function guardarTour() {
     estado: "ACTIVO"
   };
 
-const ref = tourId
-  ? db.collection("tours").doc(tourId).update(data)
-  : db.collection("tours").doc(data.nombre.replace(/\s+/g, "_")).set(data);
+// FIX: el ID se generaba solo con el nombre (destino) — si ya existía un
+// tour con ese mismo destino (ej. la versión Grupal), crear una variante
+// nueva (ej. Individual Confort) con el mismo destino SOBRESCRIBÍA la que ya
+// existía, porque ambas generaban el mismo ID de documento. Ahora el ID
+// incluye también el tipo de salida y el nivel, para que cada variante de
+// un mismo destino tenga su propio documento.
+const sufijoVariante = tipoSalida === "Individual" && nivel ? `${tipoSalida}_${nivel}` : tipoSalida;
+const idNuevoTour = `${data.nombre}_${sufijoVariante}`.replace(/\s+/g, "_");
 
-  ref.then(() => {
+async function guardarComoNuevo() {
+  // NUEVO: aviso de seguridad — si ya existe una variante con este mismo
+  // destino y nivel, confirma antes de sobrescribirla en silencio.
+  const existente = await db.collection("tours").doc(idNuevoTour).get();
+  if (existente.exists) {
+    const continuar = confirm(`Ya existe un tour "${data.nombre}" con esta misma variante (${sufijoVariante.replace('_', ' ')}). ¿Deseas reemplazarlo con estos datos?`);
+    if (!continuar) return;
+  }
+  await db.collection("tours").doc(idNuevoTour).set(data);
+  alert("Tour guardado correctamente");
+  window.location.href = "tours.html";
+}
+
+if (tourId) {
+  db.collection("tours").doc(tourId).update(data).then(() => {
     alert("Tour guardado correctamente");
     window.location.href = "tours.html";
   });
+} else {
+  guardarComoNuevo();
+}
 }
 
 if (tourId) {
@@ -452,6 +475,16 @@ document.getElementById("opcionalesContainer").innerHTML = "";
   // NUEVO: tour nuevo (sin id) — asegura que el campo Nivel arranque oculto
   // hasta que se elija "Individual".
   actualizarVisibilidadNivel();
+
+  // NUEVO: si se llegó desde el botón "➕ Agregar variante" de un destino ya
+  // existente (tours.html), se prellena el destino y se sugiere de una vez
+  // "Individual" — así solo falta elegir el nivel (Flash/Esencial/Confort).
+  const destinoDesdeUrl = params.get("nombre");
+  if (destinoDesdeUrl) {
+    document.getElementById("nombre").value = destinoDesdeUrl;
+    document.getElementById("tipoSalida").value = "Individual";
+    actualizarVisibilidadNivel();
+  }
 }
 
   function agregarHotel(nombre, info) {
@@ -619,5 +652,3 @@ document.getElementById("opcionalesContainer").innerHTML = "";
   <script src="auth-guard.js"></script>
 </body>
 </html>
-
-
