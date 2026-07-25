@@ -9,7 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
+    /* Menú lateral de navegación (mismo estilo que dashboard.html) */
     .toggle-btn {
       position: fixed;
       top: 20px;
@@ -133,13 +133,15 @@
       margin-top: 15px;
       font-weight: bold;
     }
-    input {
+    input, select {
       width: 100%;
       padding: 8px;
       border-radius: 6px;
       border: 1px solid #ccc;
       margin-top: 5px;
       box-sizing: border-box;
+      font-family: Arial, sans-serif;
+      font-size: 15px;
     }
     .btn {
       margin-top: 20px;
@@ -164,6 +166,42 @@
       border-radius: 8px;
       font-size: 14px;
       font-weight: normal;
+    }
+    .caja-categoria {
+      margin-top: 18px;
+      padding: 14px 16px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #dde8e8;
+    }
+    .caja-categoria h4 {
+      margin: 0 0 8px 0;
+      color: #02535a;
+    }
+    .caja-categoria .fila {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .caja-categoria .fila > div {
+      flex: 1;
+      min-width: 160px;
+    }
+    .aviso-ya-pagado {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #eaf5ea;
+      border: 1px solid #b6ddb6;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #1b6e1b;
+      font-weight: bold;
+    }
+    .nota-boletos {
+      font-weight: normal;
+      font-size: 13px;
+      color: #777;
+      margin-top: 2px;
     }
   </style>
 </head>
@@ -194,7 +232,7 @@
 
   <a href="#" id="btnVolverReserva" class="btn-volver">◀ Volver al Detalle de Reserva</a>
 
-  <h2>💼 Costos Proyectados</h2>
+  <h2>💼 Costos de la Reserva</h2>
 
   <div id="avisoExistente" class="aviso-existente" style="display:none;"></div>
 
@@ -212,20 +250,72 @@
     <div id="detalleVenta"></div>
   </div>
 
-  <label>Boletos Aéreos</label>
-  <input type="number" id="costoBoletos" oninput="calcularGanancia()" />
+  <div class="caja-categoria">
+    <h4>✈️ Boletos Aéreos</h4>
+    <div class="nota-boletos">Se paga prácticamente al momento de reservar, así que aquí se registra directo como monto ya pagado (no es una proyección).</div>
+    <label>Monto ya pagado</label>
+    <input type="number" id="costoBoletos" oninput="calcularGanancia()" />
+  </div>
 
-  <label>Hospedaje</label>
-  <input type="number" id="costoHospedaje" oninput="calcularGanancia()" />
+  <div class="caja-categoria" id="cajaHospedaje">
+    <h4>🏨 Hospedaje</h4>
+    <div class="fila">
+      <div>
+        <label>Proveedor</label>
+        <select id="proveedorHospedaje" onchange="manejarSeleccionProveedor(this)"></select>
+      </div>
+      <div>
+        <label>Monto proyectado</label>
+        <input type="number" id="proyectadoHospedaje" oninput="calcularGanancia()">
+      </div>
+    </div>
+    <div id="avisoRealHospedaje" style="display:none;"></div>
+  </div>
 
-  <label>Operador o Traslados</label>
-  <input type="number" id="costoOperador" oninput="calcularGanancia()" />
+  <div class="caja-categoria" id="cajaTraslados">
+    <h4>🚐 Traslados</h4>
+    <div class="fila">
+      <div>
+        <label>Proveedor</label>
+        <select id="proveedorTraslados" onchange="manejarSeleccionProveedor(this)"></select>
+      </div>
+      <div>
+        <label>Monto proyectado</label>
+        <input type="number" id="proyectadoTraslados" oninput="calcularGanancia()">
+      </div>
+    </div>
+    <div id="avisoRealTraslados" style="display:none;"></div>
+  </div>
 
-  <label>Tours y Actividades</label>
-  <input type="number" id="costoTours" oninput="calcularGanancia()" />
+  <div class="caja-categoria" id="cajaTours">
+    <h4>🎟️ Tours y Actividades</h4>
+    <div class="fila">
+      <div>
+        <label>Proveedor</label>
+        <select id="proveedorTours" onchange="manejarSeleccionProveedor(this)"></select>
+      </div>
+      <div>
+        <label>Monto proyectado</label>
+        <input type="number" id="proyectadoTours" oninput="calcularGanancia()">
+      </div>
+    </div>
+    <div id="avisoRealTours" style="display:none;"></div>
+  </div>
 
- <label>Comisión</label>
-<input type="number" id="montoComision" oninput="calcularGanancia()" />
+  <div class="caja-categoria" id="cajaComision">
+    <h4>💼 Comisión</h4>
+    <div class="fila">
+      <div>
+        <label>Embajador(a) / Proveedor</label>
+        <select id="proveedorComision" onchange="manejarSeleccionProveedor(this)"></select>
+      </div>
+      <div>
+        <label>Monto proyectado</label>
+        <input type="number" id="proyectadoComision" oninput="calcularGanancia()">
+      </div>
+    </div>
+    <div id="avisoRealComision" style="display:none;"></div>
+  </div>
 
   <div class="resultado">Ganancia Estimada: $<span id="gananciaProyectada">0.00</span></div>
 
@@ -233,210 +323,339 @@
 
   </main>
 
-  <script>
-    // FIX: firebaseConfig le faltaban storageBucket, messagingSenderId y
-    // appId — se completan aquí para que quede igual al resto del sistema.
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717",
-      storageBucket: "tours-460717.firebasestorage.app",
-      messagingSenderId: "1000749333444",
-      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+<script>
+  // FIX: firebaseConfig le faltaban storageBucket, messagingSenderId y
+  // appId — se completan aquí para que quede igual al resto del sistema.
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.firebasestorage.app",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const params = new URLSearchParams(window.location.search);
+  const codigo = params.get("reserva");
+  document.getElementById("codigoReserva").value = codigo;
+
+  // NUEVO: las 4 categorías que ahora llevan proveedor + proyectado/real por separado.
+  // "operador" se mantiene como nombre interno del campo en Firestore (por
+  // compatibilidad con datos viejos), aunque en pantalla y en el resto del
+  // sistema nuevo se llame "Traslados".
+  const CATEGORIAS = [
+    { clave: "hospedaje", campoInterno: "hospedaje" },
+    { clave: "traslados", campoInterno: "operador" },
+    { clave: "tours", campoInterno: "tours" },
+    { clave: "comision", campoInterno: "comision" }
+  ];
+
+  function nombreSelect(clave) {
+    return `proveedor${clave.charAt(0).toUpperCase()}${clave.slice(1)}`;
+  }
+  function nombreInputProyectado(clave) {
+    return `proyectado${clave.charAt(0).toUpperCase()}${clave.slice(1)}`;
+  }
+  function nombreAvisoReal(clave) {
+    return `avisoReal${clave.charAt(0).toUpperCase()}${clave.slice(1)}`;
+  }
+  function nombreCaja(clave) {
+    return `caja${clave.charAt(0).toUpperCase()}${clave.slice(1)}`;
+  }
+
+  // ---------- Menú lateral ----------
+  function inicializarMenuLateral() {
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const sidebar = document.getElementById("sidebar");
+    const contenido = document.getElementById("contenidoPrincipal");
+    const toggleBtn = document.querySelector('.toggle-btn');
+
+    if (usuario) {
+      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+      document.getElementById("rolUsuario").innerText = usuario.rol || "";
+    } else {
+      document.getElementById("nombreUsuario").innerText = "Invitado";
+    }
+
+    window.toggleSidebar = function () {
+      sidebar.classList.toggle('active');
+      contenido.classList.toggle('sidebar-visible');
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
 
-    const params = new URLSearchParams(window.location.search);
-    const codigo = params.get("reserva");
-    document.getElementById("codigoReserva").value = codigo;
+    window.cerrarSesionYRedirigir = function () {
+      localStorage.removeItem("usuario");
+      window.location.href = "login.html";
+    };
 
-    // NUEVO: menú lateral y botón de volver (mismo mecanismo que en las demás páginas).
-    function inicializarMenuLateral() {
-      const usuario = JSON.parse(localStorage.getItem("usuario"));
-      const sidebar = document.getElementById("sidebar");
-      const contenido = document.getElementById("contenidoPrincipal");
-      const toggleBtn = document.querySelector('.toggle-btn');
-
-      if (usuario) {
-        document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-        document.getElementById("rolUsuario").innerText = usuario.rol || "";
+    function checkScreenSize() {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('active');
+        contenido.classList.remove('sidebar-visible');
       } else {
-        document.getElementById("nombreUsuario").innerText = "Invitado";
+        sidebar.classList.add('active');
+        contenido.classList.add('sidebar-visible');
       }
-
-      window.toggleSidebar = function () {
-        sidebar.classList.toggle('active');
-        contenido.classList.toggle('sidebar-visible');
-      };
-
-      window.cerrarSesionYRedirigir = function () {
-        localStorage.removeItem("usuario");
-        window.location.href = "login.html";
-      };
-
-      function checkScreenSize() {
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('active');
-          contenido.classList.remove('sidebar-visible');
-        } else {
-          sidebar.classList.add('active');
-          contenido.classList.add('sidebar-visible');
-        }
-        toggleBtn.style.display = "block";
-      }
-
-      window.addEventListener('resize', checkScreenSize);
-      checkScreenSize();
-    }
-    inicializarMenuLateral();
-
-    const btnVolver = document.getElementById("btnVolverReserva");
-    if (btnVolver) {
-      btnVolver.href = codigo ? `detalle_reserva.html?codigo=${codigo}` : "reservas.html";
+      toggleBtn.style.display = "block";
     }
 
-    // NUEVO: guarda lo que ya existía en costos_reservas (si lo hay) para no
-    // perder el estado ni el desglose_real al guardar de nuevo.
-    let datosExistentesCostos = null;
+    window.addEventListener('resize', checkScreenSize);
+    checkScreenSize();
+  }
+  inicializarMenuLateral();
 
-    async function precargarDatosReserva() {
-      if (!codigo) return;
+  const btnVolver = document.getElementById("btnVolverReserva");
+  if (btnVolver) {
+    btnVolver.href = codigo ? `detalle_reserva.html?codigo=${codigo}` : "reservas.html";
+  }
+
+  // ---------- Proveedores (colección compartida y reutilizable) ----------
+  // NUEVO: en vez de escribir el proveedor a mano cada vez, se elige de una
+  // lista guardada en Firestore ("proveedores") — así "Hotel Obo" siempre se
+  // escribe exactamente igual, y luego se puede sumar correctamente cuánto
+  // se le debe/pagó a cada uno en el módulo de Finanzas.
+  let listaProveedores = [];
+
+  async function cargarProveedores() {
+    const snap = await db.collection("proveedores").orderBy("nombre").get();
+    listaProveedores = snap.docs.map(d => ({ id: d.id, nombre: d.data().nombre }));
+    poblarTodosLosSelectsDeProveedor();
+  }
+
+  function poblarTodosLosSelectsDeProveedor() {
+    CATEGORIAS.forEach(cat => {
+      const select = document.getElementById(nombreSelect(cat.clave));
+      const valorActual = select.value;
+      select.innerHTML = `<option value="">-- Seleccione --</option>` +
+        listaProveedores.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("") +
+        `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
+      if (valorActual && valorActual !== "__nuevo__") select.value = valorActual;
+    });
+  }
+
+  async function manejarSeleccionProveedor(select) {
+    if (select.value !== "__nuevo__") return;
+
+    const nombre = prompt("Nombre del nuevo proveedor (ej. Hotel Obo, Emetours, Dario Transportes, Tatiana):");
+    if (!nombre || !nombre.trim()) {
+      select.value = "";
+      return;
+    }
+
+    const nombreLimpio = nombre.trim();
+    const yaExiste = listaProveedores.some(p => p.nombre.toLowerCase() === nombreLimpio.toLowerCase());
+
+    if (!yaExiste) {
       try {
-        const doc = await db.collection("reservas").doc(codigo).get();
-        if (!doc.exists) return;
-
-        const data = doc.data();
-        const venta = parseFloat(data.total || 0);
-        document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
-        document.getElementById("ventaTotal").value = venta;
-
-        const adultos = data.cantidadAdultos || 0;
-        const ninos = data.cantidadNinos || 0;
-        const bebes = data.cantidadBebes || 0;
-        const precioAdulto = data.precioAdulto || 0;
-        const precioNino = data.precioNino || 0;
-        const precioBebe = data.precioBebe || 0;
-
-        const totalAdultos = adultos * precioAdulto;
-        const totalNinos = ninos * precioNino;
-        const totalBebes = bebes * precioBebe;
-        const totalCalculado = totalAdultos + totalNinos + totalBebes;
-
-        const diferencia = Math.abs(venta - totalCalculado);
-        let advertencia = "";
-
-        if (diferencia > 1) {
-          advertencia = `<div style="color: #c0392b; font-weight: bold; margin-top: 10px;">
-            ⚠️ Atención: El total calculado ($${totalCalculado.toFixed(2)}) difiere del total registrado ($${venta.toFixed(2)}). Verifica los precios o cantidades.
-          </div>`;
-        }
-
-        document.getElementById("detalleVenta").innerHTML = `
-          👤 Adultos: ${adultos} × $${precioAdulto} = <strong>$${totalAdultos.toFixed(2)}</strong><br>
-          🧒 Niños: ${ninos} × $${precioNino} = <strong>$${totalNinos.toFixed(2)}</strong><br>
-          👶 Bebés: ${bebes} × $${precioBebe} = <strong>$${totalBebes.toFixed(2)}</strong><br>
-          <hr>
-          💵 <strong>Total Calculado:</strong> $${totalCalculado.toFixed(2)}<br>
-          ${advertencia}
-        `;
-
-        // FIX: antes esta página NUNCA revisaba si ya existían costos guardados
-        // para esta reserva — cada vez que la abrías para corregir algo, los
-        // campos de costos aparecían en blanco, aunque ya los hubieras
-        // llenado antes. Ahora, si ya existe un documento en "costos_reservas",
-        // se precargan sus valores.
-        const docCostos = await db.collection("costos_reservas").doc(codigo).get();
-        if (docCostos.exists) {
-          datosExistentesCostos = docCostos.data();
-          const desglose = datosExistentesCostos.desglose_proyectado || {};
-          document.getElementById("costoBoletos").value = desglose.boletos || "";
-          document.getElementById("costoHospedaje").value = desglose.hospedaje || "";
-          document.getElementById("costoOperador").value = desglose.operador || "";
-          document.getElementById("costoTours").value = desglose.tours || "";
-          document.getElementById("montoComision").value = desglose.comision || "";
-
-          const tieneReal = datosExistentesCostos.desglose_real && Object.keys(datosExistentesCostos.desglose_real).length > 0;
-          const aviso = document.getElementById("avisoExistente");
-          aviso.style.display = "block";
-          aviso.innerHTML = `📋 Ya existen costos guardados para esta reserva (estado: <strong>${datosExistentesCostos.estado || "Proyectado"}</strong>).`
-            + (tieneReal ? " Esta reserva ya tiene costos <strong>reales</strong> registrados — se van a conservar al guardar." : "");
-        }
-
-        calcularGanancia();
+        await db.collection("proveedores").add({ nombre: nombreLimpio, creado_el: new Date() });
+        listaProveedores.push({ nombre: nombreLimpio });
+        listaProveedores.sort((a, b) => a.nombre.localeCompare(b.nombre));
       } catch (e) {
-        console.error("Error al obtener reserva:", e);
-      }
-    }
-
-    function calcularGanancia() {
-      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
-      const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
-      const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
-      const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-      const comision = parseFloat(document.getElementById("montoComision").value) || 0;
-
-      const totalCostos = boletos + hospedaje + operador + tours + comision;
-      const ganancia = venta - totalCostos;
-
-      document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
-    }
-
-    async function guardarCostos() {
-      const fechaViaje = document.getElementById("fechaViaje").value;
-      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
-      const hospedaje = parseFloat(document.getElementById("costoHospedaje").value) || 0;
-      const operador = parseFloat(document.getElementById("costoOperador").value) || 0;
-      const tours = parseFloat(document.getElementById("costoTours").value) || 0;
-      const comision = parseFloat(document.getElementById("montoComision").value) || 0;
-      const ganancia = venta - (boletos + hospedaje + operador + tours + comision);
-
-      if (!fechaViaje || !codigo) {
-        alert("Debe ingresar la fecha de viaje y un código válido.");
+        console.error("Error al guardar el proveedor nuevo:", e);
+        alert("❌ No se pudo guardar el proveedor nuevo.");
+        select.value = "";
         return;
       }
-
-      try {
-        // FIX: antes se usaba .set({...}) reemplazando TODO el documento,
-        // incluyendo "desglose_real: {}" fijo — eso borraba cualquier costo
-        // real que ya se hubiera registrado (ej. desde panel_costos.html)
-        // cada vez que alguien corregía algo aquí. Ahora se conserva lo que
-        // ya existía (desglose_real, estado, fecha de creación original) y
-        // solo se actualiza el desglose proyectado.
-        await db.collection("costos_reservas").doc(codigo).set({
-          codigo,
-          fecha_viaje: fechaViaje,
-          venta_total: venta,
-          estado: datosExistentesCostos?.estado || "Proyectado",
-          creado_el: datosExistentesCostos?.creado_el || new Date(),
-          actualizado_el: new Date(),
-          desglose_proyectado: {
-            boletos,
-            hospedaje,
-            operador,
-            tours,
-            comision,
-            ganancia
-          },
-          desglose_real: datosExistentesCostos?.desglose_real || {}
-        }, { merge: true });
-
-        alert("✅ Costos guardados correctamente.");
-        window.location.href = "panel_costos.html";
-      } catch (error) {
-        console.error("❌ Error al guardar:", error);
-        alert("Ocurrió un error al guardar los datos.");
-      }
     }
 
-    window.addEventListener("DOMContentLoaded", precargarDatosReserva);
-  </script>
+    poblarTodosLosSelectsDeProveedor();
+    select.value = nombreLimpio;
+  }
+
+  // ---------- Carga de datos existentes ----------
+  // NUEVO: guarda lo que ya existía en costos_reservas (si lo hay), para no
+  // perder nada de lo ya registrado (estado, fechas reales de pago, etc.)
+  let datosExistentesCostos = null;
+
+  async function precargarDatosReserva() {
+    if (!codigo) return;
+    try {
+      const doc = await db.collection("reservas").doc(codigo).get();
+      if (!doc.exists) return;
+
+      const data = doc.data();
+      const venta = parseFloat(data.total || 0);
+      document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
+      document.getElementById("ventaTotal").value = venta;
+
+      const adultos = data.cantidadAdultos || 0;
+      const ninos = data.cantidadNinos || 0;
+      const bebes = data.cantidadBebes || 0;
+      const precioAdulto = data.precioAdulto || 0;
+      const precioNino = data.precioNino || 0;
+      const precioBebe = data.precioBebe || 0;
+
+      const totalAdultos = adultos * precioAdulto;
+      const totalNinos = ninos * precioNino;
+      const totalBebes = bebes * precioBebe;
+      const totalCalculado = totalAdultos + totalNinos + totalBebes;
+
+      const diferencia = Math.abs(venta - totalCalculado);
+      let advertencia = "";
+
+      if (diferencia > 1) {
+        advertencia = `<div style="color: #c0392b; font-weight: bold; margin-top: 10px;">
+          ⚠️ Atención: El total calculado ($${totalCalculado.toFixed(2)}) difiere del total registrado ($${venta.toFixed(2)}). Verifica los precios o cantidades.
+        </div>`;
+      }
+
+      document.getElementById("detalleVenta").innerHTML = `
+        👤 Adultos: ${adultos} × $${precioAdulto} = <strong>$${totalAdultos.toFixed(2)}</strong><br>
+        🧒 Niños: ${ninos} × $${precioNino} = <strong>$${totalNinos.toFixed(2)}</strong><br>
+        👶 Bebés: ${bebes} × $${precioBebe} = <strong>$${totalBebes.toFixed(2)}</strong><br>
+        <hr>
+        💵 <strong>Total Calculado:</strong> $${totalCalculado.toFixed(2)}<br>
+        ${advertencia}
+      `;
+
+      const docCostos = await db.collection("costos_reservas").doc(codigo).get();
+
+      // NUEVO: se carga la lista de proveedores ANTES de intentar
+      // preseleccionar uno — si se hiciera al revés, el <select> todavía no
+      // tendría las opciones (proveedores) y el valor no se fijaría.
+      await cargarProveedores();
+
+      if (docCostos.exists) {
+        datosExistentesCostos = docCostos.data();
+        const aviso = document.getElementById("avisoExistente");
+        aviso.style.display = "block";
+        aviso.innerHTML = `📋 Ya existen costos guardados para esta reserva (estado: <strong>${datosExistentesCostos.estado || "Proyectado"}</strong>).`;
+
+        // NUEVO: si el documento es del modelo VIEJO (desglose_proyectado /
+        // desglose_real planos, sin "categorias"), se traduce aquí mismo al
+        // modelo nuevo para precargar el formulario — al guardar, esta
+        // reserva queda automáticamente convertida al modelo nuevo.
+        const esModeloViejo = !datosExistentesCostos.categorias;
+
+        if (esModeloViejo) {
+          const proy = datosExistentesCostos.desglose_proyectado || {};
+          const real = datosExistentesCostos.desglose_real || {};
+          document.getElementById("costoBoletos").value = (real.boletos ?? proy.boletos) || "";
+
+          CATEGORIAS.forEach(cat => {
+            const proyectadoViejo = proy[cat.campoInterno] || 0;
+            const realViejo = real[cat.campoInterno];
+            document.getElementById(nombreInputProyectado(cat.clave)).value = proyectadoViejo || "";
+            if (typeof realViejo === "number") {
+              mostrarCategoriaComoPagada(cat.clave, realViejo, "", null);
+            }
+          });
+
+          if (Object.keys(real).length > 0) {
+            aviso.innerHTML += ` Esta reserva tiene datos de una versión anterior del sistema — al guardar, se actualiza al nuevo formato con proveedores.`;
+          }
+        } else {
+          document.getElementById("costoBoletos").value = datosExistentesCostos.boletos_real || "";
+
+          CATEGORIAS.forEach(cat => {
+            const info = datosExistentesCostos.categorias?.[cat.clave] || {};
+            document.getElementById(nombreInputProyectado(cat.clave)).value = info.proyectado || "";
+            if (typeof info.real === "number") {
+              mostrarCategoriaComoPagada(cat.clave, info.real, info.proveedor || "", info.fecha_pago_real);
+            } else if (info.proveedor) {
+              document.getElementById(nombreSelect(cat.clave)).value = info.proveedor;
+            }
+          });
+        }
+      }
+
+      calcularGanancia();
+    } catch (e) {
+      console.error("Error al obtener reserva:", e);
+    }
+  }
+
+  // Deja una categoría marcada visualmente como "ya pagada" (real) — esto
+  // solo debería pasar si ya se marcó como pagada desde el Panel de Costos;
+  // aquí solo se refleja, no se edita.
+  function mostrarCategoriaComoPagada(clave, monto, proveedor, fechaPago) {
+    const caja = document.getElementById(nombreCaja(clave));
+    const aviso = document.getElementById(nombreAvisoReal(clave));
+    const inputProyectado = document.getElementById(nombreInputProyectado(clave));
+    const select = document.getElementById(nombreSelect(clave));
+
+    inputProyectado.disabled = true;
+    select.disabled = true;
+    if (proveedor) select.value = proveedor;
+
+    const fecha = fechaPago?.toDate ? fechaPago.toDate() : (fechaPago ? new Date(fechaPago) : null);
+    const fechaTexto = fecha ? ` el ${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : "";
+
+    aviso.style.display = "block";
+    aviso.className = "aviso-ya-pagado";
+    aviso.innerHTML = `✅ Ya pagado (real): $${monto.toFixed(2)}${fechaTexto}. Para corregir este monto, hazlo desde el Panel de Costos.`;
+  }
+
+  // ---------- Cálculo de ganancia ----------
+  function calcularGanancia() {
+    const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+    const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+
+    let totalCategorias = 0;
+    CATEGORIAS.forEach(cat => {
+      const info = datosExistentesCostos?.categorias?.[cat.clave];
+      if (info && typeof info.real === "number") {
+        totalCategorias += info.real;
+      } else {
+        totalCategorias += parseFloat(document.getElementById(nombreInputProyectado(cat.clave)).value) || 0;
+      }
+    });
+
+    const ganancia = venta - (boletos + totalCategorias);
+    document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
+  }
+
+  // ---------- Guardar ----------
+  async function guardarCostos() {
+    const fechaViaje = document.getElementById("fechaViaje").value;
+    const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+    const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+
+    if (!fechaViaje || !codigo) {
+      alert("Debe ingresar la fecha de viaje y un código válido.");
+      return;
+    }
+
+    const categorias = {};
+    CATEGORIAS.forEach(cat => {
+      const infoExistente = datosExistentesCostos?.categorias?.[cat.clave] || {};
+      const yaEsReal = typeof infoExistente.real === "number";
+
+      categorias[cat.clave] = {
+        proveedor: document.getElementById(nombreSelect(cat.clave)).value || infoExistente.proveedor || "",
+        // Si ya está marcada como pagada (real), el proyectado se conserva
+        // tal como estaba — esta pantalla ya no la deja editar.
+        proyectado: yaEsReal ? (infoExistente.proyectado || 0) : (parseFloat(document.getElementById(nombreInputProyectado(cat.clave)).value) || 0),
+        real: yaEsReal ? infoExistente.real : null,
+        fecha_pago_real: yaEsReal ? (infoExistente.fecha_pago_real || null) : null
+      };
+    });
+
+    try {
+      await db.collection("costos_reservas").doc(codigo).set({
+        codigo,
+        fecha_viaje: fechaViaje,
+        venta_total: venta,
+        estado: datosExistentesCostos?.estado || "Proyectado",
+        creado_el: datosExistentesCostos?.creado_el || new Date(),
+        actualizado_el: new Date(),
+        boletos_real: boletos,
+        categorias
+      }, { merge: true });
+
+      alert("✅ Costos guardados correctamente.");
+      window.location.href = "panel_costos.html";
+    } catch (error) {
+      console.error("❌ Error al guardar:", error);
+      alert("Ocurrió un error al guardar los datos.");
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", precargarDatosReserva);
+</script>
   <script src="topbar.js"></script>
-  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
-       de confiar solo en lo que dijera localStorage. -->
+  <!-- Verificación real de sesión (Firebase Authentication). -->
   <script src="auth-guard.js"></script>
 </body>
 </html>
-
