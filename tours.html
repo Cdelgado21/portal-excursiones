@@ -248,6 +248,37 @@ th {
   transform: scale(1.05);
 }
 
+/* NUEVO: fila de encabezado de cada grupo de destino, con sus variantes
+   (Flash/Esencial/Confort o Grupal) organizadas debajo. */
+tr.fila-destino td {
+  background-color: #02535a;
+  color: white;
+  font-size: 17px;
+  font-weight: bold;
+  text-align: left;
+  padding: 12px 14px;
+}
+tr.fila-destino .btn-agregar-variante {
+  float: right;
+  background-color: #f49859;
+  color: white;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+tr.fila-destino .btn-agregar-variante:hover { background-color: #dd7e37; }
+tr.fila-variante td:first-child {
+  text-align: left;
+  padding-left: 30px;
+  color: #5f9296;
+  font-weight: bold;
+}
+
 @media (max-width: 768px) {
   .menu-bar {
     flex-direction: column;
@@ -307,13 +338,13 @@ th {
     <table id="tablaTours">
      <thead>
   <tr>
-    <th>Nombre</th>
+    <th>Destino / Variante</th>
     <th>Estado</th>
     <th>Editar</th>
     <th>Eliminar</th>
   </tr>
 </thead>
-      <tbody id="tabla-body"><tr><td colspan="13">Cargando tours...</td></tr></tbody>
+      <tbody id="tabla-body"><tr><td colspan="4">Cargando tours...</td></tr></tbody>
     </table>
   </div>
 
@@ -347,30 +378,70 @@ th {
   container.appendChild(div);
 }
 
-     function cargarTours() {
+    // NUEVO: orden lógico de las variantes dentro de cada destino — primero
+    // Grupal (si existe), luego Flash, Esencial, Confort.
+    const ORDEN_VARIANTE = { "Grupal": 0, "Flash": 1, "Esencial": 2, "Confort": 3 };
+
+    function etiquetaVariante(t) {
+      return t.tipoSalida === "Individual" ? (t.nivel || "Individual") : "Grupal";
+    }
+
+    function cargarTours() {
       db.collection("tours").get().then(snapshot => {
         const tbody = document.getElementById("tabla-body");
         tbody.innerHTML = "";
+
+        // Agrupa todos los tours por su destino (campo "nombre") — así
+        // Flash/Esencial/Confort del mismo lugar quedan juntos, en vez de
+        // aparecer como filas sueltas y desconectadas entre sí.
+        const grupos = {};
         snapshot.forEach(doc => {
           const t = doc.data();
-          const fila = document.createElement("tr");
-          const hotelNombres = (t.hoteles || []).map(h => `<b>${h.nombre}</b>`).join('<hr>');
-          const hotelInfo = (t.hoteles || []).map(h => h.info).join('<hr>');
+          const destino = t.nombre || "(sin nombre)";
+          if (!grupos[destino]) grupos[destino] = [];
+          grupos[destino].push({ id: doc.id, ...t });
+        });
 
-        fila.innerHTML = `
-  <td>${t.nombre || '-'}</td>
-  <td>
-    <button class="btn-estado ${t.estado === 'ACTIVO' ? '' : 'inactivo'}"
-      onclick="toggleEstado('${doc.id}', '${t.estado}')">${t.estado}</button>
-  </td>
-  <td>
-    <button class="btn-editar" onclick="window.location.href='detalle_tours.html?id=${doc.id}'">✏️ Editar</button>
-  </td>
-  <td>
-    <button class="btn-eliminar" onclick="eliminarTour('${doc.id}')">🗑️ Eliminar</button>
-  </td>
-`;
-          tbody.appendChild(fila);
+        const destinos = Object.keys(grupos).sort((a, b) => a.localeCompare(b));
+
+        if (destinos.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Todavía no hay tours cargados.</td></tr>`;
+          return;
+        }
+
+        destinos.forEach(destino => {
+          const variantes = grupos[destino].sort((a, b) =>
+            (ORDEN_VARIANTE[etiquetaVariante(a)] ?? 9) - (ORDEN_VARIANTE[etiquetaVariante(b)] ?? 9)
+          );
+
+          const filaDestino = document.createElement("tr");
+          filaDestino.className = "fila-destino";
+          filaDestino.innerHTML = `
+            <td colspan="4">
+              📍 ${destino}
+              <a class="btn-agregar-variante" href="detalle_tours.html?nombre=${encodeURIComponent(destino)}">➕ Agregar variante</a>
+            </td>
+          `;
+          tbody.appendChild(filaDestino);
+
+          variantes.forEach(t => {
+            const fila = document.createElement("tr");
+            fila.className = "fila-variante";
+            fila.innerHTML = `
+              <td>${etiquetaVariante(t)}</td>
+              <td>
+                <button class="btn-estado ${t.estado === 'ACTIVO' ? '' : 'inactivo'}"
+                  onclick="toggleEstado('${t.id}', '${t.estado}')">${t.estado}</button>
+              </td>
+              <td>
+                <button class="btn-editar" onclick="window.location.href='detalle_tours.html?id=${t.id}'">✏️ Editar</button>
+              </td>
+              <td>
+                <button class="btn-eliminar" onclick="eliminarTour('${t.id}')">🗑️ Eliminar</button>
+              </td>
+            `;
+            tbody.appendChild(fila);
+          });
         });
       });
     }
