@@ -447,11 +447,10 @@
       <select id="destinoNombre" onchange="alCambiarDestinoPrincipal()" style="width: 100%; padding: 8px;">
         <option value="">Seleccione un destino</option>
       </select>
-      <a href="#" onclick="abrirModalDestinoNuevo(); return false;" style="font-size: 13px; display:inline-block; margin-top: 5px;">➕ ¿No encuentras tu destino? Créalo aquí</a>
     </div>
-    <!-- NUEVO: para salidas Personalizadas no hay un tour del catálogo del
+    <!-- NUEVO: para Salida Personalizada no hay un tour del catálogo del
          cual sacar el destino — se escribe a mano. Se activa eligiendo
-         "🎨 Personalizado" en el Destino de arriba. -->
+         "Salida Personalizada" en el Tipo de Salida de al lado. -->
     <div style="flex: 1; min-width: 250px; display:none;" id="contenedorDestinoPersonalizado">
       <label><strong>Destino</strong></label>
       <input type="text" id="destinoPersonalizado" placeholder="Ej. Cartagena a medida" style="width: 100%; padding: 8px;">
@@ -462,14 +461,17 @@
     </div>
   </div>
 
-  <!-- NUEVO: Tipo de Salida y Nivel ahora van DESPUÉS del Destino, y sus
-       opciones se arman según lo que exista realmente en el catálogo para
-       el destino elegido — no se puede seleccionar una combinación que no
-       existe. -->
+  <!-- NUEVO: Tipo de Salida siempre visible con sus 3 opciones fijas
+       (Grupal, Individual, Salida Personalizada) — Nivel se sigue armando
+       según lo que exista realmente en el catálogo para el destino
+       elegido. -->
   <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
-    <div style="flex: 1; min-width: 200px; display:none;" id="contenedorTipoSalida">
+    <div style="flex: 1; min-width: 200px;" id="contenedorTipoSalida">
       <label><strong>Tipo de Salida</strong></label>
       <select id="tipoSalidaReserva" onchange="alCambiarTipoSalida()" style="width: 100%; padding: 8px;">
+        <option value="Grupal">Grupal</option>
+        <option value="Individual">Individual</option>
+        <option value="Personalizado">Salida Personalizada</option>
       </select>
     </div>
     <div id="contenedorNivelReserva" style="flex: 1; min-width: 200px; display:none;">
@@ -2370,14 +2372,15 @@ async function cargarDestinos() {
     });
 
     poblarDestinoPrincipal();
+    actualizarFlujoSegunSeleccion();
   } catch (e) {
     console.error("Error al cargar destinos:", e);
   }
 }
 
-// NUEVO: el Destino ahora es lo primero que se elige — se arma la lista con
-// los destinos únicos del catálogo (sin repetir por cada nivel), más una
-// opción para salidas Personalizadas.
+// NUEVO: la lista de Destino se arma con los destinos únicos del catálogo,
+// más una opción para crear uno nuevo sin salir de la reserva (mismo patrón
+// que "Agregar nuevo proveedor").
 function poblarDestinoPrincipal() {
   const select = document.getElementById("destinoNombre");
   const valorAnterior = select.value;
@@ -2391,21 +2394,21 @@ function poblarDestinoPrincipal() {
     opt.textContent = nombre;
     select.appendChild(opt);
   });
-  const optPersonalizado = document.createElement("option");
-  optPersonalizado.value = "__personalizado__";
-  optPersonalizado.textContent = "🎨 Personalizado (tour a medida)";
-  select.appendChild(optPersonalizado);
+  const optCrear = document.createElement("option");
+  optCrear.value = "__crear_nuevo__";
+  optCrear.textContent = "➕ Crear nuevo destino...";
+  select.appendChild(optCrear);
 
-  if (valorAnterior) select.value = valorAnterior;
+  if (valorAnterior && valorAnterior !== "__crear_nuevo__") select.value = valorAnterior;
 }
 
-// Muestra/oculta los bloques según si se eligió un destino real del
-// catálogo o "Personalizado".
+// Muestra/oculta los bloques según el Tipo de Salida: catálogo (Grupal o
+// Individual) vs Salida Personalizada (todo escrito a mano).
 function aplicarModoPersonalizado() {
+  document.getElementById("contenedorDestinoCatalogo").style.display = "none";
   document.getElementById("contenedorDestinoPersonalizado").style.display = "block";
   document.getElementById("contenedorIncluyePersonalizado").style.display = "block";
   document.getElementById("contenedorToursOpcionales").style.display = "none";
-  document.getElementById("contenedorTipoSalida").style.display = "none";
   document.getElementById("contenedorNivelReserva").style.display = "none";
   document.getElementById("duracion").readOnly = false;
   document.getElementById("destino").value = "";
@@ -2413,67 +2416,44 @@ function aplicarModoPersonalizado() {
 }
 
 function aplicarModoCatalogo() {
+  document.getElementById("contenedorDestinoCatalogo").style.display = "block";
   document.getElementById("contenedorDestinoPersonalizado").style.display = "none";
   document.getElementById("contenedorIncluyePersonalizado").style.display = "none";
   document.getElementById("contenedorToursOpcionales").style.display = "block";
   document.getElementById("duracion").readOnly = true;
 }
 
-// NUEVO: al elegir el Destino, se arma el Tipo de Salida SOLO con lo que
-// realmente existe en el catálogo para ese destino (si solo hay Grupal, ni
-// siquiera aparece "Individual" como opción).
+// NUEVO: al elegir "➕ Crear nuevo destino..." en el propio desplegable de
+// Destino, se abre el modal de creación rápida — el desplegable vuelve a
+// quedar en blanco mientras tanto (es solo un disparador, no una selección).
 function alCambiarDestinoPrincipal() {
-  const valor = document.getElementById("destinoNombre").value;
+  const select = document.getElementById("destinoNombre");
+  if (select.value === "__crear_nuevo__") {
+    select.value = "";
+    abrirModalDestinoNuevo();
+    return;
+  }
+  actualizarFlujoSegunSeleccion();
+}
 
-  if (valor === "__personalizado__") {
-    document.getElementById("tipoSalidaReserva").innerHTML = '<option value="Personalizado">Personalizado</option>';
-    document.getElementById("tipoSalidaReserva").value = "Personalizado";
+// Tipo de Salida siempre tiene las mismas 3 opciones fijas (Grupal,
+// Individual, Salida Personalizada) — cambiar cualquiera de los dos campos
+// (Destino o Tipo de Salida) pasa por aquí para mantenerlos coherentes.
+function alCambiarTipoSalida() {
+  actualizarFlujoSegunSeleccion();
+}
+
+function actualizarFlujoSegunSeleccion() {
+  const tipoSalida = document.getElementById("tipoSalidaReserva").value;
+
+  if (tipoSalida === "Personalizado") {
     aplicarModoPersonalizado();
     return;
   }
 
   aplicarModoCatalogo();
 
-  const selectTipo = document.getElementById("tipoSalidaReserva");
-  const contenedorTipo = document.getElementById("contenedorTipoSalida");
-
-  if (!valor) {
-    contenedorTipo.style.display = "none";
-    document.getElementById("contenedorNivelReserva").style.display = "none";
-    document.getElementById("destino").value = "";
-    return;
-  }
-
-  const disponibles = (window.catalogoTours || []).filter(t => t.nombre === valor);
-  const tiposDisponibles = Array.from(new Set(disponibles.map(t => t.tipoSalida)));
-
-  const valorTipoAnterior = selectTipo.value;
-  selectTipo.innerHTML = "";
-  tiposDisponibles.forEach(tipo => {
-    const opt = document.createElement("option");
-    opt.value = tipo;
-    opt.textContent = tipo;
-    selectTipo.appendChild(opt);
-  });
-  contenedorTipo.style.display = "block";
-
-  // Si antes había un tipo elegido y sigue disponible para este destino, se
-  // conserva; si no, y solo hay una opción posible, se elige sola.
-  if (tiposDisponibles.includes(valorTipoAnterior)) {
-    selectTipo.value = valorTipoAnterior;
-  } else if (tiposDisponibles.length === 1) {
-    selectTipo.value = tiposDisponibles[0];
-  }
-
-  alCambiarTipoSalida();
-}
-
-// NUEVO: al elegir el Tipo de Salida, se arma el Nivel SOLO con los niveles
-// que existen para este destino+tipo — y si Individual solo tiene un nivel
-// cargado en el catálogo, se selecciona solo, sin pedirle un clic de más.
-function alCambiarTipoSalida() {
   const destinoNombre = document.getElementById("destinoNombre").value;
-  const tipoSalida = document.getElementById("tipoSalidaReserva").value;
   const contenedorNivel = document.getElementById("contenedorNivelReserva");
   const selectNivel = document.getElementById("nivelReserva");
 
@@ -2484,6 +2464,8 @@ function alCambiarTipoSalida() {
     return;
   }
 
+  // Individual: arma el Nivel SOLO con los niveles que existen para este
+  // destino — y si solo hay uno cargado en el catálogo, se selecciona solo.
   const nivelesDisponibles = (window.catalogoTours || [])
     .filter(t => t.nombre === destinoNombre && t.tipoSalida === "Individual" && t.nivel)
     .map(t => t.nivel);
@@ -2512,7 +2494,7 @@ function alCambiarNivelReserva() {
   resolverTourSeleccionado();
 }
 
-// Una vez que Destino (+ Tipo + Nivel, si aplica) dejan claro exactamente
+// Una vez que Destino + Tipo (+ Nivel, si aplica) dejan claro exactamente
 // cuál tour del catálogo es, se resuelve su ID real y se cargan sus datos
 // (duración, itinerario, tours opcionales).
 function resolverTourSeleccionado() {
@@ -2520,7 +2502,7 @@ function resolverTourSeleccionado() {
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
   const nivel = document.getElementById("nivelReserva").value;
 
-  if (!destinoNombre || destinoNombre === "__personalizado__" || !tipoSalida) {
+  if (tipoSalida === "Personalizado" || !destinoNombre) {
     document.getElementById("destino").value = "";
     return;
   }
@@ -2652,13 +2634,11 @@ async function guardarDestinoNuevoModal() {
     cerrarModalDestinoNuevo();
 
     // Refresca el desplegable de Destino y deja seleccionado justo el que
-    // se acaba de crear, avanzando la cascada Tipo de Salida → Nivel.
+    // se acaba de crear, junto con el Tipo de Salida y Nivel elegidos.
     poblarDestinoPrincipal();
-    aplicarModoCatalogo();
     document.getElementById("destinoNombre").value = nombre;
-    alCambiarDestinoPrincipal();
     document.getElementById("tipoSalidaReserva").value = tipoSalida;
-    alCambiarTipoSalida();
+    actualizarFlujoSegunSeleccion();
     if (tipoSalida === "Individual") {
       document.getElementById("nivelReserva").value = nivel;
       resolverTourSeleccionado();
@@ -2833,28 +2813,24 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("equipaje").value = data.equipaje || "";
 
     // NUEVO: si la reserva fue guardada como Personalizado, no hay tour del
-    // catálogo del cual reconocer el tipo de salida (data.destino queda
-    // vacío) — se restaura directo desde el campo tipoSalidaReserva guardado,
-    // junto con el destino, incluye y no incluye escritos a mano.
+    // catálogo del cual reconocer el destino — se restaura directo desde el
+    // campo tipoSalidaReserva guardado, junto con el destino, incluye y no
+    // incluye escritos a mano.
     if (data.tipoSalidaReserva === "Personalizado") {
-      document.getElementById("destinoNombre").value = "__personalizado__";
-      document.getElementById("tipoSalidaReserva").innerHTML = '<option value="Personalizado">Personalizado</option>';
       document.getElementById("tipoSalidaReserva").value = "Personalizado";
       aplicarModoPersonalizado();
       document.getElementById("destinoPersonalizado").value = data.nombreDestino || "";
       document.getElementById("incluyePersonalizado").value = data.incluyePersonalizado || "";
       document.getElementById("no_incluyePersonalizado").value = data.no_incluyePersonalizado || "";
     } else {
-      // Reconstruye la cascada Destino → Tipo de Salida → Nivel a partir del
-      // tour guardado, para que los 3 selectores queden exactamente como
-      // cuando se creó la reserva (y se puedan editar con normalidad).
+      // Reconstruye Destino → Tipo de Salida → Nivel a partir del tour
+      // guardado, para que los 3 selectores queden exactamente como cuando
+      // se creó la reserva (y se puedan editar con normalidad).
       const tourGuardado = (window.catalogoTours || []).find(t => t.id === data.destino);
       if (tourGuardado) {
-        aplicarModoCatalogo();
         document.getElementById("destinoNombre").value = tourGuardado.nombre;
-        alCambiarDestinoPrincipal();
         document.getElementById("tipoSalidaReserva").value = tourGuardado.tipoSalida;
-        alCambiarTipoSalida();
+        actualizarFlujoSegunSeleccion();
         if (tourGuardado.tipoSalida === "Individual") {
           document.getElementById("nivelReserva").value = tourGuardado.nivel || "";
         }
