@@ -227,6 +227,10 @@ tbody tr:last-child td { border-bottom: none; }
   color: #02535a;
   white-space: nowrap;
 }
+.celda-destino.celda-destino-repetido {
+  color: #a9c4c4;
+  font-weight: normal;
+}
 
 /* NUEVO: pastilla de "Experiencia" — un color distinto por variante, para
    distinguirlas de un vistazo (colores ya usados en el resto del sistema,
@@ -426,6 +430,14 @@ tbody tr:last-child td { border-bottom: none; }
       });
     }
 
+    // NUEVO: agrupa ignorando tildes y mayúsculas/minúsculas — así "Medellin",
+    // "Medellín" y "MEDELLÍN" se reconocen como el mismo destino para efectos
+    // de agrupar y ordenar, aunque el texto guardado en cada tour sea
+    // distinto. El texto real de cada tour NO se toca ni se corrige solo.
+    function normalizarDestino(texto) {
+      return (texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    }
+
     function renderizarTabla() {
       const tbody = document.getElementById("tabla-body");
       const texto = document.getElementById("buscadorDestino").value.toLowerCase();
@@ -438,11 +450,11 @@ tbody tr:last-child td { border-bottom: none; }
         return true;
       });
 
-      // Ordena por destino y, dentro de cada destino, por el orden lógico
-      // de experiencia — así las variantes del mismo lugar quedan juntas
-      // aunque la tabla ya no tenga una fila de encabezado por grupo.
+      // Ordena por destino (ignorando tildes/mayúsculas) y, dentro de cada
+      // destino, por el orden lógico de experiencia — así las variantes del
+      // mismo lugar quedan juntas aunque estén escritas un poco distinto.
       filtrados.sort((a, b) => {
-        const destinoCompare = (a.nombre || "").localeCompare(b.nombre || "");
+        const destinoCompare = normalizarDestino(a.nombre).localeCompare(normalizarDestino(b.nombre));
         if (destinoCompare !== 0) return destinoCompare;
         return (ORDEN_VARIANTE[etiquetaVariante(a)] ?? 9) - (ORDEN_VARIANTE[etiquetaVariante(b)] ?? 9);
       });
@@ -454,17 +466,28 @@ tbody tr:last-child td { border-bottom: none; }
         return;
       }
 
-      let destinoAnterior = null;
+      let grupoAnterior = null;
+      let textoAnteriorEnGrupo = null;
       filtrados.forEach(t => {
         const etiqueta = etiquetaVariante(t);
-        const esNuevoDestino = t.nombre !== destinoAnterior;
-        destinoAnterior = t.nombre;
+        const grupoActual = normalizarDestino(t.nombre);
+        const esNuevoDestino = grupoActual !== grupoAnterior;
+
+        // NUEVO: si sigue en el mismo grupo pero el texto exacto cambió
+        // (tilde, mayúscula, espacio de más...), se marca con un aviso —
+        // para que Cristopher lo vea y lo corrija cuando quiera, sin que el
+        // sistema lo cambie por su cuenta.
+        const escrituraDistinta = !esNuevoDestino && t.nombre !== textoAnteriorEnGrupo;
+
+        grupoAnterior = grupoActual;
+        textoAnteriorEnGrupo = t.nombre;
 
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td class="celda-destino">
-            ${esNuevoDestino ? `📍 ${t.nombre || '-'}` : ''}
+          <td class="celda-destino ${esNuevoDestino ? '' : 'celda-destino-repetido'}">
+            📍 ${t.nombre || '-'}
             ${esNuevoDestino ? `<a class="btn-variante-nueva" href="detalle_tours.html?nombre=${encodeURIComponent(t.nombre || '')}">➕ variante</a>` : ''}
+            ${escrituraDistinta ? `<span title="Este tour está escrito distinto al resto del grupo (revisa tildes, mayúsculas o espacios) — corrígelo editando el tour." style="margin-left:6px; cursor:help;">⚠️</span>` : ''}
           </td>
           <td><span class="pastilla-experiencia ${claseVariante(etiqueta)}">${etiqueta}</span></td>
           <td>
