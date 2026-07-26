@@ -289,12 +289,9 @@
     <label>Itinerario</label>
     <textarea id="itinerario_tours" placeholder="Ej. Tour Zoológico La Aurora, Tour de Pueblos (City Tour Antigua), Tour a Panajachel y el lago Atitlán, 1 día libre"></textarea>
 
-    <label>Hoteles</label>
-    <table>
-      <thead><tr><th>Nombre</th><th>Información</th><th>Acciones</th></tr></thead>
-      <tbody id="hotelesContainer"></tbody>
-    </table>
-    <button class="btn" onclick="abrirModalHotel()">+ Agregar hotel</button>
+    <!-- NUEVO: los hoteles ya no se manejan aquí — se gestionan como
+         proveedores (categoría "Hospedaje") en proveedores.html, asociados
+         al destino correspondiente. -->
 
     <label>Tours Opcionales</label>
     <table>
@@ -307,19 +304,6 @@
     <textarea id="politicas"></textarea>
 
     <button class="boton-guardar" onclick="guardarTour()">Guardar Tour</button>
-  </div>
-
-  <!-- Modal para hotel -->
-  <div id="modalHotel" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="cerrarModal('modalHotel')">&times;</span>
-      <h3>Editar Hotel</h3>
-      <label>Nombre</label>
-      <input type="text" id="hotelNombre" />
-      <label>Información</label>
-      <textarea id="hotelInfo"></textarea>
-      <button class="btn" onclick="guardarEdicionHotel()">Guardar</button>
-    </div>
   </div>
 
   <!-- Modal para tour opcional -->
@@ -369,13 +353,6 @@
   }
 
 function guardarTour() {
-  const hoteles = [];
-  document.querySelectorAll("#hotelesContainer tr").forEach(tr => {
-    const nombre = tr.cells[0].innerText.trim();
-    const info = tr.cells[1].innerText.trim();
-    if (nombre) hoteles.push({ nombre, info });
-  });
-
   const opcionales = [];
   document.querySelectorAll("#opcionalesContainer tr").forEach(tr => {
     const nombre = tr.cells[0].innerText.trim();
@@ -406,7 +383,6 @@ function guardarTour() {
     no_incluye: document.getElementById("no_incluye").value,
     itinerario_tours: document.getElementById("itinerario_tours").value,
     politicas: document.getElementById("politicas").value,
-    hoteles,
     tours_opcionales: opcionales,
     estado: "ACTIVO"
   };
@@ -448,7 +424,6 @@ if (tourId) {
     if (doc.exists) {
       const t = doc.data();
       document.querySelector("h2").innerText = "Tour: " + (t.nombre || "Sin nombre");
-      document.getElementById("hotelesContainer").innerHTML = "";
 document.getElementById("opcionalesContainer").innerHTML = "";
       document.getElementById("nombre").value = t.nombre || "";
       document.getElementById("tipoSalida").value = t.tipoSalida || "Grupal";
@@ -463,7 +438,6 @@ document.getElementById("opcionalesContainer").innerHTML = "";
       document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
       document.getElementById("politicas").value = t.politicas || "";
 
-      (t.hoteles || []).forEach(h => agregarHotel(h.nombre, h.info));
       (t.tours_opcionales || []).forEach(op => agregarTourOpcional(op.nombre, op.descripcion, op.precio));
   } else {
         alert("El tour no existe.");
@@ -487,19 +461,6 @@ document.getElementById("opcionalesContainer").innerHTML = "";
   }
 }
 
-  function agregarHotel(nombre, info) {
-    const fila = document.createElement("tr");
-    fila.innerHTML = `
-      <td>${nombre}</td>
-      <td>${info}</td>
-      <td>
-        <button class="btn" onclick="editarHotel(this)">✏️</button>
-        <button class="btn" onclick="this.closest('tr').remove()">🗑️</button>
-      </td>
-    `;
-    document.getElementById("hotelesContainer").appendChild(fila);
-  }
-
   function agregarTourOpcional(nombre, descripcion, precio) {
     const fila = document.createElement("tr");
     fila.innerHTML = `
@@ -515,15 +476,7 @@ document.getElementById("opcionalesContainer").innerHTML = "";
   }
 
      
-    let filaActualHotel = null;
     let filaActualOpcional = null;
-
-    function abrirModalHotel() {
-      document.getElementById("hotelNombre").value = "";
-      document.getElementById("hotelInfo").value = "";
-      filaActualHotel = null;
-      document.getElementById("modalHotel").style.display = "block";
-    }
 
     function abrirModalOpcional() {
       document.getElementById("opcionalNombre").value = "";
@@ -535,25 +488,6 @@ document.getElementById("opcionalesContainer").innerHTML = "";
 
     function cerrarModal(id) {
       document.getElementById(id).style.display = "none";
-    }
-
-    function editarHotel(btn) {
-      filaActualHotel = btn.closest("tr");
-      document.getElementById("hotelNombre").value = filaActualHotel.cells[0].innerText;
-      document.getElementById("hotelInfo").value = filaActualHotel.cells[1].innerText;
-      document.getElementById("modalHotel").style.display = "block";
-    }
-
-    function guardarEdicionHotel() {
-      const nombre = document.getElementById("hotelNombre").value;
-      const info = document.getElementById("hotelInfo").value;
-      if (filaActualHotel) {
-        filaActualHotel.cells[0].innerText = nombre;
-        filaActualHotel.cells[1].innerText = info;
-      } else {
-        agregarHotel(nombre, info);
-      }
-      cerrarModal("modalHotel");
     }
 
     function editarOpcional(btn) {
@@ -577,19 +511,6 @@ document.getElementById("opcionalesContainer").innerHTML = "";
       }
       cerrarModal("modalOpcional");
     }
-    function agregarHotel(nombre = "", info = "") {
-  const tabla = document.getElementById("hotelesContainer");
-  const fila = document.createElement("tr");
-  fila.innerHTML = `
-    <td>${nombre}</td>
-    <td>${info}</td>
-    <td>
-      <button class="btn" onclick="editarHotel(this)">✏️</button>
-      <button class="btn" onclick="this.closest('tr').remove()">🗑️</button>
-    </td>
-  `;
-  tabla.appendChild(fila);
-}
     function agregarTourOpcional(nombre = "", descripcion = "", precio = "") {
   const tabla = document.getElementById("opcionalesContainer");
   const fila = document.createElement("tr");
