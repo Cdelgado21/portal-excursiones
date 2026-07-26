@@ -2393,7 +2393,6 @@ async function cargarInfoTour(destinoId) {
       const data = doc.data();
       document.getElementById("duracion").value = data.duracion || "";
       document.getElementById("itinerario").value = data.itinerario_tours || "";
-      window.hotelesDelDestino = data.hoteles || [];
 
       const lista = document.getElementById("toursOpcionalesLista");
       lista.innerHTML = "";
@@ -2430,63 +2429,53 @@ function autoResizeTextarea(textarea) {
   textarea.style.height = (textarea.scrollHeight + 2) + 'px';
 }
 
+// FIX: los hoteles ya no se guardan dentro de cada tour — ahora se manejan
+// como proveedores (categoría "Hospedaje") en proveedores.html, así que se
+// leen de ahí. Se agrupan primero los del destino de esta reserva, igual que
+// ya se hace con los proveedores de costos en costos_agregar.html.
 function abrirModalHotel() {
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
   const selectHotel = document.getElementById("modal_nombre_hotel");
 
-  // NUEVO: en Personalizado no hay un solo tour del cual sacar la lista de
-  // hoteles — se combinan los hoteles de TODOS los tours del catálogo, sin
-  // repetidos, para seguir eligiendo de una lista conocida.
-  if (tipoSalida === "Personalizado") {
-    selectHotel.innerHTML = "<option value=''>Cargando hoteles...</option>";
-    db.collection("tours").get().then(snapshot => {
-      const nombresVistos = new Set();
-      selectHotel.innerHTML = "<option value=''>Seleccione un hotel</option>";
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        (data.hoteles || []).forEach(hotel => {
-          const nombre = hotel.nombre || hotel;
-          if (!nombre || nombresVistos.has(nombre)) return;
-          nombresVistos.add(nombre);
-          const opt = document.createElement("option");
-          opt.value = nombre;
-          opt.textContent = nombre;
-          selectHotel.appendChild(opt);
-        });
-      });
-      if (nombresVistos.size === 0) {
-        selectHotel.innerHTML = "<option value=''>No hay hoteles guardados en el catálogo todavía</option>";
-      }
-    });
-    document.getElementById("modalHotel").style.display = "flex";
-    return;
+  let destinoNombre = "";
+  if (tipoSalida !== "Personalizado") {
+    const destinoSeleccionado = document.getElementById("destino").value;
+    if (!destinoSeleccionado) {
+      alert("Por favor selecciona un destino antes de agregar un hotel.");
+      return;
+    }
+    const tour = (window.catalogoTours || []).find(t => t.id === destinoSeleccionado);
+    destinoNombre = tour?.nombre || "";
   }
-
-  const destinoSeleccionado = document.getElementById("destino").value;
-
-  if (!destinoSeleccionado) {
-    alert("Por favor selecciona un destino antes de agregar un hotel.");
-    return;
-  }
+  // Para Personalizado, destinoNombre queda vacío a propósito — se muestran
+  // todos los hoteles guardados, sin filtrar por destino.
 
   selectHotel.innerHTML = "<option value=''>Cargando hoteles...</option>";
 
-  db.collection("tours").doc(destinoSeleccionado).get().then(doc => {
-    if (doc.exists) {
-      const data = doc.data();
-      selectHotel.innerHTML = "<option value=''>Seleccione un hotel</option>";
+  db.collection("proveedores").where("categoria", "==", "Hospedaje").get().then(snapshot => {
+    const proveedores = snapshot.docs.map(d => d.data()).filter(p => p.activo !== false);
 
-      if (Array.isArray(data.hoteles)) {
-        data.hoteles.forEach(hotel => {
-          const opt = document.createElement("option");
-          opt.value = hotel.nombre || hotel;
-          opt.textContent = hotel.nombre || hotel;
-          selectHotel.appendChild(opt);
-        });
-      }
-    } else {
-      selectHotel.innerHTML = "<option value=''>No se encontraron hoteles</option>";
+    const deEsteDestino = destinoNombre ? proveedores.filter(p => p.destino === destinoNombre) : [];
+    const universales = proveedores.filter(p => !p.destino);
+    const otros = proveedores.filter(p => p.destino && p.destino !== destinoNombre);
+
+    function opciones(lista) {
+      return lista.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("");
     }
+
+    if (proveedores.length === 0) {
+      selectHotel.innerHTML = "<option value=''>No hay hoteles guardados en Proveedores todavía</option>";
+      return;
+    }
+
+    let html = "<option value=''>Seleccione un hotel</option>";
+    if (deEsteDestino.length > 0) html += `<optgroup label="Hoteles de ${destinoNombre}">${opciones(deEsteDestino)}</optgroup>`;
+    if (universales.length > 0) html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
+    if (otros.length > 0) html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
+    selectHotel.innerHTML = html;
+  }).catch(e => {
+    console.error("Error al cargar hoteles desde Proveedores:", e);
+    selectHotel.innerHTML = "<option value=''>No se pudieron cargar los hoteles</option>";
   });
 
   document.getElementById("modalHotel").style.display = "flex";
