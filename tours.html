@@ -150,8 +150,15 @@ h2 {
   text-align: center;
   font-size: 24px;
   margin-top: 20px;
-  margin-bottom: 25px;
+  margin-bottom: 6px;
   color: #02535a;
+}
+
+.subtitulo-catalogo {
+  text-align: center;
+  color: #5f9296;
+  font-size: 0.9rem;
+  margin-bottom: 25px;
 }
 
 .tabla-container {
@@ -159,15 +166,24 @@ h2 {
   overflow-x: auto;
   background: white;
   padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  border-radius: 14px;
+  box-shadow: 0 2px 14px rgba(2,83,90,0.08);
 }
 
 .acciones {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+}
+
+.acciones-izquierda {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .btn-agregar, .btn-descarga {
@@ -185,99 +201,144 @@ h2 {
   background-color: #036a6d;
 }
 
-table {
-  width: 100%;
-  min-width: 800px;
-  border-collapse: collapse;
+/* NUEVO: barra de búsqueda y filtro por experiencia */
+.barra-filtros {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.barra-filtros input[type="search"] {
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid #cfe3e4;
+  font-size: 14px;
+  min-width: 200px;
+}
+.barra-filtros select {
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid #cfe3e4;
+  font-size: 14px;
+  background: white;
+  color: #02535a;
+  font-weight: bold;
 }
 
-th, td {
-  border: 1px solid #ccc;
-  padding: 14px;
-  font-size: 15px;
-  text-align: center;
-  vertical-align: middle;
+table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 th {
   background-color: #02535a;
   color: white;
-  font-size: 16px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 14px 16px;
+  text-align: left;
+}
+th:first-child { border-top-left-radius: 10px; }
+th:last-child { border-top-right-radius: 10px; text-align: center; }
+
+td {
+  padding: 14px 16px;
+  font-size: 15px;
+  vertical-align: middle;
+  border-bottom: 1px solid #eef3f3;
 }
 
-.btn-estado {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
+tbody tr:hover { background-color: #f7fbfb; }
+tbody tr:last-child td { border-bottom: none; }
+
+.celda-destino {
   font-weight: bold;
+  color: #02535a;
+  white-space: nowrap;
+}
+
+/* NUEVO: pastilla de "Experiencia" — un color distinto por variante, para
+   distinguirlas de un vistazo (colores ya usados en el resto del sistema,
+   nada inventado). */
+.pastilla-experiencia {
+  display: inline-block;
+  padding: 5px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: bold;
+  color: white;
+}
+.pastilla-experiencia.grupal   { background-color: #02535a; }
+.pastilla-experiencia.flash    { background-color: #ffb703; color: #4a3200; }
+.pastilla-experiencia.esencial { background-color: #5f9296; }
+.pastilla-experiencia.confort  { background-color: #f49859; }
+
+/* Estado como pastilla-botón (activo/inactivo), con un punto indicador. */
+.btn-estado {
+  padding: 7px 16px 7px 12px;
+  border: none;
+  border-radius: 999px;
+  font-weight: bold;
+  font-size: 13px;
   cursor: pointer;
   color: white;
   background-color: #28a745;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
-
-.btn-estado.inactivo {
-  background-color: #dc3545;
+.btn-estado::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: white;
+  display: inline-block;
 }
+.btn-estado.inactivo { background-color: #9aa3a3; }
+.btn-estado:hover { transform: scale(1.05); background-color: #218838; }
+.btn-estado.inactivo:hover { background-color: #838d8d; }
 
-.btn-estado:hover {
-  transform: scale(1.05);
-  background-color: #218838;
+.celda-acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
 }
-
-.btn-estado.inactivo:hover {
-  background-color: #c82333;
-}
-
-.btn-editar,
-.btn-eliminar {
-  padding: 8px 16px;
+.btn-icono {
+  width: 34px;
+  height: 34px;
   border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  font-size: 14px;
+  border-radius: 8px;
   cursor: pointer;
-  color: white;
-  background-color: #f49859;
-  transition: all 0.2s ease;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
+.btn-icono.editar { background-color: #fde9d9; color: #c15d1e; }
+.btn-icono.editar:hover { background-color: #f49859; color: white; }
+.btn-icono.eliminar { background-color: #fbe2e0; color: #b23327; }
+.btn-icono.eliminar:hover { background-color: #c0392b; color: white; }
 
-.btn-editar:hover,
-.btn-eliminar:hover {
-  background-color: #dd7e37;
-  transform: scale(1.05);
-}
-
-/* NUEVO: fila de encabezado de cada grupo de destino, con sus variantes
-   (Flash/Esencial/Confort o Grupal) organizadas debajo. */
-tr.fila-destino td {
-  background-color: #02535a;
-  color: white;
-  font-size: 17px;
-  font-weight: bold;
-  text-align: left;
-  padding: 12px 14px;
-}
-tr.fila-destino .btn-agregar-variante {
-  float: right;
-  background-color: #f49859;
-  color: white;
-  border: none;
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 13px;
+.btn-variante-nueva {
+  background-color: transparent;
+  color: #02535a;
+  border: 1.5px dashed #9fc3c4;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
   font-weight: bold;
   cursor: pointer;
   text-decoration: none;
   display: inline-block;
+  margin-left: 8px;
 }
-tr.fila-destino .btn-agregar-variante:hover { background-color: #dd7e37; }
-tr.fila-variante td:first-child {
-  text-align: left;
-  padding-left: 30px;
-  color: #5f9296;
-  font-weight: bold;
-}
+.btn-variante-nueva:hover { background-color: #f0f7f7; border-color: #02535a; }
 
 @media (max-width: 768px) {
   .menu-bar {
@@ -329,19 +390,33 @@ tr.fila-variante td:first-child {
   </div>
 
   <h2>Catálogo de Tours</h2>
+  <p class="subtitulo-catalogo">Organizado por destino y experiencia — Grupal, Flash, Esencial o Confort.</p>
+
   <div class="tabla-container">
     <div class="acciones">
-    <button class="btn-agregar" onclick="window.location.href='detalle_tours.html'">+ Nuevo Tour</button>
-      <button class="btn-descarga" onclick="exportarTabla()">📄 Exportar PDF</button>
-      <button class="btn-descarga" onclick="descargarCSV()">📥 Exportar CSV</button>
+      <div class="acciones-izquierda">
+        <button class="btn-agregar" onclick="window.location.href='detalle_tours.html'">+ Nuevo Tour</button>
+        <button class="btn-descarga" onclick="exportarTabla()">📄 Exportar PDF</button>
+        <button class="btn-descarga" onclick="descargarCSV()">📥 Exportar CSV</button>
+      </div>
+      <div class="barra-filtros">
+        <input type="search" id="buscadorDestino" placeholder="🔍 Buscar destino..." oninput="renderizarTabla()">
+        <select id="filtroExperiencia" onchange="renderizarTabla()">
+          <option value="">Toda experiencia</option>
+          <option value="Grupal">Grupal</option>
+          <option value="Flash">Flash</option>
+          <option value="Esencial">Esencial</option>
+          <option value="Confort">Confort</option>
+        </select>
+      </div>
     </div>
     <table id="tablaTours">
      <thead>
   <tr>
-    <th>Destino / Variante</th>
+    <th>Destino</th>
+    <th>Experiencia</th>
     <th>Estado</th>
-    <th>Editar</th>
-    <th>Eliminar</th>
+    <th style="text-align:center;">Acciones</th>
   </tr>
 </thead>
       <tbody id="tabla-body"><tr><td colspan="4">Cargando tours...</td></tr></tbody>
@@ -386,63 +461,73 @@ tr.fila-variante td:first-child {
       return t.tipoSalida === "Individual" ? (t.nivel || "Individual") : "Grupal";
     }
 
+    function claseVariante(etiqueta) {
+      const mapa = { "Grupal": "grupal", "Flash": "flash", "Esencial": "esencial", "Confort": "confort" };
+      return mapa[etiqueta] || "grupal";
+    }
+
+    let todosLosTours = [];
+
     function cargarTours() {
       db.collection("tours").get().then(snapshot => {
-        const tbody = document.getElementById("tabla-body");
-        tbody.innerHTML = "";
+        todosLosTours = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        renderizarTabla();
+      });
+    }
 
-        // Agrupa todos los tours por su destino (campo "nombre") — así
-        // Flash/Esencial/Confort del mismo lugar quedan juntos, en vez de
-        // aparecer como filas sueltas y desconectadas entre sí.
-        const grupos = {};
-        snapshot.forEach(doc => {
-          const t = doc.data();
-          const destino = t.nombre || "(sin nombre)";
-          if (!grupos[destino]) grupos[destino] = [];
-          grupos[destino].push({ id: doc.id, ...t });
-        });
+    function renderizarTabla() {
+      const tbody = document.getElementById("tabla-body");
+      const texto = document.getElementById("buscadorDestino").value.toLowerCase();
+      const experienciaFiltro = document.getElementById("filtroExperiencia").value;
 
-        const destinos = Object.keys(grupos).sort((a, b) => a.localeCompare(b));
+      let filtrados = todosLosTours.filter(t => {
+        const destino = (t.nombre || "").toLowerCase();
+        if (texto && !destino.includes(texto)) return false;
+        if (experienciaFiltro && etiquetaVariante(t) !== experienciaFiltro) return false;
+        return true;
+      });
 
-        if (destinos.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999;">Todavía no hay tours cargados.</td></tr>`;
-          return;
-        }
+      // Ordena por destino y, dentro de cada destino, por el orden lógico
+      // de experiencia — así las variantes del mismo lugar quedan juntas
+      // aunque la tabla ya no tenga una fila de encabezado por grupo.
+      filtrados.sort((a, b) => {
+        const destinoCompare = (a.nombre || "").localeCompare(b.nombre || "");
+        if (destinoCompare !== 0) return destinoCompare;
+        return (ORDEN_VARIANTE[etiquetaVariante(a)] ?? 9) - (ORDEN_VARIANTE[etiquetaVariante(b)] ?? 9);
+      });
 
-        destinos.forEach(destino => {
-          const variantes = grupos[destino].sort((a, b) =>
-            (ORDEN_VARIANTE[etiquetaVariante(a)] ?? 9) - (ORDEN_VARIANTE[etiquetaVariante(b)] ?? 9)
-          );
+      tbody.innerHTML = "";
 
-          const filaDestino = document.createElement("tr");
-          filaDestino.className = "fila-destino";
-          filaDestino.innerHTML = `
-            <td colspan="4">
-              📍 ${destino}
-              <a class="btn-agregar-variante" href="detalle_tours.html?nombre=${encodeURIComponent(destino)}">➕ Agregar variante</a>
-            </td>
-          `;
-          tbody.appendChild(filaDestino);
+      if (filtrados.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999; padding:30px;">Ningún tour coincide con la búsqueda.</td></tr>`;
+        return;
+      }
 
-          variantes.forEach(t => {
-            const fila = document.createElement("tr");
-            fila.className = "fila-variante";
-            fila.innerHTML = `
-              <td>${etiquetaVariante(t)}</td>
-              <td>
-                <button class="btn-estado ${t.estado === 'ACTIVO' ? '' : 'inactivo'}"
-                  onclick="toggleEstado('${t.id}', '${t.estado}')">${t.estado}</button>
-              </td>
-              <td>
-                <button class="btn-editar" onclick="window.location.href='detalle_tours.html?id=${t.id}'">✏️ Editar</button>
-              </td>
-              <td>
-                <button class="btn-eliminar" onclick="eliminarTour('${t.id}')">🗑️ Eliminar</button>
-              </td>
-            `;
-            tbody.appendChild(fila);
-          });
-        });
+      let destinoAnterior = null;
+      filtrados.forEach(t => {
+        const etiqueta = etiquetaVariante(t);
+        const esNuevoDestino = t.nombre !== destinoAnterior;
+        destinoAnterior = t.nombre;
+
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td class="celda-destino">
+            ${esNuevoDestino ? `📍 ${t.nombre || '-'}` : ''}
+            ${esNuevoDestino ? `<a class="btn-variante-nueva" href="detalle_tours.html?nombre=${encodeURIComponent(t.nombre || '')}">➕ variante</a>` : ''}
+          </td>
+          <td><span class="pastilla-experiencia ${claseVariante(etiqueta)}">${etiqueta}</span></td>
+          <td>
+            <button class="btn-estado ${t.estado === 'ACTIVO' ? '' : 'inactivo'}"
+              onclick="toggleEstado('${t.id}', '${t.estado}')">${t.estado === 'ACTIVO' ? 'Activo' : 'Inactivo'}</button>
+          </td>
+          <td>
+            <div class="celda-acciones">
+              <button class="btn-icono editar" title="Editar" onclick="window.location.href='detalle_tours.html?id=${t.id}'">✏️</button>
+              <button class="btn-icono eliminar" title="Eliminar" onclick="eliminarTour('${t.id}')">🗑️</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(fila);
       });
     }
     
