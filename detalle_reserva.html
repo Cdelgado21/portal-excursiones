@@ -12,6 +12,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <link rel="stylesheet" href="topbar.css">
 
   <style>
     .toggle-btn {
@@ -441,34 +442,15 @@
   <h2 onclick="toggleSeccion(this)" style="background-color: #02535a; color: white; padding: 10px; border-radius: 8px; cursor:pointer; user-select:none;">Itinerario de Tours <span class="flecha-colapsable" style="float:right;">▼</span></h2>
 
   <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
-    <div style="flex: 1; min-width: 200px;">
-      <label><strong>Tipo de Salida</strong></label>
-      <select id="tipoSalidaReserva" onchange="alCambiarTipoSalida()" style="width: 100%; padding: 8px;">
-        <option value="Grupal">Grupal</option>
-        <option value="Individual">Individual</option>
-        <option value="Personalizado">Personalizado</option>
-      </select>
-    </div>
-    <div id="contenedorNivelReserva" style="flex: 1; min-width: 200px; display:none;">
-      <label><strong>Nivel de Experiencia</strong></label>
-      <select id="nivelReserva" onchange="filtrarYPoblarDestinos()" style="width: 100%; padding: 8px;">
-        <option value="">-- Todos --</option>
-        <option value="Flash">Flash</option>
-        <option value="Esencial">Esencial</option>
-        <option value="Confort">Confort</option>
-      </select>
-    </div>
-  </div>
-
-  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
     <div style="flex: 1; min-width: 250px;" id="contenedorDestinoCatalogo">
       <label><strong>Destino</strong></label>
-      <select id="destino" onchange="cargarInfoTour(this.value)" style="width: 100%; padding: 8px;">
+      <select id="destinoNombre" onchange="alCambiarDestinoPrincipal()" style="width: 100%; padding: 8px;">
         <option value="">Seleccione un destino</option>
       </select>
     </div>
     <!-- NUEVO: para salidas Personalizadas no hay un tour del catálogo del
-         cual sacar el destino — se escribe a mano. -->
+         cual sacar el destino — se escribe a mano. Se activa eligiendo
+         "🎨 Personalizado" en el Destino de arriba. -->
     <div style="flex: 1; min-width: 250px; display:none;" id="contenedorDestinoPersonalizado">
       <label><strong>Destino</strong></label>
       <input type="text" id="destinoPersonalizado" placeholder="Ej. Cartagena a medida" style="width: 100%; padding: 8px;">
@@ -478,6 +460,28 @@
       <input id="duracion" readonly placeholder="Ej. 5 días y 4 noches" style="width: 100%; padding: 8px;">
     </div>
   </div>
+
+  <!-- NUEVO: Tipo de Salida y Nivel ahora van DESPUÉS del Destino, y sus
+       opciones se arman según lo que exista realmente en el catálogo para
+       el destino elegido — no se puede seleccionar una combinación que no
+       existe. -->
+  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
+    <div style="flex: 1; min-width: 200px; display:none;" id="contenedorTipoSalida">
+      <label><strong>Tipo de Salida</strong></label>
+      <select id="tipoSalidaReserva" onchange="alCambiarTipoSalida()" style="width: 100%; padding: 8px;">
+      </select>
+    </div>
+    <div id="contenedorNivelReserva" style="flex: 1; min-width: 200px; display:none;">
+      <label><strong>Nivel de Experiencia</strong></label>
+      <select id="nivelReserva" onchange="alCambiarNivelReserva()" style="width: 100%; padding: 8px;">
+      </select>
+    </div>
+  </div>
+
+  <!-- Guarda el ID real del tour del catálogo una vez que Destino + Tipo +
+       Nivel dejan claro cuál es exactamente — el resto del código (guardar,
+       cargar reserva existente, etc.) sigue leyendo este mismo campo. -->
+  <input type="hidden" id="destino">
 
   <!-- NUEVO: Incluye / No incluye escritos a mano — solo aplica a
        Personalizado, ya que en Grupal e Individual esta información vive en
@@ -498,6 +502,7 @@
   <button onclick="abrirModalHotel()" style="margin-top: 15px; background-color: #02535a; color: white; border: none; padding: 10px 16px; border-radius: 8px;">
     ➕ Agregar Hotel
   </button>
+
 
   <div id="hotelesResumenContainer" style="margin-top: 20px;">
     <h3>Hoteles</h3>
@@ -1762,12 +1767,14 @@ async function guardarReserva() {
     const generoTitular = document.getElementById("generoTitular").value || "";
     const tipoSalidaActual = document.getElementById("tipoSalidaReserva").value;
     // NUEVO: en Personalizado no hay tour del catálogo — "destino" (el ID)
-    // queda vacío, y el nombre a mostrar sale del campo escrito a mano.
+    // queda vacío, y el nombre a mostrar sale del campo escrito a mano. Para
+    // el resto, "destino" (el ID real del tour) ya viene resuelto en el
+    // campo oculto por resolverTourSeleccionado(), y el nombre a mostrar es
+    // directo el valor elegido en el Destino.
     const destino = tipoSalidaActual === "Personalizado" ? "" : (document.getElementById("destino").value || "");
-    const destinoSelect = document.getElementById("destino");
     const nombreDestino = tipoSalidaActual === "Personalizado"
       ? (document.getElementById("destinoPersonalizado").value || "")
-      : (destinoSelect.options[destinoSelect.selectedIndex]?.text || "");
+      : (document.getElementById("destinoNombre").value || "");
     const incluyePersonalizado = tipoSalidaActual === "Personalizado" ? (document.getElementById("incluyePersonalizado").value || "") : "";
     const no_incluyePersonalizado = tipoSalidaActual === "Personalizado" ? (document.getElementById("no_incluyePersonalizado").value || "") : "";
     const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
@@ -2327,61 +2334,175 @@ async function cargarDestinos() {
       });
     });
 
-    filtrarYPoblarDestinos();
+    poblarDestinoPrincipal();
   } catch (e) {
     console.error("Error al cargar destinos:", e);
   }
 }
 
-function filtrarYPoblarDestinos() {
-  const tipoSalida = document.getElementById("tipoSalidaReserva").value;
-  const nivel = document.getElementById("nivelReserva").value;
-  const select = document.getElementById("destino");
+// NUEVO: el Destino ahora es lo primero que se elige — se arma la lista con
+// los destinos únicos del catálogo (sin repetir por cada nivel), más una
+// opción para salidas Personalizadas.
+function poblarDestinoPrincipal() {
+  const select = document.getElementById("destinoNombre");
   const valorAnterior = select.value;
 
-  const filtrados = (window.catalogoTours || []).filter(t => {
-    if (t.tipoSalida !== tipoSalida) return false;
-    if (tipoSalida === "Individual" && nivel && t.nivel !== nivel) return false;
-    return true;
-  });
+  const nombresUnicos = Array.from(new Set((window.catalogoTours || []).map(t => t.nombre))).sort((a, b) => a.localeCompare(b));
 
   select.innerHTML = "<option value=''>Seleccione un destino</option>";
-  filtrados.forEach(t => {
+  nombresUnicos.forEach(nombre => {
     const opt = document.createElement("option");
-    opt.value = t.id;
-    opt.textContent = t.tipoSalida === "Individual" && t.nivel ? `${t.nombre} (${t.nivel})` : t.nombre;
+    opt.value = nombre;
+    opt.textContent = nombre;
     select.appendChild(opt);
   });
+  const optPersonalizado = document.createElement("option");
+  optPersonalizado.value = "__personalizado__";
+  optPersonalizado.textContent = "🎨 Personalizado (tour a medida)";
+  select.appendChild(optPersonalizado);
 
-  if (filtrados.some(t => t.id === valorAnterior)) {
-    select.value = valorAnterior;
-  }
+  if (valorAnterior) select.value = valorAnterior;
 }
 
-function alCambiarTipoSalida() {
-  const tipoSalida = document.getElementById("tipoSalidaReserva").value;
-  document.getElementById("contenedorNivelReserva").style.display = tipoSalida === "Individual" ? "block" : "none";
-  if (tipoSalida !== "Individual") {
-    document.getElementById("nivelReserva").value = "";
+// Muestra/oculta los bloques según si se eligió un destino real del
+// catálogo o "Personalizado".
+function aplicarModoPersonalizado() {
+  document.getElementById("contenedorDestinoPersonalizado").style.display = "block";
+  document.getElementById("contenedorIncluyePersonalizado").style.display = "block";
+  document.getElementById("contenedorToursOpcionales").style.display = "none";
+  document.getElementById("contenedorTipoSalida").style.display = "none";
+  document.getElementById("contenedorNivelReserva").style.display = "none";
+  document.getElementById("duracion").readOnly = false;
+  document.getElementById("destino").value = "";
+  document.getElementById("toursOpcionalesLista").innerHTML = "";
+}
+
+function aplicarModoCatalogo() {
+  document.getElementById("contenedorDestinoPersonalizado").style.display = "none";
+  document.getElementById("contenedorIncluyePersonalizado").style.display = "none";
+  document.getElementById("contenedorToursOpcionales").style.display = "block";
+  document.getElementById("duracion").readOnly = true;
+}
+
+// NUEVO: al elegir el Destino, se arma el Tipo de Salida SOLO con lo que
+// realmente existe en el catálogo para ese destino (si solo hay Grupal, ni
+// siquiera aparece "Individual" como opción).
+function alCambiarDestinoPrincipal() {
+  const valor = document.getElementById("destinoNombre").value;
+
+  if (valor === "__personalizado__") {
+    document.getElementById("tipoSalidaReserva").innerHTML = '<option value="Personalizado">Personalizado</option>';
+    document.getElementById("tipoSalidaReserva").value = "Personalizado";
+    aplicarModoPersonalizado();
+    return;
   }
 
-  // NUEVO: alterna entre el flujo normal (destino del catálogo) y el flujo
-  // Personalizado (todo escrito a mano, sin tour asociado).
-  const esPersonalizado = tipoSalida === "Personalizado";
-  document.getElementById("contenedorDestinoCatalogo").style.display = esPersonalizado ? "none" : "block";
-  document.getElementById("contenedorDestinoPersonalizado").style.display = esPersonalizado ? "block" : "none";
-  document.getElementById("contenedorIncluyePersonalizado").style.display = esPersonalizado ? "block" : "none";
-  document.getElementById("contenedorToursOpcionales").style.display = esPersonalizado ? "none" : "block";
-  document.getElementById("duracion").readOnly = esPersonalizado ? false : true;
+  aplicarModoCatalogo();
 
-  if (esPersonalizado) {
-    // Sin tour del catálogo detrás, así que se limpia lo que hubiera quedado
-    // cargado de un destino anterior.
+  const selectTipo = document.getElementById("tipoSalidaReserva");
+  const contenedorTipo = document.getElementById("contenedorTipoSalida");
+
+  if (!valor) {
+    contenedorTipo.style.display = "none";
+    document.getElementById("contenedorNivelReserva").style.display = "none";
     document.getElementById("destino").value = "";
-    document.getElementById("toursOpcionalesLista").innerHTML = "";
-  } else {
-    filtrarYPoblarDestinos();
+    return;
   }
+
+  const disponibles = (window.catalogoTours || []).filter(t => t.nombre === valor);
+  const tiposDisponibles = Array.from(new Set(disponibles.map(t => t.tipoSalida)));
+
+  const valorTipoAnterior = selectTipo.value;
+  selectTipo.innerHTML = "";
+  tiposDisponibles.forEach(tipo => {
+    const opt = document.createElement("option");
+    opt.value = tipo;
+    opt.textContent = tipo;
+    selectTipo.appendChild(opt);
+  });
+  contenedorTipo.style.display = "block";
+
+  // Si antes había un tipo elegido y sigue disponible para este destino, se
+  // conserva; si no, y solo hay una opción posible, se elige sola.
+  if (tiposDisponibles.includes(valorTipoAnterior)) {
+    selectTipo.value = valorTipoAnterior;
+  } else if (tiposDisponibles.length === 1) {
+    selectTipo.value = tiposDisponibles[0];
+  }
+
+  alCambiarTipoSalida();
+}
+
+// NUEVO: al elegir el Tipo de Salida, se arma el Nivel SOLO con los niveles
+// que existen para este destino+tipo — y si Individual solo tiene un nivel
+// cargado en el catálogo, se selecciona solo, sin pedirle un clic de más.
+function alCambiarTipoSalida() {
+  const destinoNombre = document.getElementById("destinoNombre").value;
+  const tipoSalida = document.getElementById("tipoSalidaReserva").value;
+  const contenedorNivel = document.getElementById("contenedorNivelReserva");
+  const selectNivel = document.getElementById("nivelReserva");
+
+  if (tipoSalida !== "Individual") {
+    contenedorNivel.style.display = "none";
+    selectNivel.innerHTML = "";
+    resolverTourSeleccionado();
+    return;
+  }
+
+  const nivelesDisponibles = (window.catalogoTours || [])
+    .filter(t => t.nombre === destinoNombre && t.tipoSalida === "Individual" && t.nivel)
+    .map(t => t.nivel);
+  const nivelesUnicos = Array.from(new Set(nivelesDisponibles));
+
+  const valorNivelAnterior = selectNivel.value;
+  selectNivel.innerHTML = "<option value=''>-- Seleccione --</option>";
+  nivelesUnicos.forEach(nivel => {
+    const opt = document.createElement("option");
+    opt.value = nivel;
+    opt.textContent = nivel;
+    selectNivel.appendChild(opt);
+  });
+  contenedorNivel.style.display = "block";
+
+  if (nivelesUnicos.includes(valorNivelAnterior)) {
+    selectNivel.value = valorNivelAnterior;
+  } else if (nivelesUnicos.length === 1) {
+    selectNivel.value = nivelesUnicos[0];
+  }
+
+  resolverTourSeleccionado();
+}
+
+function alCambiarNivelReserva() {
+  resolverTourSeleccionado();
+}
+
+// Una vez que Destino (+ Tipo + Nivel, si aplica) dejan claro exactamente
+// cuál tour del catálogo es, se resuelve su ID real y se cargan sus datos
+// (duración, itinerario, tours opcionales).
+function resolverTourSeleccionado() {
+  const destinoNombre = document.getElementById("destinoNombre").value;
+  const tipoSalida = document.getElementById("tipoSalidaReserva").value;
+  const nivel = document.getElementById("nivelReserva").value;
+
+  if (!destinoNombre || destinoNombre === "__personalizado__" || !tipoSalida) {
+    document.getElementById("destino").value = "";
+    return;
+  }
+  if (tipoSalida === "Individual" && !nivel) {
+    // Falta elegir el nivel todavía — no se puede resolver un tour único.
+    document.getElementById("destino").value = "";
+    return;
+  }
+
+  const tour = (window.catalogoTours || []).find(t =>
+    t.nombre === destinoNombre &&
+    t.tipoSalida === tipoSalida &&
+    (tipoSalida === "Individual" ? t.nivel === nivel : true)
+  );
+
+  document.getElementById("destino").value = tour?.id || "";
+  cargarInfoTour(tour?.id || "");
 }
 
 async function cargarInfoTour(destinoId) {
@@ -2599,18 +2720,27 @@ async function cargarReservaExistente(codigo) {
     // vacío) — se restaura directo desde el campo tipoSalidaReserva guardado,
     // junto con el destino, incluye y no incluye escritos a mano.
     if (data.tipoSalidaReserva === "Personalizado") {
+      document.getElementById("destinoNombre").value = "__personalizado__";
+      document.getElementById("tipoSalidaReserva").innerHTML = '<option value="Personalizado">Personalizado</option>';
       document.getElementById("tipoSalidaReserva").value = "Personalizado";
-      alCambiarTipoSalida();
+      aplicarModoPersonalizado();
       document.getElementById("destinoPersonalizado").value = data.nombreDestino || "";
       document.getElementById("incluyePersonalizado").value = data.incluyePersonalizado || "";
       document.getElementById("no_incluyePersonalizado").value = data.no_incluyePersonalizado || "";
     } else {
+      // Reconstruye la cascada Destino → Tipo de Salida → Nivel a partir del
+      // tour guardado, para que los 3 selectores queden exactamente como
+      // cuando se creó la reserva (y se puedan editar con normalidad).
       const tourGuardado = (window.catalogoTours || []).find(t => t.id === data.destino);
       if (tourGuardado) {
+        aplicarModoCatalogo();
+        document.getElementById("destinoNombre").value = tourGuardado.nombre;
+        alCambiarDestinoPrincipal();
         document.getElementById("tipoSalidaReserva").value = tourGuardado.tipoSalida;
-        document.getElementById("contenedorNivelReserva").style.display = tourGuardado.tipoSalida === "Individual" ? "block" : "none";
-        document.getElementById("nivelReserva").value = tourGuardado.nivel || "";
-        filtrarYPoblarDestinos();
+        alCambiarTipoSalida();
+        if (tourGuardado.tipoSalida === "Individual") {
+          document.getElementById("nivelReserva").value = tourGuardado.nivel || "";
+        }
       }
       document.getElementById("destino").value = data.destino || "";
     }
@@ -3568,6 +3698,7 @@ async function enviarComprobantePorCorreo() {
 
 <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez de
      confiar solo en lo que dijera localStorage. -->
+<script src="topbar.js"></script>
 <script src="auth-guard.js"></script>
 
 </body>
