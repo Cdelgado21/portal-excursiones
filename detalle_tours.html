@@ -294,6 +294,7 @@
          al destino correspondiente. -->
 
     <label>Tours Opcionales</label>
+    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Esta lista es compartida por destino — lo que agregues o edites aquí aplica a TODAS las variantes (Flash/Esencial/Confort) de este mismo destino, no solo a esta.</div>
     <table>
       <thead><tr><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Acciones</th></tr></thead>
       <tbody id="opcionalesContainer"></tbody>
@@ -353,14 +354,6 @@
   }
 
 function guardarTour() {
-  const opcionales = [];
-  document.querySelectorAll("#opcionalesContainer tr").forEach(tr => {
-    const nombre = tr.cells[0].innerText.trim();
-    const descripcion = tr.cells[1].innerText.trim();
-    const precio = parseFloat(tr.cells[2].innerText.trim());
-    if (nombre) opcionales.push({ nombre, descripcion, precio });
-  });
-
   const tipoSalida = document.getElementById("tipoSalida").value;
   const nivel = tipoSalida === "Individual" ? document.getElementById("nivel").value : "";
 
@@ -383,7 +376,6 @@ function guardarTour() {
     no_incluye: document.getElementById("no_incluye").value,
     itinerario_tours: document.getElementById("itinerario_tours").value,
     politicas: document.getElementById("politicas").value,
-    tours_opcionales: opcionales,
     estado: "ACTIVO"
   };
 
@@ -424,7 +416,6 @@ if (tourId) {
     if (doc.exists) {
       const t = doc.data();
       document.querySelector("h2").innerText = "Tour: " + (t.nombre || "Sin nombre");
-document.getElementById("opcionalesContainer").innerHTML = "";
       document.getElementById("nombre").value = t.nombre || "";
       document.getElementById("tipoSalida").value = t.tipoSalida || "Grupal";
       document.getElementById("nivel").value = t.nivel || "";
@@ -438,7 +429,9 @@ document.getElementById("opcionalesContainer").innerHTML = "";
       document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
       document.getElementById("politicas").value = t.politicas || "";
 
-      (t.tours_opcionales || []).forEach(op => agregarTourOpcional(op.nombre, op.descripcion, op.precio));
+      // NUEVO: los tours opcionales ahora son compartidos por destino, no
+      // por variante — se cargan directo desde la colección compartida.
+      cargarOpcionalesDelDestino(t.nombre);
   } else {
         alert("El tour no existe.");
       }
@@ -458,73 +451,115 @@ document.getElementById("opcionalesContainer").innerHTML = "";
     document.getElementById("nombre").value = destinoDesdeUrl;
     document.getElementById("tipoSalida").value = "Individual";
     actualizarVisibilidadNivel();
+    cargarOpcionalesDelDestino(destinoDesdeUrl);
   }
 }
 
-  function agregarTourOpcional(nombre, descripcion, precio) {
+// NUEVO: si se está creando un tour totalmente nuevo (sin destino
+// prellenado), en cuanto se escribe el nombre del destino se recarga la
+// lista de opcionales compartidos que ya existan para ese destino.
+document.getElementById("nombre").addEventListener("blur", function () {
+  if (!tourId) cargarOpcionalesDelDestino(this.value.trim());
+});
+
+  // NUEVO: los tours opcionales viven en su propia colección compartida
+  // ("tours_opcionales"), etiquetados por destino — así "Globos en
+  // Teotihuacán" se carga UNA sola vez para "CDMX" y aparece automáticamente
+  // en Flash, Esencial y Confort de ese destino, sin duplicar nada.
+  let destinoActualOpcionales = "";
+
+  function cargarOpcionalesDelDestino(destino) {
+    destinoActualOpcionales = destino || "";
+    const tabla = document.getElementById("opcionalesContainer");
+    tabla.innerHTML = "";
+    if (!destino) return;
+
+    db.collection("tours_opcionales").where("destino", "==", destino).get().then(snapshot => {
+      snapshot.forEach(doc => agregarTourOpcional(doc.id, doc.data()));
+    }).catch(err => {
+      console.error("Error al cargar tours opcionales del destino:", err);
+    });
+  }
+
+  function agregarTourOpcional(id, datos) {
     const fila = document.createElement("tr");
+    fila.dataset.id = id || "";
     fila.innerHTML = `
-      <td>${nombre}</td>
-      <td>${descripcion}</td>
-      <td>${precio}</td>
+      <td>${datos.nombre || ""}</td>
+      <td>${datos.descripcion || ""}</td>
+      <td>${datos.precio ?? ""}</td>
       <td>
         <button class="btn" onclick="editarOpcional(this)">✏️</button>
-        <button class="btn" onclick="this.closest('tr').remove()">🗑️</button>
+        <button class="btn" onclick="eliminarOpcional(this)">🗑️</button>
       </td>
     `;
     document.getElementById("opcionalesContainer").appendChild(fila);
   }
 
-     
-    let filaActualOpcional = null;
+  let filaActualOpcional = null;
 
-    function abrirModalOpcional() {
-      document.getElementById("opcionalNombre").value = "";
-      document.getElementById("opcionalDescripcion").value = "";
-      document.getElementById("opcionalPrecio").value = "";
-      filaActualOpcional = null;
-      document.getElementById("modalOpcional").style.display = "block";
+  function abrirModalOpcional() {
+    if (!destinoActualOpcionales) {
+      alert("Primero escribe el nombre del destino arriba, antes de agregar un tour opcional.");
+      return;
+    }
+    document.getElementById("opcionalNombre").value = "";
+    document.getElementById("opcionalDescripcion").value = "";
+    document.getElementById("opcionalPrecio").value = "";
+    filaActualOpcional = null;
+    document.getElementById("modalOpcional").style.display = "block";
+  }
+
+  function cerrarModal(id) {
+    document.getElementById(id).style.display = "none";
+  }
+
+  function editarOpcional(btn) {
+    filaActualOpcional = btn.closest("tr");
+    document.getElementById("opcionalNombre").value = filaActualOpcional.cells[0].innerText;
+    document.getElementById("opcionalDescripcion").value = filaActualOpcional.cells[1].innerText;
+    document.getElementById("opcionalPrecio").value = filaActualOpcional.cells[2].innerText;
+    document.getElementById("modalOpcional").style.display = "block";
+  }
+
+  async function eliminarOpcional(btn) {
+    const fila = btn.closest("tr");
+    const id = fila.dataset.id;
+    if (!confirm("¿Eliminar este tour opcional? Esto lo quita para TODAS las variantes de este destino.")) return;
+    try {
+      if (id) await db.collection("tours_opcionales").doc(id).delete();
+      fila.remove();
+    } catch (e) {
+      console.error("Error al eliminar tour opcional:", e);
+      alert("❌ No se pudo eliminar.");
+    }
+  }
+
+  async function guardarEdicionOpcional() {
+    const nombre = document.getElementById("opcionalNombre").value.trim();
+    const descripcion = document.getElementById("opcionalDescripcion").value.trim();
+    const precio = parseFloat(document.getElementById("opcionalPrecio").value) || 0;
+
+    if (!nombre) {
+      alert("Escribe el nombre del tour opcional.");
+      return;
     }
 
-    function cerrarModal(id) {
-      document.getElementById(id).style.display = "none";
-    }
+    const datos = { nombre, descripcion, precio, destino: destinoActualOpcionales, activo: true };
 
-    function editarOpcional(btn) {
-      filaActualOpcional = btn.closest("tr");
-      document.getElementById("opcionalNombre").value = filaActualOpcional.cells[0].innerText;
-      document.getElementById("opcionalDescripcion").value = filaActualOpcional.cells[1].innerText;
-      document.getElementById("opcionalPrecio").value = filaActualOpcional.cells[2].innerText;
-      document.getElementById("modalOpcional").style.display = "block";
-    }
-
-    function guardarEdicionOpcional() {
-      const nombre = document.getElementById("opcionalNombre").value;
-      const descripcion = document.getElementById("opcionalDescripcion").value;
-      const precio = document.getElementById("opcionalPrecio").value;
-      if (filaActualOpcional) {
-        filaActualOpcional.cells[0].innerText = nombre;
-        filaActualOpcional.cells[1].innerText = descripcion;
-        filaActualOpcional.cells[2].innerText = precio;
+    try {
+      if (filaActualOpcional && filaActualOpcional.dataset.id) {
+        await db.collection("tours_opcionales").doc(filaActualOpcional.dataset.id).update(datos);
       } else {
-        agregarTourOpcional(nombre, descripcion, precio);
+        await db.collection("tours_opcionales").add(datos);
       }
       cerrarModal("modalOpcional");
+      cargarOpcionalesDelDestino(destinoActualOpcionales);
+    } catch (e) {
+      console.error("Error al guardar tour opcional:", e);
+      alert("❌ No se pudo guardar el tour opcional.");
     }
-    function agregarTourOpcional(nombre = "", descripcion = "", precio = "") {
-  const tabla = document.getElementById("opcionalesContainer");
-  const fila = document.createElement("tr");
-  fila.innerHTML = `
-    <td>${nombre}</td>
-    <td>${descripcion}</td>
-    <td>${precio}</td>
-    <td>
-      <button class="btn" onclick="editarOpcional(this)">✏️</button>
-      <button class="btn" onclick="this.closest('tr').remove()">🗑️</button>
-    </td>
-  `;
-  tabla.appendChild(fila);
-}
+  }
 
     // NUEVO: menú lateral de navegación (igual que el resto del sistema)
     function inicializarMenuLateral() {
