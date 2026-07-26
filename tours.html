@@ -227,10 +227,6 @@ tbody tr:last-child td { border-bottom: none; }
   color: #02535a;
   white-space: nowrap;
 }
-.celda-destino.celda-destino-repetido {
-  color: #a9c4c4;
-  font-weight: normal;
-}
 
 /* NUEVO: pastilla de "Experiencia" — un color distinto por variante, para
    distinguirlas de un vistazo (colores ya usados en el resto del sistema,
@@ -484,7 +480,7 @@ tbody tr:last-child td { border-bottom: none; }
 
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td class="celda-destino ${esNuevoDestino ? '' : 'celda-destino-repetido'}">
+          <td class="celda-destino">
             📍 ${t.nombre || '-'}
             ${esNuevoDestino ? `<a class="btn-variante-nueva" href="detalle_tours.html?nombre=${encodeURIComponent(t.nombre || '')}">➕ variante</a>` : ''}
             ${escrituraDistinta ? `<span title="Este tour está escrito distinto al resto del grupo (revisa tildes, mayúsculas o espacios) — corrígelo editando el tour." style="margin-left:6px; cursor:help;">⚠️</span>` : ''}
