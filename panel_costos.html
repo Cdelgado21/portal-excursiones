@@ -135,6 +135,48 @@
     }
     .proyectado { color: #f39c12; font-weight: bold; }
     .real { color: green; font-weight: bold; }
+    .caja-modal-categoria {
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      background: #f9fbfb;
+      border-radius: 8px;
+      border: 1px solid #e0e8e8;
+      text-align: left;
+    }
+    .caja-modal-categoria > label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .fila-modal-proveedor {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed #dde8e8;
+    }
+    .fila-modal-proveedor:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .modal-select-proveedor { flex: 2; min-width: 140px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; }
+    .modal-input-proyectado { flex: 1; min-width: 90px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; }
+    .btn-marcar-pagado {
+      background: #1b9e3c; color: white; border: none; border-radius: 6px;
+      padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap;
+    }
+    .btn-quitar-fila-modal {
+      background: #fbe2e0; color: #b23327; border: none; border-radius: 6px;
+      padding: 6px 9px; cursor: pointer;
+    }
+    .btn-agregar-fila-modal {
+      font-size: 13px; color: #02535a; font-weight: bold; text-decoration: none;
+    }
+    .aviso-fila-modal {
+      width: 100%;
+      font-size: 12px;
+      color: #1b6e1b;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -202,38 +244,43 @@
     <tbody id="tablaHistoricos"></tbody>
   </table>
 <div id="modalCostos" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:#00000099; z-index:1000; align-items:center; justify-content:center;">
-  <div style="background:white; padding:30px; border-radius:12px; width:95%; max-width:500px; box-shadow:0 0 20px rgba(0,0,0,0.2); position:relative;">
-    
-    <h3 style="margin-top:0; color:#02535a;">✏️ Editar Costos Reales</h3>
-    
+  <div style="background:white; padding:30px; border-radius:12px; width:95%; max-width:560px; max-height:88vh; overflow-y:auto; box-shadow:0 0 20px rgba(0,0,0,0.2); position:relative;">
+
+    <h3 style="margin-top:0; color:#02535a;">✏️ Editar Costos</h3>
+
     <input type="hidden" id="modalCodigo" />
+    <input type="hidden" id="modalDestinoNombre" />
 
-    <div style="margin-bottom:12px;">
-      <label for="modalBoletos">🎫 Boletos Aéreos</label>
-      <input type="number" id="modalBoletos" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    <div style="margin-bottom:14px; text-align:left;">
+      <label for="modalBoletos" style="font-weight:bold; display:block; margin-bottom:6px;">🎫 Boletos Aéreos (ya pagado)</label>
+      <input type="number" id="modalBoletos" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;" />
     </div>
 
-    <div style="margin-bottom:12px;">
-      <label for="modalHospedaje">🏨 Hospedaje</label>
-      <input type="number" id="modalHospedaje" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    <div class="caja-modal-categoria" data-clave="hospedaje">
+      <label>🏨 Hospedaje</label>
+      <div class="filas-modal-categoria" id="modalFilasHospedaje"></div>
+      <a href="#" class="btn-agregar-fila-modal" onclick="agregarFilaModal('hospedaje'); return false;">➕ Otra ciudad / proveedor</a>
     </div>
 
-    <div style="margin-bottom:12px;">
-      <label for="modalOperador">🚐 Operador / Traslados</label>
-      <input type="number" id="modalOperador" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    <div class="caja-modal-categoria" data-clave="traslados">
+      <label>🚐 Traslados</label>
+      <div class="filas-modal-categoria" id="modalFilasTraslados"></div>
+      <a href="#" class="btn-agregar-fila-modal" onclick="agregarFilaModal('traslados'); return false;">➕ Otra ciudad / proveedor</a>
     </div>
 
-    <div style="margin-bottom:12px;">
-      <label for="modalTours">🎟️ Tours</label>
-      <input type="number" id="modalTours" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    <div class="caja-modal-categoria" data-clave="tours">
+      <label>🎟️ Tours</label>
+      <div class="filas-modal-categoria" id="modalFilasTours"></div>
+      <a href="#" class="btn-agregar-fila-modal" onclick="agregarFilaModal('tours'); return false;">➕ Otra ciudad / proveedor</a>
     </div>
 
-    <div style="margin-bottom:20px;">
-      <label for="modalComision">💼 Comisión</label>
-      <input type="number" id="modalComision" class="campoModal" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc;" />
+    <div class="caja-modal-categoria" data-clave="comision">
+      <label>💼 Comisión</label>
+      <div class="filas-modal-categoria" id="modalFilasComision"></div>
+      <a href="#" class="btn-agregar-fila-modal" onclick="agregarFilaModal('comision'); return false;">➕ Otro embajador(a) / proveedor</a>
     </div>
 
-    <div style="text-align:right;">
+    <div style="text-align:right; margin-top:16px;">
       <button onclick="cerrarModal()" style="background:#ccc; color:#333; padding:8px 14px; border:none; border-radius:6px; margin-right:8px; cursor:pointer;">
         ✖️ Cancelar
       </button>
@@ -269,21 +316,84 @@
     });
   }
 
-  function mostrarValorCampo(proyectado = 0, real = null) {
-    const montoReal = typeof real === "number" ? real : real?.monto;
-    const esReal = typeof montoReal === "number";
-    const valor = esReal
-      ? montoReal
-      : (typeof proyectado === "number" ? proyectado : proyectado?.monto || 0);
-    const icono = esReal ? "✅" : "⚠️";
-    const clase = esReal ? "real" : "proyectado";
-    return `<span class="${clase}">$${valor.toFixed(2)} ${icono}</span>`;
+  const CATEGORIAS_PANEL = ["hospedaje", "traslados", "tours", "comision"];
+  const ETIQUETA_CATEGORIA_PANEL = { hospedaje: "Hospedaje", traslados: "Traslados", tours: "Tours", comision: "Comisión" };
+
+  // NUEVO: cada categoría ahora es un ARREGLO de filas (proveedor + monto).
+  // Si el documento viene del modelo viejo (desglose_proyectado/desglose_real
+  // planos) o de una versión intermedia (un solo objeto por categoría, sin
+  // arreglo), se normaliza aquí mismo a un arreglo, sin perder nada.
+  function normalizarCategoria(valor) {
+    if (!valor) return [];
+    if (Array.isArray(valor)) return valor;
+    return [valor];
+  }
+
+  function obtenerCategoriasNormalizadas(data) {
+    if (data.categorias) {
+      const resultado = {};
+      CATEGORIAS_PANEL.forEach(clave => {
+        resultado[clave] = normalizarCategoria(data.categorias[clave]);
+      });
+      return resultado;
+    }
+    // Modelo viejo, plano (de antes de tener proveedores por categoría).
+    const proy = data.desglose_proyectado || {};
+    const real = data.desglose_real || {};
+    const mapaCampoViejo = { hospedaje: "hospedaje", traslados: "operador", tours: "tours", comision: "comision" };
+    const resultado = {};
+    CATEGORIAS_PANEL.forEach(clave => {
+      const campoViejo = mapaCampoViejo[clave];
+      const p = proy[campoViejo] || 0;
+      const r = real[campoViejo];
+      if (p === 0 && typeof r !== "number") {
+        resultado[clave] = [];
+      } else {
+        const item = { proveedor: "", proyectado: p };
+        if (typeof r === "number") item.real = r;
+        resultado[clave] = [item];
+      }
+    });
+    return resultado;
+  }
+
+  function obtenerBoletosPagados(data) {
+    if (data.categorias || typeof data.boletos_real === "number") {
+      return data.boletos_real || 0;
+    }
+    const proy = data.desglose_proyectado || {};
+    const real = data.desglose_real || {};
+    return (real.boletos ?? proy.boletos) || 0;
+  }
+
+  // Suma el efectivo (real si existe, si no proyectado) de todas las filas
+  // de una categoría, y dice si TODAS ya están marcadas como pagadas.
+  function resumenCategoria(items) {
+    if (!items || items.length === 0) return { total: 0, todasReales: true, vacio: true };
+    let total = 0;
+    let todasReales = true;
+    items.forEach(it => {
+      const monto = typeof it.real === "number" ? it.real : (it.proyectado || 0);
+      total += monto;
+      if (typeof it.real !== "number") todasReales = false;
+    });
+    return { total, todasReales, vacio: false };
+  }
+
+  function celdaCategoria(items) {
+    const r = resumenCategoria(items);
+    if (r.vacio) return '-';
+    const clase = r.todasReales ? "real" : "proyectado";
+    const icono = r.todasReales ? "✅" : "⚠️";
+    return `<span class="${clase}">$${r.total.toFixed(2)} ${icono}</span>`;
   }
 
   async function cargarCostos() {
     const snapshot = await db.collection("costos_reservas").get();
     const proyecciones = document.getElementById("tablaProyecciones");
     const historicos = document.getElementById("tablaHistoricos");
+    proyecciones.innerHTML = "";
+    historicos.innerHTML = "";
 
     snapshot.forEach(async doc => {
       const data = doc.data();
@@ -300,20 +410,16 @@
       const bebes = info.cantidadBebes || 0;
       const venta = data.venta_total || 0;
 
-      const desgloseProy = data.desglose_proyectado || {};
-      const desgloseReal = data.desglose_real || {};
+      const boletos = obtenerBoletosPagados(data);
+      const categorias = obtenerCategoriasNormalizadas(data);
 
-      const boletos    = typeof desgloseReal.boletos    === 'number' ? desgloseReal.boletos    : desgloseProy.boletos    || 0;
-      const hospedaje  = typeof desgloseReal.hospedaje  === 'number' ? desgloseReal.hospedaje  : desgloseProy.hospedaje  || 0;
-      const operador   = typeof desgloseReal.operador   === 'number' ? desgloseReal.operador   : desgloseProy.operador   || 0;
-      const tours      = typeof desgloseReal.tours      === 'number' ? desgloseReal.tours      : desgloseProy.tours      || 0;
-      const comision   = typeof desgloseReal.comision   === 'number' ? desgloseReal.comision   : desgloseProy.comision   || 0;
-
-      const costoTotal = boletos + hospedaje + operador + tours + comision;
+      const resumenes = CATEGORIAS_PANEL.map(clave => resumenCategoria(categorias[clave]));
+      const costoTotal = boletos + resumenes.reduce((sum, r) => sum + r.total, 0);
       const ganancia = venta - costoTotal;
 
-      const esReal = Object.keys(desgloseReal).length > 0;
-      const puedeCerrar = esReal;
+      // Se puede cerrar cuando cada fila de cada categoría ya quedó marcada
+      // como pagada (real) — las categorías vacías no bloquean el cierre.
+      const puedeCerrar = resumenes.every(r => r.todasReales);
 
       const cerrarBtn = puedeCerrar
         ? `<button onclick="cerrarReserva('${reservaId}')" style="margin-left:6px; background:#02535a; color:white; border:none; padding:6px 10px; border-radius:5px; cursor:pointer;">
@@ -330,10 +436,10 @@
           <td>${ninos}</td>
           <td>${bebes}</td>
           <td>$${venta.toFixed(2)}</td>
-          <td>${mostrarValorCampo(desgloseProy.boletos, desgloseReal.boletos)}</td>
-          <td>${mostrarValorCampo(desgloseProy.hospedaje, desgloseReal.hospedaje)}</td>
-          <td>${mostrarValorCampo(desgloseProy.operador, desgloseReal.operador)}</td>
-          <td>${mostrarValorCampo(desgloseProy.tours, desgloseReal.tours)}</td>
+          <td>$${boletos.toFixed(2)} ✅</td>
+          <td>${celdaCategoria(categorias.hospedaje)}</td>
+          <td>${celdaCategoria(categorias.traslados)}</td>
+          <td>${celdaCategoria(categorias.tours)}</td>
           <td><strong>$${costoTotal.toFixed(2)}</strong></td>
           <td><strong>$${ganancia.toFixed(2)}</strong></td>
             <td>${formatoFecha(data.fecha_cierre)}</td>
@@ -346,16 +452,15 @@
         `;
         proyecciones.appendChild(fila);
       } else {
-        const totalCostos = boletos + hospedaje + operador + tours + comision;
         const fechaCierre = data.fecha_cierre?.toDate
-  ? data.fecha_cierre.toDate()
-  : new Date(data.fecha_cierre);
+          ? data.fecha_cierre.toDate()
+          : new Date(data.fecha_cierre);
         fila.innerHTML = `
           <td>${reservaId}</td>
           <td>${titular}</td>
           <td>${formatoFecha(data.fecha_viaje)}</td>
           <td>$${venta.toFixed(2)}</td>
-          <td>$${totalCostos.toFixed(2)}</td>
+          <td>$${costoTotal.toFixed(2)}</td>
               <td><strong>$${ganancia.toFixed(2)}</strong></td>
 <td>${formatoFecha(fechaCierre)}</td>
         `;
@@ -380,52 +485,156 @@
       alert("Ocurrió un error al cerrar la reserva.");
     }
   }
-  function abrirModal(codigo) {
-  // Guardar código actual
-  document.getElementById("modalCodigo").value = codigo;
 
-  // Obtener desglose actual desde Firestore
-  db.collection("costos_reservas").doc(codigo).get().then(doc => {
-    const data = doc.data();
-    const desglose = data.desglose_real && Object.keys(data.desglose_real).length > 0
-      ? data.desglose_real
-      : data.desglose_proyectado || {};
+  // ---------- Proveedores (lista simple, sin agrupar por destino aquí —
+  // ese nivel de detalle ya se hace al cargar los costos por primera vez en
+  // costos_agregar.html; aquí es principalmente para ajustar/marcar pagado). ----------
+  let listaProveedoresPanel = [];
 
-    // Cargar valores al formulario
-    document.getElementById("modalBoletos").value   = desglose.boletos   ?? '';
-    document.getElementById("modalHospedaje").value = desglose.hospedaje ?? '';
-    document.getElementById("modalOperador").value  = desglose.operador  ?? '';
-    document.getElementById("modalTours").value     = desglose.tours     ?? '';
-    document.getElementById("modalComision").value  = desglose.comision  ?? '';
-    
-    // Mostrar modal
+  async function cargarProveedoresPanel() {
+    const snap = await db.collection("proveedores").get();
+    listaProveedoresPanel = snap.docs.map(d => d.data()).filter(p => p.activo !== false);
+    listaProveedoresPanel.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }
+
+  function construirSelectProveedorModal(clave, proveedorActual) {
+    const etiqueta = ETIQUETA_CATEGORIA_PANEL[clave];
+    const relevantes = listaProveedoresPanel.filter(p => !p.categoria || p.categoria === etiqueta);
+    let html = `<option value="">-- Seleccione --</option>`;
+    relevantes.forEach(p => {
+      html += `<option value="${p.nombre}" ${p.nombre === proveedorActual ? 'selected' : ''}>${p.nombre}</option>`;
+    });
+    if (proveedorActual && !relevantes.some(p => p.nombre === proveedorActual)) {
+      html += `<option value="${proveedorActual}" selected>${proveedorActual}</option>`;
+    }
+    return html;
+  }
+
+  function crearFilaModal(clave, datos) {
+    datos = datos || {};
+    const contenedor = document.getElementById(`modalFilas${clave.charAt(0).toUpperCase()}${clave.slice(1)}`);
+    const fila = document.createElement("div");
+    fila.className = "fila-modal-proveedor";
+    fila.dataset.clave = clave;
+
+    const yaEsReal = typeof datos.real === "number";
+    fila.innerHTML = `
+      <select class="modal-select-proveedor" ${yaEsReal ? 'disabled' : ''}>${construirSelectProveedorModal(clave, datos.proveedor)}</select>
+      <input type="number" class="modal-input-proyectado" placeholder="Monto proyectado" value="${datos.proyectado || ''}" ${yaEsReal ? 'disabled' : ''}>
+      ${yaEsReal ? '' : `<button type="button" class="btn-marcar-pagado" onclick="marcarFilaModalComoPagada(this)">✅ Marcar pagado</button>`}
+      <button type="button" class="btn-quitar-fila-modal" onclick="this.closest('.fila-modal-proveedor').remove()" title="Quitar">🗑️</button>
+      <div class="aviso-fila-modal"></div>
+    `;
+
+    if (yaEsReal) {
+      const fecha = datos.fecha_pago_real?.toDate ? datos.fecha_pago_real.toDate() : (datos.fecha_pago_real ? new Date(datos.fecha_pago_real) : null);
+      const fechaTexto = fecha ? ` el ${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : "";
+      fila.dataset.real = datos.real;
+      if (fecha) fila.dataset.fechaPagoReal = fecha.toISOString();
+      fila.querySelector(".aviso-fila-modal").textContent = `✅ Pagado: $${datos.real.toFixed(2)}${fechaTexto}`;
+    }
+
+    contenedor.appendChild(fila);
+    return fila;
+  }
+
+  function agregarFilaModal(clave) {
+    crearFilaModal(clave, {});
+  }
+
+  function marcarFilaModalComoPagada(boton) {
+    const fila = boton.closest(".fila-modal-proveedor");
+    const input = fila.querySelector(".modal-input-proyectado");
+    const select = fila.querySelector(".modal-select-proveedor");
+    const proyectadoActual = parseFloat(input.value) || 0;
+
+    const entrada = prompt("¿Cuánto se pagó realmente?", proyectadoActual.toFixed(2));
+    if (entrada === null) return;
+    const monto = parseFloat(entrada);
+    if (isNaN(monto)) {
+      alert("Ingresa un monto válido.");
+      return;
+    }
+
+    const ahora = new Date();
+    fila.dataset.real = monto;
+    fila.dataset.fechaPagoReal = ahora.toISOString();
+    input.disabled = true;
+    select.disabled = true;
+    boton.remove();
+
+    const fechaTexto = ` el ${String(ahora.getDate()).padStart(2,'0')}/${String(ahora.getMonth()+1).padStart(2,'0')}/${ahora.getFullYear()}`;
+    fila.querySelector(".aviso-fila-modal").textContent = `✅ Pagado: $${monto.toFixed(2)}${fechaTexto}`;
+  }
+
+  let datosCostosModalActual = null;
+
+  async function abrirModal(codigo) {
+    document.getElementById("modalCodigo").value = codigo;
+    CATEGORIAS_PANEL.forEach(clave => {
+      document.getElementById(`modalFilas${clave.charAt(0).toUpperCase()}${clave.slice(1)}`).innerHTML = "";
+    });
+
+    if (listaProveedoresPanel.length === 0) await cargarProveedoresPanel();
+
+    const doc = await db.collection("costos_reservas").doc(codigo).get();
+    const data = doc.data() || {};
+    datosCostosModalActual = data;
+
+    document.getElementById("modalBoletos").value = obtenerBoletosPagados(data);
+
+    const categorias = obtenerCategoriasNormalizadas(data);
+    CATEGORIAS_PANEL.forEach(clave => {
+      const items = categorias[clave].length > 0 ? categorias[clave] : [{}];
+      items.forEach(item => crearFilaModal(clave, item));
+    });
+
     document.getElementById("modalCostos").style.display = "flex";
-  });
-}
-function cerrarModal() {
-  document.getElementById("modalCostos").style.display = "none";
-}
-  function guardarCostosReales() {
-  const codigo = document.getElementById("modalCodigo").value;
-  const boletos = parseFloat(document.getElementById("modalBoletos").value) || 0;
-  const hospedaje = parseFloat(document.getElementById("modalHospedaje").value) || 0;
-  const operador = parseFloat(document.getElementById("modalOperador").value) || 0;
-  const tours = parseFloat(document.getElementById("modalTours").value) || 0;
-  const comision = parseFloat(document.getElementById("modalComision").value) || 0;
+  }
 
-  try {
-    db.collection("costos_reservas").doc(codigo).update({
-      desglose_real: { boletos, hospedaje, operador, tours, comision }
-    }).then(() => {
-      alert("✅ Costos reales actualizados.");
+  function cerrarModal() {
+    document.getElementById("modalCostos").style.display = "none";
+  }
+
+  async function guardarCostosReales() {
+    const codigo = document.getElementById("modalCodigo").value;
+    const boletos = parseFloat(document.getElementById("modalBoletos").value) || 0;
+
+    const categorias = {};
+    CATEGORIAS_PANEL.forEach(clave => {
+      const contenedor = document.getElementById(`modalFilas${clave.charAt(0).toUpperCase()}${clave.slice(1)}`);
+      const filas = Array.from(contenedor.querySelectorAll(".fila-modal-proveedor"));
+      const items = filas.map(fila => {
+        const select = fila.querySelector(".modal-select-proveedor");
+        const input = fila.querySelector(".modal-input-proyectado");
+        const yaEsReal = fila.dataset.real !== undefined;
+
+        return {
+          proveedor: select.value || "",
+          proyectado: parseFloat(input.value) || 0,
+          real: yaEsReal ? parseFloat(fila.dataset.real) : null,
+          fecha_pago_real: yaEsReal && fila.dataset.fechaPagoReal ? new Date(fila.dataset.fechaPagoReal) : null
+        };
+      }).filter(item => item.proveedor || item.proyectado > 0 || item.real !== null);
+
+      categorias[clave] = items;
+    });
+
+    try {
+      await db.collection("costos_reservas").doc(codigo).set({
+        boletos_real: boletos,
+        categorias,
+        actualizado_el: new Date()
+      }, { merge: true });
+
+      alert("✅ Costos actualizados.");
       cerrarModal();
       location.reload();
-    });
-  } catch (e) {
-    console.error("❌ Error al guardar costos reales:", e);
-    alert("Ocurrió un error al guardar.");
+    } catch (e) {
+      console.error("❌ Error al guardar costos:", e);
+      alert("Ocurrió un error al guardar.");
+    }
   }
-}
 
   // NUEVO: menú lateral de navegación (igual que el resto del sistema)
   function inicializarMenuLateral() {
