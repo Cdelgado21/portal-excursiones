@@ -447,6 +447,7 @@
       <select id="destinoNombre" onchange="alCambiarDestinoPrincipal()" style="width: 100%; padding: 8px;">
         <option value="">Seleccione un destino</option>
       </select>
+      <a href="#" onclick="abrirModalDestinoNuevo(); return false;" style="font-size: 13px; display:inline-block; margin-top: 5px;">➕ ¿No encuentras tu destino? Créalo aquí</a>
     </div>
     <!-- NUEVO: para salidas Personalizadas no hay un tour del catálogo del
          cual sacar el destino — se escribe a mano. Se activa eligiendo
@@ -544,6 +545,40 @@
       <div style="margin-top:15px; text-align:right;">
         <button onclick="cerrarModalHotel()" style="margin-right:10px; background:#ccc; border:none; padding:8px 14px; border-radius:6px;">Cancelar</button>
         <button onclick="guardarHotelModal()" style="background:#02535a; color:white; border:none; padding:8px 16px; border-radius:6px;">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- NUEVO: creación rápida de un destino nuevo, sin salir de la reserva.
+       Solo pide lo mínimo para poder seguir armando la reserva ahora mismo
+       — el resto de los detalles (precios, incluye, itinerario...) se
+       completan después en el Catálogo de Tours. -->
+  <div id="modalDestinoNuevo" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:500px; position:relative;">
+      <h3 style="margin-top:0; color:#02535a;">Crear destino nuevo</h3>
+      <p style="font-size:0.85rem; color:#777; margin-top:-8px;">Esto crea un registro básico para poder seguir con la reserva ya mismo. Después completa precios, incluye e itinerario en el Catálogo de Tours.</p>
+
+      <label>Nombre del destino</label>
+      <input type="text" id="modal_nombre_destino" placeholder="Ej. Santiago de Chile" style="width:100%; margin-bottom:10px; padding:8px;">
+
+      <label>Tipo de Salida</label>
+      <select id="modal_tipoSalida_destino" onchange="alCambiarTipoSalidaModalDestino()" style="width:100%; margin-bottom:10px; padding:8px;">
+        <option value="Grupal">Grupal</option>
+        <option value="Individual">Individual</option>
+      </select>
+
+      <div id="modal_contenedorNivel_destino" style="display:none;">
+        <label>Nivel de Experiencia</label>
+        <select id="modal_nivel_destino" style="width:100%; margin-bottom:10px; padding:8px;">
+          <option value="Flash">Flash</option>
+          <option value="Esencial">Esencial</option>
+          <option value="Confort">Confort</option>
+        </select>
+      </div>
+
+      <div style="margin-top:15px; text-align:right;">
+        <button onclick="cerrarModalDestinoNuevo()" style="margin-right:10px; background:#ccc; border:none; padding:8px 14px; border-radius:6px;">Cancelar</button>
+        <button onclick="guardarDestinoNuevoModal()" style="background:#02535a; color:white; border:none; padding:8px 16px; border-radius:6px;">Guardar y usar</button>
       </div>
     </div>
   </div>
@@ -2554,6 +2589,88 @@ function autoResizeTextarea(textarea) {
 // como proveedores (categoría "Hospedaje") en proveedores.html, así que se
 // leen de ahí. Se agrupan primero los del destino de esta reserva, igual que
 // ya se hace con los proveedores de costos en costos_agregar.html.
+// NUEVO: creación rápida de un destino nuevo desde la propia reserva, sin
+// tener que ir al Catálogo de Tours. Solo guarda lo mínimo (nombre, tipo de
+// salida, nivel) — el resto queda vacío hasta que se complete después.
+function abrirModalDestinoNuevo() {
+  document.getElementById("modal_nombre_destino").value = "";
+  document.getElementById("modal_tipoSalida_destino").value = "Grupal";
+  document.getElementById("modal_contenedorNivel_destino").style.display = "none";
+  document.getElementById("modalDestinoNuevo").style.display = "flex";
+}
+
+function cerrarModalDestinoNuevo() {
+  document.getElementById("modalDestinoNuevo").style.display = "none";
+}
+
+function alCambiarTipoSalidaModalDestino() {
+  const tipo = document.getElementById("modal_tipoSalida_destino").value;
+  document.getElementById("modal_contenedorNivel_destino").style.display = tipo === "Individual" ? "block" : "none";
+}
+
+async function guardarDestinoNuevoModal() {
+  const nombre = document.getElementById("modal_nombre_destino").value.trim();
+  const tipoSalida = document.getElementById("modal_tipoSalida_destino").value;
+  const nivel = tipoSalida === "Individual" ? document.getElementById("modal_nivel_destino").value : "";
+
+  if (!nombre) {
+    alert("Escribe el nombre del destino.");
+    return;
+  }
+
+  // Mismo esquema de ID que usa detalle_tours.html, para que no choque con
+  // una variante ya existente del mismo destino.
+  const sufijoVariante = tipoSalida === "Individual" && nivel ? `${tipoSalida}_${nivel}` : tipoSalida;
+  const idTour = `${nombre}_${sufijoVariante}`.replace(/\s+/g, "_");
+
+  try {
+    const existente = await db.collection("tours").doc(idTour).get();
+    if (existente.exists) {
+      alert(`Ya existe un tour "${nombre}" con esta misma variante (${sufijoVariante.replace('_', ' ')}). Selecciónalo de la lista de Destino en vez de crearlo de nuevo.`);
+      return;
+    }
+
+    const datosBasicos = {
+      nombre,
+      tipoSalida,
+      nivel,
+      duracion: "",
+      precio_adulto: 0,
+      precio_nino: 0,
+      precio_bebe: 0,
+      incluye: "",
+      no_incluye: "",
+      itinerario_tours: "",
+      politicas: "",
+      tours_opcionales: [],
+      estado: "ACTIVO"
+    };
+
+    await db.collection("tours").doc(idTour).set(datosBasicos);
+    window.catalogoTours.push({ id: idTour, nombre, tipoSalida, nivel });
+
+    cerrarModalDestinoNuevo();
+
+    // Refresca el desplegable de Destino y deja seleccionado justo el que
+    // se acaba de crear, avanzando la cascada Tipo de Salida → Nivel.
+    poblarDestinoPrincipal();
+    aplicarModoCatalogo();
+    document.getElementById("destinoNombre").value = nombre;
+    alCambiarDestinoPrincipal();
+    document.getElementById("tipoSalidaReserva").value = tipoSalida;
+    alCambiarTipoSalida();
+    if (tipoSalida === "Individual") {
+      document.getElementById("nivelReserva").value = nivel;
+      resolverTourSeleccionado();
+    }
+
+    alert(`✅ Destino "${nombre}" creado y seleccionado. Recuerda completar precios, incluye e itinerario más adelante en el Catálogo de Tours.`);
+  } catch (e) {
+    console.error("Error al crear el destino nuevo:", e);
+    alert("❌ No se pudo crear el destino. Intenta de nuevo.");
+  }
+}
+
 function abrirModalHotel() {
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
   const selectHotel = document.getElementById("modal_nombre_hotel");
