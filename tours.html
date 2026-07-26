@@ -114,38 +114,6 @@ body {
   font-size: 16px;
 }
 
-.menu-bar {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  background-color: white;
-  padding: 15px 25px;
-  border-radius: 10px;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-  margin-bottom: 25px;
-}
-
-.menu-bar img {
-  height: 60px;
-  margin-right: 15px;
-  cursor: pointer;
-}
-
-.menu-bar button {
-  font-size: 16px;
-  padding: 10px 20px;
-  border: none;
-  background-color: #02535a;
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.menu-bar button:hover {
-  background-color: #036a6d;
-}
-
 h2 {
   text-align: center;
   font-size: 24px;
@@ -341,15 +309,6 @@ tbody tr:last-child td { border-bottom: none; }
 .btn-variante-nueva:hover { background-color: #f0f7f7; border-color: #02535a; }
 
 @media (max-width: 768px) {
-  .menu-bar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .menu-bar button {
-    width: 100%;
-  }
-
   table {
     font-size: 14px;
   }
@@ -380,14 +339,6 @@ tbody tr:last-child td { border-bottom: none; }
   </div>
 
   <main id="contenidoPrincipal">
-
-  <div class="menu-bar">
-    <img src="LOGO SIED.JPG" alt="Excursiones Delgado" onclick="window.location.href='menu.html'" />
-    <button onclick="window.location.href='menu.html'">Menú</button>
-    <button onclick="window.location.href='cotizaciones.html'">Cotizaciones</button>
-    <button onclick="window.location.href='reservas.html'">Reservas</button>
-    <button onclick="window.location.href='clientes.html'">Clientes</button>
-  </div>
 
   <h2>Catálogo de Tours</h2>
   <p class="subtitulo-catalogo">Organizado por destino y experiencia — Grupal, Flash, Esencial o Confort.</p>
