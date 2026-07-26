@@ -203,6 +203,39 @@
       color: #777;
       margin-top: 2px;
     }
+    .fila-proveedor {
+      margin-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed #e0e8e8;
+    }
+    .fila-proveedor:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .fila-proveedor .fila {
+      align-items: flex-end;
+    }
+    .btn-quitar-fila {
+      background: #fbe2e0;
+      color: #b23327;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 14px;
+      height: 38px;
+    }
+    .btn-quitar-fila:hover { background: #c0392b; color: white; }
+    .btn-agregar-fila {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 13px;
+      color: #02535a;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .btn-agregar-fila:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -258,64 +291,28 @@
     <input type="number" id="costoBoletos" oninput="calcularGanancia()" />
   </div>
 
-  <div class="caja-categoria" id="cajaHospedaje">
+  <div class="caja-categoria" id="cajaHospedaje" data-clave="hospedaje">
     <h4>🏨 Hospedaje</h4>
-    <div class="fila">
-      <div>
-        <label>Proveedor</label>
-        <select id="proveedorHospedaje" onchange="manejarSeleccionProveedor(this)"></select>
-      </div>
-      <div>
-        <label>Monto proyectado</label>
-        <input type="number" id="proyectadoHospedaje" oninput="calcularGanancia()">
-      </div>
-    </div>
-    <div id="avisoRealHospedaje" style="display:none;"></div>
+    <div class="filas-categoria" id="filasHospedaje"></div>
+    <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('hospedaje'); return false;">➕ Otra ciudad / proveedor</a>
   </div>
 
-  <div class="caja-categoria" id="cajaTraslados">
+  <div class="caja-categoria" id="cajaTraslados" data-clave="traslados">
     <h4>🚐 Traslados</h4>
-    <div class="fila">
-      <div>
-        <label>Proveedor</label>
-        <select id="proveedorTraslados" onchange="manejarSeleccionProveedor(this)"></select>
-      </div>
-      <div>
-        <label>Monto proyectado</label>
-        <input type="number" id="proyectadoTraslados" oninput="calcularGanancia()">
-      </div>
-    </div>
-    <div id="avisoRealTraslados" style="display:none;"></div>
+    <div class="filas-categoria" id="filasTraslados"></div>
+    <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('traslados'); return false;">➕ Otra ciudad / proveedor</a>
   </div>
 
-  <div class="caja-categoria" id="cajaTours">
+  <div class="caja-categoria" id="cajaTours" data-clave="tours">
     <h4>🎟️ Tours y Actividades</h4>
-    <div class="fila">
-      <div>
-        <label>Proveedor</label>
-        <select id="proveedorTours" onchange="manejarSeleccionProveedor(this)"></select>
-      </div>
-      <div>
-        <label>Monto proyectado</label>
-        <input type="number" id="proyectadoTours" oninput="calcularGanancia()">
-      </div>
-    </div>
-    <div id="avisoRealTours" style="display:none;"></div>
+    <div class="filas-categoria" id="filasTours"></div>
+    <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('tours'); return false;">➕ Otra ciudad / proveedor</a>
   </div>
 
-  <div class="caja-categoria" id="cajaComision">
+  <div class="caja-categoria" id="cajaComision" data-clave="comision">
     <h4>💼 Comisión</h4>
-    <div class="fila">
-      <div>
-        <label>Embajador(a) / Proveedor</label>
-        <select id="proveedorComision" onchange="manejarSeleccionProveedor(this)"></select>
-      </div>
-      <div>
-        <label>Monto proyectado</label>
-        <input type="number" id="proyectadoComision" oninput="calcularGanancia()">
-      </div>
-    </div>
-    <div id="avisoRealComision" style="display:none;"></div>
+    <div class="filas-categoria" id="filasComision"></div>
+    <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('comision'); return false;">➕ Otro embajador(a) / proveedor</a>
   </div>
 
   <div class="resultado">Ganancia Estimada: $<span id="gananciaProyectada">0.00</span></div>
@@ -353,17 +350,82 @@
     { clave: "comision", campoInterno: "comision" }
   ];
 
-  function nombreSelect(clave) {
-    return `proveedor${clave.charAt(0).toUpperCase()}${clave.slice(1)}`;
+  function contenedorFilas(clave) {
+    return document.getElementById(`filas${clave.charAt(0).toUpperCase()}${clave.slice(1)}`);
   }
-  function nombreInputProyectado(clave) {
-    return `proyectado${clave.charAt(0).toUpperCase()}${clave.slice(1)}`;
+
+  // NUEVO: cada categoría ahora puede tener VARIAS filas (proveedor +
+  // monto) — para viajes multi-destino ocasionales (ej. Cartagena, Medellín
+  // y Bogotá en una sola reserva), donde cada ciudad tiene su propio hotel u
+  // operador que hay que poder rastrear por separado.
+  function crearFilaCategoria(clave, datos) {
+    datos = datos || {};
+    const contenedor = contenedorFilas(clave);
+    const fila = document.createElement("div");
+    fila.className = "fila-proveedor";
+    fila.dataset.clave = clave;
+    fila.innerHTML = `
+      <div class="fila">
+        <div>
+          <label>Proveedor</label>
+          <select class="select-proveedor" onchange="manejarSeleccionProveedor(this)"></select>
+        </div>
+        <div>
+          <label>Monto proyectado</label>
+          <input type="number" class="input-proyectado" oninput="calcularGanancia()">
+        </div>
+        <div style="flex: 0 0 auto;">
+          <label>&nbsp;</label>
+          <button type="button" class="btn-quitar-fila" onclick="quitarFilaCategoria(this)" title="Quitar esta fila">🗑️</button>
+        </div>
+      </div>
+      <div class="aviso-real-fila" style="display:none;"></div>
+    `;
+    contenedor.appendChild(fila);
+
+    const selectProveedor = fila.querySelector(".select-proveedor");
+    poblarUnSelectDeProveedor(selectProveedor, clave);
+    if (datos.proveedor) selectProveedor.value = datos.proveedor;
+    fila.querySelector(".input-proyectado").value = datos.proyectado || "";
+
+    if (typeof datos.real === "number") {
+      marcarFilaComoPagada(fila, datos.real, datos.proveedor || "", datos.fecha_pago_real);
+    }
+
+    return fila;
   }
-  function nombreAvisoReal(clave) {
-    return `avisoReal${clave.charAt(0).toUpperCase()}${clave.slice(1)}`;
+
+  function agregarFilaCategoria(clave) {
+    crearFilaCategoria(clave, {});
+    calcularGanancia();
   }
-  function nombreCaja(clave) {
-    return `caja${clave.charAt(0).toUpperCase()}${clave.slice(1)}`;
+
+  function quitarFilaCategoria(boton) {
+    boton.closest(".fila-proveedor").remove();
+    calcularGanancia();
+  }
+
+  // Deja una fila específica marcada visualmente como "ya pagada" (real) —
+  // esto solo debería pasar si ya se marcó como pagada desde el Panel de
+  // Costos; aquí solo se refleja, no se edita.
+  function marcarFilaComoPagada(fila, monto, proveedor, fechaPago) {
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const aviso = fila.querySelector(".aviso-real-fila");
+
+    select.disabled = true;
+    input.disabled = true;
+    if (proveedor) select.value = proveedor;
+
+    const fecha = fechaPago?.toDate ? fechaPago.toDate() : (fechaPago ? new Date(fechaPago) : null);
+    fila.dataset.real = monto;
+    if (fecha) fila.dataset.fechaPagoReal = fecha.toISOString();
+
+    const fechaTexto = fecha ? ` el ${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : "";
+
+    aviso.style.display = "block";
+    aviso.className = "aviso-ya-pagado aviso-real-fila";
+    aviso.innerHTML = `✅ Ya pagado (real): $${monto.toFixed(2)}${fechaTexto}. Para corregir este monto, hazlo desde el Panel de Costos.`;
   }
 
   // ---------- Menú lateral ----------
@@ -430,40 +492,47 @@
     poblarTodosLosSelectsDeProveedor();
   }
 
+  // Puebla UN select de proveedor específico (una fila) según su categoría.
+  function poblarUnSelectDeProveedor(select, clave) {
+    const valorActual = select.value;
+    const etiqueta = ETIQUETA_CATEGORIA[clave];
+
+    // Solo se listan proveedores activos, de esta categoría (o sin
+    // categoría asignada, por si vienen de antes de tener este campo).
+    const relevantes = listaProveedores.filter(p =>
+      p.activo !== false && (!p.categoria || p.categoria === etiqueta)
+    );
+
+    const deEsteDestino = relevantes.filter(p => destinoActualReserva && p.destino === destinoActualReserva);
+    const universales = relevantes.filter(p => !p.destino);
+    const otros = relevantes.filter(p => p.destino && p.destino !== destinoActualReserva);
+
+    function opciones(lista) {
+      return lista.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("");
+    }
+
+    let html = `<option value="">-- Seleccione --</option>`;
+    if (deEsteDestino.length > 0) {
+      html += `<optgroup label="Proveedores de ${destinoActualReserva}">${opciones(deEsteDestino)}</optgroup>`;
+    }
+    if (universales.length > 0) {
+      html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
+    }
+    if (otros.length > 0) {
+      html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
+    }
+    html += `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
+
+    select.innerHTML = html;
+    if (valorActual && valorActual !== "__nuevo__") select.value = valorActual;
+  }
+
+  // NUEVO: ahora puede haber varias filas por categoría — se recorren TODOS
+  // los selects de proveedor que existan en la pantalla en ese momento.
   function poblarTodosLosSelectsDeProveedor() {
-    CATEGORIAS.forEach(cat => {
-      const select = document.getElementById(nombreSelect(cat.clave));
-      const valorActual = select.value;
-      const etiqueta = ETIQUETA_CATEGORIA[cat.clave];
-
-      // Solo se listan proveedores activos, de esta categoría (o sin
-      // categoría asignada, por si vienen de antes de tener este campo).
-      const relevantes = listaProveedores.filter(p =>
-        p.activo !== false && (!p.categoria || p.categoria === etiqueta)
-      );
-
-      const deEsteDestino = relevantes.filter(p => destinoActualReserva && p.destino === destinoActualReserva);
-      const universales = relevantes.filter(p => !p.destino);
-      const otros = relevantes.filter(p => p.destino && p.destino !== destinoActualReserva);
-
-      function opciones(lista) {
-        return lista.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("");
-      }
-
-      let html = `<option value="">-- Seleccione --</option>`;
-      if (deEsteDestino.length > 0) {
-        html += `<optgroup label="Proveedores de ${destinoActualReserva}">${opciones(deEsteDestino)}</optgroup>`;
-      }
-      if (universales.length > 0) {
-        html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
-      }
-      if (otros.length > 0) {
-        html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
-      }
-      html += `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
-
-      select.innerHTML = html;
-      if (valorActual && valorActual !== "__nuevo__") select.value = valorActual;
+    document.querySelectorAll(".select-proveedor").forEach(select => {
+      const clave = select.closest(".fila-proveedor")?.dataset.clave;
+      if (clave) poblarUnSelectDeProveedor(select, clave);
     });
   }
 
@@ -481,9 +550,9 @@
 
     if (!yaExiste) {
       // NUEVO: se etiqueta automático con el destino de esta reserva y la
-      // categoría del campo desde el que se agregó — se puede ajustar
+      // categoría de la fila desde la que se agregó — se puede ajustar
       // después desde la hoja de Proveedores si hace falta.
-      const claveCategoria = CATEGORIAS.find(c => document.getElementById(nombreSelect(c.clave)) === select)?.clave;
+      const claveCategoria = select.closest(".fila-proveedor")?.dataset.clave;
       const nuevoProveedor = {
         nombre: nombreLimpio,
         destino: destinoActualReserva || "",
@@ -567,10 +636,14 @@
         }
       }
 
-      // NUEVO: se carga la lista de proveedores ANTES de intentar
-      // preseleccionar uno — si se hiciera al revés, el <select> todavía no
-      // tendría las opciones (proveedores) y el valor no se fijaría.
+      // NUEVO: se carga la lista de proveedores ANTES de crear ninguna fila
+      // — si se hiciera al revés, los <select> todavía no tendrían las
+      // opciones (proveedores) y el valor no se fijaría.
       await cargarProveedores();
+
+      // Por defecto, cada categoría arranca con una fila vacía lista para
+      // llenar (así se ve igual que antes cuando no hay nada guardado).
+      CATEGORIAS.forEach(cat => crearFilaCategoria(cat.clave, {}));
 
       if (docCostos.exists) {
         datosExistentesCostos = docCostos.data();
@@ -592,10 +665,10 @@
           CATEGORIAS.forEach(cat => {
             const proyectadoViejo = proy[cat.campoInterno] || 0;
             const realViejo = real[cat.campoInterno];
-            document.getElementById(nombreInputProyectado(cat.clave)).value = proyectadoViejo || "";
-            if (typeof realViejo === "number") {
-              mostrarCategoriaComoPagada(cat.clave, realViejo, "", null);
-            }
+            contenedorFilas(cat.clave).innerHTML = "";
+            const datosFila = { proyectado: proyectadoViejo };
+            if (typeof realViejo === "number") datosFila.real = realViejo;
+            crearFilaCategoria(cat.clave, datosFila);
           });
 
           if (Object.keys(real).length > 0) {
@@ -604,14 +677,17 @@
         } else {
           document.getElementById("costoBoletos").value = datosExistentesCostos.boletos_real || "";
 
+          // NUEVO: cada categoría ahora puede traer varias filas (arreglo) o
+          // — si viene de antes de este cambio — un solo objeto (se trata
+          // como un arreglo de un elemento, para no perder nada).
           CATEGORIAS.forEach(cat => {
-            const info = datosExistentesCostos.categorias?.[cat.clave] || {};
-            document.getElementById(nombreInputProyectado(cat.clave)).value = info.proyectado || "";
-            if (typeof info.real === "number") {
-              mostrarCategoriaComoPagada(cat.clave, info.real, info.proveedor || "", info.fecha_pago_real);
-            } else if (info.proveedor) {
-              document.getElementById(nombreSelect(cat.clave)).value = info.proveedor;
-            }
+            let items = datosExistentesCostos.categorias?.[cat.clave];
+            if (!items) items = [];
+            else if (!Array.isArray(items)) items = [items];
+            if (items.length === 0) items = [{}];
+
+            contenedorFilas(cat.clave).innerHTML = "";
+            items.forEach(item => crearFilaCategoria(cat.clave, item));
           });
         }
       }
@@ -622,39 +698,18 @@
     }
   }
 
-  // Deja una categoría marcada visualmente como "ya pagada" (real) — esto
-  // solo debería pasar si ya se marcó como pagada desde el Panel de Costos;
-  // aquí solo se refleja, no se edita.
-  function mostrarCategoriaComoPagada(clave, monto, proveedor, fechaPago) {
-    const caja = document.getElementById(nombreCaja(clave));
-    const aviso = document.getElementById(nombreAvisoReal(clave));
-    const inputProyectado = document.getElementById(nombreInputProyectado(clave));
-    const select = document.getElementById(nombreSelect(clave));
-
-    inputProyectado.disabled = true;
-    select.disabled = true;
-    if (proveedor) select.value = proveedor;
-
-    const fecha = fechaPago?.toDate ? fechaPago.toDate() : (fechaPago ? new Date(fechaPago) : null);
-    const fechaTexto = fecha ? ` el ${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : "";
-
-    aviso.style.display = "block";
-    aviso.className = "aviso-ya-pagado";
-    aviso.innerHTML = `✅ Ya pagado (real): $${monto.toFixed(2)}${fechaTexto}. Para corregir este monto, hazlo desde el Panel de Costos.`;
-  }
-
   // ---------- Cálculo de ganancia ----------
   function calcularGanancia() {
     const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
     const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
 
     let totalCategorias = 0;
-    CATEGORIAS.forEach(cat => {
-      const info = datosExistentesCostos?.categorias?.[cat.clave];
-      if (info && typeof info.real === "number") {
-        totalCategorias += info.real;
+    document.querySelectorAll(".fila-proveedor").forEach(fila => {
+      if (fila.dataset.real !== undefined) {
+        totalCategorias += parseFloat(fila.dataset.real) || 0;
       } else {
-        totalCategorias += parseFloat(document.getElementById(nombreInputProyectado(cat.clave)).value) || 0;
+        const input = fila.querySelector(".input-proyectado");
+        totalCategorias += parseFloat(input.value) || 0;
       }
     });
 
@@ -673,19 +728,27 @@
       return;
     }
 
+    // NUEVO: cada categoría se guarda como un ARREGLO de filas (proveedor +
+    // monto), para poder rastrear por separado el costo de cada ciudad en
+    // un viaje multi-destino. Las filas totalmente vacías (sin proveedor ni
+    // monto) no se guardan.
     const categorias = {};
     CATEGORIAS.forEach(cat => {
-      const infoExistente = datosExistentesCostos?.categorias?.[cat.clave] || {};
-      const yaEsReal = typeof infoExistente.real === "number";
+      const filas = Array.from(contenedorFilas(cat.clave).querySelectorAll(".fila-proveedor"));
+      const items = filas.map(fila => {
+        const select = fila.querySelector(".select-proveedor");
+        const input = fila.querySelector(".input-proyectado");
+        const yaEsReal = fila.dataset.real !== undefined;
 
-      categorias[cat.clave] = {
-        proveedor: document.getElementById(nombreSelect(cat.clave)).value || infoExistente.proveedor || "",
-        // Si ya está marcada como pagada (real), el proyectado se conserva
-        // tal como estaba — esta pantalla ya no la deja editar.
-        proyectado: yaEsReal ? (infoExistente.proyectado || 0) : (parseFloat(document.getElementById(nombreInputProyectado(cat.clave)).value) || 0),
-        real: yaEsReal ? infoExistente.real : null,
-        fecha_pago_real: yaEsReal ? (infoExistente.fecha_pago_real || null) : null
-      };
+        return {
+          proveedor: select.value || "",
+          proyectado: parseFloat(input.value) || 0,
+          real: yaEsReal ? parseFloat(fila.dataset.real) : null,
+          fecha_pago_real: yaEsReal && fila.dataset.fechaPagoReal ? new Date(fila.dataset.fechaPagoReal) : null
+        };
+      }).filter(item => item.proveedor || item.proyectado > 0 || item.real !== null);
+
+      categorias[cat.clave] = items;
     });
 
     try {
@@ -715,4 +778,3 @@
   <script src="auth-guard.js"></script>
 </body>
 </html>
-
