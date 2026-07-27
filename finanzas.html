@@ -533,8 +533,8 @@
           <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
           <td>${r.titular}</td>
           <td>${formatearFechaVisible(r.fecha)}</td>
-          <td class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(r.saldo)}</td>
-          <td>${costos ? formatoMoneda(costos.costoTotal) : `<span class="aviso-sin-costos">⚠️ sin costos — <a class="enlace-fila" href="costos_agregar.html?reserva=${codigo}">agregar</a></span>`}</td>
+          <td class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}"><a class="enlace-fila" style="color:inherit;" href="detalle_reserva.html?codigo=${codigo}" title="Ver detalle y registrar pagos">${formatoMoneda(r.saldo)}</a></td>
+          <td>${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Editar costos de esta reserva">${formatoMoneda(costos.costoTotal)}</a>` : `<span class="aviso-sin-costos">⚠️ sin costos — <a class="enlace-fila" href="costos_agregar.html?reserva=${codigo}">agregar</a></span>`}</td>
           <td class="${costos ? (costos.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta') : ''}">${costos ? formatoMoneda(costos.ganancia) : '-'}</td>
         `;
         tabla.appendChild(fila);
