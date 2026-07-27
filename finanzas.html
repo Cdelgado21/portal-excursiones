@@ -233,13 +233,6 @@
       color: white;
       border-color: #02535a;
     }
-    .tarjeta.clickeable {
-      cursor: pointer;
-      transition: box-shadow 0.15s ease;
-    }
-    .tarjeta.clickeable:hover {
-      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
-    }
     .modal-finanzas {
       display: none;
       position: fixed;
@@ -304,30 +297,7 @@
   <main id="contenidoPrincipal">
 
   <h2>💰 Panel Financiero</h2>
-  <p class="subtitulo">Vista general de dinero por cobrar, por pagar, y ganancia — calculada en vivo a partir de tus reservas.</p>
-
-  <div class="tarjetas">
-    <div class="tarjeta cobrar clickeable" onclick="document.getElementById('seccionPorCobrar').scrollIntoView({behavior:'smooth'})" title="Ver detalle filtrable por fecha de viaje">
-      <div class="etiqueta">Por cobrar (reservas activas)</div>
-      <div class="monto" id="tarjetaPorCobrar">$0.00</div>
-      <div class="detalle" id="detallePorCobrar">calculando...</div>
-    </div>
-    <div class="tarjeta pagar">
-      <div class="etiqueta">Costos por cubrir (activas)</div>
-      <div class="monto" id="tarjetaPorPagar">$0.00</div>
-      <div class="detalle" id="detallePorPagar">calculando...</div>
-    </div>
-    <div class="tarjeta proyectada">
-      <div class="etiqueta">Ganancia proyectada (activas)</div>
-      <div class="monto" id="tarjetaGananciaProyectada">$0.00</div>
-      <div class="detalle">reservas todavía sin cerrar</div>
-    </div>
-    <div class="tarjeta real">
-      <div class="etiqueta">Ganancia real acumulada</div>
-      <div class="monto" id="tarjetaGananciaReal">$0.00</div>
-      <div class="detalle" id="detalleGananciaReal">reservas ya cerradas</div>
-    </div>
-  </div>
+  <p class="subtitulo">Vista general de dinero por cobrar, por pagar, y ganancia — desglosada por período en las secciones de abajo.</p>
 
   <div class="seccion">
     <h3>📊 Resumen de Ventas por Período</h3>
@@ -674,8 +644,6 @@
     // desactualizado en cuanto se registra un pago nuevo desde
     // facturacion.html, así que usarlo directo daría cifras viejas.
     const reservasSnap = await db.collection("reservas").get();
-    let totalPorCobrar = 0;
-    let cantidadConSaldo = 0;
     const reservasPorCodigo = {};
 
     reservasSnap.forEach(doc => {
@@ -704,31 +672,17 @@
         vendedor: data.vendedor || '',
         destino: data.nombreDestino || ''
       };
-
-      if (esActiva && saldo > 0.01) {
-        totalPorCobrar += saldo;
-        cantidadConSaldo++;
-      }
     });
 
-    document.getElementById("tarjetaPorCobrar").textContent = formatoMoneda(totalPorCobrar);
-    document.getElementById("detallePorCobrar").textContent =
-      `${cantidadConSaldo} reserva${cantidadConSaldo === 1 ? '' : 's'} con saldo pendiente`;
-
-    // ---------- 2. COSTOS: por pagar, ganancia proyectada y real ----------
+    // ---------- 2. COSTOS: se usa para las secciones de abajo (Viajes por
+    // fecha, Proyecciones de Pago) — ya no hay tarjetas de resumen aquí. ----------
     const costosSnap = await db.collection("costos_reservas").get();
-    let totalPorPagar = 0;
-    let cantidadActivasConCostos = 0;
-    let gananciaProyectada = 0;
-    let gananciaReal = 0;
-    let cantidadCerradas = 0;
     const costosPorCodigo = {};
     const categoriasPorCodigo = {};
 
     costosSnap.forEach(doc => {
       const data = doc.data();
       const codigo = data.codigo;
-      const cerrada = data.estado === "Cerrado";
 
       const { costoTotal, todosPagados } = analizarCostosDeReserva(data);
       const venta = Number(data.venta_total || 0);
@@ -736,24 +690,7 @@
 
       costosPorCodigo[codigo] = { costoTotal, ganancia, todosPagados };
       if (data.categorias) categoriasPorCodigo[codigo] = data.categorias;
-
-      if (cerrada) {
-        gananciaReal += ganancia;
-        cantidadCerradas++;
-      } else {
-        totalPorPagar += costoTotal;
-        gananciaProyectada += ganancia;
-        cantidadActivasConCostos++;
-      }
     });
-
-    document.getElementById("tarjetaPorPagar").textContent = formatoMoneda(totalPorPagar);
-    document.getElementById("detallePorPagar").textContent =
-      `${cantidadActivasConCostos} reserva${cantidadActivasConCostos === 1 ? '' : 's'} con costos registrados`;
-    document.getElementById("tarjetaGananciaProyectada").textContent = formatoMoneda(gananciaProyectada);
-    document.getElementById("tarjetaGananciaReal").textContent = formatoMoneda(gananciaReal);
-    document.getElementById("detalleGananciaReal").textContent =
-      `${cantidadCerradas} reserva${cantidadCerradas === 1 ? '' : 's'} cerrada${cantidadCerradas === 1 ? '' : 's'}`;
 
     // NUEVO: se guardan aparte para que el filtro de fechas pueda reusarlos
     // sin volver a consultar Firebase.
