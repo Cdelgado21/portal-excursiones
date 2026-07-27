@@ -223,12 +223,9 @@
 
 <h2>Detalle de Reserva</h2>
 
-<section>
-  <label for="codigoCotizacion">Código de Cotización</label>
-  <input type="text" id="codigoCotizacion" placeholder="Ej: COT-003-2025">
-  <button onclick="cargarDesdeCotizacion()">Cargar Información</button>
-  <div id="infoCotizacion"></div>
-</section>
+<div id="tituloCodigoReserva" style="background:#f0f7f7; padding:12px 18px; border-radius:8px; margin-bottom:20px; font-size:1.15rem; font-weight:bold; color:#02535a; border:1px solid #cfe3e4;">
+  Código de Reserva: <span id="valorCodigoReserva">(se asigna al guardar)</span>
+</div>
 
 <section>
   <h2 onclick="toggleSeccion(this)" style="cursor:pointer; user-select:none;">Información del Titular <span class="flecha-colapsable" style="float:right;">▼</span></h2>
@@ -673,19 +670,6 @@
   <div style="flex: 1; min-width: 250px;">
     <label>Vendedor(a)</label>
     <select id="vendedor" class="campoInput">
-      <option value="">Seleccione</option>
-      <option value="Yare">Yare</option>
-      <option value="Yuliana">Yuliana</option>
-      <option value="Tatiana">Tatiana</option>
-      <option value="Geansury">Geansury</option>
-      <option value="Marcela">Marcela</option>
-      <option value="Cristopher">Cristopher</option>
-    </select>
-  </div>
-
-  <div style="flex: 1; min-width: 250px;">
-    <label>Embajadora Responsable</label>
-    <select id="embajadora" class="campoInput">
       <option value="">Seleccione</option>
       <option value="Yare">Yare</option>
       <option value="Yuliana">Yuliana</option>
@@ -1855,7 +1839,6 @@ async function guardarReserva() {
     const pagos = window.listaPagos || [];
     const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
     const saldo = total - abono;
-    const embajadora = document.getElementById("embajadora").value || "";
     const vendedor = document.getElementById("vendedor").value || "";
 
     const cantidadAdultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
@@ -1957,6 +1940,7 @@ async function guardarReserva() {
       return;
     }
     window.codigoActualReserva = codigo;
+    document.getElementById("valorCodigoReserva").textContent = codigo;
 
     let datosExistentes = await db.collection("reservas").doc(codigo).get();
     datosExistentes = datosExistentes.exists ? datosExistentes.data() : {};
@@ -2023,9 +2007,8 @@ async function guardarReserva() {
       // campo — antes nunca se guardaba, así que el botón "🔍 Reservas" de
       // esa pantalla nunca mostraba nada.
       telefonoCliente: telefono,
-      total, abono, saldo, pagos, embajadora,
-      // NUEVO: quién de la agencia cerró la venta — distinto de
-      // "embajadora" (a quién se le paga comisión por referir la venta).
+      total, abono, saldo, pagos,
+      // NUEVO: quién de la agencia cerró la venta.
       vendedor,
       vuelosIntermedios: [],
       pasajeros: [],
@@ -2124,30 +2107,6 @@ function calcularTotalGeneral() {
     const saldo = total - totalPagado;
     document.getElementById("saldoPendiente").textContent = saldo.toFixed(2);
   }
-}
-
-function cargarDesdeCotizacion() {
-  const codigo = document.getElementById('codigoCotizacion').value.trim();
-  const contenedor = document.getElementById("infoCotizacion");
-  if (!codigo) return alert("Por favor ingresa un código de cotización.");
-  contenedor.innerHTML = "Cargando información...";
-  db.collection("cotizacionformal").doc(codigo).get().then(doc => {
-    if (doc.exists) {
-      const data = doc.data();
-      contenedor.innerHTML = `
-        <h3>Resumen</h3>
-        <p><strong>Destino:</strong> ${data.destino || 'No disponible'}</p>
-        <p><strong>Aerolínea:</strong> ${data.aerolinea || 'No disponible'}</p>
-        <p><strong>Hotel:</strong> ${data.hotel || 'No disponible'}</p>
-        <p><strong>Incluye:</strong> ${data.incluye || 'No disponible'}</p>
-      `;
-    } else {
-      contenedor.innerHTML = `<p style="color:red;">No se encontró una cotización con ese código.</p>`;
-    }
-  }).catch(err => {
-    console.error(err);
-    contenedor.innerHTML = `<p style="color:red;">Error al cargar datos.</p>`;
-  });
 }
 
 let vueloCounter = 1;
@@ -2907,6 +2866,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const codigo = params.get("codigo") || params.get("id");
 
   if (codigo) {
+    document.getElementById("valorCodigoReserva").textContent = codigo;
     await cargarReservaExistente(codigo);
     document.getElementById("btnCostos").href = `costos_agregar.html?reserva=${codigo}`;
     document.getElementById("btnCostos").style.display = "inline-block";
@@ -3008,7 +2968,6 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("precioNino").value = data.precioNino || 0;
     document.getElementById("precioBebe").value = data.precioBebe || 0;
 
-    document.getElementById("embajadora").value = data.embajadora || "";
     document.getElementById("vendedor").value = data.vendedor || "";
 
     await cargarInfoTour(data.destino);
