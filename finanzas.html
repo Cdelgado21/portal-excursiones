@@ -307,7 +307,7 @@
   <p class="subtitulo">Vista general de dinero por cobrar, por pagar, y ganancia — calculada en vivo a partir de tus reservas.</p>
 
   <div class="tarjetas">
-    <div class="tarjeta cobrar clickeable" onclick="abrirModalPorCobrar()" title="Ver detalle de clientes con saldo pendiente">
+    <div class="tarjeta cobrar clickeable" onclick="document.getElementById('seccionPorCobrar').scrollIntoView({behavior:'smooth'})" title="Ver detalle filtrable por fecha de viaje">
       <div class="etiqueta">Por cobrar (reservas activas)</div>
       <div class="monto" id="tarjetaPorCobrar">$0.00</div>
       <div class="detalle" id="detallePorCobrar">calculando...</div>
@@ -422,6 +422,49 @@
     <div id="avisoSinProximos" class="vacio" style="display:none;">No hay viajes con fecha en ese rango.</div>
   </div>
 
+  <div class="seccion" id="seccionPorCobrar">
+    <h3>💵 Por Cobrar</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE — así podés ver, por ejemplo, quién viaja en los próximos 30 días y todavía debe.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="cobrarDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="cobrarHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoCobrar(7)" class="btn-rango btn-rango-cobrar">7 días</button>
+        <button type="button" onclick="aplicarRangoCobrar(30)" class="btn-rango btn-rango-cobrar">30 días</button>
+        <button type="button" onclick="aplicarRangoCobrar(60)" class="btn-rango btn-rango-cobrar">60 días</button>
+        <button type="button" onclick="aplicarRangoCobrar(90)" class="btn-rango btn-rango-cobrar">90 días</button>
+        <button type="button" onclick="aplicarRangoCobrarTodas()" class="btn-rango btn-rango-cobrar">Todas las activas</button>
+      </div>
+    </div>
+
+    <div class="tarjeta cobrar" style="max-width:340px; margin-bottom:18px;">
+      <div class="etiqueta">Total por cobrar en el rango</div>
+      <div class="monto" id="cobrarTotalPendiente">$0.00</div>
+      <div class="detalle" id="cobrarDetalleTotal">calculando...</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Titular</th>
+          <th>Destino</th>
+          <th>Fecha de viaje</th>
+          <th>Saldo pendiente</th>
+        </tr>
+      </thead>
+      <tbody id="tablaPorCobrar"></tbody>
+    </table>
+    <div id="avisoSinCobrar" class="vacio" style="display:none;">No hay saldos pendientes en ese rango.</div>
+  </div>
+
   <div class="seccion">
     <h3>💳 Proyecciones de Pago por Proveedor</h3>
     <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE (no de venta) — así sabés con cuánto tenés que contar para un período específico. Solo cuenta lo todavía proyectado (sin marcar como pagado en costos_agregar.html). Dale clic a un proveedor para ver el detalle reserva por reserva.</p>
@@ -471,28 +514,6 @@
   </div>
 
   </main>
-
-  <div id="modalPorCobrar" class="modal-finanzas">
-    <div class="modal-finanzas-content">
-      <h3>💵 Reservas con saldo pendiente</h3>
-      <p style="font-size:0.85rem; color:#666; margin-top:-8px;">Reservas activas (con viaje pendiente) que todavía tienen algo por cobrar, ordenadas de mayor a menor saldo.</p>
-      <table>
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Titular</th>
-            <th>Fecha de viaje</th>
-            <th>Saldo pendiente</th>
-          </tr>
-        </thead>
-        <tbody id="tablaModalPorCobrar"></tbody>
-      </table>
-      <div id="avisoSinPendientesModal" class="vacio" style="display:none;">No hay reservas activas con saldo pendiente.</div>
-      <div style="text-align:right; margin-top:15px;">
-        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalPorCobrar()">Cerrar</button>
-      </div>
-    </div>
-  </div>
 
   <div id="modalReservasVendedor" class="modal-finanzas">
     <div class="modal-finanzas-content">
@@ -744,6 +765,8 @@
     aplicarRangoRapido(30);
     // Y el resumen de ventas arranca mostrando el mes en curso.
     aplicarRangoVentas("mes-actual");
+    // Por Cobrar arranca mostrando los próximos 30 días de viaje.
+    aplicarRangoCobrar(30);
     // Proyección de pago por proveedor — mismo criterio de rango rápido
     // que "Viajes por fecha", pero como sección independiente.
     aplicarRangoProveedores(30);
@@ -926,39 +949,79 @@
   }
 
   // ==========================================
-  // NUEVO: Modal de "Por Cobrar" — lista de clientes/reservas con saldo
-  // pendiente, al hacerle clic a la tarjeta correspondiente.
+  // ==========================================
+  // NUEVO: Sección "Por Cobrar" — filtra por fecha de VIAJE, para poder
+  // ver, por ejemplo, quién viaja en los próximos 30 días y todavía debe.
   // ==========================================
 
-  function abrirModalPorCobrar() {
-    const tabla = document.getElementById("tablaModalPorCobrar");
-    tabla.innerHTML = "";
+  function renderizarPorCobrar() {
+    const desdeStr = document.getElementById("cobrarDesde").value;
+    const hastaStr = document.getElementById("cobrarHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
 
     const pendientes = Object.entries(datosReservasPorCodigo)
-      .filter(([codigo, r]) => r.activa && r.saldo > 0.01)
-      .sort((a, b) => b[1].saldo - a[1].saldo);
+      .filter(([codigo, r]) => {
+        if (!r.activa || r.saldo <= 0.01) return false;
+        if (!r.fecha) return false;
+        if (desde && r.fecha < desde) return false;
+        if (hasta && r.fecha > hasta) return false;
+        return true;
+      })
+      .sort((a, b) => a[1].fecha - b[1].fecha);
+
+    const totalPendiente = pendientes.reduce((sum, [codigo, r]) => sum + r.saldo, 0);
+    document.getElementById("cobrarTotalPendiente").textContent = formatoMoneda(totalPendiente);
+    document.getElementById("cobrarDetalleTotal").textContent =
+      `${pendientes.length} reserva${pendientes.length === 1 ? '' : 's'} con saldo pendiente en el rango`;
+
+    const tabla = document.getElementById("tablaPorCobrar");
+    tabla.innerHTML = "";
 
     if (pendientes.length === 0) {
-      document.getElementById("avisoSinPendientesModal").style.display = "block";
+      document.getElementById("avisoSinCobrar").style.display = "block";
     } else {
-      document.getElementById("avisoSinPendientesModal").style.display = "none";
+      document.getElementById("avisoSinCobrar").style.display = "none";
       pendientes.forEach(([codigo, r]) => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
           <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
           <td>${r.titular}</td>
+          <td>${r.destino || '-'}</td>
           <td>${formatearFechaVisible(r.fecha)}</td>
           <td class="cifra-alerta">${formatoMoneda(r.saldo)}</td>
         `;
         tabla.appendChild(fila);
       });
     }
-
-    document.getElementById("modalPorCobrar").style.display = "flex";
   }
 
-  function cerrarModalPorCobrar() {
-    document.getElementById("modalPorCobrar").style.display = "none";
+  function aplicarRangoCobrar(dias) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const hasta = new Date(hoy);
+    hasta.setDate(hasta.getDate() + dias);
+
+    document.getElementById("cobrarDesde").value = formatearFechaInput(hoy);
+    document.getElementById("cobrarHasta").value = formatearFechaInput(hasta);
+    marcarBotonCobrarActivo(dias);
+    renderizarPorCobrar();
+  }
+
+  function aplicarRangoCobrarTodas() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    document.getElementById("cobrarDesde").value = formatearFechaInput(hoy);
+    document.getElementById("cobrarHasta").value = "";
+    marcarBotonCobrarActivo("todas");
+    renderizarPorCobrar();
+  }
+
+  function marcarBotonCobrarActivo(cual) {
+    document.querySelectorAll(".btn-rango-cobrar").forEach(btn => btn.classList.remove("activo"));
+    const indice = { 7: 0, 30: 1, 60: 2, 90: 3, todas: 4 }[cual];
+    const botones = document.querySelectorAll(".btn-rango-cobrar");
+    if (botones[indice]) botones[indice].classList.add("activo");
   }
 
   // ==========================================
@@ -1229,6 +1292,16 @@
     document.getElementById("proveedoresHasta").addEventListener("change", () => {
       document.querySelectorAll(".btn-rango-proveedores").forEach(btn => btn.classList.remove("activo"));
       renderizarProyeccionesPago();
+    });
+
+    // NUEVO: mismo comportamiento para la sección Por Cobrar.
+    document.getElementById("cobrarDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-cobrar").forEach(btn => btn.classList.remove("activo"));
+      renderizarPorCobrar();
+    });
+    document.getElementById("cobrarHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-cobrar").forEach(btn => btn.classList.remove("activo"));
+      renderizarPorCobrar();
     });
   });
 </script>
