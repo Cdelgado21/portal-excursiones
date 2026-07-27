@@ -372,6 +372,42 @@
     return `$${(valor || 0).toFixed(2)}`;
   }
 
+  // FIX: costos_reservas ya no guarda desglose_proyectado/desglose_real
+  // plano — desde el ajuste hecho en costos_agregar.html, cada reserva
+  // guarda "categorias" (hospedaje/traslados/tours/comision), cada una
+  // como un ARREGLO de filas {proveedor, proyectado, real}. Esta función
+  // calcula el costo total leyendo ese modelo nuevo — fila por fila, usa
+  // el monto real si esa fila específica ya se marcó como pagada, o si no,
+  // el proyectado como mejor estimado — y sigue soportando el modelo viejo
+  // para cualquier reserva que aún no se haya vuelto a guardar.
+  function calcularCostoTotalDeReserva(data) {
+    const esModeloViejo = !data.categorias;
+
+    if (esModeloViejo) {
+      const proy = data.desglose_proyectado || {};
+      const real = data.desglose_real || {};
+      const usarReal = Object.keys(real).length > 0;
+      const fuente = usarReal ? real : proy;
+      return Number(fuente.boletos || 0) + Number(fuente.hospedaje || 0) +
+             Number(fuente.operador || 0) + Number(fuente.tours || 0) +
+             Number(fuente.comision || 0);
+    }
+
+    const boletos = Number(data.boletos_real || 0);
+    let sumaCategorias = 0;
+    ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+      let items = data.categorias?.[clave];
+      if (!items) items = [];
+      else if (!Array.isArray(items)) items = [items];
+      items.forEach(item => {
+        const monto = (typeof item.real === "number") ? item.real : Number(item.proyectado || 0);
+        sumaCategorias += monto;
+      });
+    });
+
+    return boletos + sumaCategorias;
+  }
+
   // NUEVO: guardados aparte (no solo dentro de la función) para poder
   // volver a filtrar la tabla de "Viajes por fecha" al instante cuando se
   // cambia el rango — sin tener que volver a consultar Firebase cada vez.
@@ -419,8 +455,6 @@
       `${cantidadConSaldo} reserva${cantidadConSaldo === 1 ? '' : 's'} con saldo pendiente`;
 
     // ---------- 2. COSTOS: por pagar, ganancia proyectada y real ----------
-    // Mismo criterio que panel_costos.html: usa el costo REAL si ya se
-    // registró, y si no, el PROYECTADO como mejor estimado disponible.
     const costosSnap = await db.collection("costos_reservas").get();
     let totalPorPagar = 0;
     let cantidadActivasConCostos = 0;
@@ -434,17 +468,7 @@
       const codigo = data.codigo;
       const cerrada = data.estado === "Cerrado";
 
-      const proy = data.desglose_proyectado || {};
-      const real = data.desglose_real || {};
-      const usarReal = Object.keys(real).length > 0;
-      const fuente = usarReal ? real : proy;
-
-      const boletos = Number(fuente.boletos || 0);
-      const hospedaje = Number(fuente.hospedaje || 0);
-      const operador = Number(fuente.operador || 0);
-      const tours = Number(fuente.tours || 0);
-      const comision = Number(fuente.comision || 0);
-      const costoTotal = boletos + hospedaje + operador + tours + comision;
+      const costoTotal = calcularCostoTotalDeReserva(data);
       const venta = Number(data.venta_total || 0);
       const ganancia = venta - costoTotal;
 
