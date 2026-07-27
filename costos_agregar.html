@@ -312,7 +312,7 @@
   <div class="caja-categoria" id="cajaComision" data-clave="comision">
     <h4>💼 Comisión</h4>
     <div class="filas-categoria" id="filasComision"></div>
-    <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('comision'); return false;">➕ Otro embajador(a) / proveedor</a>
+    <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('comision'); return false;">➕ Otra embajadora</a>
   </div>
 
   <div class="resultado">Ganancia Estimada: $<span id="gananciaProyectada">0.00</span></div>
@@ -360,6 +360,18 @@
   // operador que hay que poder rastrear por separado.
   function crearFilaCategoria(clave, datos) {
     datos = datos || {};
+
+    // NUEVO: comisión se calcula por defecto como el 2% de la Venta Total —
+    // solo para filas realmente nuevas (sin monto guardado todavía), para no
+    // pisar un monto ya guardado al recargar la reserva. Sigue siendo
+    // editable a mano si en algún caso debe ser más o menos.
+    if (clave === "comision" && datos.proyectado === undefined) {
+      const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
+      datos = { ...datos, proyectado: +(venta * 0.02).toFixed(2) };
+    }
+
+    const etiquetaProveedor = clave === "comision" ? "Embajadora" : "Proveedor";
+
     const contenedor = contenedorFilas(clave);
     const fila = document.createElement("div");
     fila.className = "fila-proveedor";
@@ -367,7 +379,7 @@
     fila.innerHTML = `
       <div class="fila">
         <div>
-          <label>Proveedor</label>
+          <label>${etiquetaProveedor}</label>
           <select class="select-proveedor" onchange="manejarSeleccionProveedor(this)"></select>
         </div>
         <div>
@@ -528,23 +540,31 @@
       relevantes.sort((a, b) => a.nombre.localeCompare(b.nombre));
     }
 
-    const deEsteDestino = relevantes.filter(p => destinoActualReserva && p.destino === destinoActualReserva);
-    const universales = relevantes.filter(p => !p.destino);
-    const otros = relevantes.filter(p => p.destino && p.destino !== destinoActualReserva);
-
     function opciones(lista) {
       return lista.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("");
     }
 
     let html = `<option value="">-- Seleccione --</option>`;
-    if (deEsteDestino.length > 0) {
-      html += `<optgroup label="Proveedores de ${destinoActualReserva}">${opciones(deEsteDestino)}</optgroup>`;
-    }
-    if (universales.length > 0) {
-      html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
-    }
-    if (otros.length > 0) {
-      html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
+
+    // NUEVO: Comisión no se agrupa por destino — las embajadoras no están
+    // ligadas a un lugar, así que mostrar "Todos los destinos" ahí no tenía
+    // sentido. Se muestra como lista simple, ya ordenada alfabéticamente.
+    if (clave === "comision") {
+      html += opciones(relevantes);
+    } else {
+      const deEsteDestino = relevantes.filter(p => destinoActualReserva && p.destino === destinoActualReserva);
+      const universales = relevantes.filter(p => !p.destino);
+      const otros = relevantes.filter(p => p.destino && p.destino !== destinoActualReserva);
+
+      if (deEsteDestino.length > 0) {
+        html += `<optgroup label="Proveedores de ${destinoActualReserva}">${opciones(deEsteDestino)}</optgroup>`;
+      }
+      if (universales.length > 0) {
+        html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
+      }
+      if (otros.length > 0) {
+        html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
+      }
     }
     html += `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
 
