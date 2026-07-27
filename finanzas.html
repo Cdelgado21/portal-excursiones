@@ -423,6 +423,24 @@
   </div>
 
   <div class="seccion">
+    <h3>💳 Proyecciones de Pago por Proveedor</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Cuánto le debés a cada proveedor ahora mismo — solo cuenta lo que todavía está proyectado (sin marcar como pagado en costos_agregar.html). Dale clic a un proveedor para ver el detalle reserva por reserva.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Categoría</th>
+          <th>Reservas pendientes</th>
+          <th>Monto pendiente</th>
+        </tr>
+      </thead>
+      <tbody id="tablaProyeccionesPago"></tbody>
+    </table>
+    <div id="avisoSinProyecciones" class="vacio" style="display:none;">No hay montos proyectados pendientes de pago en este momento.</div>
+  </div>
+
+  <div class="seccion">
     <h3>📋 Detalle y edición de costos</h3>
     <p style="font-size:0.85rem; color:#666;">Para editar los costos reales de una reserva, marcar una reserva como cerrada, o ver el historial completo, usa el panel de costos.</p>
     <a href="panel_costos.html" class="btn-panel-costos">Abrir Panel de Costos completo →</a>
@@ -448,6 +466,48 @@
       <div id="avisoSinPendientesModal" class="vacio" style="display:none;">No hay reservas activas con saldo pendiente.</div>
       <div style="text-align:right; margin-top:15px;">
         <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalPorCobrar()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalReservasVendedor" class="modal-finanzas">
+    <div class="modal-finanzas-content">
+      <h3 id="tituloModalVendedor">Reservas de</h3>
+      <p style="font-size:0.85rem; color:#666; margin-top:-8px;">Reservas vendidas en el rango de fechas que tenés seleccionado en "Resumen de Ventas por Período" (incluye viajes ya realizados).</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Destino</th>
+            <th>Fecha de viaje</th>
+            <th>Ingreso</th>
+            <th>Por cobrar</th>
+          </tr>
+        </thead>
+        <tbody id="tablaModalReservasVendedor"></tbody>
+      </table>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalReservasVendedor()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalProveedorDetalle" class="modal-finanzas">
+    <div class="modal-finanzas-content">
+      <h3 id="tituloModalProveedor">Detalle de pagos pendientes</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Destino</th>
+            <th>Fecha de viaje</th>
+            <th>Monto proyectado</th>
+          </tr>
+        </thead>
+        <tbody id="tablaModalProveedor"></tbody>
+      </table>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalProveedorDetalle()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -554,6 +614,10 @@
   // cambia el rango — sin tener que volver a consultar Firebase cada vez.
   let datosReservasPorCodigo = {};
   let datosCostosPorCodigo = {};
+  // NUEVO: guarda las categorías tal cual (proveedor+monto por fila) de
+  // cada reserva, para poder armar la Proyección de Pago por Proveedor —
+  // datosCostosPorCodigo solo tiene el total agregado, no el detalle.
+  let datosCategoriasPorCodigo = {};
 
   async function cargarPanelFinanciero() {
     const hoy = new Date();
@@ -592,7 +656,8 @@
         ingreso: total,
         activa: esActiva,
         creadoEl,
-        vendedor: data.vendedor || ''
+        vendedor: data.vendedor || '',
+        destino: data.nombreDestino || ''
       };
 
       if (esActiva && saldo > 0.01) {
@@ -613,6 +678,7 @@
     let gananciaReal = 0;
     let cantidadCerradas = 0;
     const costosPorCodigo = {};
+    const categoriasPorCodigo = {};
 
     costosSnap.forEach(doc => {
       const data = doc.data();
@@ -624,6 +690,7 @@
       const ganancia = venta - costoTotal;
 
       costosPorCodigo[codigo] = { costoTotal, ganancia, todosPagados };
+      if (data.categorias) categoriasPorCodigo[codigo] = data.categorias;
 
       if (cerrada) {
         gananciaReal += ganancia;
@@ -647,11 +714,15 @@
     // sin volver a consultar Firebase.
     datosReservasPorCodigo = reservasPorCodigo;
     datosCostosPorCodigo = costosPorCodigo;
+    datosCategoriasPorCodigo = categoriasPorCodigo;
 
     // Por defecto arranca mostrando los próximos 30 días.
     aplicarRangoRapido(30);
     // Y el resumen de ventas arranca mostrando el mes en curso.
     aplicarRangoVentas("mes-actual");
+    // Proyección de pago por proveedor — no depende de un rango de fechas,
+    // muestra todo lo pendiente de pagar ahora mismo.
+    renderizarProyeccionesPago();
   }
 
   // NUEVO: filtra y vuelve a dibujar la tabla de "Viajes por fecha" según
@@ -821,7 +892,7 @@
         const fila = document.createElement("tr");
         fila.innerHTML = `
           <td>${nombre}</td>
-          <td>${v.cantidad}</td>
+          <td><a class="enlace-fila" href="#" onclick="abrirModalReservasVendedor('${nombre.replace(/'/g, "\\'")}'); return false;">${v.cantidad}</a></td>
           <td>${formatoMoneda(v.vendido)}</td>
           <td class="${v.porCobrar > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(v.porCobrar)}</td>
         `;
@@ -864,6 +935,154 @@
 
   function cerrarModalPorCobrar() {
     document.getElementById("modalPorCobrar").style.display = "none";
+  }
+
+  // ==========================================
+  // NUEVO: Reservas de un vendedor específico (clic en la cantidad, dentro
+  // del Resumen de Ventas por Período) — respeta el mismo rango de fechas
+  // que esté seleccionado ahí, e incluye viajes ya realizados (histórico).
+  // ==========================================
+
+  function abrirModalReservasVendedor(nombreVendedor) {
+    document.getElementById("tituloModalVendedor").textContent = `Reservas de ${nombreVendedor}`;
+
+    const desdeStr = document.getElementById("ventasDesde").value;
+    const hastaStr = document.getElementById("ventasHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const filtradas = Object.entries(datosReservasPorCodigo).filter(([codigo, r]) => {
+      const vendedorReal = r.vendedor || "Sin vendedor asignado";
+      if (vendedorReal !== nombreVendedor) return false;
+      if (!r.creadoEl) return false;
+      if (desde && r.creadoEl < desde) return false;
+      if (hasta && r.creadoEl > hasta) return false;
+      return true;
+    }).sort((a, b) => (b[1].creadoEl || 0) - (a[1].creadoEl || 0));
+
+    const tabla = document.getElementById("tablaModalReservasVendedor");
+    tabla.innerHTML = "";
+    filtradas.forEach(([codigo, r]) => {
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}" target="_blank">${codigo}</a></td>
+        <td>${r.destino || '-'}</td>
+        <td>${formatearFechaVisible(r.fecha)}</td>
+        <td>${formatoMoneda(r.ingreso)}</td>
+        <td class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(r.saldo)}</td>
+      `;
+      tabla.appendChild(fila);
+    });
+
+    document.getElementById("modalReservasVendedor").style.display = "flex";
+  }
+
+  function cerrarModalReservasVendedor() {
+    document.getElementById("modalReservasVendedor").style.display = "none";
+  }
+
+  // ==========================================
+  // NUEVO: Proyecciones de Pago por Proveedor — agrupa TODAS las filas
+  // pendientes (proyectado, todavía sin marcar como pagado) de todas las
+  // reservas, por proveedor + categoría. Así se ve de un vistazo "a Hotel
+  // Obo le debo $X en 5 reservas", sin tener que abrir cada una.
+  // ==========================================
+
+  const ETIQUETA_CATEGORIA_FINANZAS = { hospedaje: "Hospedaje", traslados: "Traslados", tours: "Tours", comision: "Comisión" };
+
+  let datosProyeccionesPago = {};
+
+  function calcularProyeccionesDePago() {
+    const grupos = {};
+
+    Object.entries(datosCategoriasPorCodigo).forEach(([codigo, categorias]) => {
+      const infoReserva = datosReservasPorCodigo[codigo];
+      ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+        let items = categorias?.[clave];
+        if (!items) items = [];
+        else if (!Array.isArray(items)) items = [items];
+
+        items.forEach(item => {
+          const esReal = typeof item.real === "number";
+          if (esReal) return; // ya pagado, no cuenta como proyección pendiente
+          const monto = Number(item.proyectado || 0);
+          if (!item.proveedor || monto <= 0) return;
+
+          const llave = `${item.proveedor}|${clave}`;
+          if (!grupos[llave]) {
+            grupos[llave] = {
+              proveedor: item.proveedor,
+              categoria: ETIQUETA_CATEGORIA_FINANZAS[clave] || clave,
+              total: 0,
+              reservas: []
+            };
+          }
+          grupos[llave].total += monto;
+          grupos[llave].reservas.push({
+            codigo,
+            monto,
+            destino: infoReserva?.destino || '-',
+            fecha: infoReserva?.fecha || null
+          });
+        });
+      });
+    });
+
+    return grupos;
+  }
+
+  function renderizarProyeccionesPago() {
+    datosProyeccionesPago = calcularProyeccionesDePago();
+    const tabla = document.getElementById("tablaProyeccionesPago");
+    tabla.innerHTML = "";
+
+    const llaves = Object.keys(datosProyeccionesPago).sort((a, b) => datosProyeccionesPago[b].total - datosProyeccionesPago[a].total);
+
+    if (llaves.length === 0) {
+      document.getElementById("avisoSinProyecciones").style.display = "block";
+    } else {
+      document.getElementById("avisoSinProyecciones").style.display = "none";
+      llaves.forEach(llave => {
+        const g = datosProyeccionesPago[llave];
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td><a class="enlace-fila" href="#" onclick="abrirModalProveedorDetalle('${llave.replace(/'/g, "\\'")}'); return false;">${g.proveedor}</a></td>
+          <td>${g.categoria}</td>
+          <td>${g.reservas.length}</td>
+          <td>${formatoMoneda(g.total)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  function abrirModalProveedorDetalle(llave) {
+    const g = datosProyeccionesPago[llave];
+    if (!g) return;
+
+    document.getElementById("tituloModalProveedor").textContent = `${g.proveedor} — ${g.categoria} (pendiente: ${formatoMoneda(g.total)})`;
+
+    const tabla = document.getElementById("tablaModalProveedor");
+    tabla.innerHTML = "";
+    g.reservas
+      .slice()
+      .sort((a, b) => (a.fecha || 0) - (b.fecha || 0))
+      .forEach(r => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td><a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a></td>
+          <td>${r.destino}</td>
+          <td>${formatearFechaVisible(r.fecha)}</td>
+          <td>${formatoMoneda(r.monto)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+
+    document.getElementById("modalProveedorDetalle").style.display = "flex";
+  }
+
+  function cerrarModalProveedorDetalle() {
+    document.getElementById("modalProveedorDetalle").style.display = "none";
   }
 
   // Menú lateral de navegación (igual que el resto del sistema)
