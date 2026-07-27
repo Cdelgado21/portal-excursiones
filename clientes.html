@@ -281,17 +281,26 @@
       overflow: hidden;
       margin-top: 10px;
     }
-    #tablaReservas { width: 100%; border-collapse: collapse; }
+    #tablaReservas { width: 100%; table-layout: fixed; border-collapse: collapse; }
     #tablaReservas th {
       background-color: #5f9296;
       font-size: 13px;
       padding: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
+    #tablaReservas th:nth-child(1) { width: 32%; }
+    #tablaReservas th:nth-child(2) { width: 38%; }
+    #tablaReservas th:nth-child(3) { width: 30%; }
     #tablaReservas td {
       padding: 10px;
       font-size: 14px;
       border-bottom: 1px solid #eee;
       border-right: 1px solid #f2f2f2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     #tablaReservas td:last-child { border-right: none; }
     #tablaReservas tr:last-child td { border-bottom: none; }
