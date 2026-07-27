@@ -760,7 +760,15 @@
             const proyectadoViejo = proy[cat.campoInterno] || 0;
             const realViejo = real[cat.campoInterno];
             contenedorFilas(cat.clave).innerHTML = "";
-            const datosFila = { proyectado: proyectadoViejo };
+            // FIX: si no había nada guardado (proyectadoViejo es 0 porque el
+            // campo nunca existió), se deja "proyectado" sin definir en vez
+            // de ponerle 0 explícito — así el cálculo automático del 2% de
+            // Comisión sí se dispara, igual que en una reserva sin costos
+            // previos. Un 0 real (el usuario sí puso 0 a propósito) no
+            // puede distinguirse de "vacío" en este modelo viejo, pero es
+            // preferible recalcular el 2% a quedarse pegado en blanco.
+            const datosFila = {};
+            if (proyectadoViejo > 0) datosFila.proyectado = proyectadoViejo;
             if (typeof realViejo === "number") datosFila.real = realViejo;
             crearFilaCategoria(cat.clave, datosFila);
           });
