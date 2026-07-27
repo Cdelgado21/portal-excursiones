@@ -671,6 +671,19 @@
 
 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; margin-top: 20px;">
   <div style="flex: 1; min-width: 250px;">
+    <label>Vendedor(a)</label>
+    <select id="vendedor" class="campoInput">
+      <option value="">Seleccione</option>
+      <option value="Yare">Yare</option>
+      <option value="Yuliana">Yuliana</option>
+      <option value="Tatiana">Tatiana</option>
+      <option value="Geansury">Geansury</option>
+      <option value="Marcela">Marcela</option>
+      <option value="Cristopher">Cristopher</option>
+    </select>
+  </div>
+
+  <div style="flex: 1; min-width: 250px;">
     <label>Embajadora Responsable</label>
     <select id="embajadora" class="campoInput">
       <option value="">Seleccione</option>
@@ -1843,6 +1856,7 @@ async function guardarReserva() {
     const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
     const saldo = total - abono;
     const embajadora = document.getElementById("embajadora").value || "";
+    const vendedor = document.getElementById("vendedor").value || "";
 
     const cantidadAdultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
     const cantidadNinos = parseInt(document.getElementById("cantidadNinos").value) || 0;
@@ -1981,6 +1995,12 @@ async function guardarReserva() {
 
     const datos = {
       codigo, numero, año,
+      // NUEVO: fecha en la que la reserva se creó por primera vez (distinta
+      // de fechaReserva, que es la fecha del vuelo/viaje). Se usa para
+      // reportes de ventas por período — se guarda una sola vez y nunca se
+      // pisa en ediciones posteriores. Las reservas creadas antes de este
+      // cambio no la tendrán, así que quedan fuera de esos reportes.
+      creado_el: datosExistentes?.creado_el || new Date(),
       nombreTitular, cedula, correo, telefono,
       fechaNacimientoTitular, vencimientoPasaporteTitular,
       nacionalidadTitular, generoTitular, pasaporteTitularURL,
@@ -2004,6 +2024,9 @@ async function guardarReserva() {
       // esa pantalla nunca mostraba nada.
       telefonoCliente: telefono,
       total, abono, saldo, pagos, embajadora,
+      // NUEVO: quién de la agencia cerró la venta — distinto de
+      // "embajadora" (a quién se le paga comisión por referir la venta).
+      vendedor,
       vuelosIntermedios: [],
       pasajeros: [],
       cantidadAdultos, cantidadNinos, cantidadBebes,
@@ -2986,6 +3009,7 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("precioBebe").value = data.precioBebe || 0;
 
     document.getElementById("embajadora").value = data.embajadora || "";
+    document.getElementById("vendedor").value = data.vendedor || "";
 
     await cargarInfoTour(data.destino);
 
