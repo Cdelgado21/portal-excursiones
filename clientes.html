@@ -295,22 +295,10 @@
       border-color: #5f9296;
       box-shadow: 0 2px 10px rgba(2,83,90,0.08);
     }
-    .tarjeta-reserva-codigo {
-      font-size: 15px;
-      font-weight: bold;
-      color: #02535a;
-      text-decoration: none;
-      display: inline-block;
-      margin-bottom: 8px;
-    }
-    .tarjeta-reserva-codigo:hover {
-      text-decoration: underline;
-      color: #036a6d;
-    }
     .tarjeta-reserva-datos {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px 22px;
+      gap: 6px 26px;
       font-size: 13.5px;
       color: #444;
     }
@@ -322,6 +310,15 @@
       display: block;
       letter-spacing: 0.3px;
       margin-bottom: 2px;
+    }
+    .tarjeta-reserva-codigo {
+      color: #02535a;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .tarjeta-reserva-codigo:hover {
+      text-decoration: underline;
+      color: #036a6d;
     }
     .tarjeta-reserva-vacio {
       text-align: center;
@@ -555,8 +552,8 @@
           const tarjeta = document.createElement("div");
           tarjeta.className = "tarjeta-reserva";
           tarjeta.innerHTML = `
-            <a class="tarjeta-reserva-codigo" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a>
             <div class="tarjeta-reserva-datos">
+              <div class="tarjeta-reserva-dato"><strong>Código</strong><a class="tarjeta-reserva-codigo" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a></div>
               <div class="tarjeta-reserva-dato"><strong>Destino</strong>${r.nombreDestino || r.destino || '-'}</div>
               <div class="tarjeta-reserva-dato"><strong>Fecha Viaje</strong>${formatearFechaVisible(r.fechaReserva)}</div>
               <div class="tarjeta-reserva-dato"><strong>Personas</strong>${cantidadPersonas}</div>
