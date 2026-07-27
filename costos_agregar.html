@@ -398,7 +398,10 @@
     const selectProveedor = fila.querySelector(".select-proveedor");
     poblarUnSelectDeProveedor(selectProveedor, clave);
     if (datos.proveedor) selectProveedor.value = datos.proveedor;
-    fila.querySelector(".input-proyectado").value = datos.proyectado || "";
+    // FIX: usar !== undefined/null en vez de "|| ''" — con "|| ''" un monto
+    // guardado legítimamente como 0 (real, ya pagado en 0) se mostraba en
+    // blanco en vez de mostrar "0".
+    fila.querySelector(".input-proyectado").value = (datos.proyectado !== undefined && datos.proyectado !== null) ? datos.proyectado : "";
 
     if (typeof datos.real === "number") {
       marcarFilaComoPagada(fila, datos.real, datos.proveedor || "", datos.fecha_pago_real);
@@ -729,6 +732,14 @@
             let items = datosExistentesCostos.categorias?.[cat.clave];
             if (!items) items = [];
             else if (!Array.isArray(items)) items = [items];
+
+            // FIX: una fila guardada sin proveedor, sin monto proyectado y
+            // sin pago real es, en la práctica, una fila vacía — no debe
+            // tratarse como "el usuario ya decidió que este monto es 0",
+            // porque eso bloqueaba el cálculo automático del 2% de
+            // Comisión en reservas que ya tenían costos guardados de antes
+            // de que existiera esa función.
+            items = items.filter(it => it && (it.proveedor || it.proyectado > 0 || typeof it.real === "number"));
             if (items.length === 0) items = [{}];
 
             contenedorFilas(cat.clave).innerHTML = "";
