@@ -233,6 +233,49 @@
       color: white;
       border-color: #02535a;
     }
+    .tarjeta.clickeable {
+      cursor: pointer;
+      transition: box-shadow 0.15s ease;
+    }
+    .tarjeta.clickeable:hover {
+      box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+    }
+    .modal-finanzas {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+    }
+    .modal-finanzas-content {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      width: 92%;
+      max-width: 720px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .modal-finanzas-content h3 {
+      margin-top: 0;
+      color: #02535a;
+    }
+    .btn-cerrar-modal-finanzas {
+      background: #ccc;
+      color: #333;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .tabla-vendedores th {
+      background-color: #5f9296;
+    }
   </style>
 </head>
 <body>
@@ -264,7 +307,7 @@
   <p class="subtitulo">Vista general de dinero por cobrar, por pagar, y ganancia — calculada en vivo a partir de tus reservas.</p>
 
   <div class="tarjetas">
-    <div class="tarjeta cobrar">
+    <div class="tarjeta cobrar clickeable" onclick="abrirModalPorCobrar()" title="Ver detalle de clientes con saldo pendiente">
       <div class="etiqueta">Por cobrar (reservas activas)</div>
       <div class="monto" id="tarjetaPorCobrar">$0.00</div>
       <div class="detalle" id="detallePorCobrar">calculando...</div>
@@ -287,6 +330,60 @@
   </div>
 
   <div class="seccion">
+    <h3>📊 Resumen de Ventas por Período</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Se cuenta por la fecha en que se hizo la reserva (cuando se vendió), sin importar cuándo viaja el cliente — por defecto, este mes.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="ventasDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="ventasHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoVentas('mes-actual')" class="btn-rango btn-rango-ventas">Este mes</button>
+        <button type="button" onclick="aplicarRangoVentas('mes-anterior')" class="btn-rango btn-rango-ventas">Mes anterior</button>
+        <button type="button" onclick="aplicarRangoVentas('ano-actual')" class="btn-rango btn-rango-ventas">Este año</button>
+      </div>
+    </div>
+
+    <div class="tarjetas" style="margin-bottom:20px;">
+      <div class="tarjeta proyectada">
+        <div class="etiqueta">Total vendido</div>
+        <div class="monto" id="ventasTotalVendido">$0.00</div>
+        <div class="detalle" id="ventasCantidadReservas">calculando...</div>
+      </div>
+      <div class="tarjeta real">
+        <div class="etiqueta">Ganancia de estas ventas</div>
+        <div class="monto" id="ventasGanancia">$0.00</div>
+        <div class="detalle">proyectada + real, según cada reserva</div>
+      </div>
+      <div class="tarjeta cobrar">
+        <div class="etiqueta">Por cobrar de estas ventas</div>
+        <div class="monto" id="ventasPorCobrar">$0.00</div>
+        <div class="detalle">saldo pendiente de este mismo grupo</div>
+      </div>
+    </div>
+
+    <h4 style="color:#02535a; margin-bottom:8px;">Desglose por Vendedor(a)</h4>
+    <table class="tabla-vendedores">
+      <thead>
+        <tr>
+          <th>Vendedor(a)</th>
+          <th>Reservas</th>
+          <th>Total vendido</th>
+          <th>Por cobrar</th>
+        </tr>
+      </thead>
+      <tbody id="tablaVentasPorVendedor"></tbody>
+    </table>
+    <div id="avisoSinVentas" class="vacio" style="display:none;">No hay reservas vendidas en ese rango.</div>
+    <p style="font-size:0.78rem; color:#999; margin-top:10px;">⚠️ Solo cuenta reservas creadas después de que se agregó el campo "Vendedor" — las anteriores no aparecen aquí.</p>
+  </div>
+
+  <div class="seccion">
     <h3>🗓️ Viajes por fecha</h3>
     <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Elige el rango que quieras ver — por defecto muestra los próximos 30 días, pero lo puedes ampliar o achicar.</p>
 
@@ -300,11 +397,11 @@
         <input type="date" id="filtroHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
       </div>
       <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        <button type="button" onclick="aplicarRangoRapido(7)" class="btn-rango">7 días</button>
-        <button type="button" onclick="aplicarRangoRapido(30)" class="btn-rango">30 días</button>
-        <button type="button" onclick="aplicarRangoRapido(60)" class="btn-rango">60 días</button>
-        <button type="button" onclick="aplicarRangoRapido(90)" class="btn-rango">90 días</button>
-        <button type="button" onclick="aplicarRangoTodas()" class="btn-rango">Todas las activas</button>
+        <button type="button" onclick="aplicarRangoRapido(7)" class="btn-rango btn-rango-viajes">7 días</button>
+        <button type="button" onclick="aplicarRangoRapido(30)" class="btn-rango btn-rango-viajes">30 días</button>
+        <button type="button" onclick="aplicarRangoRapido(60)" class="btn-rango btn-rango-viajes">60 días</button>
+        <button type="button" onclick="aplicarRangoRapido(90)" class="btn-rango btn-rango-viajes">90 días</button>
+        <button type="button" onclick="aplicarRangoTodas()" class="btn-rango btn-rango-viajes">Todas las activas</button>
       </div>
     </div>
 
@@ -332,6 +429,28 @@
   </div>
 
   </main>
+
+  <div id="modalPorCobrar" class="modal-finanzas">
+    <div class="modal-finanzas-content">
+      <h3>💵 Reservas con saldo pendiente</h3>
+      <p style="font-size:0.85rem; color:#666; margin-top:-8px;">Reservas activas (con viaje pendiente) que todavía tienen algo por cobrar, ordenadas de mayor a menor saldo.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Titular</th>
+            <th>Fecha de viaje</th>
+            <th>Saldo pendiente</th>
+          </tr>
+        </thead>
+        <tbody id="tablaModalPorCobrar"></tbody>
+      </table>
+      <div id="avisoSinPendientesModal" class="vacio" style="display:none;">No hay reservas activas con saldo pendiente.</div>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalPorCobrar()">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
 <script>
   const firebaseConfig = {
@@ -454,20 +573,29 @@
       const data = doc.data();
       const fecha = parseFechaReserva(data.fechaReserva);
       const esActiva = !fecha || fecha >= hoy;
-      if (!esActiva) return; // las reservas ya viajadas no cuentan como "por cobrar" activo
 
       const total = Number(data.total || 0);
       const pagado = (data.pagos || []).reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
       const saldo = total - pagado;
 
+      // NUEVO: creado_el (fecha en que se hizo la venta, distinta de la
+      // fecha de viaje) y vendedor — para el Resumen de Ventas por
+      // Período. Se guardan TODAS las reservas aquí (no solo las activas),
+      // porque una venta de este mes cuenta aunque el viaje ya haya
+      // pasado; solo "Por cobrar" se sigue limitando a las activas.
+      const creadoEl = data.creado_el?.toDate ? data.creado_el.toDate() : (data.creado_el ? new Date(data.creado_el) : null);
+
       reservasPorCodigo[doc.id] = {
         titular: data.nombreTitular || '-',
         fecha,
         saldo,
-        ingreso: total
+        ingreso: total,
+        activa: esActiva,
+        creadoEl,
+        vendedor: data.vendedor || ''
       };
 
-      if (saldo > 0.01) {
+      if (esActiva && saldo > 0.01) {
         totalPorCobrar += saldo;
         cantidadConSaldo++;
       }
@@ -522,6 +650,8 @@
 
     // Por defecto arranca mostrando los próximos 30 días.
     aplicarRangoRapido(30);
+    // Y el resumen de ventas arranca mostrando el mes en curso.
+    aplicarRangoVentas("mes-actual");
   }
 
   // NUEVO: filtra y vuelve a dibujar la tabla de "Viajes por fecha" según
@@ -599,10 +729,141 @@
   }
 
   function marcarBotonRangoActivo(cual) {
-    document.querySelectorAll(".btn-rango").forEach(btn => btn.classList.remove("activo"));
+    document.querySelectorAll(".btn-rango-viajes").forEach(btn => btn.classList.remove("activo"));
     const indice = { 7: 0, 30: 1, 60: 2, 90: 3, todas: 4 }[cual];
-    const botones = document.querySelectorAll(".btn-rango");
+    const botones = document.querySelectorAll(".btn-rango-viajes");
     if (botones[indice]) botones[indice].classList.add("activo");
+  }
+
+  // ==========================================
+  // NUEVO: Resumen de Ventas por Período — cuenta por fecha de CREACIÓN de
+  // la reserva (cuándo se vendió), no por fecha de viaje. Así una venta de
+  // hoy que viaja hasta setiembre igual cuenta como vendida este mes.
+  // ==========================================
+
+  function marcarBotonVentasActivo(cual) {
+    document.querySelectorAll(".btn-rango-ventas").forEach(btn => btn.classList.remove("activo"));
+    const boton = Array.from(document.querySelectorAll(".btn-rango-ventas")).find(b => b.getAttribute("onclick") === `aplicarRangoVentas('${cual}')`);
+    if (boton) boton.classList.add("activo");
+  }
+
+  function aplicarRangoVentas(tipo) {
+    const hoy = new Date();
+    let desde, hasta;
+
+    if (tipo === "mes-actual") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    } else if (tipo === "mes-anterior") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    } else if (tipo === "ano-actual") {
+      desde = new Date(hoy.getFullYear(), 0, 1);
+      hasta = new Date(hoy.getFullYear(), 11, 31);
+    }
+
+    document.getElementById("ventasDesde").value = formatearFechaInput(desde);
+    document.getElementById("ventasHasta").value = formatearFechaInput(hasta);
+    marcarBotonVentasActivo(tipo);
+    renderizarResumenVentas();
+  }
+
+  // Vuelve a calcular el resumen según los campos Desde/Hasta actuales —
+  // reutiliza los datos ya cargados en memoria, sin consultar Firebase de
+  // nuevo.
+  function renderizarResumenVentas() {
+    const desdeStr = document.getElementById("ventasDesde").value;
+    const hastaStr = document.getElementById("ventasHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const vendidasEnRango = Object.entries(datosReservasPorCodigo).filter(([codigo, r]) => {
+      if (!r.creadoEl) return false; // reservas de antes de guardar creado_el no entran aquí
+      if (desde && r.creadoEl < desde) return false;
+      if (hasta && r.creadoEl > hasta) return false;
+      return true;
+    });
+
+    let totalVendido = 0;
+    let totalGanancia = 0;
+    let totalPorCobrarPeriodo = 0;
+    const porVendedor = {};
+
+    vendidasEnRango.forEach(([codigo, r]) => {
+      totalVendido += r.ingreso;
+      totalPorCobrarPeriodo += Math.max(r.saldo, 0);
+      const costos = datosCostosPorCodigo[codigo];
+      if (costos) totalGanancia += costos.ganancia;
+
+      const nombreVendedor = r.vendedor || "Sin vendedor asignado";
+      if (!porVendedor[nombreVendedor]) porVendedor[nombreVendedor] = { cantidad: 0, vendido: 0, porCobrar: 0 };
+      porVendedor[nombreVendedor].cantidad++;
+      porVendedor[nombreVendedor].vendido += r.ingreso;
+      porVendedor[nombreVendedor].porCobrar += Math.max(r.saldo, 0);
+    });
+
+    document.getElementById("ventasTotalVendido").textContent = formatoMoneda(totalVendido);
+    document.getElementById("ventasCantidadReservas").textContent =
+      `${vendidasEnRango.length} reserva${vendidasEnRango.length === 1 ? '' : 's'} vendida${vendidasEnRango.length === 1 ? '' : 's'}`;
+    document.getElementById("ventasGanancia").textContent = formatoMoneda(totalGanancia);
+    document.getElementById("ventasPorCobrar").textContent = formatoMoneda(totalPorCobrarPeriodo);
+
+    const tabla = document.getElementById("tablaVentasPorVendedor");
+    tabla.innerHTML = "";
+    const nombresVendedores = Object.keys(porVendedor).sort((a, b) => porVendedor[b].vendido - porVendedor[a].vendido);
+
+    if (nombresVendedores.length === 0) {
+      document.getElementById("avisoSinVentas").style.display = "block";
+    } else {
+      document.getElementById("avisoSinVentas").style.display = "none";
+      nombresVendedores.forEach(nombre => {
+        const v = porVendedor[nombre];
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${nombre}</td>
+          <td>${v.cantidad}</td>
+          <td>${formatoMoneda(v.vendido)}</td>
+          <td class="${v.porCobrar > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(v.porCobrar)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  // ==========================================
+  // NUEVO: Modal de "Por Cobrar" — lista de clientes/reservas con saldo
+  // pendiente, al hacerle clic a la tarjeta correspondiente.
+  // ==========================================
+
+  function abrirModalPorCobrar() {
+    const tabla = document.getElementById("tablaModalPorCobrar");
+    tabla.innerHTML = "";
+
+    const pendientes = Object.entries(datosReservasPorCodigo)
+      .filter(([codigo, r]) => r.activa && r.saldo > 0.01)
+      .sort((a, b) => b[1].saldo - a[1].saldo);
+
+    if (pendientes.length === 0) {
+      document.getElementById("avisoSinPendientesModal").style.display = "block";
+    } else {
+      document.getElementById("avisoSinPendientesModal").style.display = "none";
+      pendientes.forEach(([codigo, r]) => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
+          <td>${r.titular}</td>
+          <td>${formatearFechaVisible(r.fecha)}</td>
+          <td class="cifra-alerta">${formatoMoneda(r.saldo)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+
+    document.getElementById("modalPorCobrar").style.display = "flex";
+  }
+
+  function cerrarModalPorCobrar() {
+    document.getElementById("modalPorCobrar").style.display = "none";
   }
 
   // Menú lateral de navegación (igual que el resto del sistema)
@@ -651,12 +912,22 @@
     // NUEVO: si Cristopher cambia las fechas a mano (no con los botones
     // rápidos), la tabla se vuelve a filtrar sola, al instante.
     document.getElementById("filtroDesde").addEventListener("change", () => {
-      document.querySelectorAll(".btn-rango").forEach(btn => btn.classList.remove("activo"));
+      document.querySelectorAll(".btn-rango-viajes").forEach(btn => btn.classList.remove("activo"));
       renderizarViajesPorFecha();
     });
     document.getElementById("filtroHasta").addEventListener("change", () => {
-      document.querySelectorAll(".btn-rango").forEach(btn => btn.classList.remove("activo"));
+      document.querySelectorAll(".btn-rango-viajes").forEach(btn => btn.classList.remove("activo"));
       renderizarViajesPorFecha();
+    });
+
+    // NUEVO: mismo comportamiento para el Resumen de Ventas por Período.
+    document.getElementById("ventasDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-ventas").forEach(btn => btn.classList.remove("activo"));
+      renderizarResumenVentas();
+    });
+    document.getElementById("ventasHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-ventas").forEach(btn => btn.classList.remove("activo"));
+      renderizarResumenVentas();
     });
   });
 </script>
