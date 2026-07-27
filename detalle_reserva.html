@@ -1788,6 +1788,37 @@ async function generarCodigoReserva() {
   return { codigo, numero: nuevoNumero, año: añoActual };
 }
 
+// NUEVO: guarda (o actualiza) al titular de la reserva en la colección de
+// Clientes — usando el teléfono como identificador, igual que ya hace
+// clientes.html. Se guardan también fecha de nacimiento y vencimiento de
+// pasaporte, pensando en futuros avisos automáticos (cumpleaños, pasaportes
+// por vencer). Si el cliente ya existía, se conserva su fecha de registro
+// original — no se pisa.
+async function sincronizarClienteDesdeTitular(datosReserva) {
+  const telefonoCliente = (datosReserva.telefono || "").trim();
+  if (!telefonoCliente) return; // sin teléfono no hay forma de identificarlo como cliente
+
+  try {
+    const clienteRef = db.collection("clientes").doc(telefonoCliente);
+    const clienteExistente = await clienteRef.get();
+
+    await clienteRef.set({
+      nombre: datosReserva.nombreTitular || "",
+      telefono: telefonoCliente,
+      correo: datosReserva.correo || "",
+      nacionalidad: datosReserva.nacionalidadTitular || "",
+      pasaporte: datosReserva.cedula || "",
+      fechaNacimiento: datosReserva.fechaNacimientoTitular || "",
+      vencimientoPasaporte: datosReserva.vencimientoPasaporteTitular || "",
+      fechaRegistro: clienteExistente.exists
+        ? (clienteExistente.data().fechaRegistro || new Date().toISOString())
+        : new Date().toISOString()
+    }, { merge: true });
+  } catch (e) {
+    console.error("No se pudo sincronizar el cliente desde la reserva:", e);
+  }
+}
+
 async function guardarReserva() {
   try {
     const nombreTitular = document.getElementById("nombreTitular").value || "";
@@ -1968,6 +1999,10 @@ async function guardarReserva() {
       fechaReserva, destino, nombreDestino,
       tipoSalidaReserva: tipoSalidaActual,
       incluyePersonalizado, no_incluyePersonalizado,
+      // NUEVO: clientes.html busca las reservas de cada cliente por este
+      // campo — antes nunca se guardaba, así que el botón "🔍 Reservas" de
+      // esa pantalla nunca mostraba nada.
+      telefonoCliente: telefono,
       total, abono, saldo, pagos, embajadora,
       vuelosIntermedios: [],
       pasajeros: [],
@@ -2024,6 +2059,12 @@ async function guardarReserva() {
 
     await db.collection("reservas").doc(codigo).set(datos);
     alert("✅ Reserva guardada correctamente como " + codigo);
+
+    // NUEVO: el titular de la reserva se guarda (o se actualiza) también en
+    // Clientes — para poder usarlo después en campañas, felicitaciones de
+    // cumpleaños, avisos de vencimiento de pasaporte, etc. No bloquea el
+    // guardado de la reserva si esto llegara a fallar.
+    await sincronizarClienteDesdeTitular(datos);
 
     mostrarListaTiquetesVuelo(tiquetesVuelo);
     document.getElementById("tiqueteVueloFile").value = "";
