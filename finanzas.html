@@ -187,6 +187,8 @@
     tr:hover { background-color: #f7fbfb; }
     .cifra-positiva { color: #1b9e3c; font-weight: bold; }
     .cifra-alerta { color: #c0392b; font-weight: bold; }
+    .costo-proyectado { color: #e07d3c; font-weight: bold; }
+    .costo-pagado { color: #c0392b; font-weight: bold; }
     .aviso-sin-costos {
       color: #a35b00;
       font-size: 0.82rem;
@@ -312,9 +314,10 @@
           <th>Código</th>
           <th>Titular</th>
           <th>Fecha de viaje</th>
-          <th>Por cobrar</th>
+          <th>Ingreso</th>
           <th>Costo total</th>
           <th>Ganancia</th>
+          <th>Por cobrar</th>
         </tr>
       </thead>
       <tbody id="tablaProximosViajes"></tbody>
@@ -380,7 +383,12 @@
   // el monto real si esa fila específica ya se marcó como pagada, o si no,
   // el proyectado como mejor estimado — y sigue soportando el modelo viejo
   // para cualquier reserva que aún no se haya vuelto a guardar.
-  function calcularCostoTotalDeReserva(data) {
+  //
+  // NUEVO: además del monto, devuelve "todosPagados" — true solo si CADA
+  // fila de proveedor con datos ya está marcada como real (pagada). Esto
+  // permite mostrar el Costo Total en naranja (todavía proyección) o en
+  // rojo (ya se le pagó a todos los proveedores de esta reserva).
+  function analizarCostosDeReserva(data) {
     const esModeloViejo = !data.categorias;
 
     if (esModeloViejo) {
@@ -388,24 +396,38 @@
       const real = data.desglose_real || {};
       const usarReal = Object.keys(real).length > 0;
       const fuente = usarReal ? real : proy;
-      return Number(fuente.boletos || 0) + Number(fuente.hospedaje || 0) +
+      const costoTotal = Number(fuente.boletos || 0) + Number(fuente.hospedaje || 0) +
              Number(fuente.operador || 0) + Number(fuente.tours || 0) +
              Number(fuente.comision || 0);
+      return { costoTotal, todosPagados: usarReal };
     }
 
     const boletos = Number(data.boletos_real || 0);
     let sumaCategorias = 0;
+    let filasConDatos = 0;
+    let filasPagadas = 0;
+
     ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
       let items = data.categorias?.[clave];
       if (!items) items = [];
       else if (!Array.isArray(items)) items = [items];
       items.forEach(item => {
-        const monto = (typeof item.real === "number") ? item.real : Number(item.proyectado || 0);
-        sumaCategorias += monto;
+        const tieneDatos = item.proveedor || item.proyectado > 0 || typeof item.real === "number";
+        if (!tieneDatos) return;
+        filasConDatos++;
+        const esReal = typeof item.real === "number";
+        if (esReal) filasPagadas++;
+        sumaCategorias += esReal ? item.real : Number(item.proyectado || 0);
       });
     });
 
-    return boletos + sumaCategorias;
+    const costoTotal = boletos + sumaCategorias;
+    // Boletos se registra siempre como monto ya pagado desde el inicio, así
+    // que solo hace falta que las demás filas (hospedaje/traslados/tours/
+    // comisión) con datos estén todas marcadas como reales.
+    const todosPagados = filasConDatos === 0 ? true : (filasPagadas === filasConDatos);
+
+    return { costoTotal, todosPagados };
   }
 
   // NUEVO: guardados aparte (no solo dentro de la función) para poder
@@ -441,7 +463,8 @@
       reservasPorCodigo[doc.id] = {
         titular: data.nombreTitular || '-',
         fecha,
-        saldo
+        saldo,
+        ingreso: total
       };
 
       if (saldo > 0.01) {
@@ -468,11 +491,11 @@
       const codigo = data.codigo;
       const cerrada = data.estado === "Cerrado";
 
-      const costoTotal = calcularCostoTotalDeReserva(data);
+      const { costoTotal, todosPagados } = analizarCostosDeReserva(data);
       const venta = Number(data.venta_total || 0);
       const ganancia = venta - costoTotal;
 
-      costosPorCodigo[codigo] = { costoTotal, ganancia, tieneCostos: true };
+      costosPorCodigo[codigo] = { costoTotal, ganancia, todosPagados };
 
       if (cerrada) {
         gananciaReal += ganancia;
@@ -528,14 +551,16 @@
       document.getElementById("avisoSinProximos").style.display = "none";
       filtrados.forEach(([codigo, r]) => {
         const costos = datosCostosPorCodigo[codigo];
+        const claseCosto = costos ? (costos.todosPagados ? 'costo-pagado' : 'costo-proyectado') : '';
         const fila = document.createElement("tr");
         fila.innerHTML = `
           <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
           <td>${r.titular}</td>
           <td>${formatearFechaVisible(r.fecha)}</td>
-          <td class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}"><a class="enlace-fila" style="color:inherit;" href="detalle_reserva.html?codigo=${codigo}" title="Ver detalle y registrar pagos">${formatoMoneda(r.saldo)}</a></td>
-          <td>${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Editar costos de esta reserva">${formatoMoneda(costos.costoTotal)}</a>` : `<span class="aviso-sin-costos">⚠️ sin costos — <a class="enlace-fila" href="costos_agregar.html?reserva=${codigo}">agregar</a></span>`}</td>
+          <td>${formatoMoneda(r.ingreso)}</td>
+          <td class="${claseCosto}">${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Editar costos de esta reserva">${formatoMoneda(costos.costoTotal)}</a>` : `<span class="aviso-sin-costos">⚠️ sin costos — <a class="enlace-fila" href="costos_agregar.html?reserva=${codigo}">agregar</a></span>`}</td>
           <td class="${costos ? (costos.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta') : ''}">${costos ? formatoMoneda(costos.ganancia) : '-'}</td>
+          <td class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}"><a class="enlace-fila" style="color:inherit;" href="detalle_reserva.html?codigo=${codigo}" title="Ver detalle y registrar pagos">${formatoMoneda(r.saldo)}</a></td>
         `;
         tabla.appendChild(fila);
       });
