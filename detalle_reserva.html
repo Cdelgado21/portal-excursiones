@@ -1968,14 +1968,24 @@ async function guardarReserva() {
       }];
     }
 
+    // FIX: antes este .set() no tenía merge:true — cada vez que se
+    // guardaba la reserva (aunque fuera solo para corregir un dato del
+    // titular), esto BORRABA por completo lo que ya se hubiera cargado en
+    // costos_agregar.html (categorias de hospedaje/traslados/tours/
+    // comisión), reseteaba el estado de vuelta a "Proyectado" aunque ya
+    // estuviera Cerrada, y pisaba creado_el con la fecha de hoy. Ahora se
+    // lee primero lo que ya existe, para conservarlo, y se usa merge:true.
+    const costosDocExistente = await db.collection("costos_reservas").doc(codigo).get();
+    const costosPrevios = costosDocExistente.exists ? costosDocExistente.data() : {};
+
     await db.collection("costos_reservas").doc(codigo).set({
       codigo: codigo,
       fecha_viaje: fechaReserva,
       venta_total: total,
-      estado: "Proyectado",
-      creado_el: new Date(),
+      estado: costosPrevios.estado || "Proyectado",
+      creado_el: costosPrevios.creado_el || new Date(),
       actualizado_el: new Date()
-    });
+    }, { merge: true });
 
     const datos = {
       codigo, numero, año,
