@@ -550,6 +550,27 @@
     </div>
   </div>
 
+  <div id="modalDetalleGrafico" class="modal-finanzas">
+    <div class="modal-finanzas-content">
+      <h3 id="tituloModalGrafico">Detalle</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Titular</th>
+            <th>Fecha</th>
+            <th id="encabezadoMontoModalGrafico">Monto</th>
+            <th id="encabezadoMetodoModalGrafico">Método</th>
+          </tr>
+        </thead>
+        <tbody id="tablaModalGrafico"></tbody>
+      </table>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalDetalleGrafico()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -705,10 +726,16 @@
       };
 
       // NUEVO: alimenta el gráfico de Comportamiento de Ventas.
-      if (creadoEl) ventasCreadas.push({ fecha: creadoEl, monto: total });
+      if (creadoEl) ventasCreadas.push({ fecha: creadoEl, monto: total, codigo: doc.id, titular: data.nombreTitular || '-' });
       (data.pagos || []).forEach(p => {
         const fechaPago = parseFechaReserva(p.fecha);
-        if (fechaPago) pagosRealizados.push({ fecha: fechaPago, monto: Number(p.monto) || 0 });
+        if (fechaPago) pagosRealizados.push({
+          fecha: fechaPago,
+          monto: Number(p.monto) || 0,
+          codigo: doc.id,
+          titular: data.nombreTitular || '-',
+          metodo: p.metodo || '-'
+        });
       });
     });
 
@@ -936,6 +963,7 @@
   let tipoGraficoActual = "creado";
   let periodoGraficoActual = "mensual";
   let chartVentas = null;
+  let bucketsGraficoActual = [];
 
   const NOMBRES_MES_CORTOS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
@@ -957,6 +985,10 @@
     const datos = tipoGraficoActual === "creado" ? datosVentasCreadas : datosPagosRealizados;
     let labels = [];
     let valores = [];
+    // NUEVO: guarda, por cada barra, el filtro exacto usado para calcularla
+    // — así al hacer clic se puede recuperar la lista de registros reales
+    // que la componen, sin tener que adivinar ni volver a calcular.
+    bucketsGraficoActual = [];
 
     if (periodoGraficoActual === "mensual") {
       // Últimos 12 meses, terminando en el mes actual.
@@ -971,6 +1003,10 @@
           .filter(x => x.fecha.getFullYear() === d.getFullYear() && x.fecha.getMonth() === d.getMonth())
           .reduce((sum, x) => sum + x.monto, 0)
       );
+      bucketsGraficoActual = meses.map(d => ({
+        etiqueta: `${NOMBRES_MES_CORTOS[d.getMonth()]} ${d.getFullYear()}`,
+        filtro: x => x.fecha.getFullYear() === d.getFullYear() && x.fecha.getMonth() === d.getMonth()
+      }));
     } else {
       // Anual: agrupa todo lo que haya, por año.
       const porAnio = {};
@@ -981,6 +1017,10 @@
       const anios = Object.keys(porAnio).sort();
       labels = anios;
       valores = anios.map(a => porAnio[a]);
+      bucketsGraficoActual = anios.map(a => ({
+        etiqueta: a,
+        filtro: x => String(x.fecha.getFullYear()) === a
+      }));
     }
 
     const totalGeneral = valores.reduce((sum, v) => sum + v, 0);
@@ -1002,6 +1042,13 @@
       },
       options: {
         responsive: true,
+        onClick: (evt, elementos) => {
+          if (!elementos.length) return;
+          abrirModalDetalleGrafico(elementos[0].index);
+        },
+        onHover: (evt, elementos) => {
+          evt.native.target.style.cursor = elementos.length ? "pointer" : "default";
+        },
         maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
@@ -1019,6 +1066,52 @@
         }
       }
     });
+  }
+
+  // NUEVO: al hacer clic en una barra, muestra la lista real de registros
+  // que la componen — así se puede verificar cualquier número del gráfico
+  // sin tener que adivinar ni revisar reserva por reserva a mano.
+  function abrirModalDetalleGrafico(indice) {
+    const bucket = bucketsGraficoActual[indice];
+    if (!bucket) return;
+
+    const datos = tipoGraficoActual === "creado" ? datosVentasCreadas : datosPagosRealizados;
+    const registros = datos.filter(bucket.filtro).sort((a, b) => a.fecha - b.fecha);
+    const total = registros.reduce((sum, r) => sum + r.monto, 0);
+
+    document.getElementById("tituloModalGrafico").textContent =
+      `${tipoGraficoActual === "creado" ? "Ventas creadas" : "Pagos recibidos"} en ${bucket.etiqueta} (total: ${formatoMoneda(total)})`;
+
+    const encabezado = document.getElementById("encabezadoMontoModalGrafico");
+    encabezado.textContent = tipoGraficoActual === "creado" ? "Venta" : "Monto pagado";
+
+    const contenedorMetodo = document.getElementById("encabezadoMetodoModalGrafico");
+    contenedorMetodo.style.display = tipoGraficoActual === "pagado" ? "table-cell" : "none";
+
+    const tabla = document.getElementById("tablaModalGrafico");
+    tabla.innerHTML = "";
+
+    if (registros.length === 0) {
+      tabla.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999; padding:15px;">Sin registros en este período.</td></tr>`;
+    } else {
+      registros.forEach(r => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a></td>
+          <td>${r.titular}</td>
+          <td>${formatearFechaVisible(r.fecha)}</td>
+          <td>${formatoMoneda(r.monto)}</td>
+          ${tipoGraficoActual === "pagado" ? `<td>${r.metodo || '-'}</td>` : ''}
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+
+    document.getElementById("modalDetalleGrafico").style.display = "flex";
+  }
+
+  function cerrarModalDetalleGrafico() {
+    document.getElementById("modalDetalleGrafico").style.display = "none";
   }
 
   // ==========================================
