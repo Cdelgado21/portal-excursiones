@@ -482,6 +482,7 @@
   // así que aquí se agrupan primero los que coinciden con el destino de
   // esta reserva.
   let listaProveedores = [];
+  let listaUsuariosComision = [];
   let destinoActualReserva = "";
 
   const ETIQUETA_CATEGORIA = { hospedaje: "Hospedaje", traslados: "Traslados", tours: "Tours", comision: "Comisión" };
@@ -489,6 +490,17 @@
   async function cargarProveedores() {
     const snap = await db.collection("proveedores").orderBy("nombre").get();
     listaProveedores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // NUEVO: cualquier persona ya registrada en Usuarios (registro.html) se
+    // suma como opción para la categoría "Comisión" — sin tener que crearla
+    // aparte como proveedor. Se guarda separado de listaProveedores para no
+    // mezclar los dos orígenes de datos.
+    const snapUsuarios = await db.collection("usuarios").get();
+    listaUsuariosComision = snapUsuarios.docs
+      .map(d => d.data())
+      .filter(u => u.estado !== "Inactivo")
+      .map(u => ({ nombre: u.nombre, destino: "", categoria: "Comisión", activo: true }));
+
     poblarTodosLosSelectsDeProveedor();
   }
 
@@ -499,9 +511,22 @@
 
     // Solo se listan proveedores activos, de esta categoría (o sin
     // categoría asignada, por si vienen de antes de tener este campo).
-    const relevantes = listaProveedores.filter(p =>
+    let relevantes = listaProveedores.filter(p =>
       p.activo !== false && (!p.categoria || p.categoria === etiqueta)
     );
+
+    // Para Comisión, se agregan también los usuarios registrados — evitando
+    // nombres repetidos si alguien ya existiera como proveedor manual.
+    if (clave === "comision") {
+      const nombresYaListados = new Set(relevantes.map(p => p.nombre.toLowerCase()));
+      listaUsuariosComision.forEach(u => {
+        if (!nombresYaListados.has(u.nombre.toLowerCase())) {
+          relevantes.push(u);
+          nombresYaListados.add(u.nombre.toLowerCase());
+        }
+      });
+      relevantes.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    }
 
     const deEsteDestino = relevantes.filter(p => destinoActualReserva && p.destino === destinoActualReserva);
     const universales = relevantes.filter(p => !p.destino);
