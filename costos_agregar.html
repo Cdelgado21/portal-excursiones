@@ -386,6 +386,10 @@
           <label>Monto proyectado</label>
           <input type="number" class="input-proyectado" oninput="calcularGanancia()">
         </div>
+        <div style="flex: 0 0 auto; text-align:center;">
+          <label style="font-size:11px;">Pagado</label>
+          <input type="checkbox" class="chk-pagado" onchange="alternarPagadoFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;" title="Marcar como ya pagado (real)">
+        </div>
         <div style="flex: 0 0 auto;">
           <label>&nbsp;</label>
           <button type="button" class="btn-quitar-fila" onclick="quitarFilaCategoria(this)" title="Quitar esta fila">🗑️</button>
@@ -420,16 +424,19 @@
     calcularGanancia();
   }
 
-  // Deja una fila específica marcada visualmente como "ya pagada" (real) —
-  // esto solo debería pasar si ya se marcó como pagada desde el Panel de
-  // Costos; aquí solo se refleja, no se edita.
+  // Deja una fila específica marcada visualmente como "ya pagada" (real).
+  // NUEVO: ahora esto se puede activar directo desde el checkbox "Pagado"
+  // de la fila (antes solo se reflejaba si ya venía marcada desde el Panel
+  // de Costos). Incluye un enlace "deshacer" por si fue un error.
   function marcarFilaComoPagada(fila, monto, proveedor, fechaPago) {
     const select = fila.querySelector(".select-proveedor");
     const input = fila.querySelector(".input-proyectado");
+    const chk = fila.querySelector(".chk-pagado");
     const aviso = fila.querySelector(".aviso-real-fila");
 
     select.disabled = true;
     input.disabled = true;
+    if (chk) { chk.checked = true; chk.disabled = true; }
     if (proveedor) select.value = proveedor;
 
     const fecha = fechaPago?.toDate ? fechaPago.toDate() : (fechaPago ? new Date(fechaPago) : null);
@@ -440,7 +447,46 @@
 
     aviso.style.display = "block";
     aviso.className = "aviso-ya-pagado aviso-real-fila";
-    aviso.innerHTML = `✅ Ya pagado (real): $${monto.toFixed(2)}${fechaTexto}. Para corregir este monto, hazlo desde el Panel de Costos.`;
+    aviso.innerHTML = `✅ Ya pagado (real): $${monto.toFixed(2)}${fechaTexto} <a href="#" onclick="desmarcarFilaPagada(this); return false;" style="margin-left:10px; font-weight:normal; text-decoration:underline; color:#1b6e1b;">deshacer</a>`;
+  }
+
+  // NUEVO: se activa al marcar el checkbox "Pagado" de una fila — toma el
+  // proveedor y monto proyectado que ya estén ahí y los convierte en el
+  // monto real (ya pagado), con la fecha de hoy.
+  function alternarPagadoFila(checkbox) {
+    if (!checkbox.checked) return;
+    const fila = checkbox.closest(".fila-proveedor");
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const monto = parseFloat(input.value) || 0;
+
+    if (!select.value || monto <= 0) {
+      alert("Selecciona el proveedor e ingresa el monto antes de marcarlo como pagado.");
+      checkbox.checked = false;
+      return;
+    }
+
+    marcarFilaComoPagada(fila, monto, select.value, new Date());
+    calcularGanancia();
+  }
+
+  // NUEVO: revierte una fila marcada como pagada, por si fue un error —
+  // vuelve a quedar editable como proyección.
+  function desmarcarFilaPagada(enlace) {
+    const fila = enlace.closest(".fila-proveedor");
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const chk = fila.querySelector(".chk-pagado");
+    const aviso = fila.querySelector(".aviso-real-fila");
+
+    delete fila.dataset.real;
+    delete fila.dataset.fechaPagoReal;
+    select.disabled = false;
+    input.disabled = false;
+    if (chk) { chk.checked = false; chk.disabled = false; }
+    aviso.style.display = "none";
+    aviso.innerHTML = "";
+    calcularGanancia();
   }
 
   // ---------- Menú lateral ----------
