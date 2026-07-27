@@ -287,28 +287,24 @@
       font-size: 13px;
       padding: 10px;
     }
-    #tablaReservas th:last-child { text-align: center; }
     #tablaReservas td {
       padding: 10px;
       font-size: 14px;
       border-bottom: 1px solid #eee;
       border-right: 1px solid #f2f2f2;
     }
-    #tablaReservas td:last-child { border-right: none; text-align: center; }
+    #tablaReservas td:last-child { border-right: none; }
     #tablaReservas tr:last-child td { border-bottom: none; }
-    .btn-ver-reserva {
-      background-color: #02535a;
-      color: white;
-      border: none;
-      padding: 6px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
+    .codigo-reserva-link {
+      color: #02535a;
       font-weight: bold;
-      display: inline-block;
       text-decoration: none;
+      cursor: pointer;
     }
-    .btn-ver-reserva:hover { background-color: #036a6d; color: white; }
+    .codigo-reserva-link:hover {
+      text-decoration: underline;
+      color: #036a6d;
+    }
   </style>
 </head>
 <body>
@@ -396,7 +392,7 @@
       <div class="tabla-reservas-container">
         <table id="tablaReservas">
           <thead>
-            <tr><th>Código</th><th>Destino</th><th>Fecha Viaje</th><th>Acción</th></tr>
+            <tr><th>Código</th><th>Destino</th><th>Fecha Viaje</th></tr>
           </thead>
           <tbody id="bodyReservas"></tbody>
         </table>
@@ -536,15 +532,14 @@
       const reservasCliente = reservas.filter(r => r.telefonoCliente === telefono);
 
       if (reservasCliente.length === 0) {
-        body.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">Este cliente todavía no tiene reservas.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999; padding:20px;">Este cliente todavía no tiene reservas.</td></tr>`;
       } else {
         reservasCliente.forEach(r => {
           const fila = document.createElement("tr");
           fila.innerHTML = `
-            <td>${r.codigo}</td>
+            <td><a class="codigo-reserva-link" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a></td>
             <td>${r.nombreDestino || r.destino || ''}</td>
             <td>${formatearFechaVisible(r.fechaReserva)}</td>
-            <td><a class="btn-ver-reserva" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">Ver</a></td>
           `;
           body.appendChild(fila);
         });
@@ -664,4 +659,3 @@
   <script src="auth-guard.js"></script>
 </body>
 </html>
-  
