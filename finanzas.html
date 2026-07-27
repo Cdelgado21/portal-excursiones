@@ -501,6 +501,61 @@
   </div>
 
   <div class="seccion">
+    <h3>📑 Balance por Período</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE — así ves la ganancia real de los viajes que salieron (o van a salir) en ese rango, con el desglose de en qué se fue el costo.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="balanceDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="balanceHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoBalance('mes-actual')" class="btn-rango btn-rango-balance activo">Este mes</button>
+        <button type="button" onclick="aplicarRangoBalance('mes-anterior')" class="btn-rango btn-rango-balance">Mes anterior</button>
+        <button type="button" onclick="aplicarRangoBalance('ano-actual')" class="btn-rango btn-rango-balance">Este año</button>
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Mes específico</label>
+        <input type="month" id="balanceMesEspecifico" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+        <button type="button" onclick="aplicarMesEspecificoBalance()" class="btn-rango" style="margin-top:4px;">Ver ese mes</button>
+      </div>
+    </div>
+
+    <div class="tarjetas" style="margin-bottom:20px;">
+      <div class="tarjeta cobrar">
+        <div class="etiqueta">Ingreso</div>
+        <div class="monto" id="balanceIngreso">$0.00</div>
+        <div class="detalle" id="balanceCantidad">0 reservas</div>
+      </div>
+      <div class="tarjeta pagar">
+        <div class="etiqueta">Costo total</div>
+        <div class="monto" id="balanceCosto">$0.00</div>
+      </div>
+      <div class="tarjeta real">
+        <div class="etiqueta">Ganancia</div>
+        <div class="monto" id="balanceGanancia">$0.00</div>
+        <div class="detalle" id="balanceMargen">margen: 0%</div>
+      </div>
+    </div>
+
+    <h4 style="color:#02535a; margin-bottom:8px;">Desglose de Costos</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Categoría</th>
+          <th>Monto</th>
+          <th>% del costo total</th>
+        </tr>
+      </thead>
+      <tbody id="tablaDesgloseBalance"></tbody>
+    </table>
+  </div>
+
+  <div class="seccion">
     <h3>📋 Detalle y edición de costos</h3>
     <p style="font-size:0.85rem; color:#666;">Para editar los costos reales de una reserva, marcar una reserva como cerrada, o ver el historial completo, usa el panel de costos.</p>
     <a href="panel_costos.html" class="btn-panel-costos">Abrir Panel de Costos completo →</a>
@@ -753,7 +808,7 @@
       const venta = Number(data.venta_total || 0);
       const ganancia = venta - costoTotal;
 
-      costosPorCodigo[codigo] = { costoTotal, ganancia, todosPagados };
+      costosPorCodigo[codigo] = { costoTotal, ganancia, todosPagados, boletos: Number(data.boletos_real || 0) };
       if (data.categorias) categoriasPorCodigo[codigo] = data.categorias;
     });
 
@@ -776,6 +831,8 @@
     // Proyección de pago por proveedor — mismo criterio de rango rápido
     // que "Viajes por fecha", pero como sección independiente.
     aplicarRangoProveedores(30);
+    // Balance por Período arranca mostrando el mes en curso.
+    aplicarRangoBalance("mes-actual");
   }
 
   // NUEVO: filtra y vuelve a dibujar la tabla de "Viajes por fecha" según
@@ -1385,6 +1442,138 @@
     document.getElementById("modalProveedorDetalle").style.display = "none";
   }
 
+  // ==========================================
+  // NUEVO: Balance por Período — ingreso, costo desglosado por categoría y
+  // ganancia de los viajes (fecha de VIAJE) dentro del rango elegido. Se
+  // puede elegir un mes específico directo (ej. "Junio 2026") en vez de
+  // tener que ajustar Desde/Hasta a mano.
+  // ==========================================
+
+  const ETIQUETAS_DESGLOSE_BALANCE = {
+    boletos: "✈️ Boletos Aéreos",
+    hospedaje: "🏨 Hospedaje",
+    traslados: "🚐 Traslados",
+    tours: "🎟️ Tours",
+    comision: "💼 Comisión"
+  };
+
+  // Suma el mejor monto disponible por fila (real si ya está pagada, si no
+  // el proyectado) — mismo criterio que se usa en el resto de Finanzas.
+  function sumarCategoriaMejorMonto(items) {
+    if (!items) return 0;
+    if (!Array.isArray(items)) items = [items];
+    return items.reduce((sum, item) => sum + (typeof item.real === "number" ? item.real : Number(item.proyectado || 0)), 0);
+  }
+
+  function calcularDesgloseCostos(codigo) {
+    const categorias = datosCategoriasPorCodigo[codigo] || {};
+    return {
+      boletos: datosCostosPorCodigo[codigo]?.boletos || 0,
+      hospedaje: sumarCategoriaMejorMonto(categorias.hospedaje),
+      traslados: sumarCategoriaMejorMonto(categorias.traslados),
+      tours: sumarCategoriaMejorMonto(categorias.tours),
+      comision: sumarCategoriaMejorMonto(categorias.comision)
+    };
+  }
+
+  function renderizarBalance() {
+    const desdeStr = document.getElementById("balanceDesde").value;
+    const hastaStr = document.getElementById("balanceHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const incluidas = Object.entries(datosReservasPorCodigo).filter(([codigo, r]) => {
+      if (!r.fecha) return false;
+      if (desde && r.fecha < desde) return false;
+      if (hasta && r.fecha > hasta) return false;
+      return true;
+    });
+
+    let ingreso = 0;
+    const desglose = { boletos: 0, hospedaje: 0, traslados: 0, tours: 0, comision: 0 };
+
+    incluidas.forEach(([codigo, r]) => {
+      ingreso += r.ingreso;
+      const d = calcularDesgloseCostos(codigo);
+      desglose.boletos += d.boletos;
+      desglose.hospedaje += d.hospedaje;
+      desglose.traslados += d.traslados;
+      desglose.tours += d.tours;
+      desglose.comision += d.comision;
+    });
+
+    const costo = desglose.boletos + desglose.hospedaje + desglose.traslados + desglose.tours + desglose.comision;
+    const ganancia = ingreso - costo;
+    const margen = ingreso > 0 ? (ganancia / ingreso * 100) : 0;
+
+    document.getElementById("balanceIngreso").textContent = formatoMoneda(ingreso);
+    document.getElementById("balanceCantidad").textContent = `${incluidas.length} reserva${incluidas.length === 1 ? '' : 's'}`;
+    document.getElementById("balanceCosto").textContent = formatoMoneda(costo);
+    document.getElementById("balanceGanancia").textContent = formatoMoneda(ganancia);
+    document.getElementById("balanceMargen").textContent = `margen: ${margen.toFixed(1)}%`;
+
+    const tabla = document.getElementById("tablaDesgloseBalance");
+    tabla.innerHTML = "";
+    Object.keys(ETIQUETAS_DESGLOSE_BALANCE).forEach(clave => {
+      const monto = desglose[clave];
+      const porcentaje = costo > 0 ? (monto / costo * 100) : 0;
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td>${ETIQUETAS_DESGLOSE_BALANCE[clave]}</td>
+        <td>${formatoMoneda(monto)}</td>
+        <td>${porcentaje.toFixed(1)}%</td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
+
+  function aplicarRangoBalance(tipo) {
+    const hoy = new Date();
+    let desde, hasta;
+
+    if (tipo === "mes-actual") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    } else if (tipo === "mes-anterior") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    } else if (tipo === "ano-actual") {
+      desde = new Date(hoy.getFullYear(), 0, 1);
+      hasta = new Date(hoy.getFullYear(), 11, 31);
+    }
+
+    document.getElementById("balanceDesde").value = formatearFechaInput(desde);
+    document.getElementById("balanceHasta").value = formatearFechaInput(hasta);
+    document.getElementById("balanceMesEspecifico").value = "";
+    marcarBotonBalanceActivo(tipo);
+    renderizarBalance();
+  }
+
+  // NUEVO: para consultas puntuales como "cuánto fue la ganancia de junio
+  // 2026" sin tener que calcular a mano el primer y último día del mes.
+  function aplicarMesEspecificoBalance() {
+    const valor = document.getElementById("balanceMesEspecifico").value; // formato "2026-06"
+    if (!valor) {
+      alert("Elegí un mes primero.");
+      return;
+    }
+    const [anio, mes] = valor.split("-").map(Number);
+    const desde = new Date(anio, mes - 1, 1);
+    const hasta = new Date(anio, mes, 0);
+
+    document.getElementById("balanceDesde").value = formatearFechaInput(desde);
+    document.getElementById("balanceHasta").value = formatearFechaInput(hasta);
+    document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
+    renderizarBalance();
+  }
+
+  function marcarBotonBalanceActivo(cual) {
+    document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
+    const indice = { "mes-actual": 0, "mes-anterior": 1, "ano-actual": 2 }[cual];
+    const botones = document.querySelectorAll(".btn-rango-balance");
+    if (botones[indice]) botones[indice].classList.add("activo");
+  }
+
   // Menú lateral de navegación (igual que el resto del sistema)
   function inicializarMenuLateral() {
     const usuario = JSON.parse(localStorage.getItem("usuario"));
@@ -1467,6 +1656,18 @@
     document.getElementById("cobrarHasta").addEventListener("change", () => {
       document.querySelectorAll(".btn-rango-cobrar").forEach(btn => btn.classList.remove("activo"));
       renderizarPorCobrar();
+    });
+
+    // NUEVO: mismo comportamiento para Balance por Período.
+    document.getElementById("balanceDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
+      document.getElementById("balanceMesEspecifico").value = "";
+      renderizarBalance();
+    });
+    document.getElementById("balanceHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
+      document.getElementById("balanceMesEspecifico").value = "";
+      renderizarBalance();
     });
   });
 </script>
