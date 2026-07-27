@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
     /* Menú lateral — mismo estilo que el resto del sistema. */
@@ -354,6 +355,28 @@
   </div>
 
   <div class="seccion">
+    <h3>📈 Comportamiento de Ventas</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Tendencia mes a mes o año a año — "Total creado" cuenta por fecha de venta, "Total pagado" cuenta por fecha real de cada pago recibido.</p>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+      <div style="display:flex; gap:6px;">
+        <button type="button" onclick="cambiarTipoGrafico('creado')" id="btnGraficoCreado" class="btn-rango activo">Total creado</button>
+        <button type="button" onclick="cambiarTipoGrafico('pagado')" id="btnGraficoPagado" class="btn-rango">Total pagado</button>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button type="button" onclick="cambiarPeriodoGrafico('mensual')" id="btnGraficoMensual" class="btn-rango activo">Mensual</button>
+        <button type="button" onclick="cambiarPeriodoGrafico('anual')" id="btnGraficoAnual" class="btn-rango">Anual</button>
+      </div>
+    </div>
+
+    <div style="font-size:1.8rem; font-weight:bold; color:#02535a; margin-bottom:12px;" id="graficoTotalGeneral">$0.00</div>
+
+    <div style="position:relative; height:320px;">
+      <canvas id="canvasGraficoVentas"></canvas>
+    </div>
+  </div>
+
+  <div class="seccion">
     <h3>🗓️ Viajes por fecha</h3>
     <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Elige el rango que quieras ver — por defecto muestra los próximos 30 días, pero lo puedes ampliar o achicar.</p>
 
@@ -628,6 +651,12 @@
   // volver a filtrar la tabla de "Viajes por fecha" al instante cuando se
   // cambia el rango — sin tener que volver a consultar Firebase cada vez.
   let datosReservasPorCodigo = {};
+  // NUEVO: para el gráfico de "Comportamiento de Ventas" — un registro por
+  // venta (fecha de creación de la reserva + su monto) y uno por cada pago
+  // individual recibido (fecha real del pago + su monto), sin agrupar
+  // todavía — el gráfico agrupa por mes o año según lo que se elija.
+  let datosVentasCreadas = [];
+  let datosPagosRealizados = [];
   let datosCostosPorCodigo = {};
   // NUEVO: guarda las categorías tal cual (proveedor+monto por fila) de
   // cada reserva, para poder armar la Proyección de Pago por Proveedor —
@@ -645,6 +674,8 @@
     // facturacion.html, así que usarlo directo daría cifras viejas.
     const reservasSnap = await db.collection("reservas").get();
     const reservasPorCodigo = {};
+    const ventasCreadas = [];
+    const pagosRealizados = [];
 
     reservasSnap.forEach(doc => {
       const data = doc.data();
@@ -672,6 +703,13 @@
         vendedor: data.vendedor || '',
         destino: data.nombreDestino || ''
       };
+
+      // NUEVO: alimenta el gráfico de Comportamiento de Ventas.
+      if (creadoEl) ventasCreadas.push({ fecha: creadoEl, monto: total });
+      (data.pagos || []).forEach(p => {
+        const fechaPago = parseFechaReserva(p.fecha);
+        if (fechaPago) pagosRealizados.push({ fecha: fechaPago, monto: Number(p.monto) || 0 });
+      });
     });
 
     // ---------- 2. COSTOS: se usa para las secciones de abajo (Viajes por
@@ -697,11 +735,15 @@
     datosReservasPorCodigo = reservasPorCodigo;
     datosCostosPorCodigo = costosPorCodigo;
     datosCategoriasPorCodigo = categoriasPorCodigo;
+    datosVentasCreadas = ventasCreadas;
+    datosPagosRealizados = pagosRealizados;
 
     // Por defecto arranca mostrando los próximos 30 días.
     aplicarRangoRapido(30);
     // Y el resumen de ventas arranca mostrando el mes en curso.
     aplicarRangoVentas("mes-actual");
+    // Gráfico de Comportamiento de Ventas — arranca en Total creado / Mensual.
+    renderizarGraficoVentas();
     // Por Cobrar arranca mostrando los próximos 30 días de viaje.
     aplicarRangoCobrar(30);
     // Proyección de pago por proveedor — mismo criterio de rango rápido
@@ -886,6 +928,99 @@
   }
 
   // ==========================================
+  // NUEVO: Gráfico "Comportamiento de Ventas" — barras mes a mes (últimos
+  // 12 meses) o año a año, alternando entre Total Creado (fecha de venta)
+  // y Total Pagado (fecha real de cada pago recibido).
+  // ==========================================
+
+  let tipoGraficoActual = "creado";
+  let periodoGraficoActual = "mensual";
+  let chartVentas = null;
+
+  const NOMBRES_MES_CORTOS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+  function cambiarTipoGrafico(tipo) {
+    tipoGraficoActual = tipo;
+    document.getElementById("btnGraficoCreado").classList.toggle("activo", tipo === "creado");
+    document.getElementById("btnGraficoPagado").classList.toggle("activo", tipo === "pagado");
+    renderizarGraficoVentas();
+  }
+
+  function cambiarPeriodoGrafico(periodo) {
+    periodoGraficoActual = periodo;
+    document.getElementById("btnGraficoMensual").classList.toggle("activo", periodo === "mensual");
+    document.getElementById("btnGraficoAnual").classList.toggle("activo", periodo === "anual");
+    renderizarGraficoVentas();
+  }
+
+  function renderizarGraficoVentas() {
+    const datos = tipoGraficoActual === "creado" ? datosVentasCreadas : datosPagosRealizados;
+    let labels = [];
+    let valores = [];
+
+    if (periodoGraficoActual === "mensual") {
+      // Últimos 12 meses, terminando en el mes actual.
+      const hoy = new Date();
+      const meses = [];
+      for (let i = 11; i >= 0; i--) {
+        meses.push(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1));
+      }
+      labels = meses.map(d => NOMBRES_MES_CORTOS[d.getMonth()]);
+      valores = meses.map(d =>
+        datos
+          .filter(x => x.fecha.getFullYear() === d.getFullYear() && x.fecha.getMonth() === d.getMonth())
+          .reduce((sum, x) => sum + x.monto, 0)
+      );
+    } else {
+      // Anual: agrupa todo lo que haya, por año.
+      const porAnio = {};
+      datos.forEach(x => {
+        const anio = x.fecha.getFullYear();
+        porAnio[anio] = (porAnio[anio] || 0) + x.monto;
+      });
+      const anios = Object.keys(porAnio).sort();
+      labels = anios;
+      valores = anios.map(a => porAnio[a]);
+    }
+
+    const totalGeneral = valores.reduce((sum, v) => sum + v, 0);
+    document.getElementById("graficoTotalGeneral").textContent = formatoMoneda(totalGeneral);
+
+    const ctx = document.getElementById("canvasGraficoVentas").getContext("2d");
+    if (chartVentas) chartVentas.destroy();
+    chartVentas = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: tipoGraficoActual === "creado" ? "Total creado" : "Total pagado",
+          data: valores,
+          backgroundColor: "#02535a",
+          borderRadius: 6,
+          maxBarThickness: 60
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => formatoMoneda(ctx.parsed.y)
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: v => "$" + v.toLocaleString() }
+          }
+        }
+      }
+    });
+  }
+
   // ==========================================
   // NUEVO: Sección "Por Cobrar" — filtra por fecha de VIAJE, para poder
   // ver, por ejemplo, quién viaja en los próximos 30 días y todavía debe.
