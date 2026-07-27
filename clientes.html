@@ -305,8 +305,10 @@
       cursor: pointer;
       font-size: 13px;
       font-weight: bold;
+      display: inline-block;
+      text-decoration: none;
     }
-    .btn-ver-reserva:hover { background-color: #036a6d; }
+    .btn-ver-reserva:hover { background-color: #036a6d; color: white; }
   </style>
 </head>
 <body>
@@ -542,7 +544,7 @@
             <td>${r.codigo}</td>
             <td>${r.nombreDestino || r.destino || ''}</td>
             <td>${formatearFechaVisible(r.fechaReserva)}</td>
-            <td><button class="btn-ver-reserva" onclick="window.location.href='detalle_reserva.html?codigo=${r.codigo}'">Ver</button></td>
+            <td><a class="btn-ver-reserva" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">Ver</a></td>
           `;
           body.appendChild(fila);
         });
