@@ -424,7 +424,31 @@
 
   <div class="seccion">
     <h3>💳 Proyecciones de Pago por Proveedor</h3>
-    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Cuánto le debés a cada proveedor ahora mismo — solo cuenta lo que todavía está proyectado (sin marcar como pagado en costos_agregar.html). Dale clic a un proveedor para ver el detalle reserva por reserva.</p>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE (no de venta) — así sabés con cuánto tenés que contar para un período específico. Solo cuenta lo todavía proyectado (sin marcar como pagado en costos_agregar.html). Dale clic a un proveedor para ver el detalle reserva por reserva.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="proveedoresDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="proveedoresHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoProveedores(7)" class="btn-rango btn-rango-proveedores">7 días</button>
+        <button type="button" onclick="aplicarRangoProveedores(30)" class="btn-rango btn-rango-proveedores">30 días</button>
+        <button type="button" onclick="aplicarRangoProveedores(60)" class="btn-rango btn-rango-proveedores">60 días</button>
+        <button type="button" onclick="aplicarRangoProveedores(90)" class="btn-rango btn-rango-proveedores">90 días</button>
+        <button type="button" onclick="aplicarRangoProveedoresTodas()" class="btn-rango btn-rango-proveedores">Todas las activas</button>
+      </div>
+    </div>
+
+    <div class="tarjeta pagar" style="max-width:340px; margin-bottom:18px;">
+      <div class="etiqueta">Total a tener disponible en el rango</div>
+      <div class="monto" id="proveedoresTotalPendiente">$0.00</div>
+      <div class="detalle" id="proveedoresDetalleTotal">calculando...</div>
+    </div>
 
     <table>
       <thead>
@@ -437,7 +461,7 @@
       </thead>
       <tbody id="tablaProyeccionesPago"></tbody>
     </table>
-    <div id="avisoSinProyecciones" class="vacio" style="display:none;">No hay montos proyectados pendientes de pago en este momento.</div>
+    <div id="avisoSinProyecciones" class="vacio" style="display:none;">No hay montos proyectados pendientes de pago en ese rango.</div>
   </div>
 
   <div class="seccion">
@@ -720,9 +744,9 @@
     aplicarRangoRapido(30);
     // Y el resumen de ventas arranca mostrando el mes en curso.
     aplicarRangoVentas("mes-actual");
-    // Proyección de pago por proveedor — no depende de un rango de fechas,
-    // muestra todo lo pendiente de pagar ahora mismo.
-    renderizarProyeccionesPago();
+    // Proyección de pago por proveedor — mismo criterio de rango rápido
+    // que "Viajes por fecha", pero como sección independiente.
+    aplicarRangoProveedores(30);
   }
 
   // NUEVO: filtra y vuelve a dibujar la tabla de "Viajes por fecha" según
@@ -993,10 +1017,22 @@
   let datosProyeccionesPago = {};
 
   function calcularProyeccionesDePago() {
+    const desdeStr = document.getElementById("proveedoresDesde").value;
+    const hastaStr = document.getElementById("proveedoresHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
     const grupos = {};
 
     Object.entries(datosCategoriasPorCodigo).forEach(([codigo, categorias]) => {
       const infoReserva = datosReservasPorCodigo[codigo];
+
+      // Filtra por fecha de VIAJE de esa reserva (no por fecha de venta) —
+      // sin fecha de viaje conocida, no se puede ubicar en el rango.
+      if (!infoReserva?.fecha) return;
+      if (desde && infoReserva.fecha < desde) return;
+      if (hasta && infoReserva.fecha > hasta) return;
+
       ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
         let items = categorias?.[clave];
         if (!items) items = [];
@@ -1037,6 +1073,12 @@
     tabla.innerHTML = "";
 
     const llaves = Object.keys(datosProyeccionesPago).sort((a, b) => datosProyeccionesPago[b].total - datosProyeccionesPago[a].total);
+    const totalGeneral = llaves.reduce((sum, llave) => sum + datosProyeccionesPago[llave].total, 0);
+    const totalReservasUnicas = new Set(llaves.flatMap(llave => datosProyeccionesPago[llave].reservas.map(r => r.codigo))).size;
+
+    document.getElementById("proveedoresTotalPendiente").textContent = formatoMoneda(totalGeneral);
+    document.getElementById("proveedoresDetalleTotal").textContent =
+      `${llaves.length} proveedor${llaves.length === 1 ? '' : 'es'} · ${totalReservasUnicas} reserva${totalReservasUnicas === 1 ? '' : 's'}`;
 
     if (llaves.length === 0) {
       document.getElementById("avisoSinProyecciones").style.display = "block";
@@ -1054,6 +1096,36 @@
         tabla.appendChild(fila);
       });
     }
+  }
+
+  // NUEVO: rangos rápidos para Proyecciones de Pago — filtra por fecha de
+  // viaje, igual que "Viajes por fecha", pero como sección independiente.
+  function aplicarRangoProveedores(dias) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const hasta = new Date(hoy);
+    hasta.setDate(hasta.getDate() + dias);
+
+    document.getElementById("proveedoresDesde").value = formatearFechaInput(hoy);
+    document.getElementById("proveedoresHasta").value = formatearFechaInput(hasta);
+    marcarBotonProveedoresActivo(dias);
+    renderizarProyeccionesPago();
+  }
+
+  function aplicarRangoProveedoresTodas() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    document.getElementById("proveedoresDesde").value = formatearFechaInput(hoy);
+    document.getElementById("proveedoresHasta").value = "";
+    marcarBotonProveedoresActivo("todas");
+    renderizarProyeccionesPago();
+  }
+
+  function marcarBotonProveedoresActivo(cual) {
+    document.querySelectorAll(".btn-rango-proveedores").forEach(btn => btn.classList.remove("activo"));
+    const indice = { 7: 0, 30: 1, 60: 2, 90: 3, todas: 4 }[cual];
+    const botones = document.querySelectorAll(".btn-rango-proveedores");
+    if (botones[indice]) botones[indice].classList.add("activo");
   }
 
   function abrirModalProveedorDetalle(llave) {
@@ -1147,6 +1219,16 @@
     document.getElementById("ventasHasta").addEventListener("change", () => {
       document.querySelectorAll(".btn-rango-ventas").forEach(btn => btn.classList.remove("activo"));
       renderizarResumenVentas();
+    });
+
+    // NUEVO: mismo comportamiento para Proyecciones de Pago por Proveedor.
+    document.getElementById("proveedoresDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-proveedores").forEach(btn => btn.classList.remove("activo"));
+      renderizarProyeccionesPago();
+    });
+    document.getElementById("proveedoresHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-proveedores").forEach(btn => btn.classList.remove("activo"));
+      renderizarProyeccionesPago();
     });
   });
 </script>
