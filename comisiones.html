@@ -1,89 +1,455 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Comisiones por Tour</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comisiones - Excursiones Delgado</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f7f7; padding: 30px; }
-    h2 { text-align: center; color: #02535a; }
-    .tabla-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 100%; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ccc; padding: 10px; text-align: left; }
-    th { background-color: #02535a; color: white; }
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links li a.activo {
+      background-color: #ffb703;
+      color: #02535a;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+      padding-left: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+        padding-left: 70px;
+      }
+    }
+    body {
+      background-color: #f4f7f8;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      padding: 30px;
+    }
+    h1 {
+      font-size: 28px;
+      font-weight: bold;
+      color: #02535a;
+      margin-bottom: 6px;
+    }
+    .subtitulo {
+      color: #5f9296;
+      font-size: 0.9rem;
+      margin-top: 0;
+      margin-bottom: 25px;
+    }
+    th {
+      background-color: #02535a;
+      color: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+    td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      background-color: white;
+    }
+    tr:nth-child(even) td {
+      background-color: #f1f1f1;
+    }
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      display: none;
+      z-index: 9999;
+    }
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      width: 95%;
+      max-width: 650px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: relative;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .modal h2 {
+      color: #02535a;
+    }
+    .btn {
+      padding: 8px 14px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+    }
+    .cifra-pendiente { color: #a35b00; font-weight: bold; }
+    .cifra-pagado { color: #1b9e3c; font-weight: bold; }
   </style>
 </head>
 <body>
-  <h2>Tabla de Comisiones por Tour</h2>
-  <div class="tabla-container">
-    <table>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="comisiones.html" class="activo"><span class="icon">💰</span>Comisiones</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
+      <li><a href="finanzas.html"><span class="icon">💵</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesion()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+  <div class="container">
+    <h1>💰 Comisiones</h1>
+    <p class="subtitulo">Cada persona registrada en Usuarios aparece aquí automáticamente, con el total real acumulado.</p>
+
+    <table style="width: 100%; border-collapse: collapse; background-color: white;">
       <thead>
         <tr>
-          <th>Destino</th>
-          <th>Precio Adulto</th>
-          <th>% Comisión Adulto</th>
-          <th>Comisión Adulto</th>
-          <th>Precio Niño</th>
-          <th>% Comisión Niño</th>
-          <th>Comisión Niño</th>
-          <th>Precio Bebé</th>
-          <th>% Comisión Bebé</th>
-          <th>Comisión Bebé</th>
+          <th>Colaborador(a)</th>
+          <th>Rol</th>
+          <th>Pendiente de pago</th>
+          <th>Ya pagado</th>
+          <th>Acción</th>
         </tr>
       </thead>
       <tbody id="tablaComisiones"></tbody>
     </table>
   </div>
+  </main>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDUEZgkW-3HbZu2BLej4v0mbDHZf2vRo8",
-      authDomain: "tours-460717.firebaseapp.com",
-      projectId: "tours-460717"
+  <!-- Modal para pagar comisiones — se eligen reserva por reserva cuáles
+       entran en el pago, no todo de golpe. -->
+  <div id="modalComisiones" class="modal">
+    <div class="modal-content">
+      <h2 id="tituloModalComisiones">Comisiones de</h2>
+      <p style="font-size:0.85rem; color:#666; margin-top:-10px;">Marca las reservas que quieres incluir en este pago. El monto se puede ajustar si pagaste distinto a lo proyectado.</p>
+      <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
+        <thead>
+          <tr style="background:#5f9296; color:white;">
+            <th style="padding:8px;"></th>
+            <th style="padding:8px;">Reserva</th>
+            <th style="padding:8px;">Fecha viaje</th>
+            <th style="padding:8px;">Monto</th>
+          </tr>
+        </thead>
+        <tbody id="filasComisionesPendientes"></tbody>
+      </table>
+      <div id="avisoSinPendientesComisiones" style="display:none; color:#888; text-align:center; padding:15px;">Esta persona no tiene comisiones pendientes de pago.</div>
+      <div style="text-align:right;">
+        <button type="button" onclick="cerrarModalComisiones()" class="btn">Cancelar</button>
+        <button type="button" onclick="pagarComisionesSeleccionadas()" class="btn" style="background-color:#02535a; color:white;">💾 Registrar pago</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.firebasestorage.app",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function inicializarMenuLateral() {
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const sidebar = document.getElementById("sidebar");
+    const contenido = document.getElementById("contenidoPrincipal");
+    const toggleBtn = document.querySelector('.toggle-btn');
+
+    if (usuario) {
+      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+      document.getElementById("rolUsuario").innerText = usuario.rol || "";
+    } else {
+      document.getElementById("nombreUsuario").innerText = "Invitado";
+    }
+
+    window.toggleSidebar = function () {
+      sidebar.classList.toggle('active');
+      contenido.classList.toggle('sidebar-visible');
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
 
-    function cargarComisiones() {
-      db.collection("tours").get().then(snapshot => {
-        const tabla = document.getElementById("tablaComisiones");
-        tabla.innerHTML = "";
+    window.cerrarSesion = function () {
+      localStorage.removeItem("usuario");
+      window.location.href = "login.html";
+    };
 
-        snapshot.forEach(doc => {
-          const t = doc.data();
+    function checkScreenSize() {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('active');
+        contenido.classList.remove('sidebar-visible');
+      } else {
+        sidebar.classList.add('active');
+        contenido.classList.add('sidebar-visible');
+      }
+      toggleBtn.style.display = "block";
+    }
 
-          const precioAdulto = parseFloat(t.precio_adulto || 0);
-          const comisionA = parseFloat(t.comision_adulto || 0);
-          const montoA = (precioAdulto * comisionA / 100).toFixed(2);
+    window.addEventListener('resize', checkScreenSize);
+    checkScreenSize();
+  }
+  inicializarMenuLateral();
 
-          const precioNino = parseFloat(t.precio_nino || 0);
-          const comisionN = parseFloat(t.comision_nino || 0);
-          const montoN = (precioNino * comisionN / 100).toFixed(2);
+  // ==========================================
+  // Comisiones — cada usuario registrado en Usuarios aparece aquí
+  // automáticamente, con el total real acumulado, leído directo de
+  // costos_reservas (categorias.comision), emparejando por nombre.
+  // ==========================================
 
-          const precioBebe = parseFloat(t.precio_bebe || 0);
-          const comisionB = parseFloat(t.comision_bebe || 0);
-          const montoB = (precioBebe * comisionB / 100).toFixed(2);
+  function comoDateComision(valor) {
+    if (!valor) return null;
+    if (typeof valor.toDate === "function") return valor.toDate();
+    return new Date(valor);
+  }
 
-          const fila = document.createElement("tr");
-          fila.innerHTML = `
-            <td>${t.nombre || '-'}</td>
-            <td>$${precioAdulto}</td>
-            <td>${comisionA}%</td>
-            <td>$${montoA}</td>
-            <td>$${precioNino}</td>
-            <td>${comisionN}%</td>
-            <td>$${montoN}</td>
-            <td>$${precioBebe}</td>
-            <td>${comisionB}%</td>
-            <td>$${montoB}</td>
-          `;
-          tabla.appendChild(fila);
-        });
+  async function cargarComisiones() {
+    const tabla = document.getElementById("tablaComisiones");
+    tabla.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999;">Cargando...</td></tr>`;
+
+    const usuariosSnap = await db.collection("usuarios").get();
+    const usuarios = usuariosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const costosSnap = await db.collection("costos_reservas").get();
+
+    window.comisionesPorUsuario = {};
+    usuarios.forEach(u => { window.comisionesPorUsuario[u.nombre] = { pendientes: [], pagadas: [] }; });
+
+    costosSnap.forEach(doc => {
+      const data = doc.data();
+      const comisiones = data.categorias?.comision;
+      if (!Array.isArray(comisiones)) return;
+
+      comisiones.forEach((item, indice) => {
+        if (!item.proveedor || !window.comisionesPorUsuario[item.proveedor]) return;
+        const esReal = typeof item.real === "number";
+        const registro = {
+          docId: doc.id,
+          indice,
+          reserva: data.codigo,
+          fecha_viaje: data.fecha_viaje,
+          monto: esReal ? item.real : (item.proyectado || 0),
+          fecha_pago_real: item.fecha_pago_real || null
+        };
+        if (esReal) {
+          window.comisionesPorUsuario[item.proveedor].pagadas.push(registro);
+        } else {
+          window.comisionesPorUsuario[item.proveedor].pendientes.push(registro);
+        }
+      });
+    });
+
+    tabla.innerHTML = "";
+    if (usuarios.length === 0) {
+      tabla.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#999;">No hay usuarios registrados todavía.</td></tr>`;
+      return;
+    }
+
+    usuarios.forEach(u => {
+      const info = window.comisionesPorUsuario[u.nombre];
+      const totalPendiente = info.pendientes.reduce((sum, r) => sum + r.monto, 0);
+      const totalPagado = info.pagadas.reduce((sum, r) => sum + r.monto, 0);
+
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td>${u.nombre} ${u.apellidos || ''}</td>
+        <td>${u.rol || '-'}</td>
+        <td class="${totalPendiente > 0 ? 'cifra-pendiente' : ''}">$${totalPendiente.toFixed(2)}</td>
+        <td class="cifra-pagado">$${totalPagado.toFixed(2)}</td>
+        <td>
+          <button class="btn" style="background-color:#f49859; color:white;" onclick="abrirModalComisiones('${u.nombre}', '${(u.nombre + ' ' + (u.apellidos || '')).replace(/'/g, "\\'")}')">Ver / Pagar</button>
+        </td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
+
+  function abrirModalComisiones(nombreUsuario, nombreCompleto) {
+    window.comisionesUsuarioActual = nombreUsuario;
+    document.getElementById("tituloModalComisiones").textContent = `Comisiones de ${nombreCompleto}`;
+
+    const pendientes = window.comisionesPorUsuario[nombreUsuario]?.pendientes || [];
+    const filas = document.getElementById("filasComisionesPendientes");
+    filas.innerHTML = "";
+
+    if (pendientes.length === 0) {
+      document.getElementById("avisoSinPendientesComisiones").style.display = "block";
+    } else {
+      document.getElementById("avisoSinPendientesComisiones").style.display = "none";
+      pendientes.forEach((r, i) => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td style="padding:8px; text-align:center;"><input type="checkbox" class="check-comision" data-indice="${i}" checked></td>
+          <td style="padding:8px;">${r.reserva}</td>
+          <td style="padding:8px;">${r.fecha_viaje || '-'}</td>
+          <td style="padding:8px;"><input type="number" class="monto-comision" data-indice="${i}" value="${r.monto.toFixed(2)}" style="width:90px; margin:0; padding:6px;"></td>
+        `;
+        filas.appendChild(fila);
       });
     }
 
-    window.onload = cargarComisiones;
-  </script>
+    document.getElementById("modalComisiones").style.display = "flex";
+  }
+
+  function cerrarModalComisiones() {
+    document.getElementById("modalComisiones").style.display = "none";
+  }
+
+  async function pagarComisionesSeleccionadas() {
+    const pendientes = window.comisionesPorUsuario[window.comisionesUsuarioActual]?.pendientes || [];
+    const checks = document.querySelectorAll(".check-comision:checked");
+
+    if (checks.length === 0) {
+      alert("Marca al menos una reserva para registrar el pago.");
+      return;
+    }
+
+    const porDoc = {};
+    checks.forEach(chk => {
+      const i = parseInt(chk.dataset.indice);
+      const registro = pendientes[i];
+      const montoInput = document.querySelector(`.monto-comision[data-indice="${i}"]`);
+      const montoReal = parseFloat(montoInput.value) || 0;
+
+      if (!porDoc[registro.docId]) porDoc[registro.docId] = [];
+      porDoc[registro.docId].push({ indice: registro.indice, montoReal });
+    });
+
+    const ahora = new Date();
+
+    try {
+      for (const docId of Object.keys(porDoc)) {
+        const docRef = db.collection("costos_reservas").doc(docId);
+        const docSnap = await docRef.get();
+        const data = docSnap.data();
+        const comisiones = data.categorias?.comision || [];
+
+        porDoc[docId].forEach(cambio => {
+          comisiones[cambio.indice] = {
+            ...comisiones[cambio.indice],
+            real: cambio.montoReal,
+            fecha_pago_real: ahora
+          };
+        });
+
+        await docRef.update({ "categorias.comision": comisiones });
+      }
+
+      alert("✅ Pago de comisiones registrado.");
+      cerrarModalComisiones();
+      cargarComisiones();
+    } catch (e) {
+      console.error("Error al registrar el pago de comisiones:", e);
+      alert("❌ Ocurrió un error al registrar el pago.");
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", cargarComisiones);
+</script>
+  <script src="topbar.js"></script>
+  <script src="auth-guard.js"></script>
 </body>
 </html>
