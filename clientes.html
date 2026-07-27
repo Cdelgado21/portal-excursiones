@@ -286,6 +286,17 @@
       font-size: 14px;
       border-bottom: 1px solid #eee;
     }
+    .btn-ver-reserva {
+      background-color: #02535a;
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .btn-ver-reserva:hover { background-color: #036a6d; }
   </style>
 </head>
 <body>
@@ -453,8 +464,6 @@
           <td>
             <div class="celda-acciones">
               <button class="btn-icono" title="Reservas" onclick="abrirModalReservas('${cli.telefono}')">🔍</button>
-              <button class="btn-icono" title="Abono" onclick="registrarAbono('${cli.telefono}')">💰</button>
-              <button class="btn-icono" title="Facturas" onclick="verFacturas('${cli.telefono}')">🧾</button>
               <button class="btn-icono" title="Editar" onclick="editarCliente('${cli.telefono}')">✏️</button>
               <button class="btn-icono eliminar" title="Eliminar" onclick="eliminarCliente('${cli.telefono}')">🗑️</button>
             </div>
@@ -521,7 +530,7 @@
             <td>${r.codigo}</td>
             <td>${r.nombreDestino || r.destino || ''}</td>
             <td>${formatearFechaVisible(r.fechaReserva)}</td>
-            <td><button class="btn-icono" onclick="window.location.href='detalle_reserva.html?codigo=${r.codigo}'">Ver</button></td>
+            <td><button class="btn-ver-reserva" onclick="window.location.href='detalle_reserva.html?codigo=${r.codigo}'">Ver</button></td>
           `;
           body.appendChild(fila);
         });
@@ -532,14 +541,6 @@
 
     function cerrarModalReservas() {
       document.getElementById("modalReservas").style.display = "none";
-    }
-
-    function registrarAbono(telefono) {
-      alert("💰 Aquí se abrirá el formulario de abono para el cliente: " + telefono);
-    }
-
-    function verFacturas(telefono) {
-      alert("🧾 Aquí se listarán las facturas emitidas al cliente: " + telefono);
     }
 
     function mostrarModal() {
