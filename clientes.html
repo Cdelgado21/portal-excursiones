@@ -9,8 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* NUEVO: menú lateral de navegación (mismo estilo que el resto del
-       sistema) — esta página nunca lo había tenido. */
     .toggle-btn {
       position: fixed;
       top: 20px;
@@ -106,67 +104,133 @@
     }
 
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
       background: #f0f7f7;
       margin: 0;
       padding: 0;
       color: #02535a;
     }
-    h1 {
-      text-align: center;
+    h2 {
+      margin-bottom: 4px;
+    }
+    .subtitulo {
+      color: #5f9296;
+      font-size: 0.9rem;
+      margin-top: 0;
+      margin-bottom: 25px;
+    }
+
+    .tabla-container {
+      max-width: 100%;
+      overflow-x: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 2px 14px rgba(2,83,90,0.08);
+    }
+
+    .acciones-superiores {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .btn-agregar {
+      font-size: 15px;
+      padding: 10px 20px;
+      border-radius: 8px;
       background-color: #02535a;
       color: white;
-      padding: 15px;
-      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
     }
+    .btn-agregar:hover { background-color: #036a6d; }
+
     input[type="search"] {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 20px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      flex: 1;
+      min-width: 240px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #cfe3e4;
       box-sizing: border-box;
+      font-size: 14px;
     }
+
     table {
       width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    }
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
-      text-align: left;
+      min-width: 900px;
+      border-collapse: separate;
+      border-spacing: 0;
     }
     th {
-      background-color: #5f9296;
-      color: white;
-    }
-    tr:hover {
-      background-color: #f5f5f5;
-    }
-    button {
-      background-color: #f49859;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      color: white;
-      cursor: pointer;
-      margin-right: 5px;
-    }
-    #crearClienteBtn {
-      margin-bottom: 20px;
       background-color: #02535a;
+      color: white;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 14px 16px;
+      text-align: left;
     }
+    th:first-child { border-top-left-radius: 10px; }
+    th:last-child { border-top-right-radius: 10px; text-align: center; }
+    td {
+      padding: 14px 16px;
+      font-size: 14.5px;
+      vertical-align: middle;
+      border-bottom: 1px solid #eef3f3;
+    }
+    tbody tr:hover { background-color: #f7fbfb; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .celda-nombre { font-weight: bold; color: #02535a; }
+    .celda-contacto small { display: block; color: #5f9296; font-size: 12.5px; }
+
+    .pastilla-pasaporte {
+      display: inline-block;
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: bold;
+    }
+    .pastilla-pasaporte.ok { background: #e0f5e0; color: #1b6e1b; }
+    .pastilla-pasaporte.pronto { background: #fdecd2; color: #a35b00; }
+    .pastilla-pasaporte.vencido { background: #fbe2e0; color: #b23327; }
+    .pastilla-pasaporte.sin-dato { background: #f0f0f0; color: #999; }
+
+    .celda-acciones {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-icono {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      background-color: #eef6f6;
+      color: #02535a;
+    }
+    .btn-icono:hover { background-color: #02535a; color: white; }
+    .btn-icono.eliminar:hover { background-color: #c0392b; color: white; }
+
+    .vacio { text-align: center; color: #999; padding: 30px; }
+
     #modal, #modalReservas {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       background: rgba(0,0,0,0.5);
       justify-content: center;
       align-items: center;
@@ -174,22 +238,53 @@
     }
     #modalContent, #modalReservasContent {
       background: white;
-      padding: 20px;
-      border-radius: 8px;
+      padding: 25px;
+      border-radius: 12px;
       width: 90%;
-      max-width: 600px;
+      max-width: 480px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    #modalReservasContent { max-width: 640px; }
+    #modalContent h3, #modalReservasContent h3 { color: #02535a; margin-top: 0; }
+    #modalContent label {
+      display: block;
+      font-weight: bold;
+      font-size: 13px;
+      margin-top: 12px;
+      margin-bottom: 4px;
+      color: #02535a;
     }
     #modalContent input {
       width: 100%;
-      padding: 8px;
-      margin-bottom: 10px;
+      padding: 9px;
       border: 1px solid #ccc;
-      border-radius: 5px;
+      border-radius: 6px;
       box-sizing: border-box;
     }
-    #tablaReservas td, #tablaReservas th {
-      padding: 8px;
-      border: 1px solid #ccc;
+    #modalContent .botones, #modalReservasContent .botones {
+      margin-top: 20px;
+      text-align: right;
+    }
+    #modalContent .botones button, #modalReservasContent .botones button {
+      padding: 9px 18px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    .btn-guardar-modal { background: #02535a; color: white; }
+    .btn-cancelar-modal { background: #ccc; color: #333; }
+    #tablaReservas { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    #tablaReservas th {
+      background-color: #5f9296;
+      font-size: 13px;
+      padding: 10px;
+    }
+    #tablaReservas td {
+      padding: 10px;
+      font-size: 14px;
+      border-bottom: 1px solid #eee;
     }
   </style>
 </head>
@@ -209,43 +304,66 @@
       <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
       <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
       <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="comisiones.html"><span class="icon">💰</span>Comisiones</a></li>
       <li><a href="clientes.html" class="activo"><span class="icon">🧑‍💼</span>Clientes</a></li>
       <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
+      <li><a href="finanzas.html"><span class="icon">💵</span>Finanzas</a></li>
       <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
     </ul>
   </div>
 
   <main id="contenidoPrincipal">
 
-  <h1>Gestión de Clientes</h1>
-  <button id="crearClienteBtn" onclick="mostrarModal()">➕ Crear Cliente</button>
-  <input type="search" id="buscador" placeholder="Buscar por nombre, teléfono, correo o ID de reserva...">
+  <h2>🧑‍💼 Gestión de Clientes</h2>
+  <p class="subtitulo">Titulares de reserva, con fecha de nacimiento y vencimiento de pasaporte — para avisos y campañas futuras.</p>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Nombre</th>
-        <th>Teléfono</th>
-        <th>Correo</th>
-        <th>Nacionalidad</th>
-        <th>Pasaporte</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody id="tablaClientes"></tbody>
-  </table>
+  <div class="tabla-container">
+    <div class="acciones-superiores">
+      <button id="crearClienteBtn" class="btn-agregar" onclick="mostrarModal()">➕ Crear Cliente</button>
+      <input type="search" id="buscador" placeholder="🔍 Buscar por nombre, teléfono, correo o ID de reserva...">
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Contacto</th>
+          <th>Nacionalidad</th>
+          <th>Pasaporte</th>
+          <th>F. Nacimiento</th>
+          <th>Vence Pasaporte</th>
+          <th style="text-align:center;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaClientes"></tbody>
+    </table>
+    <div id="avisoVacio" class="vacio" style="display:none;">No hay clientes que coincidan con la búsqueda.</div>
+  </div>
+
+  </main>
 
   <div id="modal">
     <div id="modalContent">
       <h3>Nuevo Cliente</h3>
-      <input type="text" id="nuevoNombre" placeholder="Nombre completo">
-      <input type="text" id="nuevoTelefono" placeholder="Teléfono">
-      <input type="email" id="nuevoCorreo" placeholder="Correo electrónico">
-      <input type="text" id="nuevaNacionalidad" placeholder="Nacionalidad">
-      <input type="text" id="nuevoPasaporte" placeholder="Número de pasaporte">
-      <button onclick="guardarNuevoCliente()">Guardar</button>
-      <button onclick="cerrarModal()">Cancelar</button>
+      <label>Nombre completo</label>
+      <input type="text" id="nuevoNombre">
+      <label>Teléfono</label>
+      <input type="text" id="nuevoTelefono">
+      <label>Correo electrónico</label>
+      <input type="email" id="nuevoCorreo">
+      <label>Nacionalidad</label>
+      <input type="text" id="nuevaNacionalidad">
+      <label>Número de pasaporte</label>
+      <input type="text" id="nuevoPasaporte">
+      <label>Fecha de nacimiento</label>
+      <input type="date" id="nuevaFechaNacimiento">
+      <label>Vencimiento del pasaporte</label>
+      <input type="date" id="nuevoVencimientoPasaporte">
+      <div class="botones">
+        <button class="btn-cancelar-modal" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn-guardar-modal" onclick="guardarNuevoCliente()">Guardar</button>
+      </div>
     </div>
   </div>
 
@@ -258,12 +376,11 @@
         </thead>
         <tbody id="bodyReservas"></tbody>
       </table>
-      <br>
-      <button onclick="cerrarModalReservas()">Cerrar</button>
+      <div class="botones">
+        <button class="btn-cancelar-modal" onclick="cerrarModalReservas()">Cerrar</button>
+      </div>
     </div>
   </div>
-
-  </main>
 
   <script>
     // FIX: firebaseConfig estaba incompleto (le faltaban storageBucket,
@@ -285,23 +402,62 @@
     const buscador = document.getElementById("buscador");
     let clientes = [];
     let reservas = [];
+    let clienteEnEdicion = null;
+
+    function formatearFechaVisible(str) {
+      if (!str) return '-';
+      const fecha = new Date(str + "T00:00:00");
+      if (isNaN(fecha.getTime())) return str;
+      const dia = String(fecha.getDate()).padStart(2, '0');
+      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+      return `${dia}/${mes}/${fecha.getFullYear()}`;
+    }
+
+    // Pastilla de vencimiento de pasaporte: vencido / vence pronto (dentro
+    // de 6 meses, el mismo plazo que ya se usa en las políticas de viaje) /
+    // vigente / sin dato.
+    function pastillaPasaporte(str) {
+      if (!str) return `<span class="pastilla-pasaporte sin-dato">Sin dato</span>`;
+      const vencimiento = new Date(str + "T00:00:00");
+      if (isNaN(vencimiento.getTime())) return `<span class="pastilla-pasaporte sin-dato">${str}</span>`;
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      const en6Meses = new Date(hoy);
+      en6Meses.setMonth(en6Meses.getMonth() + 6);
+
+      const texto = formatearFechaVisible(str);
+      if (vencimiento < hoy) return `<span class="pastilla-pasaporte vencido">⚠️ ${texto}</span>`;
+      if (vencimiento <= en6Meses) return `<span class="pastilla-pasaporte pronto">${texto}</span>`;
+      return `<span class="pastilla-pasaporte ok">${texto}</span>`;
+    }
 
     function mostrarClientes(filtrados) {
       tabla.innerHTML = "";
+
+      if (filtrados.length === 0) {
+        document.getElementById("avisoVacio").style.display = "block";
+        return;
+      }
+      document.getElementById("avisoVacio").style.display = "none";
+
       filtrados.forEach(cli => {
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td>${cli.nombre}</td>
-          <td>${cli.telefono}</td>
-          <td>${cli.correo}</td>
-          <td>${cli.nacionalidad || ''}</td>
-          <td>${cli.pasaporte || ''}</td>
+          <td class="celda-nombre">${cli.nombre}</td>
+          <td class="celda-contacto">${cli.telefono}<small>${cli.correo || ''}</small></td>
+          <td>${cli.nacionalidad || '-'}</td>
+          <td>${cli.pasaporte || '-'}</td>
+          <td>${formatearFechaVisible(cli.fechaNacimiento)}</td>
+          <td>${pastillaPasaporte(cli.vencimientoPasaporte)}</td>
           <td>
-            <button onclick="abrirModalReservas('${cli.telefono}')">🔍 Reservas</button>
-            <button onclick="registrarAbono('${cli.telefono}')">💰 Abono</button>
-            <button onclick="verFacturas('${cli.telefono}')">🧾 Facturas</button>
-            <button onclick="editarCliente('${cli.telefono}')">✏️ Editar</button>
-            <button onclick="eliminarCliente('${cli.telefono}')">🗑️ Eliminar</button>
+            <div class="celda-acciones">
+              <button class="btn-icono" title="Reservas" onclick="abrirModalReservas('${cli.telefono}')">🔍</button>
+              <button class="btn-icono" title="Abono" onclick="registrarAbono('${cli.telefono}')">💰</button>
+              <button class="btn-icono" title="Facturas" onclick="verFacturas('${cli.telefono}')">🧾</button>
+              <button class="btn-icono" title="Editar" onclick="editarCliente('${cli.telefono}')">✏️</button>
+              <button class="btn-icono eliminar" title="Eliminar" onclick="eliminarCliente('${cli.telefono}')">🗑️</button>
+            </div>
           </td>
         `;
         tabla.appendChild(row);
@@ -311,11 +467,14 @@
     function editarCliente(telefono) {
       const cliente = clientes.find(c => c.telefono === telefono);
       if (cliente) {
+        clienteEnEdicion = telefono;
         document.getElementById("nuevoNombre").value = cliente.nombre;
         document.getElementById("nuevoTelefono").value = cliente.telefono;
-        document.getElementById("nuevoCorreo").value = cliente.correo;
+        document.getElementById("nuevoCorreo").value = cliente.correo || '';
         document.getElementById("nuevaNacionalidad").value = cliente.nacionalidad || '';
         document.getElementById("nuevoPasaporte").value = cliente.pasaporte || '';
+        document.getElementById("nuevaFechaNacimiento").value = cliente.fechaNacimiento || '';
+        document.getElementById("nuevoVencimientoPasaporte").value = cliente.vencimientoPasaporte || '';
         mostrarModal();
       }
     }
@@ -325,7 +484,6 @@
         db.collection("clientes").doc(telefono).delete().then(() => {
           clientes = clientes.filter(c => c.telefono !== telefono);
           mostrarClientes(clientes);
-          alert("Cliente eliminado.");
         }).catch(err => alert("Error al eliminar: " + err));
       }
     }
@@ -335,7 +493,7 @@
       const filtrados = clientes.filter(c =>
         c.nombre.toLowerCase().includes(texto) ||
         c.telefono.toLowerCase().includes(texto) ||
-        c.correo.toLowerCase().includes(texto)
+        (c.correo || '').toLowerCase().includes(texto)
       );
 
       if (texto.startsWith("ed-")) {
@@ -354,16 +512,20 @@
       body.innerHTML = "";
       const reservasCliente = reservas.filter(r => r.telefonoCliente === telefono);
 
-      reservasCliente.forEach(r => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${r.codigo}</td>
-          <td>${r.destino || ''}</td>
-          <td>${r.fechaViaje || ''}</td>
-          <td><button onclick="window.location.href='detalle_reserva.html?codigo=${r.codigo}'">Ver</button></td>
-        `;
-        body.appendChild(fila);
-      });
+      if (reservasCliente.length === 0) {
+        body.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">Este cliente todavía no tiene reservas.</td></tr>`;
+      } else {
+        reservasCliente.forEach(r => {
+          const fila = document.createElement("tr");
+          fila.innerHTML = `
+            <td>${r.codigo}</td>
+            <td>${r.nombreDestino || r.destino || ''}</td>
+            <td>${formatearFechaVisible(r.fechaReserva)}</td>
+            <td><button class="btn-icono" onclick="window.location.href='detalle_reserva.html?codigo=${r.codigo}'">Ver</button></td>
+          `;
+          body.appendChild(fila);
+        });
+      }
 
       document.getElementById("modalReservas").style.display = "flex";
     }
@@ -386,6 +548,9 @@
 
     function cerrarModal() {
       document.getElementById("modal").style.display = "none";
+      clienteEnEdicion = null;
+      ["nuevoNombre","nuevoTelefono","nuevoCorreo","nuevaNacionalidad","nuevoPasaporte","nuevaFechaNacimiento","nuevoVencimientoPasaporte"]
+        .forEach(id => document.getElementById(id).value = "");
     }
 
     function guardarNuevoCliente() {
@@ -394,11 +559,15 @@
       const correo = document.getElementById("nuevoCorreo").value.trim();
       const nacionalidad = document.getElementById("nuevaNacionalidad").value.trim();
       const pasaporte = document.getElementById("nuevoPasaporte").value.trim();
+      const fechaNacimiento = document.getElementById("nuevaFechaNacimiento").value;
+      const vencimientoPasaporte = document.getElementById("nuevoVencimientoPasaporte").value;
 
       if (!nombre || !telefono || !correo) {
-        alert("Por favor complete todos los campos obligatorios.");
+        alert("Por favor completa nombre, teléfono y correo — son obligatorios.");
         return;
       }
+
+      const existente = clientes.find(c => c.telefono === telefono);
 
       const nuevo = {
         nombre,
@@ -406,16 +575,17 @@
         correo,
         nacionalidad,
         pasaporte,
-        fechaRegistro: new Date().toISOString()
+        fechaNacimiento,
+        vencimientoPasaporte,
+        fechaRegistro: existente?.fechaRegistro || new Date().toISOString()
       };
 
-      db.collection("clientes").doc(telefono).set(nuevo).then(() => {
+      db.collection("clientes").doc(telefono).set(nuevo, { merge: true }).then(() => {
         const index = clientes.findIndex(c => c.telefono === telefono);
         if (index !== -1) clientes[index] = nuevo;
         else clientes.push(nuevo);
         mostrarClientes(clientes);
         cerrarModal();
-        alert("✅ Cliente guardado correctamente.");
       }).catch(err => {
         console.error("Error al guardar cliente:", err);
         alert("❌ Hubo un error al guardar.");
@@ -433,7 +603,7 @@
       mostrarClientes(clientes);
     });
 
-    // NUEVO: menú lateral de navegación (igual que el resto del sistema)
+    // Menú lateral de navegación (igual que el resto del sistema)
     function inicializarMenuLateral() {
       const usuario = JSON.parse(localStorage.getItem("usuario"));
       const sidebar = document.getElementById("sidebar");
@@ -475,8 +645,7 @@
     inicializarMenuLateral();
   </script>
   <script src="topbar.js"></script>
-  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
-       de confiar solo en lo que dijera localStorage. -->
+  <!-- Verificación real de sesión (Firebase Authentication). -->
   <script src="auth-guard.js"></script>
 </body>
 </html>
