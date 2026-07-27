@@ -8,6 +8,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
     /* Menú lateral — mismo estilo que el resto del sistema. */
@@ -270,6 +272,20 @@
     .tabla-vendedores th {
       background-color: #5f9296;
     }
+    .alerta-vacia {
+      color: #1b9e3c;
+      font-weight: bold;
+      padding: 10px 0;
+    }
+    .badge-dias {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: bold;
+      background: #fbe2e0;
+      color: #c0392b;
+    }
   </style>
 </head>
 <body>
@@ -299,6 +315,12 @@
 
   <h2>💰 Panel Financiero</h2>
   <p class="subtitulo">Vista general de dinero por cobrar, por pagar, y ganancia — desglosada por período en las secciones de abajo.</p>
+
+  <div class="seccion" id="seccionAlertaCobro" style="border-left: 6px solid #c0392b;">
+    <h3>⚠️ Cobro Urgente</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Reservas que viajan en los próximos 15 días y todavía tienen saldo pendiente — según tu propia política, el saldo debe estar cancelado 15 días antes del viaje.</p>
+    <div id="contenidoAlertaCobro"></div>
+  </div>
 
   <div class="seccion">
     <h3>📊 Resumen de Ventas por Período</h3>
@@ -501,6 +523,43 @@
   </div>
 
   <div class="seccion">
+    <h3>🏆 Ranking de Destinos por Margen</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">No es lo mismo vender mucho que ganar mucho — acá ves qué destinos te dejan más ganancia real, no solo cuáles se venden más. Filtra por fecha de viaje.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="destinosDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="destinosHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoDestinos(30)" class="btn-rango btn-rango-destinos">30 días</button>
+        <button type="button" onclick="aplicarRangoDestinos(90)" class="btn-rango btn-rango-destinos">90 días</button>
+        <button type="button" onclick="aplicarRangoDestinos(180)" class="btn-rango btn-rango-destinos">180 días</button>
+        <button type="button" onclick="aplicarRangoDestinosTodas()" class="btn-rango btn-rango-destinos activo">Todas las activas</button>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Destino</th>
+          <th>Reservas</th>
+          <th>Ingreso</th>
+          <th>Costo</th>
+          <th>Ganancia</th>
+          <th>Margen</th>
+        </tr>
+      </thead>
+      <tbody id="tablaRankingDestinos"></tbody>
+    </table>
+    <div id="avisoSinDestinos" class="vacio" style="display:none;">No hay reservas con costos registrados en ese rango.</div>
+  </div>
+
+  <div class="seccion">
     <h3>📑 Balance por Período</h3>
     <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE — así ves la ganancia real de los viajes que salieron (o van a salir) en ese rango, con el desglose de en qué se fue el costo.</p>
 
@@ -553,6 +612,8 @@
       </thead>
       <tbody id="tablaDesgloseBalance"></tbody>
     </table>
+
+    <button type="button" onclick="exportarBalancePDF()" class="btn-panel-costos" style="margin-top:15px;">📄 Exportar Balance a PDF</button>
   </div>
 
   <div class="seccion">
@@ -831,8 +892,13 @@
     // Proyección de pago por proveedor — mismo criterio de rango rápido
     // que "Viajes por fecha", pero como sección independiente.
     aplicarRangoProveedores(30);
+    // Ranking de Destinos por Margen — arranca mostrando todas las activas.
+    aplicarRangoDestinosTodas();
     // Balance por Período arranca mostrando el mes en curso.
     aplicarRangoBalance("mes-actual");
+    // Alerta de Cobro Urgente — no depende de un rango de fechas, siempre
+    // muestra los próximos 15 días.
+    renderizarAlertaCobro();
   }
 
   // NUEVO: filtra y vuelve a dibujar la tabla de "Viajes por fecha" según
@@ -1172,6 +1238,65 @@
   }
 
   // ==========================================
+  // NUEVO: Alerta de Cobro Urgente — reservas que viajan en los próximos
+  // 15 días y todavía tienen saldo pendiente, según la propia política de
+  // la agencia (el saldo debe estar cancelado 15 días antes del viaje).
+  // ==========================================
+
+  const DIAS_ALERTA_COBRO = 15;
+
+  function renderizarAlertaCobro() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const limite = new Date(hoy);
+    limite.setDate(limite.getDate() + DIAS_ALERTA_COBRO);
+
+    const urgentes = Object.entries(datosReservasPorCodigo)
+      .filter(([codigo, r]) => r.activa && r.saldo > 0.01 && r.fecha && r.fecha >= hoy && r.fecha <= limite)
+      .sort((a, b) => a[1].fecha - b[1].fecha);
+
+    const contenedor = document.getElementById("contenidoAlertaCobro");
+
+    if (urgentes.length === 0) {
+      contenedor.innerHTML = `<div class="alerta-vacia">✅ Ninguna reserva con saldo pendiente viaja en los próximos ${DIAS_ALERTA_COBRO} días.</div>`;
+      return;
+    }
+
+    const totalUrgente = urgentes.reduce((sum, [codigo, r]) => sum + r.saldo, 0);
+    let filasHtml = "";
+    urgentes.forEach(([codigo, r]) => {
+      const diasRestantes = Math.round((r.fecha - hoy) / 86400000);
+      filasHtml += `
+        <tr>
+          <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
+          <td>${r.titular}</td>
+          <td>${r.destino || '-'}</td>
+          <td>${formatearFechaVisible(r.fecha)}</td>
+          <td><span class="badge-dias">${diasRestantes === 0 ? 'Hoy' : diasRestantes + ' día' + (diasRestantes === 1 ? '' : 's')}</span></td>
+          <td class="cifra-alerta">${formatoMoneda(r.saldo)}</td>
+        </tr>
+      `;
+    });
+
+    contenedor.innerHTML = `
+      <p style="font-weight:bold; color:#c0392b; margin-bottom:10px;">${urgentes.length} reserva${urgentes.length === 1 ? '' : 's'} — total pendiente: ${formatoMoneda(totalUrgente)}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Titular</th>
+            <th>Destino</th>
+            <th>Fecha de viaje</th>
+            <th>Faltan</th>
+            <th>Saldo</th>
+          </tr>
+        </thead>
+        <tbody>${filasHtml}</tbody>
+      </table>
+    `;
+  }
+
+  // ==========================================
   // NUEVO: Sección "Por Cobrar" — filtra por fecha de VIAJE, para poder
   // ver, por ejemplo, quién viaja en los próximos 30 días y todavía debe.
   // ==========================================
@@ -1449,6 +1574,8 @@
   // tener que ajustar Desde/Hasta a mano.
   // ==========================================
 
+  let ultimoBalanceCalculado = null;
+
   const ETIQUETAS_DESGLOSE_BALANCE = {
     boletos: "✈️ Boletos Aéreos",
     hospedaje: "🏨 Hospedaje",
@@ -1525,6 +1652,72 @@
       `;
       tabla.appendChild(fila);
     });
+
+    // NUEVO: guardado aparte para poder exportarlo a PDF sin tener que
+    // volver a calcular ni leer los valores desde el DOM.
+    ultimoBalanceCalculado = {
+      desdeStr, hastaStr, ingreso, costo, ganancia, margen,
+      cantidad: incluidas.length, desglose
+    };
+  }
+
+  // NUEVO: exporta el Balance por Período visible ahora mismo a un PDF
+  // simple — útil para llevárselo al contador o guardarlo como respaldo,
+  // sin tener que compartir acceso al sistema.
+  function exportarBalancePDF() {
+    if (!ultimoBalanceCalculado) {
+      alert("Todavía no hay un balance calculado. Esperá a que termine de cargar la página.");
+      return;
+    }
+    const b = ultimoBalanceCalculado;
+    const doc = new jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+    const COLOR_MARCA = [2, 83, 90];
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...COLOR_MARCA);
+    doc.text("Excursiones Delgado — Balance por Período", 18, 20);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    const periodoTexto = `Período: ${b.desdeStr ? formatearFechaVisible(new Date(b.desdeStr + "T00:00:00")) : "—"} al ${b.hastaStr ? formatearFechaVisible(new Date(b.hastaStr + "T00:00:00")) : "—"}`;
+    doc.text(periodoTexto, 18, 28);
+    doc.text(`Generado el ${formatearFechaVisible(new Date())} — ${b.cantidad} reserva${b.cantidad === 1 ? '' : 's'} con fecha de viaje en el rango`, 18, 34);
+
+    doc.autoTable({
+      startY: 42,
+      margin: { left: 18, right: 18 },
+      head: [["Concepto", "Monto"]],
+      body: [
+        ["Ingreso", formatoMoneda(b.ingreso)],
+        ["Costo total", formatoMoneda(b.costo)],
+        ["Ganancia", formatoMoneda(b.ganancia)],
+        ["Margen", `${b.margen.toFixed(1)}%`]
+      ],
+      theme: "plain",
+      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
+      styles: { fontSize: 10, cellPadding: 3 }
+    });
+
+    const filasDesglose = Object.keys(ETIQUETAS_DESGLOSE_BALANCE).map(clave => {
+      const monto = b.desglose[clave];
+      const porcentaje = b.costo > 0 ? (monto / b.costo * 100) : 0;
+      return [ETIQUETAS_DESGLOSE_BALANCE[clave], formatoMoneda(monto), `${porcentaje.toFixed(1)}%`];
+    });
+
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 10,
+      margin: { left: 18, right: 18 },
+      head: [["Desglose de Costos", "Monto", "% del costo total"]],
+      body: filasDesglose,
+      theme: "plain",
+      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
+      styles: { fontSize: 10, cellPadding: 3 }
+    });
+
+    const nombreArchivo = `Balance_${b.desdeStr || 'inicio'}_a_${b.hastaStr || 'hoy'}.pdf`;
+    doc.save(nombreArchivo);
   }
 
   function aplicarRangoBalance(tipo) {
@@ -1571,6 +1764,91 @@
     document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
     const indice = { "mes-actual": 0, "mes-anterior": 1, "ano-actual": 2 }[cual];
     const botones = document.querySelectorAll(".btn-rango-balance");
+    if (botones[indice]) botones[indice].classList.add("activo");
+  }
+
+  // ==========================================
+  // NUEVO: Ranking de Destinos por Margen — agrupa las reservas con costos
+  // registrados por destino, y compara ganancia real (no solo volumen de
+  // venta) — para saber cuáles destinos realmente conviene empujar.
+  // ==========================================
+
+  function renderizarRankingDestinos() {
+    const desdeStr = document.getElementById("destinosDesde").value;
+    const hastaStr = document.getElementById("destinosHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const grupos = {};
+
+    Object.entries(datosReservasPorCodigo).forEach(([codigo, r]) => {
+      if (!r.fecha) return;
+      if (desde && r.fecha < desde) return;
+      if (hasta && r.fecha > hasta) return;
+      const costos = datosCostosPorCodigo[codigo];
+      if (!costos) return; // sin costos registrados, no se puede calcular margen
+
+      const nombreDestino = r.destino || "Sin destino";
+      if (!grupos[nombreDestino]) grupos[nombreDestino] = { reservas: 0, ingreso: 0, costo: 0 };
+      grupos[nombreDestino].reservas++;
+      grupos[nombreDestino].ingreso += r.ingreso;
+      grupos[nombreDestino].costo += costos.costoTotal;
+    });
+
+    const nombres = Object.keys(grupos).map(nombre => {
+      const g = grupos[nombre];
+      const ganancia = g.ingreso - g.costo;
+      const margen = g.ingreso > 0 ? (ganancia / g.ingreso * 100) : 0;
+      return { nombre, ...g, ganancia, margen };
+    }).sort((a, b) => b.margen - a.margen);
+
+    const tabla = document.getElementById("tablaRankingDestinos");
+    tabla.innerHTML = "";
+
+    if (nombres.length === 0) {
+      document.getElementById("avisoSinDestinos").style.display = "block";
+    } else {
+      document.getElementById("avisoSinDestinos").style.display = "none";
+      nombres.forEach(d => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${d.nombre}</td>
+          <td>${d.reservas}</td>
+          <td>${formatoMoneda(d.ingreso)}</td>
+          <td>${formatoMoneda(d.costo)}</td>
+          <td class="${d.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${formatoMoneda(d.ganancia)}</td>
+          <td class="${d.margen >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${d.margen.toFixed(1)}%</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  function aplicarRangoDestinos(dias) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const hasta = new Date(hoy);
+    hasta.setDate(hasta.getDate() + dias);
+
+    document.getElementById("destinosDesde").value = formatearFechaInput(hoy);
+    document.getElementById("destinosHasta").value = formatearFechaInput(hasta);
+    marcarBotonDestinosActivo(dias);
+    renderizarRankingDestinos();
+  }
+
+  function aplicarRangoDestinosTodas() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    document.getElementById("destinosDesde").value = formatearFechaInput(hoy);
+    document.getElementById("destinosHasta").value = "";
+    marcarBotonDestinosActivo("todas");
+    renderizarRankingDestinos();
+  }
+
+  function marcarBotonDestinosActivo(cual) {
+    document.querySelectorAll(".btn-rango-destinos").forEach(btn => btn.classList.remove("activo"));
+    const indice = { 30: 0, 90: 1, 180: 2, todas: 3 }[cual];
+    const botones = document.querySelectorAll(".btn-rango-destinos");
     if (botones[indice]) botones[indice].classList.add("activo");
   }
 
@@ -1668,6 +1946,16 @@
       document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
       document.getElementById("balanceMesEspecifico").value = "";
       renderizarBalance();
+    });
+
+    // NUEVO: mismo comportamiento para el Ranking de Destinos por Margen.
+    document.getElementById("destinosDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-destinos").forEach(btn => btn.classList.remove("activo"));
+      renderizarRankingDestinos();
+    });
+    document.getElementById("destinosHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-destinos").forEach(btn => btn.classList.remove("activo"));
+      renderizarRankingDestinos();
     });
   });
 </script>
