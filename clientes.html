@@ -275,17 +275,27 @@
     }
     .btn-guardar-modal { background: #02535a; color: white; }
     .btn-cancelar-modal { background: #ccc; color: #333; }
-    #tablaReservas { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .tabla-reservas-container {
+      border: 1px solid #dde8e8;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    #tablaReservas { width: 100%; border-collapse: collapse; }
     #tablaReservas th {
       background-color: #5f9296;
       font-size: 13px;
       padding: 10px;
     }
+    #tablaReservas th:last-child { text-align: center; }
     #tablaReservas td {
       padding: 10px;
       font-size: 14px;
       border-bottom: 1px solid #eee;
+      border-right: 1px solid #f2f2f2;
     }
+    #tablaReservas td:last-child { border-right: none; text-align: center; }
+    #tablaReservas tr:last-child td { border-bottom: none; }
     .btn-ver-reserva {
       background-color: #02535a;
       color: white;
@@ -381,12 +391,14 @@
   <div id="modalReservas">
     <div id="modalReservasContent">
       <h3>Reservas del Cliente</h3>
-      <table id="tablaReservas">
-        <thead>
-          <tr><th>Código</th><th>Destino</th><th>Fecha Viaje</th><th>Acción</th></tr>
-        </thead>
-        <tbody id="bodyReservas"></tbody>
-      </table>
+      <div class="tabla-reservas-container">
+        <table id="tablaReservas">
+          <thead>
+            <tr><th>Código</th><th>Destino</th><th>Fecha Viaje</th><th>Acción</th></tr>
+          </thead>
+          <tbody id="bodyReservas"></tbody>
+        </table>
+      </div>
       <div class="botones">
         <button class="btn-cancelar-modal" onclick="cerrarModalReservas()">Cerrar</button>
       </div>
