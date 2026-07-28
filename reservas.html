@@ -223,6 +223,12 @@
     }
     .btn-icono:hover { background-color: #02535a; color: white; }
     .btn-icono.eliminar:hover { background-color: #c0392b; color: white; }
+
+    .check-reunion {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -381,6 +387,9 @@
             <td>${data.nombreDestino || data.destino || '-'}</td>
             <td>${calcularPersonas(data) ?? '-'}</td>
             <td>${formatearFechaVisible(data.fechaReserva)}</td>
+            <td style="text-align:center;">
+              <input type="checkbox" class="check-reunion" ${data.reunionRealizada ? 'checked' : ''} onchange="marcarReunionRealizada('${doc.id}', this.checked)" title="¿Ya se hizo la reunión de guía de viaje?">
+            </td>
             <td>
               <div class="celda-acciones">
                 <button class="btn-icono" title="Editar reserva" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
@@ -761,6 +770,25 @@
       }
 
       if (mensajeBoletos) alert(`✅ Reporte generado.${mensajeBoletos}`);
+    }
+
+    // ==========================================
+    // NUEVO: Reunión de Guía de Viaje — marca por reserva si ya se hizo la
+    // reunión virtual (Meet) de presentación de la guía. La alerta de
+    // "faltan menos de 15 días y no se ha hecho" vive en dashboard.html,
+    // no acá — este archivo solo guarda el estado del checkbox.
+    // ==========================================
+
+    async function marcarReunionRealizada(codigo, marcada) {
+      try {
+        await db.collection("reservas").doc(codigo).update({ reunionRealizada: marcada });
+        if (window.datosReservasPorCodigo[codigo]) {
+          window.datosReservasPorCodigo[codigo].reunionRealizada = marcada;
+        }
+      } catch (e) {
+        console.error("Error al actualizar el estado de la reunión:", e);
+        alert("❌ No se pudo guardar el cambio. Intenta de nuevo.");
+      }
     }
 
     function eliminarReserva(id) {
