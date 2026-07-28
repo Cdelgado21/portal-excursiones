@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salidas Grupales - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
+  <style>
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active { transform: translateX(0); }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 { font-size: 1rem; margin: 0; color: white; }
+    .sidebar .user-info small { font-size: 0.8rem; color: #f4f7f8; }
+    .nav-links { list-style: none; padding: 0; }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover { background-color: #e0e0e0; }
+    .nav-links li a.activo { background-color: #ffb703; color: #02535a; }
+    .nav-links .icon { margin-right: 10px; font-size: 1.2rem; }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+    }
+    main#contenidoPrincipal.sidebar-visible { margin-left: 250px; padding-left: 20px; }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible { margin-left: 0; padding-left: 70px; }
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f7f7;
+      margin: 0;
+      padding: 0;
+      color: #02535a;
+    }
+    h2 { margin-bottom: 4px; }
+    .subtitulo { color: #5f9296; font-size: 0.9rem; margin-top: 0; margin-bottom: 25px; }
+
+    .tabla-container {
+      max-width: 100%;
+      overflow-x: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 2px 14px rgba(2,83,90,0.08);
+    }
+    .barra-superior {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .btn-agregar {
+      font-size: 15px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      background-color: #02535a;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .btn-agregar:hover { background-color: #036a6d; }
+
+    table { width: 100%; min-width: 900px; border-collapse: separate; border-spacing: 0; }
+    th {
+      background-color: #02535a;
+      color: white;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 14px 16px;
+      text-align: left;
+    }
+    th:first-child { border-top-left-radius: 10px; }
+    th:last-child { border-top-right-radius: 10px; text-align: center; }
+    td {
+      padding: 14px 16px;
+      font-size: 14.5px;
+      vertical-align: middle;
+      border-bottom: 1px solid #eef3f3;
+    }
+    tbody tr:hover { background-color: #f7fbfb; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .pastilla-estado {
+      display: inline-block;
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: bold;
+    }
+    .pastilla-estado.activa { background: #e0f5e0; color: #1b6e1b; }
+    .pastilla-estado.cerrada { background: #fdecd2; color: #a35b00; }
+    .pastilla-estado.cancelada { background: #fbe2e0; color: #b23327; }
+
+    .barra-cupo {
+      width: 100%;
+      height: 8px;
+      background: #eef3f3;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .barra-cupo-relleno {
+      height: 100%;
+      background: #02535a;
+      border-radius: 999px;
+    }
+    .barra-cupo-relleno.lleno { background: #c0392b; }
+    .texto-cupo { font-size: 12px; color: #5f9296; margin-top: 2px; }
+
+    .celda-acciones { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
+    .btn-icono {
+      width: 34px; height: 34px; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 14px; display: inline-flex; align-items: center; justify-content: center;
+      transition: all 0.15s ease; background-color: #eef6f6; color: #02535a;
+    }
+    .btn-icono:hover { background-color: #02535a; color: white; }
+    .btn-icono.eliminar:hover { background-color: #c0392b; color: white; }
+
+    .vacio { text-align: center; color: #999; padding: 30px; }
+
+    .modal-sg {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    .modal-sg-content {
+      background: white;
+      padding: 28px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 480px;
+      max-height: 88vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .modal-sg-content.ancho { max-width: 650px; }
+    .modal-sg-content h3 { color: #02535a; margin-top: 0; }
+    .modal-sg-content label {
+      display: block;
+      font-weight: bold;
+      font-size: 13px;
+      margin-top: 12px;
+      margin-bottom: 4px;
+      color: #02535a;
+    }
+    .modal-sg-content input,
+    .modal-sg-content select,
+    .modal-sg-content textarea {
+      width: 100%;
+      padding: 9px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .modal-sg-content .botones { margin-top: 20px; text-align: right; }
+    .modal-sg-content .botones button {
+      padding: 9px 18px;
+      border-radius: 6px;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    .btn-guardar-sg { background: #02535a; color: white; }
+    .btn-cancelar-sg { background: #ccc; color: #333; }
+
+    .tabla-reservas-sg { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .tabla-reservas-sg th { background: #5f9296; font-size: 12.5px; padding: 8px; }
+    .tabla-reservas-sg td { padding: 8px; font-size: 13.5px; border-bottom: 1px solid #eee; }
+    .tabla-reservas-sg a { color: #02535a; font-weight: bold; text-decoration: none; }
+    .tabla-reservas-sg a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="salidas_grupales.html" class="activo"><span class="icon">🚌</span>Salidas Grupales</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+
+  <h2>🚌 Salidas Grupales</h2>
+  <p class="subtitulo">Cada salida es una fecha concreta de viaje para un destino Grupal — acá ves cuántas reservas y personas tiene cada una.</p>
+
+  <div class="tabla-container">
+    <div class="barra-superior">
+      <button class="btn-agregar" onclick="abrirModalNuevaSalida()">➕ Crear Salida Grupal</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Destino</th>
+          <th>Fecha de Salida</th>
+          <th>Estado</th>
+          <th>Reservas</th>
+          <th>Ocupación</th>
+          <th style="text-align:center;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaSalidas"></tbody>
+    </table>
+    <div id="avisoVacio" class="vacio" style="display:none;">Todavía no hay ninguna salida grupal creada.</div>
+  </div>
+
+  </main>
+
+  <!-- Modal: Crear / Editar salida grupal -->
+  <div id="modalSalida" class="modal-sg">
+    <div class="modal-sg-content">
+      <h3 id="tituloModalSalida">Crear Salida Grupal</h3>
+
+      <label>Destino</label>
+      <select id="sg_destino">
+        <option value="">Seleccione un destino</option>
+      </select>
+
+      <label>Fecha de Salida</label>
+      <input type="date" id="sg_fechaSalida">
+
+      <label>Fecha de Regreso (opcional)</label>
+      <input type="date" id="sg_fechaRegreso">
+
+      <div style="display:flex; gap:12px;">
+        <div style="flex:1;">
+          <label>Cupo mínimo (opcional)</label>
+          <input type="number" id="sg_cupoMinimo" placeholder="Ej. 10">
+        </div>
+        <div style="flex:1;">
+          <label>Cupo máximo (opcional)</label>
+          <input type="number" id="sg_cupoMaximo" placeholder="Ej. 25">
+        </div>
+      </div>
+
+      <label>Estado</label>
+      <select id="sg_estado">
+        <option value="Activa">Activa</option>
+        <option value="Cerrada">Cerrada</option>
+        <option value="Cancelada">Cancelada</option>
+      </select>
+
+      <label>Notas (opcional)</label>
+      <textarea id="sg_notas" rows="2" placeholder="Ej. Salida con Hotel Obo confirmado"></textarea>
+
+      <div class="botones">
+        <button class="btn-cancelar-sg" onclick="cerrarModalSalida()">Cancelar</button>
+        <button class="btn-guardar-sg" onclick="guardarSalida()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Ver reservas asociadas a una salida -->
+  <div id="modalReservasSalida" class="modal-sg">
+    <div class="modal-sg-content ancho">
+      <h3 id="tituloModalReservasSalida">Reservas de esta salida</h3>
+      <table class="tabla-reservas-sg">
+        <thead>
+          <tr><th>Código</th><th>Titular</th><th>Personas</th><th>Saldo</th></tr>
+        </thead>
+        <tbody id="tablaReservasDeSalida"></tbody>
+      </table>
+      <div id="avisoSinReservasSalida" class="vacio" style="display:none;">Todavía no hay ninguna reserva asociada a esta salida.</div>
+      <div class="botones">
+        <button class="btn-cancelar-sg" onclick="cerrarModalReservasSalida()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.firebasestorage.app",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function parseFechaSG(str) {
+    if (!str) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + "T00:00:00");
+    const partes = str.split("/");
+    if (partes.length === 3) {
+      const [dia, mes, año] = partes.map(Number);
+      if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) return new Date(año, mes - 1, dia);
+    }
+    return null;
+  }
+  function formatearFechaSG(str) {
+    const f = parseFechaSG(str);
+    if (!f) return '-';
+    return `${String(f.getDate()).padStart(2,'0')}/${String(f.getMonth()+1).padStart(2,'0')}/${f.getFullYear()}`;
+  }
+  function formatearFechaInputSG(fecha) {
+    return `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}-${String(fecha.getDate()).padStart(2,'0')}`;
+  }
+
+  let listaSalidas = [];
+  let reservasPorSalida = {}; // { salidaId: [ {codigo, titular, personas, saldo}, ... ] }
+  let destinosDisponibles = [];
+  let salidaEnEdicion = null;
+
+  async function cargarCatalogoDestinos() {
+    const snap = await db.collection("tours").get();
+    const nombres = new Set();
+    snap.forEach(doc => {
+      const data = doc.data();
+      if (data.tipoSalida === "Grupal" && data.nombre) nombres.add(data.nombre);
+    });
+    destinosDisponibles = Array.from(nombres).sort((a, b) => a.localeCompare(b));
+    const select = document.getElementById("sg_destino");
+    select.innerHTML = "<option value=''>Seleccione un destino</option>" +
+      destinosDisponibles.map(n => `<option value="${n}">${n}</option>`).join("");
+  }
+
+  // Calcula, para cada reserva Grupal, cuántas personas tiene (mismo criterio
+  // que se usa en el resto del sistema).
+  function calcularPersonasSG(data) {
+    const adultos = data.cantidadAdultos || 0;
+    const ninos = data.cantidadNinos || 0;
+    const bebes = data.cantidadBebes || 0;
+    const suma = adultos + ninos + bebes;
+    if (suma > 0) return suma;
+    if (Array.isArray(data.pasajeros) && data.pasajeros.length > 0) return data.pasajeros.length + 1;
+    return 1;
+  }
+
+  async function cargarReservasPorSalida() {
+    const snap = await db.collection("reservas").get();
+    reservasPorSalida = {};
+    snap.forEach(doc => {
+      const data = doc.data();
+      if (!data.salidaGrupalId) return;
+      if (!reservasPorSalida[data.salidaGrupalId]) reservasPorSalida[data.salidaGrupalId] = [];
+      const total = Number(data.total || 0);
+      const pagado = (data.pagos || []).reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+      reservasPorSalida[data.salidaGrupalId].push({
+        codigo: doc.id,
+        titular: data.nombreTitular || '-',
+        personas: calcularPersonasSG(data),
+        saldo: total - pagado
+      });
+    });
+  }
+
+  async function cargarSalidas() {
+    const tabla = document.getElementById("tablaSalidas");
+    tabla.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#999;">Cargando...</td></tr>`;
+
+    await Promise.all([cargarCatalogoDestinos(), cargarReservasPorSalida()]);
+
+    const snap = await db.collection("salidas_grupales").orderBy("fechaSalida").get();
+    listaSalidas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    tabla.innerHTML = "";
+    if (listaSalidas.length === 0) {
+      document.getElementById("avisoVacio").style.display = "block";
+      return;
+    }
+    document.getElementById("avisoVacio").style.display = "none";
+
+    listaSalidas.forEach(salida => {
+      const reservasAsociadas = reservasPorSalida[salida.id] || [];
+      const totalPersonas = reservasAsociadas.reduce((sum, r) => sum + r.personas, 0);
+      const cupoMax = Number(salida.cupoMaximo || 0);
+      const porcentaje = cupoMax > 0 ? Math.min((totalPersonas / cupoMax) * 100, 100) : 0;
+      const lleno = cupoMax > 0 && totalPersonas >= cupoMax;
+
+      const estadoClase = (salida.estado || "Activa").toLowerCase();
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td class="celda-nombre" style="font-weight:bold;">${salida.destino || '-'}</td>
+        <td>${formatearFechaSG(salida.fechaSalida)}</td>
+        <td><span class="pastilla-estado ${estadoClase}">${salida.estado || 'Activa'}</span></td>
+        <td>
+          <a href="#" onclick="abrirModalReservasDeSalida('${salida.id}'); return false;" style="color:#02535a; font-weight:bold; text-decoration:none;">
+            ${reservasAsociadas.length} reserva${reservasAsociadas.length === 1 ? '' : 's'}
+          </a>
+        </td>
+        <td>
+          ${cupoMax > 0 ? `
+            <div class="texto-cupo">${totalPersonas} / ${cupoMax} personas</div>
+            <div class="barra-cupo"><div class="barra-cupo-relleno ${lleno ? 'lleno' : ''}" style="width:${porcentaje}%;"></div></div>
+          ` : `<div class="texto-cupo">${totalPersonas} persona${totalPersonas === 1 ? '' : 's'} (sin cupo definido)</div>`}
+        </td>
+        <td>
+          <div class="celda-acciones">
+            <button class="btn-icono" title="Editar" onclick="abrirModalEditarSalida('${salida.id}')">✏️</button>
+            <button class="btn-icono eliminar" title="Eliminar" onclick="eliminarSalida('${salida.id}')">🗑️</button>
+          </div>
+        </td>
+      `;
+      tabla.appendChild(fila);
+    });
+  }
+
+  function abrirModalNuevaSalida() {
+    salidaEnEdicion = null;
+    document.getElementById("tituloModalSalida").textContent = "Crear Salida Grupal";
+    document.getElementById("sg_destino").value = "";
+    document.getElementById("sg_fechaSalida").value = "";
+    document.getElementById("sg_fechaRegreso").value = "";
+    document.getElementById("sg_cupoMinimo").value = "";
+    document.getElementById("sg_cupoMaximo").value = "";
+    document.getElementById("sg_estado").value = "Activa";
+    document.getElementById("sg_notas").value = "";
+    document.getElementById("modalSalida").style.display = "flex";
+  }
+
+  function abrirModalEditarSalida(id) {
+    const salida = listaSalidas.find(s => s.id === id);
+    if (!salida) return;
+    salidaEnEdicion = id;
+    document.getElementById("tituloModalSalida").textContent = "Editar Salida Grupal";
+    document.getElementById("sg_destino").value = salida.destino || "";
+    document.getElementById("sg_fechaSalida").value = salida.fechaSalida || "";
+    document.getElementById("sg_fechaRegreso").value = salida.fechaRegreso || "";
+    document.getElementById("sg_cupoMinimo").value = salida.cupoMinimo || "";
+    document.getElementById("sg_cupoMaximo").value = salida.cupoMaximo || "";
+    document.getElementById("sg_estado").value = salida.estado || "Activa";
+    document.getElementById("sg_notas").value = salida.notas || "";
+    document.getElementById("modalSalida").style.display = "flex";
+  }
+
+  function cerrarModalSalida() {
+    document.getElementById("modalSalida").style.display = "none";
+  }
+
+  async function guardarSalida() {
+    const destino = document.getElementById("sg_destino").value;
+    const fechaSalida = document.getElementById("sg_fechaSalida").value;
+
+    if (!destino || !fechaSalida) {
+      alert("El destino y la fecha de salida son obligatorios.");
+      return;
+    }
+
+    const datos = {
+      destino,
+      fechaSalida,
+      fechaRegreso: document.getElementById("sg_fechaRegreso").value || "",
+      cupoMinimo: document.getElementById("sg_cupoMinimo").value ? Number(document.getElementById("sg_cupoMinimo").value) : null,
+      cupoMaximo: document.getElementById("sg_cupoMaximo").value ? Number(document.getElementById("sg_cupoMaximo").value) : null,
+      estado: document.getElementById("sg_estado").value,
+      notas: document.getElementById("sg_notas").value || ""
+    };
+
+    try {
+      if (salidaEnEdicion) {
+        await db.collection("salidas_grupales").doc(salidaEnEdicion).update(datos);
+      } else {
+        datos.creado_el = new Date();
+        await db.collection("salidas_grupales").add(datos);
+      }
+      cerrarModalSalida();
+      cargarSalidas();
+    } catch (e) {
+      console.error("Error al guardar la salida grupal:", e);
+      alert("❌ No se pudo guardar la salida grupal.");
+    }
+  }
+
+  async function eliminarSalida(id) {
+    const asociadas = reservasPorSalida[id] || [];
+    if (asociadas.length > 0) {
+      alert(`No se puede eliminar: esta salida tiene ${asociadas.length} reserva(s) asociada(s). Reasignalas primero desde cada reserva, o marcá la salida como "Cancelada" en vez de eliminarla.`);
+      return;
+    }
+    if (!confirm("¿Eliminar esta salida grupal?")) return;
+    try {
+      await db.collection("salidas_grupales").doc(id).delete();
+      cargarSalidas();
+    } catch (e) {
+      console.error("Error al eliminar la salida grupal:", e);
+      alert("❌ No se pudo eliminar la salida grupal.");
+    }
+  }
+
+  function abrirModalReservasDeSalida(id) {
+    const salida = listaSalidas.find(s => s.id === id);
+    const reservasAsociadas = reservasPorSalida[id] || [];
+    document.getElementById("tituloModalReservasSalida").textContent =
+      `Reservas — ${salida?.destino || ''} (${formatearFechaSG(salida?.fechaSalida)})`;
+
+    const tabla = document.getElementById("tablaReservasDeSalida");
+    tabla.innerHTML = "";
+    if (reservasAsociadas.length === 0) {
+      document.getElementById("avisoSinReservasSalida").style.display = "block";
+    } else {
+      document.getElementById("avisoSinReservasSalida").style.display = "none";
+      reservasAsociadas.forEach(r => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td><a href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a></td>
+          <td>${r.titular}</td>
+          <td>${r.personas}</td>
+          <td>$${r.saldo.toFixed(2)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+    document.getElementById("modalReservasSalida").style.display = "flex";
+  }
+
+  function cerrarModalReservasSalida() {
+    document.getElementById("modalReservasSalida").style.display = "none";
+  }
+
+  function inicializarMenuLateral() {
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const sidebar = document.getElementById("sidebar");
+    const contenido = document.getElementById("contenidoPrincipal");
+    const toggleBtn = document.querySelector('.toggle-btn');
+
+    if (usuario) {
+      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+      document.getElementById("rolUsuario").innerText = usuario.rol || "";
+    } else {
+      document.getElementById("nombreUsuario").innerText = "Invitado";
+    }
+
+    window.toggleSidebar = function () {
+      sidebar.classList.toggle('active');
+      contenido.classList.toggle('sidebar-visible');
+    };
+    window.cerrarSesionYRedirigir = function () {
+      localStorage.removeItem("usuario");
+      window.location.href = "login.html";
+    };
+
+    function checkScreenSize() {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('active');
+        contenido.classList.remove('sidebar-visible');
+      } else {
+        sidebar.classList.add('active');
+        contenido.classList.add('sidebar-visible');
+      }
+      toggleBtn.style.display = "block";
+    }
+    window.addEventListener('resize', checkScreenSize);
+    checkScreenSize();
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    inicializarMenuLateral();
+    cargarSalidas();
+  });
+</script>
+  <script src="topbar.js"></script>
+  <!-- Verificación real de sesión (Firebase Authentication). -->
+  <script src="auth-guard.js"></script>
+</body>
+</html>
