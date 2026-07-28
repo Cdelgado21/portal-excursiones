@@ -248,6 +248,63 @@
         padding: 30px 24px;
       }
     }
+
+    /* ---------- Modal de mensaje propio (reemplaza el alert() nativo) ---------- */
+    .overlay-mensaje {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 20, 22, 0.6);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .overlay-mensaje.activo { display: flex; }
+    .caja-mensaje {
+      background: white;
+      border-radius: 16px;
+      padding: 34px 30px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+      animation: aparecerMensaje 0.25s ease;
+    }
+    @keyframes aparecerMensaje {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .caja-mensaje .icono {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: #eef6f6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+    .caja-mensaje .icono.exito { background: #e0f5e0; }
+    .caja-mensaje .icono.error { background: #fbe2e0; }
+    .caja-mensaje p {
+      color: #444;
+      font-size: 0.95rem;
+      line-height: 1.55;
+      margin: 0 0 22px;
+    }
+    .caja-mensaje button {
+      background-color: #02535a;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .caja-mensaje button:hover { background-color: #037177; }
   </style>
 </head>
 <body>
@@ -300,6 +357,14 @@
 
   <div id="modal-bienvenida"></div>
 
+  <div class="overlay-mensaje" id="overlayMensaje">
+    <div class="caja-mensaje">
+      <div class="icono" id="iconoMensaje">✉️</div>
+      <p id="textoMensaje"></p>
+      <button type="button" onclick="cerrarMensaje()">Aceptar</button>
+    </div>
+  </div>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -324,6 +389,23 @@
     document.getElementById("overlayLogin").classList.remove("activo");
   }
 
+  // NUEVO: reemplaza el alert() nativo del navegador (que no se puede
+  // estilizar) por un modal propio, con la misma identidad visual del
+  // resto del sitio. icono puede ser "info" (✉️, neutro), "exito" (✅,
+  // verde) o "error" (⚠️, rojo).
+  function mostrarMensaje(texto, tipo) {
+    tipo = tipo || "info";
+    const iconos = { info: "✉️", exito: "✅", error: "⚠️" };
+    const icono = document.getElementById("iconoMensaje");
+    icono.textContent = iconos[tipo] || iconos.info;
+    icono.className = "icono" + (tipo !== "info" ? " " + tipo : "");
+    document.getElementById("textoMensaje").textContent = texto;
+    document.getElementById("overlayMensaje").classList.add("activo");
+  }
+  function cerrarMensaje() {
+    document.getElementById("overlayMensaje").classList.remove("activo");
+  }
+
   function togglePassword() {
     const passwordInput = document.getElementById('clave');
     const icon = document.getElementById('eyeIcon');
@@ -342,15 +424,15 @@
   const parametrosURL = new URLSearchParams(window.location.search);
   const motivo = parametrosURL.get("motivo");
   if (motivo === "inactividad") {
-    alert("Tu sesión se cerró automáticamente por 30 minutos de inactividad. Vuelve a iniciar sesión.");
+    mostrarMensaje("Tu sesión se cerró automáticamente por 30 minutos de inactividad. Vuelve a iniciar sesión.", "info");
     abrirPanelLogin();
   } else if (motivo === "sesion_requerida") {
-    alert("Necesitas iniciar sesión para entrar ahí.");
+    mostrarMensaje("Necesitas iniciar sesión para entrar ahí.", "info");
     abrirPanelLogin();
   } else if (motivo === "usuario_inactivo") {
-    alert("Tu usuario está marcado como inactivo. Contacta a un administrador.");
+    mostrarMensaje("Tu usuario está marcado como inactivo. Contacta a un administrador.", "error");
   } else if (motivo === "usuario_no_encontrado") {
-    alert("Tu cuenta no tiene un perfil configurado en el sistema. Contacta a un administrador.");
+    mostrarMensaje("Tu cuenta no tiene un perfil configurado en el sistema. Contacta a un administrador.", "error");
   }
 
   // FIX DE SEGURIDAD: antes, el login comparaba la contraseña escrita
@@ -381,7 +463,7 @@
     const email = document.getElementById('correo').value.trim();
 
     if (!email) {
-      alert("Primero escribe tu correo en el campo de arriba, y luego dale clic aquí de nuevo.");
+      mostrarMensaje("Primero escribe tu correo en el campo de arriba, y luego dale clic aquí de nuevo.", "info");
       document.getElementById('correo').focus();
       return;
     }
@@ -392,17 +474,17 @@
       // así nadie puede usar este formulario para "adivinar" qué correos
       // están registrados en el sistema (esto se llama evitar la
       // "enumeración de usuarios").
-      alert(`Si ${email} tiene una cuenta en el sistema, te llegará un correo con instrucciones para elegir una contraseña nueva. Revisa también la carpeta de spam.`);
+      mostrarMensaje(`Si ${email} tiene una cuenta en el sistema, te llegará un correo con instrucciones para elegir una contraseña nueva. Revisa también la carpeta de spam.`, "exito");
     } catch (error) {
       console.error("Error al enviar el correo de recuperación:", error);
       if (error.code === "auth/invalid-email") {
-        alert("Ese correo no tiene un formato válido. Revísalo e intenta de nuevo.");
+        mostrarMensaje("Ese correo no tiene un formato válido. Revísalo e intenta de nuevo.", "error");
       } else if (error.code === "auth/too-many-requests") {
-        alert("Se hicieron demasiados intentos seguidos. Espera un momento antes de volver a intentar.");
+        mostrarMensaje("Se hicieron demasiados intentos seguidos. Espera un momento antes de volver a intentar.", "error");
       } else {
         // Mismo mensaje genérico también en caso de error, por la misma
         // razón de seguridad explicada arriba (no revelar si la cuenta existe).
-        alert(`Si ${email} tiene una cuenta en el sistema, te llegará un correo con instrucciones para elegir una contraseña nueva. Revisa también la carpeta de spam.`);
+        mostrarMensaje(`Si ${email} tiene una cuenta en el sistema, te llegará un correo con instrucciones para elegir una contraseña nueva. Revisa también la carpeta de spam.`, "exito");
       }
     }
   }
@@ -419,7 +501,7 @@
       const docUsuario = await db.collection("usuarios").doc(uid).get();
 
       if (!docUsuario.exists) {
-        alert("Tu cuenta no tiene un perfil configurado en el sistema. Contacta a un administrador.");
+        mostrarMensaje("Tu cuenta no tiene un perfil configurado en el sistema. Contacta a un administrador.", "error");
         await firebase.auth().signOut();
         return;
       }
@@ -427,7 +509,7 @@
       const usuario = docUsuario.data();
 
       if (usuario.estado !== "Activo") {
-        alert("El usuario no está activo.");
+        mostrarMensaje("El usuario no está activo.", "error");
         await firebase.auth().signOut();
         return;
       }
@@ -451,11 +533,11 @@
     } catch (error) {
       console.error("Error al iniciar sesión:", error);
       if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
-        alert("Correo o contraseña incorrectos.");
+        mostrarMensaje("Correo o contraseña incorrectos.", "error");
       } else if (error.code === "auth/too-many-requests") {
-        alert("Demasiados intentos fallidos. Espera un momento antes de volver a intentar.");
+        mostrarMensaje("Demasiados intentos fallidos. Espera un momento antes de volver a intentar.", "error");
       } else {
-        alert("Ocurrió un error al validar tus datos.");
+        mostrarMensaje("Ocurrió un error al validar tus datos.", "error");
       }
     }
   });
