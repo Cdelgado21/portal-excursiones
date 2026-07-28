@@ -7,6 +7,8 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
     /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
@@ -244,6 +246,10 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const tabla = document.querySelector("#tablaReservas tbody");
+    // NUEVO: guarda el documento completo de cada reserva, indexado por
+    // código — así el botón de Reporte de Operador puede generar el PDF al
+    // instante, sin volver a consultar Firebase.
+    window.datosReservasPorCodigo = {};
 
     // Convierte los dos formatos de fecha que existen en la base de datos
     // ("2025-06-08" y "21/6/2025") a un objeto Date comparable.
@@ -311,6 +317,7 @@
 
           if (!fecha) contadorSinFecha++;
           contadorActivas++;
+          window.datosReservasPorCodigo[doc.id] = data;
 
           const fila = document.createElement("tr");
           fila.innerHTML = `
@@ -324,6 +331,7 @@
             <td class="acciones">
               <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
               <button class="editar-btn" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
+              <button class="editar-btn" title="Reporte para el tour operador en destino" onclick="generarReporteOperador('${doc.id}')">📄</button>
               <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
             </td>
           `;
@@ -365,6 +373,255 @@
       } else if (contador) {
         contador.textContent = window.textoContadorOriginal || "";
       }
+    }
+
+    // ==========================================
+    // NUEVO: Reporte de Operador (PDF) — todo lo que un tour operador en
+    // destino necesita para recibir al grupo: vuelos, hospedaje, lista de
+    // pasajeros con datos de pasaporte, itinerario de tours día por día, y
+    // el contacto del cliente titular. Se arma con los datos que ya están
+    // cargados en memoria (window.datosReservasPorCodigo), sin volver a
+    // consultar Firebase.
+    // ==========================================
+
+    const COLOR_MARCA_OPERADOR = [2, 83, 90]; // #02535a
+
+    function calcularEdadDesde(fechaStr) {
+      if (!fechaStr) return null;
+      const nacimiento = new Date(fechaStr);
+      if (isNaN(nacimiento.getTime())) return null;
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - nacimiento.getFullYear();
+      const mes = hoy.getMonth() - nacimiento.getMonth();
+      if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
+      return edad;
+    }
+
+    // Arma el texto del vuelo (aerolínea + n° de vuelo + fecha + ruta) en
+    // una sola línea legible, para ida/regreso/escalas por igual.
+    function textoDeVuelo(vuelo) {
+      if (!vuelo) return null;
+      const partes = [];
+      if (vuelo.aerolinea) partes.push(vuelo.aerolinea);
+      if (vuelo.vuelo) partes.push(`Vuelo ${vuelo.vuelo}`);
+      if (vuelo.fecha) partes.push(formatearFechaVisible(vuelo.fecha));
+      if (vuelo.codigo) partes.push(`Código: ${vuelo.codigo}`);
+      const linea1 = partes.join(" — ");
+      return { linea1, descripcion: vuelo.descripcion || "" };
+    }
+
+    // Convierte el texto libre de "Itinerario" (una línea por día, ej. "Día 1
+    // Llegada a Medellín") en un arreglo [{numero, texto}, ...] — mismo
+    // parseo que ya usa el comprobante de reserva.
+    function parsearItinerarioPorDiasOperador(texto) {
+      if (!texto) return [];
+      const lineas = texto.split("\n").map(l => l.trim()).filter(Boolean);
+      const dias = [];
+      lineas.forEach(linea => {
+        const m = /^D[ií]a\s*(\d+)\s*[:.\-]?\s*(.*)$/i.exec(linea);
+        if (m) {
+          dias.push({ numero: m[1], texto: m[2].trim() });
+        } else if (dias.length > 0) {
+          dias[dias.length - 1].texto += " " + linea;
+        }
+      });
+      return dias;
+    }
+
+    function generarReporteOperador(codigo) {
+      const data = window.datosReservasPorCodigo[codigo];
+      if (!data) {
+        alert("No se encontraron datos de esta reserva. Recargá la página e intentá de nuevo.");
+        return;
+      }
+
+      const doc = new jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+      const margen = 16;
+      const anchoUtil = doc.internal.pageSize.getWidth() - margen * 2;
+      let y = 20;
+
+      function asegurarEspacio(alto) {
+        if (y + alto > doc.internal.pageSize.getHeight() - 20) {
+          doc.addPage();
+          y = 20;
+        }
+      }
+
+      function titulo(texto) {
+        asegurarEspacio(10);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.setTextColor(...COLOR_MARCA_OPERADOR);
+        doc.text(texto.toUpperCase(), margen, y);
+        y += 2;
+        doc.setDrawColor(...COLOR_MARCA_OPERADOR);
+        doc.line(margen, y, margen + anchoUtil, y);
+        y += 7;
+      }
+
+      function linea(etiqueta, valor) {
+        if (!valor) return;
+        asegurarEspacio(6);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(...COLOR_MARCA_OPERADOR);
+        doc.text(`${etiqueta}:`, margen, y);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(40, 40, 40);
+        doc.text(String(valor), margen + 42, y);
+        y += 6;
+      }
+
+      // ===== ENCABEZADO =====
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(...COLOR_MARCA_OPERADOR);
+      doc.text("Reporte para Operador", margen, y);
+      y += 8;
+      doc.setFontSize(11);
+      doc.setTextColor(80, 80, 80);
+      doc.text(`Excursiones Delgado — Código de reserva: ${codigo}`, margen, y);
+      y += 10;
+
+      // ===== DESTINO Y FECHAS =====
+      titulo("Datos del Viaje");
+      linea("Destino", (data.nombreDestino || data.destino || "-").split(" (")[0]);
+      linea("Fecha de viaje (ida)", formatearFechaVisible(data.vueloIda?.fecha || data.fechaReserva));
+      linea("Fecha de regreso", formatearFechaVisible(data.vueloRegreso?.fecha));
+      linea("Cantidad de personas", calcularPersonas(data) ?? "-");
+      y += 4;
+
+      // ===== VUELOS =====
+      titulo("Itinerario de Vuelos");
+      const vueloIdaTexto = textoDeVuelo(data.vueloIda);
+      if (vueloIdaTexto) {
+        linea("Vuelo de ida", vueloIdaTexto.linea1);
+        if (vueloIdaTexto.descripcion) linea("Ruta", vueloIdaTexto.descripcion);
+      }
+      if (Array.isArray(data.vuelosIntermedios)) {
+        data.vuelosIntermedios.forEach(v => {
+          const t = textoDeVuelo(v);
+          if (t) {
+            linea("Escala", t.linea1);
+            if (t.descripcion) linea("Detalle", t.descripcion);
+          }
+        });
+      }
+      const vueloRegresoTexto = textoDeVuelo(data.vueloRegreso);
+      if (vueloRegresoTexto) {
+        linea("Vuelo de regreso", vueloRegresoTexto.linea1);
+        if (vueloRegresoTexto.descripcion) linea("Ruta", vueloRegresoTexto.descripcion);
+      }
+      y += 4;
+
+      // ===== HOSPEDAJE =====
+      if (Array.isArray(data.hoteles) && data.hoteles.length > 0) {
+        titulo("Hospedaje");
+        asegurarEspacio(30);
+        doc.autoTable({
+          startY: y,
+          margin: { left: margen, right: margen },
+          head: [["Hotel", "Tipo de habitación", "Cantidad", "Observaciones"]],
+          body: data.hoteles.map(h => [h.nombre || "-", h.tipo || "-", h.cantidad || "-", h.observaciones || "-"]),
+          theme: "plain",
+          headStyles: { fillColor: COLOR_MARCA_OPERADOR, textColor: 255, fontStyle: "bold", fontSize: 9 },
+          styles: { fontSize: 9, cellPadding: 3 }
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      // ===== PASAJEROS =====
+      titulo("Lista de Pasajeros");
+      const filasPasajeros = [];
+      filasPasajeros.push([
+        `${data.nombreTitular || "-"} (Titular)`,
+        data.cedula || "-",
+        formatearFechaVisible(data.vencimientoPasaporteTitular),
+        data.nacionalidadTitular || "-",
+        formatearFechaVisible(data.fechaNacimientoTitular),
+        calcularEdadDesde(data.fechaNacimientoTitular) ?? "-"
+      ]);
+      (data.pasajeros || []).forEach(p => {
+        filasPasajeros.push([
+          p.nombre || "-",
+          p.documento || "-",
+          formatearFechaVisible(p.vencimiento),
+          p.nacionalidad || "-",
+          formatearFechaVisible(p.nacimiento),
+          calcularEdadDesde(p.nacimiento) ?? "-"
+        ]);
+      });
+      asegurarEspacio(20 + filasPasajeros.length * 7);
+      doc.autoTable({
+        startY: y,
+        margin: { left: margen, right: margen },
+        head: [["Nombre completo", "N° Pasaporte", "Vencimiento", "Nacionalidad", "F. Nacimiento", "Edad"]],
+        body: filasPasajeros,
+        theme: "plain",
+        headStyles: { fillColor: COLOR_MARCA_OPERADOR, textColor: 255, fontStyle: "bold", fontSize: 8.5 },
+        styles: { fontSize: 8.5, cellPadding: 3 }
+      });
+      y = doc.lastAutoTable.finalY + 8;
+
+      // ===== EQUIPAJE (si hay algo registrado) =====
+      if (data.equipaje) {
+        titulo("Equipaje");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(40, 40, 40);
+        const lineasEquipaje = doc.splitTextToSize(data.equipaje, anchoUtil);
+        lineasEquipaje.forEach(l => {
+          asegurarEspacio(5);
+          doc.text(l, margen, y);
+          y += 5;
+        });
+        y += 3;
+      }
+
+      // ===== ITINERARIO DE TOURS (día por día) =====
+      const diasItinerario = parsearItinerarioPorDiasOperador(data.itinerario);
+      if (diasItinerario.length > 0) {
+        titulo("Itinerario de Tours");
+        asegurarEspacio(30);
+        doc.autoTable({
+          startY: y,
+          margin: { left: margen, right: margen },
+          head: [diasItinerario.map(d => `Día ${d.numero}`)],
+          body: [diasItinerario.map(d => d.texto)],
+          theme: "plain",
+          headStyles: { fillColor: COLOR_MARCA_OPERADOR, textColor: 255, fontStyle: "bold", halign: "center", fontSize: 9 },
+          styles: { fontSize: 8, cellPadding: 3, halign: "center", valign: "top" }
+        });
+        y = doc.lastAutoTable.finalY + 8;
+      }
+
+      if (Array.isArray(data.toursOpcionales) && data.toursOpcionales.length > 0) {
+        titulo("Tours Opcionales Incluidos");
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+        doc.setTextColor(40, 40, 40);
+        data.toursOpcionales.forEach(t => {
+          asegurarEspacio(5);
+          doc.text(`• ${t}`, margen, y);
+          y += 5;
+        });
+        y += 3;
+      }
+
+      // ===== CONTACTO DEL CLIENTE (para el operador en destino) =====
+      titulo("Contacto del Cliente Titular");
+      linea("Nombre", data.nombreTitular);
+      linea("Teléfono", data.telefono);
+      linea("Correo", data.correo);
+      y += 4;
+
+      // ===== CONTACTO DE LA AGENCIA =====
+      titulo("Contacto de la Agencia");
+      linea("Agencia", "Excursiones Delgado");
+      linea("Teléfono", "+506 6132 8183");
+      linea("Correo", "boletosexcursionesdelgado@gmail.com");
+
+      doc.save(`Reporte_Operador_${codigo}.pdf`);
     }
 
     function eliminarReserva(id) {
@@ -428,4 +685,3 @@
   <script src="auth-guard.js"></script>
 </body>
 </html>
-
