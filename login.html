@@ -366,6 +366,17 @@
   // sistema de recuperación de Firebase Authentication, que le manda a la
   // persona un correo con un enlace para elegir una contraseña nueva. Nadie
   // del equipo (ni tú) llega a ver ni a manejar la contraseña en el proceso.
+  // FIX: el enlace del correo ahora apunta a reset-password.html (página
+  // propia) en vez de la página genérica de Firebase — esa página nueva
+  // solo confirma el cambio cuando la persona le da clic explícito al
+  // botón, así un escaneo automático de seguridad del correo (que solo
+  // abre la página, sin darle clic a nada) ya no puede gastar el enlace
+  // antes de que la persona real lo use.
+  const CONFIGURACION_RESET = {
+    url: "https://excursionesdelgado.com/reset-password.html",
+    handleCodeInApp: false
+  };
+
   async function recuperarContrasena() {
     const email = document.getElementById('correo').value.trim();
 
@@ -376,7 +387,7 @@
     }
 
     try {
-      await firebase.auth().sendPasswordResetEmail(email);
+      await firebase.auth().sendPasswordResetEmail(email, CONFIGURACION_RESET);
       // NOTA DE SEGURIDAD: el mensaje es el mismo exista o no esa cuenta —
       // así nadie puede usar este formulario para "adivinar" qué correos
       // están registrados en el sistema (esto se llama evitar la
@@ -451,4 +462,3 @@
 </script>
 </body>
 </html>
-
