@@ -474,6 +474,32 @@
     </div>
   </div>
 
+  <!-- NUEVO: solo visible cuando Tipo de Salida = Grupal — permite elegir a
+       cuál fecha concreta de salida pertenece esta reserva (ver
+       salidas_grupales.html), o crear una nueva ahí mismo si no existe. -->
+  <div id="contenedorSalidaGrupal" style="margin-top: 15px; display:none;">
+    <label><strong>Salida Grupal</strong></label>
+    <select id="salidaGrupalId" onchange="alCambiarSalidaGrupal()" style="width: 100%; padding: 8px;">
+      <option value="">Seleccione una salida</option>
+    </select>
+  </div>
+
+  <!-- NUEVO: creación rápida de una salida grupal nueva, sin salir de la
+       reserva — mismo patrón que "Crear destino nuevo". -->
+  <div id="modalSalidaGrupalNueva" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:480px; position:relative;">
+      <h3 style="margin-top:0; color:#02535a;">Crear Salida Grupal</h3>
+      <label>Fecha de Salida</label>
+      <input type="date" id="modal_sg_fechaSalida" style="width:100%; margin-bottom:10px; padding:8px;">
+      <label>Cupo máximo (opcional)</label>
+      <input type="number" id="modal_sg_cupoMaximo" placeholder="Ej. 25" style="width:100%; margin-bottom:10px; padding:8px;">
+      <div style="margin-top:15px; text-align:right;">
+        <button onclick="cerrarModalSalidaGrupalNueva()" style="margin-right:10px; background:#ccc; border:none; padding:8px 14px; border-radius:6px;">Cancelar</button>
+        <button onclick="guardarSalidaGrupalNuevaModal()" style="background:#02535a; color:white; border:none; padding:8px 16px; border-radius:6px;">Guardar y usar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Guarda el ID real del tour del catálogo una vez que Destino + Tipo +
        Nivel dejan claro cuál es exactamente — el resto del código (guardar,
        cargar reserva existente, etc.) sigue leyendo este mismo campo. -->
@@ -1840,6 +1866,11 @@ async function guardarReserva() {
     const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
     const saldo = total - abono;
     const vendedor = document.getElementById("vendedor").value || "";
+    // NUEVO: solo aplica si el Tipo de Salida es Grupal y el selector está
+    // visible — para Individual/Personalizado queda vacío.
+    const salidaGrupalId = (tipoSalidaActual === "Grupal" && document.getElementById("salidaGrupalId").value !== "__nuevo__")
+      ? (document.getElementById("salidaGrupalId").value || "")
+      : "";
 
     const cantidadAdultos = parseInt(document.getElementById("cantidadAdultos").value) || 0;
     const cantidadNinos = parseInt(document.getElementById("cantidadNinos").value) || 0;
@@ -2020,6 +2051,9 @@ async function guardarReserva() {
       total, abono, saldo, pagos,
       // NUEVO: quién de la agencia cerró la venta.
       vendedor,
+      // NUEVO: a cuál Salida Grupal pertenece (ver salidas_grupales.html) —
+      // vacío para Individual/Personalizado, o si todavía no se eligió.
+      salidaGrupalId,
       vuelosIntermedios: [],
       pasajeros: [],
       cantidadAdultos, cantidadNinos, cantidadBebes,
@@ -2458,6 +2492,8 @@ function aplicarModoPersonalizado() {
   document.getElementById("nivelReserva").innerHTML = "";
   document.getElementById("destino").value = "";
   document.getElementById("toursOpcionalesLista").innerHTML = "";
+  // NUEVO: la Salida Grupal solo aplica a destinos Grupales del catálogo.
+  document.getElementById("contenedorSalidaGrupal").style.display = "none";
 }
 
 function aplicarModoCatalogo() {
@@ -2498,6 +2534,17 @@ function actualizarFlujoSegunSeleccion() {
   const destinoNombre = document.getElementById("destinoNombre").value;
   const contenedorNivel = document.getElementById("contenedorNivelReserva");
   const selectNivel = document.getElementById("nivelReserva");
+
+  // NUEVO: la Salida Grupal solo aplica cuando Tipo de Salida = Grupal y ya
+  // hay un destino elegido — para Individual no tiene sentido (no son
+  // salidas de grupo con fecha fija compartida).
+  const contenedorSalidaGrupal = document.getElementById("contenedorSalidaGrupal");
+  if (tipoSalida === "Grupal" && destinoNombre) {
+    contenedorSalidaGrupal.style.display = "block";
+    cargarSalidasGrupalesParaDestino(destinoNombre);
+  } else {
+    contenedorSalidaGrupal.style.display = "none";
+  }
 
   if (tipoSalida !== "Individual") {
     contenedorNivel.style.display = "none";
@@ -2696,6 +2743,90 @@ async function guardarDestinoNuevoModal() {
   } catch (e) {
     console.error("Error al crear el destino nuevo:", e);
     alert("❌ No se pudo crear el destino. Intenta de nuevo.");
+  }
+}
+
+// ==========================================
+// NUEVO: Salida Grupal — permite ligar esta reserva a una fecha concreta de
+// salida (ver salidas_grupales.html), para poder saber cuántas reservas y
+// personas tiene cada salida sin depender de que las fechas coincidan
+// exactas entre reservas distintas del mismo grupo.
+// ==========================================
+
+window.catalogoSalidasGrupales = [];
+
+async function cargarSalidasGrupalesParaDestino(nombreDestino) {
+  const select = document.getElementById("salidaGrupalId");
+  const valorAnterior = select.value;
+  select.innerHTML = "<option value=''>Cargando salidas...</option>";
+
+  try {
+    const snap = await db.collection("salidas_grupales").where("destino", "==", nombreDestino).orderBy("fechaSalida").get();
+    window.catalogoSalidasGrupales = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    let html = "<option value=''>Seleccione una salida</option>";
+    window.catalogoSalidasGrupales.forEach(s => {
+      const fecha = s.fechaSalida ? new Date(s.fechaSalida + "T00:00:00") : null;
+      const fechaTexto = fecha ? `${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : s.fechaSalida;
+      html += `<option value="${s.id}">${fechaTexto}${s.estado && s.estado !== 'Activa' ? ` (${s.estado})` : ''}</option>`;
+    });
+    html += `<option value="__nuevo__">➕ Crear nueva salida grupal...</option>`;
+    select.innerHTML = html;
+
+    if (valorAnterior && valorAnterior !== "__nuevo__" && window.catalogoSalidasGrupales.some(s => s.id === valorAnterior)) {
+      select.value = valorAnterior;
+    }
+  } catch (e) {
+    console.error("Error al cargar las salidas grupales de este destino:", e);
+    select.innerHTML = "<option value=''>Seleccione una salida</option><option value='__nuevo__'>➕ Crear nueva salida grupal...</option>";
+  }
+}
+
+function alCambiarSalidaGrupal() {
+  const select = document.getElementById("salidaGrupalId");
+  if (select.value === "__nuevo__") {
+    select.value = "";
+    abrirModalSalidaGrupalNueva();
+  }
+}
+
+function abrirModalSalidaGrupalNueva() {
+  document.getElementById("modal_sg_fechaSalida").value = document.getElementById("fechaIda").value || "";
+  document.getElementById("modal_sg_cupoMaximo").value = "";
+  document.getElementById("modalSalidaGrupalNueva").style.display = "flex";
+}
+
+function cerrarModalSalidaGrupalNueva() {
+  document.getElementById("modalSalidaGrupalNueva").style.display = "none";
+}
+
+async function guardarSalidaGrupalNuevaModal() {
+  const fechaSalida = document.getElementById("modal_sg_fechaSalida").value;
+  if (!fechaSalida) {
+    alert("Indicá la fecha de salida.");
+    return;
+  }
+  const destinoNombre = document.getElementById("destinoNombre").value;
+  const cupoMaximo = document.getElementById("modal_sg_cupoMaximo").value;
+
+  try {
+    const nuevaSalida = {
+      destino: destinoNombre,
+      fechaSalida,
+      fechaRegreso: "",
+      cupoMinimo: null,
+      cupoMaximo: cupoMaximo ? Number(cupoMaximo) : null,
+      estado: "Activa",
+      notas: "",
+      creado_el: new Date()
+    };
+    const ref = await db.collection("salidas_grupales").add(nuevaSalida);
+    cerrarModalSalidaGrupalNueva();
+    await cargarSalidasGrupalesParaDestino(destinoNombre);
+    document.getElementById("salidaGrupalId").value = ref.id;
+  } catch (e) {
+    console.error("Error al crear la salida grupal nueva:", e);
+    alert("❌ No se pudo crear la salida grupal. Intenta de nuevo.");
   }
 }
 
@@ -2924,6 +3055,13 @@ async function cargarReservaExistente(codigo) {
         actualizarFlujoSegunSeleccion();
         if (tourGuardado.tipoSalida === "Individual") {
           document.getElementById("nivelReserva").value = tourGuardado.nivel || "";
+        }
+        // NUEVO: restaura la Salida Grupal elegida — hay que esperar a que
+        // termine de cargar la lista (actualizarFlujoSegunSeleccion la
+        // dispara, pero no la espera) antes de poder seleccionar el valor.
+        if (tourGuardado.tipoSalida === "Grupal" && data.salidaGrupalId) {
+          await cargarSalidasGrupalesParaDestino(tourGuardado.nombre);
+          document.getElementById("salidaGrupalId").value = data.salidaGrupalId;
         }
       }
       document.getElementById("destino").value = data.destino || "";
