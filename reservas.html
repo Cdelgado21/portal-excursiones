@@ -108,72 +108,121 @@
     }
 
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f0f7f7;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f7f7;
+      margin: 0;
       padding: 0;
-    }
-    h2 {
-      text-align: center;
       color: #02535a;
     }
+    h2 {
+      margin-bottom: 4px;
+    }
+    .subtitulo {
+      color: #5f9296;
+      font-size: 0.9rem;
+      margin-top: 0;
+      margin-bottom: 25px;
+    }
+
+    .tabla-container {
+      max-width: 100%;
+      overflow-x: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 2px 14px rgba(2,83,90,0.08);
+    }
+
     .barra-superior {
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 12px;
       margin-bottom: 20px;
     }
+
     .btn-agregar, .btn-historicas {
+      font-size: 14px;
+      padding: 10px 18px;
+      border-radius: 8px;
       background-color: #02535a;
       color: white;
-      padding: 10px 15px;
       border: none;
-      border-radius: 6px;
       cursor: pointer;
+      font-weight: bold;
       text-decoration: none;
       display: inline-block;
+    }
+    .btn-agregar:hover, .btn-historicas:hover { background-color: #036a6d; }
+    .btn-historicas { background-color: #5f9296; }
+    .btn-historicas:hover { background-color: #4d7d80; }
+
+    #buscadorReservas {
+      width: 100%;
+      max-width: 500px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #cfe3e4;
+      box-sizing: border-box;
       font-size: 14px;
-    }
-    .btn-historicas {
-      background-color: #6c757d;
-    }
-    .contador {
-      text-align: center;
-      color: #555;
       margin-bottom: 15px;
-      font-size: 0.9rem;
     }
+
+    .contador {
+      color: #5f9296;
+      margin-bottom: 15px;
+      font-size: 0.85rem;
+    }
+
     table {
       width: 100%;
-      border-collapse: collapse;
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-    }
-    th, td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid #ccc;
+      min-width: 900px;
+      border-collapse: separate;
+      border-spacing: 0;
     }
     th {
       background-color: #02535a;
       color: white;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 14px 16px;
+      text-align: left;
     }
-    .acciones button {
+    th:first-child { border-top-left-radius: 10px; }
+    th:last-child { border-top-right-radius: 10px; text-align: center; }
+    td {
+      padding: 14px 16px;
+      font-size: 14.5px;
+      vertical-align: middle;
+      border-bottom: 1px solid #eef3f3;
+    }
+    tbody tr:hover { background-color: #f7fbfb; }
+    tbody tr:last-child td { border-bottom: none; }
+
+    .celda-acciones {
       display: flex;
       gap: 6px;
       justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-icono {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      display: inline-flex;
       align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      background-color: #eef6f6;
+      color: #02535a;
     }
-    .editar-btn {
-      background-color: transparent;
-      color: white;
-    }
-    .eliminar-btn {
-      background-color: transparent;
-      color: white;
-    }
+    .btn-icono:hover { background-color: #02535a; color: white; }
+    .btn-icono.eliminar:hover { background-color: #c0392b; color: white; }
   </style>
 </head>
 <body>
@@ -201,36 +250,39 @@
 
   <main id="contenidoPrincipal">
 
-  <h2>📦 Reservas Activas</h2>
+  <h2>📦 Gestión de Reservas Activas</h2>
+  <p class="subtitulo">Reservas con viaje pendiente — desde acá también generás el reporte para el operador en destino.</p>
 
-  <div class="barra-superior">
-    <button class="btn-agregar" onclick="window.location.href='detalle_reserva.html'">➕ Agregar reserva</button>
-    <a class="btn-historicas" href="reservas_historicas.html">🕓 Ver reservas históricas</a>
+  <div class="tabla-container">
+    <div class="barra-superior">
+      <button class="btn-agregar" onclick="window.location.href='detalle_reserva.html'">➕ Agregar reserva</button>
+      <a class="btn-historicas" href="reservas_historicas.html">🕓 Ver reservas históricas</a>
+    </div>
+
+    <!-- NUEVO: buscador — filtra la tabla mientras se escribe, sin volver a
+         consultar Firebase (los datos ya están cargados en la página). -->
+    <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()">
+
+    <p class="contador" id="contador"></p>
+
+    <table id="tablaReservas">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Cliente</th>
+          <th>Teléfono</th>
+          <th>Correo</th>
+          <th>Destino</th>
+          <th>Personas</th>
+          <th>Fecha de viaje</th>
+          <th style="text-align:center;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Reservas se cargarán dinámicamente -->
+      </tbody>
+    </table>
   </div>
-
-  <!-- NUEVO: buscador — filtra la tabla mientras se escribe, sin volver a
-       consultar Firebase (los datos ya están cargados en la página). -->
-  <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()" style="width: 100%; max-width: 500px; padding: 10px 14px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px; font-size: 15px; box-sizing: border-box;">
-
-  <p class="contador" id="contador"></p>
-
-  <table id="tablaReservas">
-    <thead>
-      <tr>
-        <th>Código</th>
-        <th>Cliente</th>
-        <th>Teléfono</th>
-        <th>Correo</th>
-        <th>Destino</th>
-        <th>Personas</th>
-        <th>Fecha de viaje</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Reservas se cargarán dinámicamente -->
-    </tbody>
-  </table>
   <script>
     // FIX: firebaseConfig estaba incompleto (le faltaban storageBucket,
     // messagingSenderId y appId) y tenía la misma apiKey mal escrita que
@@ -329,12 +381,13 @@
             <td>${data.nombreDestino || data.destino || '-'}</td>
             <td>${calcularPersonas(data) ?? '-'}</td>
             <td>${formatearFechaVisible(data.fechaReserva)}</td>
-            <td class="acciones">
-              <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
-              <button class="editar-btn" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
-              <button class="editar-btn" title="Reporte para el tour operador en destino" onclick="generarReporteOperador('${doc.id}')">📄</button>
-              <button class="editar-btn" title="Agregar hotel a esta reserva" onclick="abrirModalHotelReservas('${doc.id}')">🏨</button>
-              <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
+            <td>
+              <div class="celda-acciones">
+                <button class="btn-icono" title="Editar reserva" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
+                <button class="btn-icono" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
+                <button class="btn-icono" title="Reporte para el tour operador en destino" onclick="generarReporteOperador('${doc.id}')">📄</button>
+                <button class="btn-icono eliminar" title="Eliminar reserva" onclick="eliminarReserva('${doc.id}')">🗑️</button>
+              </div>
             </td>
           `;
           tabla.appendChild(fila);
@@ -710,143 +763,6 @@
       if (mensajeBoletos) alert(`✅ Reporte generado.${mensajeBoletos}`);
     }
 
-    // ==========================================
-    // NUEVO: Agregar Hotel directo desde reservas.html — mismo patrón de
-    // selección de proveedor (categoría Hospedaje) que detalle_reserva.html,
-    // pero guardando directo en Firestore sin tener que abrir esa pantalla.
-    // ==========================================
-
-    window.codigoHotelActualReservas = null;
-    window.listaHotelesModalReservas = [];
-
-    function renderizarListaHotelesActuales(codigo) {
-      const data = window.datosReservasPorCodigo[codigo];
-      const contenedor = document.getElementById("listaHotelesActualesReservas");
-      const hoteles = Array.isArray(data?.hoteles) ? data.hoteles : [];
-      if (hoteles.length === 0) {
-        contenedor.innerHTML = "<em>Esta reserva todavía no tiene ningún hotel agregado.</em>";
-      } else {
-        contenedor.innerHTML = "<strong>Ya agregados:</strong><br>" + hoteles.map(h =>
-          `• ${h.nombre || '-'} (${h.tipo || '-'}, x${h.cantidad || '-'})`
-        ).join("<br>");
-      }
-    }
-
-    function abrirModalHotelReservas(codigo) {
-      window.codigoHotelActualReservas = codigo;
-      const data = window.datosReservasPorCodigo[codigo];
-      const destinoNombre = (data?.nombreDestino || data?.destino || "").split(" (")[0];
-
-      renderizarListaHotelesActuales(codigo);
-
-      const selectHotel = document.getElementById("modalReservas_nombre_hotel");
-      selectHotel.innerHTML = "<option value=''>Cargando hoteles...</option>";
-
-      db.collection("proveedores").where("categoria", "==", "Hospedaje").get().then(snapshot => {
-        const proveedores = snapshot.docs.map(d => d.data()).filter(p => p.activo !== false);
-        window.listaHotelesModalReservas = proveedores;
-
-        const deEsteDestino = destinoNombre ? proveedores.filter(p => p.destino === destinoNombre) : [];
-        const universales = proveedores.filter(p => !p.destino);
-        const otros = proveedores.filter(p => p.destino && p.destino !== destinoNombre);
-
-        function opciones(lista) {
-          return lista.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("");
-        }
-
-        let html = "<option value=''>Seleccione un hotel</option>";
-        if (deEsteDestino.length > 0) html += `<optgroup label="Hoteles de ${destinoNombre}">${opciones(deEsteDestino)}</optgroup>`;
-        if (universales.length > 0) html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
-        if (otros.length > 0) html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
-        html += `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
-        selectHotel.innerHTML = html;
-      }).catch(e => {
-        console.error("Error al cargar hoteles desde Proveedores:", e);
-        selectHotel.innerHTML = `<option value=''>Seleccione un hotel</option><option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
-      });
-
-      document.getElementById("modalHotelReservas").style.display = "flex";
-    }
-
-    function cerrarModalHotelReservas() {
-      document.getElementById("modalHotelReservas").style.display = "none";
-      document.getElementById("modalReservas_cantidadHabitacion_hotel").value = "";
-      document.getElementById("modalReservas_observaciones_hotel").value = "";
-    }
-
-    async function manejarSeleccionProveedorHotelReservas(select) {
-      if (select.value !== "__nuevo__") return;
-
-      const nombre = prompt("Nombre del hotel (ej. Hotel Obo):");
-      if (!nombre || !nombre.trim()) {
-        select.value = "";
-        return;
-      }
-
-      const nombreLimpio = nombre.trim();
-      const yaExiste = window.listaHotelesModalReservas.some(p => p.nombre.toLowerCase() === nombreLimpio.toLowerCase());
-      const data = window.datosReservasPorCodigo[window.codigoHotelActualReservas];
-      const destinoNombre = (data?.nombreDestino || data?.destino || "").split(" (")[0];
-
-      if (!yaExiste) {
-        try {
-          await db.collection("proveedores").add({
-            nombre: nombreLimpio,
-            destino: destinoNombre || "",
-            categoria: "Hospedaje",
-            activo: true,
-            creado_el: new Date()
-          });
-          window.listaHotelesModalReservas.push({ nombre: nombreLimpio, destino: destinoNombre || "" });
-        } catch (e) {
-          console.error("Error al guardar el hotel nuevo:", e);
-          alert("❌ No se pudo guardar el hotel nuevo.");
-          select.value = "";
-          return;
-        }
-      }
-
-      const opt = document.createElement("option");
-      opt.value = nombreLimpio;
-      opt.textContent = nombreLimpio;
-      select.insertBefore(opt, select.lastElementChild);
-      select.value = nombreLimpio;
-    }
-
-    async function guardarHotelModalReservas() {
-      const hotel = document.getElementById("modalReservas_nombre_hotel").value;
-      if (!hotel) {
-        alert("Debes seleccionar un hotel.");
-        return;
-      }
-
-      const tipo = document.getElementById("modalReservas_tipoHabitacion_hotel").value;
-      const cantidad = document.getElementById("modalReservas_cantidadHabitacion_hotel").value;
-      const obs = document.getElementById("modalReservas_observaciones_hotel").value;
-      const codigo = window.codigoHotelActualReservas;
-
-      const nuevoHotel = { nombre: hotel, tipo, cantidad, observaciones: obs || "Sin observaciones" };
-      const hotelesActuales = Array.isArray(window.datosReservasPorCodigo[codigo]?.hoteles)
-        ? [...window.datosReservasPorCodigo[codigo].hoteles]
-        : [];
-      hotelesActuales.push(nuevoHotel);
-
-      try {
-        await db.collection("reservas").doc(codigo).update({ hoteles: hotelesActuales });
-        // Se refleja al instante en memoria — así el Reporte de Operador ya
-        // lo incluye sin tener que recargar la página.
-        window.datosReservasPorCodigo[codigo].hoteles = hotelesActuales;
-        renderizarListaHotelesActuales(codigo);
-        document.getElementById("modalReservas_cantidadHabitacion_hotel").value = "";
-        document.getElementById("modalReservas_observaciones_hotel").value = "";
-        document.getElementById("modalReservas_nombre_hotel").value = "";
-        alert(`✅ Hotel agregado a la reserva ${codigo}.`);
-      } catch (e) {
-        console.error("Error al guardar el hotel en la reserva:", e);
-        alert("❌ No se pudo guardar el hotel en la reserva.");
-      }
-    }
-
     function eliminarReserva(id) {
       if (confirm("¿Deseas eliminar esta reserva?")) {
         db.collection("reservas").doc(id).delete().then(() => {
@@ -900,39 +816,6 @@
       cargarReservas();
     };
   </script>
-
-  <!-- NUEVO: modal para agregar un hotel a una reserva directo desde esta
-       pantalla, sin tener que abrir detalle_reserva.html. Mismo patrón de
-       selección de proveedor (categoría Hospedaje) que ya existe ahí. -->
-  <div id="modalHotelReservas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; position:relative;">
-      <h3 style="margin-top:0; color:#02535a;">Agregar Hotel</h3>
-      <div id="listaHotelesActualesReservas" style="margin-bottom:15px; font-size:0.85rem; color:#555;"></div>
-
-      <label style="display:block; font-weight:bold; margin-bottom:5px;">Nombre del Hotel</label>
-      <select id="modalReservas_nombre_hotel" onchange="manejarSeleccionProveedorHotelReservas(this)" style="width:100%; margin-bottom:10px; padding:8px;">
-        <option value="">Seleccione un hotel</option>
-      </select>
-
-      <label style="display:block; font-weight:bold; margin-bottom:5px;">Tipo de habitación</label>
-      <select id="modalReservas_tipoHabitacion_hotel" style="width:100%; margin-bottom:10px; padding:8px;">
-        <option value="Doble">Doble</option>
-        <option value="Triple">Triple</option>
-        <option value="Cuádruple">Cuádruple</option>
-      </select>
-
-      <label style="display:block; font-weight:bold; margin-bottom:5px;">Cantidad</label>
-      <input type="number" id="modalReservas_cantidadHabitacion_hotel" placeholder="Ej. 2" style="width:100%; margin-bottom:10px; padding:8px;">
-
-      <label style="display:block; font-weight:bold; margin-bottom:5px;">Observaciones</label>
-      <textarea id="modalReservas_observaciones_hotel" rows="3" placeholder="Ej. Vista al mar, habitación conectada..." style="width:100%; padding:8px;"></textarea>
-
-      <div style="margin-top:15px; text-align:right;">
-        <button onclick="cerrarModalHotelReservas()" style="margin-right:10px; background:#ccc; border:none; padding:8px 14px; border-radius:6px;">Cancelar</button>
-        <button onclick="guardarHotelModalReservas()" style="background:#02535a; color:white; border:none; padding:8px 16px; border-radius:6px;">Guardar</button>
-      </div>
-    </div>
-  </div>
 
   </main>
   <script src="topbar.js"></script>
