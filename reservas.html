@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
     /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
@@ -332,6 +333,7 @@
               <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
               <button class="editar-btn" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
               <button class="editar-btn" title="Reporte para el tour operador en destino" onclick="generarReporteOperador('${doc.id}')">📄</button>
+              <button class="editar-btn" title="Agregar hotel a esta reserva" onclick="abrirModalHotelReservas('${doc.id}')">🏨</button>
               <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
             </td>
           `;
@@ -428,7 +430,66 @@
       return dias;
     }
 
-    function generarReporteOperador(codigo) {
+    // Descarga un comprobante de vuelo ya subido (Storage) como bytes, para
+    // poder fusionarlo al PDF del reporte.
+    async function descargarTiqueteComoBytesOperador(tiquete) {
+      const respuesta = await fetch(tiquete.url);
+      if (!respuesta.ok) {
+        throw new Error(`HTTP ${respuesta.status} al descargar el archivo`);
+      }
+      const blob = await respuesta.blob();
+      return await blob.arrayBuffer();
+    }
+
+    // NUEVO: pega los boletos de avión ya subidos (tiquetesVuelo) al final
+    // del Reporte de Operador — a diferencia del comprobante que se le manda
+    // al cliente, acá NO se tapa el precio (el operador sí puede verlo).
+    async function fusionarReporteConBoletosOperador(pdfJsPDF, tiquetesVuelo) {
+      const { PDFDocument } = PDFLib;
+      const bytesReporte = pdfJsPDF.output("arraybuffer");
+      const pdfFinal = await PDFDocument.load(bytesReporte);
+      const errores = [];
+
+      for (const tiquete of tiquetesVuelo || []) {
+        try {
+          const bytes = await descargarTiqueteComoBytesOperador(tiquete);
+          const esImagen = /\.(png|jpe?g)$/i.test(tiquete.nombre || "") || (tiquete.url || "").match(/\.(png|jpe?g)/i);
+
+          if (esImagen) {
+            const paginaNueva = pdfFinal.addPage();
+            const { width, height } = paginaNueva.getSize();
+            let imagenEmbebida;
+            try {
+              imagenEmbebida = await pdfFinal.embedPng(bytes);
+            } catch (e) {
+              imagenEmbebida = await pdfFinal.embedJpg(bytes);
+            }
+            const escala = Math.min(width / imagenEmbebida.width, height / imagenEmbebida.height) * 0.9;
+            const anchoFinal = imagenEmbebida.width * escala;
+            const altoFinal = imagenEmbebida.height * escala;
+            paginaNueva.drawImage(imagenEmbebida, {
+              x: (width - anchoFinal) / 2,
+              y: (height - altoFinal) / 2,
+              width: anchoFinal,
+              height: altoFinal
+            });
+          } else {
+            const pdfTiquete = await PDFDocument.load(bytes);
+            const paginasCopiadas = await pdfFinal.copyPages(pdfTiquete, pdfTiquete.getPageIndices());
+            paginasCopiadas.forEach(p => pdfFinal.addPage(p));
+          }
+        } catch (e) {
+          // Causa más común: el bucket de Firebase Storage sin CORS
+          // configurado para este dominio.
+          console.error(`No se pudo anexar el comprobante de vuelo "${tiquete.nombre}":`, e);
+          errores.push(`${tiquete.nombre || "un comprobante"} (${e.message || e})`);
+        }
+      }
+
+      return { bytes: await pdfFinal.save(), errores };
+    }
+
+    async function generarReporteOperador(codigo) {
       const data = window.datosReservasPorCodigo[codigo];
       if (!data) {
         alert("No se encontraron datos de esta reserva. Recargá la página e intentá de nuevo.");
@@ -621,7 +682,169 @@
       linea("Teléfono", "+506 6132 8183");
       linea("Correo", "boletosexcursionesdelgado@gmail.com");
 
-      doc.save(`Reporte_Operador_${codigo}.pdf`);
+      // ===== BOLETOS DE AVIÓN YA CARGADOS =====
+      // NUEVO: si la reserva tiene comprobantes de vuelo subidos (los que se
+      // usan para autocompletar destinos/fechas al crear la reserva), se
+      // pegan aquí al final tal cual — sin tapar el precio, a diferencia del
+      // comprobante que recibe el cliente.
+      const tiquetes = data.tiquetesVuelo || [];
+      let mensajeBoletos = "";
+      if (tiquetes.length > 0) {
+        const { bytes: bytesFinal, errores } = await fusionarReporteConBoletosOperador(doc, tiquetes);
+        const blob = new Blob([bytesFinal], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const enlace = document.createElement("a");
+        enlace.href = url;
+        enlace.download = `Reporte_Operador_${codigo}.pdf`;
+        document.body.appendChild(enlace);
+        enlace.click();
+        document.body.removeChild(enlace);
+        URL.revokeObjectURL(url);
+        if (errores.length > 0) {
+          mensajeBoletos = `\n\n⚠️ No se pudieron adjuntar estos boletos: ${errores.join("; ")}`;
+        }
+      } else {
+        doc.save(`Reporte_Operador_${codigo}.pdf`);
+      }
+
+      if (mensajeBoletos) alert(`✅ Reporte generado.${mensajeBoletos}`);
+    }
+
+    // ==========================================
+    // NUEVO: Agregar Hotel directo desde reservas.html — mismo patrón de
+    // selección de proveedor (categoría Hospedaje) que detalle_reserva.html,
+    // pero guardando directo en Firestore sin tener que abrir esa pantalla.
+    // ==========================================
+
+    window.codigoHotelActualReservas = null;
+    window.listaHotelesModalReservas = [];
+
+    function renderizarListaHotelesActuales(codigo) {
+      const data = window.datosReservasPorCodigo[codigo];
+      const contenedor = document.getElementById("listaHotelesActualesReservas");
+      const hoteles = Array.isArray(data?.hoteles) ? data.hoteles : [];
+      if (hoteles.length === 0) {
+        contenedor.innerHTML = "<em>Esta reserva todavía no tiene ningún hotel agregado.</em>";
+      } else {
+        contenedor.innerHTML = "<strong>Ya agregados:</strong><br>" + hoteles.map(h =>
+          `• ${h.nombre || '-'} (${h.tipo || '-'}, x${h.cantidad || '-'})`
+        ).join("<br>");
+      }
+    }
+
+    function abrirModalHotelReservas(codigo) {
+      window.codigoHotelActualReservas = codigo;
+      const data = window.datosReservasPorCodigo[codigo];
+      const destinoNombre = (data?.nombreDestino || data?.destino || "").split(" (")[0];
+
+      renderizarListaHotelesActuales(codigo);
+
+      const selectHotel = document.getElementById("modalReservas_nombre_hotel");
+      selectHotel.innerHTML = "<option value=''>Cargando hoteles...</option>";
+
+      db.collection("proveedores").where("categoria", "==", "Hospedaje").get().then(snapshot => {
+        const proveedores = snapshot.docs.map(d => d.data()).filter(p => p.activo !== false);
+        window.listaHotelesModalReservas = proveedores;
+
+        const deEsteDestino = destinoNombre ? proveedores.filter(p => p.destino === destinoNombre) : [];
+        const universales = proveedores.filter(p => !p.destino);
+        const otros = proveedores.filter(p => p.destino && p.destino !== destinoNombre);
+
+        function opciones(lista) {
+          return lista.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("");
+        }
+
+        let html = "<option value=''>Seleccione un hotel</option>";
+        if (deEsteDestino.length > 0) html += `<optgroup label="Hoteles de ${destinoNombre}">${opciones(deEsteDestino)}</optgroup>`;
+        if (universales.length > 0) html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
+        if (otros.length > 0) html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
+        html += `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
+        selectHotel.innerHTML = html;
+      }).catch(e => {
+        console.error("Error al cargar hoteles desde Proveedores:", e);
+        selectHotel.innerHTML = `<option value=''>Seleccione un hotel</option><option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
+      });
+
+      document.getElementById("modalHotelReservas").style.display = "flex";
+    }
+
+    function cerrarModalHotelReservas() {
+      document.getElementById("modalHotelReservas").style.display = "none";
+      document.getElementById("modalReservas_cantidadHabitacion_hotel").value = "";
+      document.getElementById("modalReservas_observaciones_hotel").value = "";
+    }
+
+    async function manejarSeleccionProveedorHotelReservas(select) {
+      if (select.value !== "__nuevo__") return;
+
+      const nombre = prompt("Nombre del hotel (ej. Hotel Obo):");
+      if (!nombre || !nombre.trim()) {
+        select.value = "";
+        return;
+      }
+
+      const nombreLimpio = nombre.trim();
+      const yaExiste = window.listaHotelesModalReservas.some(p => p.nombre.toLowerCase() === nombreLimpio.toLowerCase());
+      const data = window.datosReservasPorCodigo[window.codigoHotelActualReservas];
+      const destinoNombre = (data?.nombreDestino || data?.destino || "").split(" (")[0];
+
+      if (!yaExiste) {
+        try {
+          await db.collection("proveedores").add({
+            nombre: nombreLimpio,
+            destino: destinoNombre || "",
+            categoria: "Hospedaje",
+            activo: true,
+            creado_el: new Date()
+          });
+          window.listaHotelesModalReservas.push({ nombre: nombreLimpio, destino: destinoNombre || "" });
+        } catch (e) {
+          console.error("Error al guardar el hotel nuevo:", e);
+          alert("❌ No se pudo guardar el hotel nuevo.");
+          select.value = "";
+          return;
+        }
+      }
+
+      const opt = document.createElement("option");
+      opt.value = nombreLimpio;
+      opt.textContent = nombreLimpio;
+      select.insertBefore(opt, select.lastElementChild);
+      select.value = nombreLimpio;
+    }
+
+    async function guardarHotelModalReservas() {
+      const hotel = document.getElementById("modalReservas_nombre_hotel").value;
+      if (!hotel) {
+        alert("Debes seleccionar un hotel.");
+        return;
+      }
+
+      const tipo = document.getElementById("modalReservas_tipoHabitacion_hotel").value;
+      const cantidad = document.getElementById("modalReservas_cantidadHabitacion_hotel").value;
+      const obs = document.getElementById("modalReservas_observaciones_hotel").value;
+      const codigo = window.codigoHotelActualReservas;
+
+      const nuevoHotel = { nombre: hotel, tipo, cantidad, observaciones: obs || "Sin observaciones" };
+      const hotelesActuales = Array.isArray(window.datosReservasPorCodigo[codigo]?.hoteles)
+        ? [...window.datosReservasPorCodigo[codigo].hoteles]
+        : [];
+      hotelesActuales.push(nuevoHotel);
+
+      try {
+        await db.collection("reservas").doc(codigo).update({ hoteles: hotelesActuales });
+        // Se refleja al instante en memoria — así el Reporte de Operador ya
+        // lo incluye sin tener que recargar la página.
+        window.datosReservasPorCodigo[codigo].hoteles = hotelesActuales;
+        renderizarListaHotelesActuales(codigo);
+        document.getElementById("modalReservas_cantidadHabitacion_hotel").value = "";
+        document.getElementById("modalReservas_observaciones_hotel").value = "";
+        document.getElementById("modalReservas_nombre_hotel").value = "";
+        alert(`✅ Hotel agregado a la reserva ${codigo}.`);
+      } catch (e) {
+        console.error("Error al guardar el hotel en la reserva:", e);
+        alert("❌ No se pudo guardar el hotel en la reserva.");
+      }
     }
 
     function eliminarReserva(id) {
@@ -677,6 +900,39 @@
       cargarReservas();
     };
   </script>
+
+  <!-- NUEVO: modal para agregar un hotel a una reserva directo desde esta
+       pantalla, sin tener que abrir detalle_reserva.html. Mismo patrón de
+       selección de proveedor (categoría Hospedaje) que ya existe ahí. -->
+  <div id="modalHotelReservas" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; position:relative;">
+      <h3 style="margin-top:0; color:#02535a;">Agregar Hotel</h3>
+      <div id="listaHotelesActualesReservas" style="margin-bottom:15px; font-size:0.85rem; color:#555;"></div>
+
+      <label style="display:block; font-weight:bold; margin-bottom:5px;">Nombre del Hotel</label>
+      <select id="modalReservas_nombre_hotel" onchange="manejarSeleccionProveedorHotelReservas(this)" style="width:100%; margin-bottom:10px; padding:8px;">
+        <option value="">Seleccione un hotel</option>
+      </select>
+
+      <label style="display:block; font-weight:bold; margin-bottom:5px;">Tipo de habitación</label>
+      <select id="modalReservas_tipoHabitacion_hotel" style="width:100%; margin-bottom:10px; padding:8px;">
+        <option value="Doble">Doble</option>
+        <option value="Triple">Triple</option>
+        <option value="Cuádruple">Cuádruple</option>
+      </select>
+
+      <label style="display:block; font-weight:bold; margin-bottom:5px;">Cantidad</label>
+      <input type="number" id="modalReservas_cantidadHabitacion_hotel" placeholder="Ej. 2" style="width:100%; margin-bottom:10px; padding:8px;">
+
+      <label style="display:block; font-weight:bold; margin-bottom:5px;">Observaciones</label>
+      <textarea id="modalReservas_observaciones_hotel" rows="3" placeholder="Ej. Vista al mar, habitación conectada..." style="width:100%; padding:8px;"></textarea>
+
+      <div style="margin-top:15px; text-align:right;">
+        <button onclick="cerrarModalHotelReservas()" style="margin-right:10px; background:#ccc; border:none; padding:8px 14px; border-radius:6px;">Cancelar</button>
+        <button onclick="guardarHotelModalReservas()" style="background:#02535a; color:white; border:none; padding:8px 16px; border-radius:6px;">Guardar</button>
+      </div>
+    </div>
+  </div>
 
   </main>
   <script src="topbar.js"></script>
