@@ -185,6 +185,60 @@
         margin-left: 0;
       }
     }
+
+    /* NUEVO: alerta de Reunión de Guía de Viaje — mismo criterio visual que
+       la alerta de "Cobro Urgente" ya usada en finanzas.html. */
+    .alerta-reunion {
+      background: white;
+      border-left: 6px solid #c0392b;
+      border-radius: 10px;
+      padding: 20px 22px;
+      box-shadow: 0 2px 14px rgba(2,83,90,0.08);
+    }
+    .alerta-reunion h2 {
+      margin: 0 0 4px;
+    }
+    .alerta-reunion p.detalle-alerta {
+      font-size: 0.85rem;
+      color: #888;
+      margin: 0 0 14px;
+    }
+    .alerta-reunion .vacio {
+      color: #1b9e3c;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    .lista-alerta-reunion {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .fila-alerta-reunion {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fbe2e0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .fila-alerta-reunion a {
+      color: #02535a;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .fila-alerta-reunion a:hover { text-decoration: underline; }
+    .badge-dias-reunion {
+      background: #c0392b;
+      color: white;
+      font-size: 0.78rem;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
   </style>
 </head>
 <body>
@@ -217,6 +271,15 @@
       <div class="card">📦 Reservas activas: <strong>8</strong></div>
       <div class="card">🎯 Meta mensual: <strong>$18,400</strong></div>
       <div class="card">📅 Viajes esta semana: <strong>3</strong></div>
+    </div>
+
+    <!-- NUEVO: Reunión de Guía de Viaje pendiente — a diferencia de las
+         tarjetas de arriba (que todavía son datos de ejemplo), esta sección
+         SÍ se calcula en vivo desde Firestore (colección "reservas"). -->
+    <div class="dashboard-section alerta-reunion" id="seccionAlertaReunion">
+      <h2>📹 Reunión de Guía de Viaje pendiente</h2>
+      <p class="detalle-alerta">Reservas que viajan en menos de 15 días y todavía no tienen marcada la reunión virtual (Meet) de presentación de la guía.</p>
+      <div id="contenidoAlertaReunion">Cargando...</div>
     </div>
 
     <div class="dashboard-section alertas">
@@ -279,6 +342,10 @@
       appId: "1:1000749333444:web:73437891b59a96b6a4c291"
     };
     firebase.initializeApp(firebaseConfig);
+    // NUEVO: faltaba esta línea — sin ella no se podía consultar Firestore
+    // desde esta página (topbar.js/auth-guard.js no la necesitan, pero la
+    // alerta de Reunión sí).
+    const db = firebase.firestore();
 
     const usuario = JSON.parse(localStorage.getItem("usuario"));
     const sidebar = document.getElementById("sidebar");
@@ -317,6 +384,83 @@
 
     window.addEventListener('resize', checkScreenSize);
     window.addEventListener('load', checkScreenSize);
+
+    // ==========================================
+    // NUEVO: Alerta de Reunión de Guía de Viaje — igual criterio que ya se
+    // usa en reservas.html (el checkbox que marca reunionRealizada vive
+    // ahí); acá solo se consulta y se muestra la lista de pendientes.
+    // ==========================================
+
+    const DIAS_ALERTA_REUNION = 15;
+
+    // Mismo parseo flexible de fechas que usa el resto del sistema — la
+    // fecha de viaje se ha guardado con formatos distintos a lo largo del
+    // tiempo ("2025-06-08" con guiones, o "16/7/2026" con barras).
+    function parseFechaReserva(str) {
+      if (!str) return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+        return new Date(str + "T00:00:00");
+      }
+      const partes = str.split("/");
+      if (partes.length === 3) {
+        const [dia, mes, año] = partes.map(Number);
+        if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) {
+          return new Date(año, mes - 1, dia);
+        }
+      }
+      return null;
+    }
+
+    function formatearFechaVisible(fecha) {
+      if (!fecha) return '-';
+      const dia = String(fecha.getDate()).padStart(2, '0');
+      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+      return `${dia}/${mes}/${fecha.getFullYear()}`;
+    }
+
+    async function cargarAlertaReunion() {
+      const contenedor = document.getElementById("contenidoAlertaReunion");
+      try {
+        const snapshot = await db.collection("reservas").get();
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const limite = new Date(hoy);
+        limite.setDate(limite.getDate() + DIAS_ALERTA_REUNION);
+
+        const pendientes = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const fecha = parseFechaReserva(data.fechaReserva);
+          if (!fecha || fecha < hoy || fecha > limite) return;
+          if (data.reunionRealizada) return;
+          pendientes.push({ codigo: doc.id, data, fecha });
+        });
+        pendientes.sort((a, b) => a.fecha - b.fecha);
+
+        if (pendientes.length === 0) {
+          contenedor.innerHTML = `<div class="vacio">✅ Ninguna reserva con viaje en los próximos ${DIAS_ALERTA_REUNION} días está sin su reunión de guía.</div>`;
+          return;
+        }
+
+        const filas = pendientes.map(r => {
+          const diasRestantes = Math.round((r.fecha - hoy) / 86400000);
+          const etiquetaDias = diasRestantes === 0 ? "Hoy" : `${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`;
+          return `
+            <div class="fila-alerta-reunion">
+              <span><a href="detalle_reserva.html?codigo=${r.codigo}">${r.codigo}</a> — ${r.data.nombreTitular || '-'} — ${r.data.nombreDestino || r.data.destino || '-'} — ${formatearFechaVisible(r.fecha)}</span>
+              <span class="badge-dias-reunion">${etiquetaDias}</span>
+            </div>
+          `;
+        }).join("");
+
+        contenedor.innerHTML = `<div class="lista-alerta-reunion">${filas}</div>`;
+      } catch (e) {
+        console.error("Error al cargar la alerta de Reunión de Guía de Viaje:", e);
+        contenedor.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo cargar esta alerta.</span>`;
+      }
+    }
+
+    cargarAlertaReunion();
   </script>
   <!-- NUEVO: barra superior compartida — siempre al final, después de que
        Firebase ya quedó inicializado arriba. -->
