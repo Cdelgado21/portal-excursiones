@@ -1478,7 +1478,12 @@ async function confirmarEnvioCorreo() {
 
   try {
     const base64PDF = await generarPDFBase64();
-    const urlWebApp = "https://proxy-correo.cris-delgado21.workers.dev/";
+    // FIX: antes apuntaba a un Worker de Cloudflare (proxy-correo.cris-
+    // delgado21.workers.dev), que quedó bloqueado por la red de la oficina
+    // (ERR_CONNECTION_RESET incluso visitándolo directo, sin código de por
+    // medio). Ahora usa una función propia de Netlify — mismo dominio que el
+    // resto del sitio, sin depender de *.workers.dev.
+    const urlWebApp = "/.netlify/functions/factura-correo";
 
     const data = {
       emailDestino: para,
