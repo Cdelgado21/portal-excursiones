@@ -1509,7 +1509,10 @@ async function confirmarEnvioCorreo() {
     cerrarModalRevisarCorreo();
   } catch (error) {
     console.error("Error al enviar el correo:", error);
-    alert("Ocurrió un error al enviar el correo.");
+    // NUEVO: se muestra el detalle técnico (mensaje + línea) directo en el
+    // alert — temporal, solo para encontrar la causa exacta de un error que
+    // no se estaba pudiendo reproducir bien en la consola del navegador.
+    alert("Ocurrió un error al enviar el correo.\n\nDetalle técnico:\n" + (error.stack || error.message || error));
   } finally {
     boton.disabled = false;
     boton.textContent = "Enviar";
