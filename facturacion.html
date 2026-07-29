@@ -362,6 +362,61 @@ input[type="date"] {
     border-radius: 8px;
     font-size: 14px;
   }
+
+  /* NUEVO: modal de revisión de correo antes de enviarlo. */
+  #modalRevisarCorreo {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+  }
+  #modalRevisarCorreo .modal-contenido {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 650px;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+  }
+  #modalRevisarCorreo label {
+    display: block;
+    font-weight: bold;
+    color: #02535a;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  #modalRevisarCorreo input,
+  #modalRevisarCorreo textarea {
+    width: 100%;
+    padding: 9px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 14px;
+  }
+  #modalRevisarCorreo .fila-cc {
+    display: flex;
+    gap: 12px;
+  }
+  #modalRevisarCorreo .fila-cc > div {
+    flex: 1;
+  }
+  #modalRevisarCorreo .aviso-adjunto {
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: #f0f7f7;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #5f9296;
+  }
   </style>
 </head>
 <body>
@@ -501,6 +556,39 @@ input[type="date"] {
     <div style="text-align:right; margin-top: 20px;">
       <button onclick="abrirModalAgregarPago()">Agregar Pago</button>
       <button onclick="cerrarModal('modalTransacciones')" style="background-color: #999;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div id="modalRevisarCorreo" style="display: none;">
+  <div class="modal-contenido">
+    <h3>✉️ Revisar correo antes de enviar</h3>
+
+    <label>Para</label>
+    <input type="text" id="correoModalPara" placeholder="correo@ejemplo.com">
+
+    <div class="fila-cc">
+      <div>
+        <label>CC (opcional)</label>
+        <input type="text" id="correoModalCC" placeholder="separá varios con coma">
+      </div>
+      <div>
+        <label>CCO (opcional)</label>
+        <input type="text" id="correoModalCCO" placeholder="separá varios con coma">
+      </div>
+    </div>
+
+    <label>Asunto</label>
+    <input type="text" id="correoModalAsunto">
+
+    <label>Mensaje</label>
+    <textarea id="correoModalMensaje" rows="4"></textarea>
+
+    <div class="aviso-adjunto">📎 Se adjunta automáticamente el PDF de esta factura.</div>
+
+    <div style="margin-top: 20px; text-align: right;">
+      <button onclick="cerrarModalRevisarCorreo()" style="background-color: #999;">Cancelar</button>
+      <button id="btnConfirmarEnvioCorreo" onclick="confirmarEnvioCorreo()">Enviar</button>
     </div>
   </div>
 </div>
@@ -1350,7 +1438,10 @@ async function generarPDFBase64() {
   return datauri.split(',')[1];
 }
 
-async function enviarPorCorreo() {
+// NUEVO: en vez de enviar directo, abre un modal de revisión (Para/CC/CCO/
+// Asunto/Mensaje editables) — el envío real solo ocurre cuando se confirma
+// ahí, en confirmarEnvioCorreo().
+function enviarPorCorreo() {
   const destinatario = document.getElementById("correoCliente").textContent.trim();
 
   // NUEVO: si el correo del cliente está vacío o sigue en "---" (porque la
@@ -1362,14 +1453,42 @@ async function enviarPorCorreo() {
     return;
   }
 
+  document.getElementById("correoModalPara").value = destinatario;
+  document.getElementById("correoModalCC").value = "";
+  document.getElementById("correoModalCCO").value = "";
+  document.getElementById("correoModalAsunto").value = "Factura de Reserva | Excursiones Delgado";
+  document.getElementById("correoModalMensaje").value = "Gracias por viajar con nosotros. Adjunto encontrará su factura.";
+  document.getElementById("modalRevisarCorreo").style.display = "flex";
+}
+
+function cerrarModalRevisarCorreo() {
+  document.getElementById("modalRevisarCorreo").style.display = "none";
+}
+
+async function confirmarEnvioCorreo() {
+  const para = document.getElementById("correoModalPara").value.trim();
+  if (!para) {
+    alert("El campo \"Para\" no puede quedar vacío.");
+    return;
+  }
+
+  const boton = document.getElementById("btnConfirmarEnvioCorreo");
+  boton.disabled = true;
+  boton.textContent = "Enviando...";
+
   try {
     const base64PDF = await generarPDFBase64();
     const urlWebApp = "https://proxy-correo.cris-delgado21.workers.dev/";
 
     const data = {
-      emailDestino: destinatario,
-      asunto: "Factura de Reserva | Excursiones Delgado",
-      mensaje: "Gracias por viajar con nosotros. Adjunto encontrará su factura.",
+      emailDestino: para,
+      // NUEVO: cc/cco — ojo, la Apps Script del otro lado tiene que leer
+      // estos dos campos y usarlos en MailApp.sendEmail para que realmente
+      // tengan efecto (hoy puede que solo tenga un CC fijo hardcodeado).
+      cc: document.getElementById("correoModalCC").value.trim(),
+      cco: document.getElementById("correoModalCCO").value.trim(),
+      asunto: document.getElementById("correoModalAsunto").value.trim() || "Factura de Reserva | Excursiones Delgado",
+      mensaje: document.getElementById("correoModalMensaje").value.trim(),
       archivoBase64: base64PDF,
       nombreArchivo: "Factura_Reserva.pdf"
     };
@@ -1382,9 +1501,13 @@ async function enviarPorCorreo() {
 
     const result = await response.text();
     alert(result);
+    cerrarModalRevisarCorreo();
   } catch (error) {
     console.error("Error al enviar el correo:", error);
     alert("Ocurrió un error al enviar el correo.");
+  } finally {
+    boton.disabled = false;
+    boton.textContent = "Enviar";
   }
 }
 </script>
