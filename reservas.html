@@ -282,6 +282,7 @@
           <th>Personas</th>
           <th>Fecha de viaje</th>
           <th style="text-align:center;">Reunión</th>
+          <th style="text-align:center;">Operación</th>
           <th style="text-align:center;">Acciones</th>
         </tr>
       </thead>
@@ -390,6 +391,9 @@
             <td>${formatearFechaVisible(data.fechaReserva)}</td>
             <td style="text-align:center;">
               <input type="checkbox" class="check-reunion" ${data.reunionRealizada ? 'checked' : ''} onchange="marcarReunionRealizada('${doc.id}', this.checked)" title="¿Ya se hizo la reunión de guía de viaje?">
+            </td>
+            <td style="text-align:center;">
+              <input type="checkbox" class="check-reunion" ${data.operacionConfirmada ? 'checked' : ''} onchange="marcarOperacionConfirmada('${doc.id}', this.checked)" title="¿Ya están confirmados todos los servicios con los proveedores (hoteles, tours, traslados)?">
             </td>
             <td>
               <div class="celda-acciones">
@@ -788,6 +792,23 @@
         }
       } catch (e) {
         console.error("Error al actualizar el estado de la reunión:", e);
+        alert("❌ No se pudo guardar el cambio. Intenta de nuevo.");
+      }
+    }
+
+    // NUEVO: check de "Operación" — marca manual de que los servicios con
+    // proveedores (hoteles, tours, traslados) ya quedaron confirmados para
+    // esta reserva. Separado a propósito de los checks de "Confirmado" por
+    // proveedor en costos_agregar.html (esos son el detalle fila por fila;
+    // este es un vistazo rápido a nivel de toda la reserva, marcado a mano).
+    async function marcarOperacionConfirmada(codigo, marcada) {
+      try {
+        await db.collection("reservas").doc(codigo).update({ operacionConfirmada: marcada });
+        if (window.datosReservasPorCodigo[codigo]) {
+          window.datosReservasPorCodigo[codigo].operacionConfirmada = marcada;
+        }
+      } catch (e) {
+        console.error("Error al actualizar el estado de operación:", e);
         alert("❌ No se pudo guardar el cambio. Intenta de nuevo.");
       }
     }
