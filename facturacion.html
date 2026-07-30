@@ -1454,11 +1454,21 @@ function enviarPorCorreo() {
     return;
   }
 
+  const nombreCliente = document.getElementById("nombreCliente").textContent.trim();
+  const codigoActual = reservaID || "";
+
   document.getElementById("correoModalPara").value = destinatario;
   document.getElementById("correoModalCC").value = "";
   document.getElementById("correoModalCCO").value = "";
-  document.getElementById("correoModalAsunto").value = "Factura de Reserva | Excursiones Delgado";
-  document.getElementById("correoModalMensaje").value = "Gracias por viajar con nosotros. Adjunto encontrará su factura.";
+  // NUEVO: mismo espíritu cálido y personalizado que el correo de bienvenida
+  // del comprobante — este es el correo que más se repite (cada vez que el
+  // cliente abona), así que merece el mismo cuidado.
+  document.getElementById("correoModalAsunto").value = `Tu factura actualizada — reserva ${codigoActual} con Excursiones Delgado ✈️`;
+  document.getElementById("correoModalMensaje").value =
+    `¡Hola ${nombreCliente}!\n\n` +
+    `Cada abono te acerca un poco más a la fecha de tu viaje — ¡qué emoción! Te adjuntamos la factura actualizada de tu reserva ${codigoActual}, con el detalle de lo abonado hasta hoy y el saldo pendiente.\n\n` +
+    `Si tenés alguna duda sobre tu pago o necesitás ayuda con algo, escribinos por WhatsApp al 6132-8183 — con gusto te ayudamos.\n\n` +
+    `¡Gracias por seguir construyendo este viaje con nosotros!`;
   document.getElementById("modalRevisarCorreo").style.display = "flex";
 }
 
