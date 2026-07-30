@@ -209,13 +209,30 @@
       margin-top: 12px;
       font-size: 0.9rem;
     }
-    #modalContent input, #modalContent select {
+    #modalContent input, #modalContent select, #modalContent textarea {
       width: 100%;
       padding: 8px;
       margin-top: 5px;
       border: 1px solid #ccc;
       border-radius: 5px;
       box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+    #modalContent textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+    /* NUEVO: campo de información del hotel — solo se muestra cuando la
+       categoría seleccionada es "Hospedaje", ya que no aplica a los demás
+       tipos de proveedor. */
+    #contenedorInfoHotel {
+      display: none;
+    }
+    #contenedorInfoHotel small {
+      display: block;
+      font-weight: normal;
+      color: #888;
+      margin-top: 2px;
     }
     #modalContent .botones {
       margin-top: 20px;
@@ -304,13 +321,21 @@
       </select>
 
       <label>Categoría</label>
-      <select id="campoCategoria">
+      <select id="campoCategoria" onchange="actualizarVisibilidadInfoHotel()">
         <option value="Hospedaje">Hospedaje</option>
         <option value="Tours">Tours</option>
         <option value="Traslados">Traslados</option>
         <option value="Comisión">Comisión</option>
         <option value="Otro">Otro</option>
       </select>
+
+      <!-- NUEVO: información del hotel — la usa cotizacionformal.html para
+           autocompletar la descripción al elegir el hotel en una cotización. -->
+      <div id="contenedorInfoHotel">
+        <label>Información del Hotel</label>
+        <textarea id="campoInfoHotel" placeholder="Ej. Hotel 4 estrellas, ubicación céntrica, desayuno incluido, wifi gratis, piscina..."></textarea>
+        <small>Solo aplica para proveedores de categoría Hospedaje. Este texto se usa para autocompletar la información del hotel en las cotizaciones.</small>
+      </div>
 
       <label>Estado</label>
       <select id="campoActivo">
@@ -406,13 +431,26 @@
     });
   }
 
+  // NUEVO: muestra/oculta el campo "Información del Hotel" según la
+  // categoría elegida — solo aplica a Hospedaje.
+  function actualizarVisibilidadInfoHotel() {
+    const categoria = document.getElementById("campoCategoria").value;
+    const contenedor = document.getElementById("contenedorInfoHotel");
+    contenedor.style.display = categoria === "Hospedaje" ? "block" : "none";
+    if (categoria !== "Hospedaje") {
+      document.getElementById("campoInfoHotel").value = "";
+    }
+  }
+
   function abrirModal() {
     document.getElementById("tituloModal").textContent = "Nuevo Proveedor";
     document.getElementById("proveedorId").value = "";
     document.getElementById("campoNombre").value = "";
     document.getElementById("campoDestino").value = "";
     document.getElementById("campoCategoria").value = "Hospedaje";
+    document.getElementById("campoInfoHotel").value = "";
     document.getElementById("campoActivo").value = "true";
+    actualizarVisibilidadInfoHotel();
     document.getElementById("modal").style.display = "flex";
   }
 
@@ -424,7 +462,9 @@
     document.getElementById("campoNombre").value = p.nombre || "";
     document.getElementById("campoDestino").value = p.destino || "";
     document.getElementById("campoCategoria").value = p.categoria || "Hospedaje";
+    document.getElementById("campoInfoHotel").value = p.info || "";
     document.getElementById("campoActivo").value = p.activo === false ? "false" : "true";
+    actualizarVisibilidadInfoHotel();
     document.getElementById("modal").style.display = "flex";
   }
 
@@ -437,6 +477,7 @@
     const nombre = document.getElementById("campoNombre").value.trim();
     const destino = document.getElementById("campoDestino").value;
     const categoria = document.getElementById("campoCategoria").value;
+    const info = document.getElementById("campoInfoHotel").value.trim();
     const activo = document.getElementById("campoActivo").value === "true";
 
     if (!nombre) {
@@ -444,7 +485,7 @@
       return;
     }
 
-    const datos = { nombre, destino, categoria, activo };
+    const datos = { nombre, destino, categoria, activo, info: categoria === "Hospedaje" ? info : "" };
 
     try {
       if (id) {
