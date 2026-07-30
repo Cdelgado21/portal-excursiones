@@ -796,35 +796,77 @@
     }
 
     // ==========================================
-    // NUEVO: Exportar a Excel — respaldo manual de las reservas activas
-    // que ya están cargadas en esta pantalla, para tener una segunda copia
-    // fuera del sistema (Google Drive, Excel local, etc.) y poder revisar
-    // que todo cuadre. No hace ninguna consulta nueva a Firebase — usa los
-    // mismos datos que ya están en memoria.
+    // NUEVO: Exportar a Excel — respaldo manual calcado del formato real
+    // que ya usás en Drive ("Reservas Salidas Particulares"): una fila por
+    // PASAJERO (no por reserva), con los mismos encabezados. Tres columnas
+    // quedan vacías a propósito porque el sistema no las captura con ese
+    // detalle: "Apellidos" (el nombre se guarda completo, sin separar),
+    // "Lugar de Nacimiento" y "Paquete de Turismo" (texto libre que no se
+    // guarda tal cual). No hace ninguna consulta nueva a Firebase — usa
+    // los mismos datos que ya están en memoria.
     // ==========================================
 
+    const MESES_EXPORT = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+    function calcularEdadExport(fechaNac) {
+      const f = parseFechaReserva(fechaNac);
+      if (!f) return "";
+      const hoy = new Date();
+      let edad = hoy.getFullYear() - f.getFullYear();
+      const m = hoy.getMonth() - f.getMonth();
+      if (m < 0 || (m === 0 && hoy.getDate() < f.getDate())) edad--;
+      return edad;
+    }
+
     function exportarReservasExcel() {
-      const filas = Object.entries(window.datosReservasPorCodigo).map(([codigo, data]) => {
+      const filas = [];
+
+      Object.entries(window.datosReservasPorCodigo).forEach(([codigo, data]) => {
         const total = Number(data.total || 0);
         const pagado = (data.pagos || []).reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
         const saldo = total - pagado;
+        const pagaron = saldo <= 0.01;
 
-        return {
-          "Código": codigo,
-          "Cliente": data.nombreTitular || "",
-          "Teléfono": data.telefono || "",
-          "Correo": data.correo || "",
-          "Destino": data.nombreDestino || data.destino || "",
-          "Personas": calcularPersonas(data) ?? "",
-          "Fecha de viaje": formatearFechaVisible(data.fechaReserva),
-          "Ingreso": total,
-          "Pagado": pagado,
-          "Saldo": saldo,
-          "Vendedor": data.vendedor || "",
-          "Reunión de guía hecha": data.reunionRealizada ? "Sí" : "No",
-          "Código de vuelo": data.vueloIda?.codigo || "",
-          "Fecha de vuelo (ida)": formatearFechaVisible(data.vueloIda?.fecha)
-        };
+        const fecha = parseFechaReserva(data.fechaReserva);
+        const mesTexto = fecha ? `${MESES_EXPORT[fecha.getMonth()]} ${fecha.getFullYear()}` : "";
+        const hotelTexto = (data.hoteles || []).map(h => h.nombre).filter(Boolean).join(", ");
+        const codigoVuelo = data.vueloIda?.codigo || "";
+        const destino = data.nombreDestino || data.destino || "";
+        const fechaViajeTexto = formatearFechaVisible(data.fechaReserva);
+
+        function agregarFilaPasajero(nombreCompleto, documento, vencimiento, nacionalidad, nacimiento, genero) {
+          filas.push({
+            "# DE RESERVA": codigo,
+            "Nombre Completo": nombreCompleto || "",
+            "Apellidos": "",
+            "N° Pasaporte": documento || "",
+            "Vencimiento Pasaporte": formatearFechaVisible(vencimiento),
+            "Nacionalidad": nacionalidad || "",
+            "Fecha de Nacimiento": formatearFechaVisible(nacimiento),
+            "Edad": calcularEdadExport(nacimiento),
+            "Lugar de Nacimiento": "",
+            "Sexo": genero || "",
+            "MES": mesTexto,
+            "DESTINO": destino,
+            "Fecha de Viaje": fechaViajeTexto,
+            "Paquete de Turismo": "",
+            "Precio de Tour": "",
+            "Abono": pagado,
+            "Saldo": saldo,
+            "Telefono": data.telefono || "",
+            "Correo Electrónico": data.correo || "",
+            "Código Reserva": codigoVuelo,
+            "Hotel": hotelTexto,
+            "PAGARON": pagaron,
+            "REUNIÓN": !!data.reunionRealizada
+          });
+        }
+
+        // Titular primero, luego cada acompañante — mismo orden que tu hoja.
+        agregarFilaPasajero(data.nombreTitular, data.cedula, data.vencimientoPasaporteTitular, data.nacionalidadTitular, data.fechaNacimientoTitular, data.generoTitular);
+        (data.pasajeros || []).forEach(p => {
+          agregarFilaPasajero(p.nombre, p.documento, p.vencimiento, p.nacionalidad, p.nacimiento, p.genero);
+        });
       });
 
       if (filas.length === 0) {
