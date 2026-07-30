@@ -9,6 +9,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
@@ -262,6 +263,7 @@
   <div class="tabla-container">
     <div class="barra-superior">
       <button class="btn-agregar" onclick="window.location.href='detalle_reserva.html'">➕ Agregar reserva</button>
+      <button class="btn-historicas" style="border:none; cursor:pointer;" onclick="exportarReservasExcel()">📥 Exportar a Excel</button>
       <a class="btn-historicas" href="reservas_historicas.html">🕓 Ver reservas históricas</a>
     </div>
 
@@ -791,6 +793,52 @@
         console.error("Error al actualizar el estado de la reunión:", e);
         alert("❌ No se pudo guardar el cambio. Intenta de nuevo.");
       }
+    }
+
+    // ==========================================
+    // NUEVO: Exportar a Excel — respaldo manual de las reservas activas
+    // que ya están cargadas en esta pantalla, para tener una segunda copia
+    // fuera del sistema (Google Drive, Excel local, etc.) y poder revisar
+    // que todo cuadre. No hace ninguna consulta nueva a Firebase — usa los
+    // mismos datos que ya están en memoria.
+    // ==========================================
+
+    function exportarReservasExcel() {
+      const filas = Object.entries(window.datosReservasPorCodigo).map(([codigo, data]) => {
+        const total = Number(data.total || 0);
+        const pagado = (data.pagos || []).reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+        const saldo = total - pagado;
+
+        return {
+          "Código": codigo,
+          "Cliente": data.nombreTitular || "",
+          "Teléfono": data.telefono || "",
+          "Correo": data.correo || "",
+          "Destino": data.nombreDestino || data.destino || "",
+          "Personas": calcularPersonas(data) ?? "",
+          "Fecha de viaje": formatearFechaVisible(data.fechaReserva),
+          "Ingreso": total,
+          "Pagado": pagado,
+          "Saldo": saldo,
+          "Vendedor": data.vendedor || "",
+          "Reunión de guía hecha": data.reunionRealizada ? "Sí" : "No",
+          "Código de vuelo": data.vueloIda?.codigo || "",
+          "Fecha de vuelo (ida)": formatearFechaVisible(data.vueloIda?.fecha)
+        };
+      });
+
+      if (filas.length === 0) {
+        alert("Todavía no hay reservas cargadas. Esperá a que termine de cargar la página e intentá de nuevo.");
+        return;
+      }
+
+      const hoja = XLSX.utils.json_to_sheet(filas);
+      const libro = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(libro, hoja, "Reservas");
+
+      const hoy = new Date();
+      const fechaArchivo = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+      XLSX.writeFile(libro, `Respaldo_Reservas_${fechaArchivo}.xlsx`);
     }
 
     function eliminarReserva(id) {
