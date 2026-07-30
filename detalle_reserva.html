@@ -4025,8 +4025,16 @@ async function enviarComprobantePorCorreo() {
   document.getElementById("comprobante_modal_para").value = datos.correo || "";
   document.getElementById("comprobante_modal_cc").value = "";
   document.getElementById("comprobante_modal_cco").value = "";
-  document.getElementById("comprobante_modal_asunto").value = "Comprobante de Reserva | Excursiones Delgado";
-  document.getElementById("comprobante_modal_mensaje").value = "Adjunto encontrará el comprobante de su reserva. Cualquier duda, quedamos atentos.";
+  // NUEVO: el Asunto y Mensaje se prellenan con el mismo texto personalizado
+  // de siempre (con el código de reserva y el nombre del titular), no un
+  // texto genérico — así, si no se toca nada, el correo sale exactamente
+  // igual a como salía antes de agregar este modal.
+  document.getElementById("comprobante_modal_asunto").value = `¡Bienvenido a bordo! Tu reserva ${datos.codigo} con Excursiones Delgado ✈️`;
+  document.getElementById("comprobante_modal_mensaje").value =
+    `¡Bienvenido a bordo! Tu reserva ${datos.codigo} con Excursiones Delgado ya está confirmada, y nos emociona muchísimo acompañarte en esta nueva aventura.\n\n` +
+    `Adjunto encontrarás el comprobante completo, con todos los detalles de tu viaje.\n\n` +
+    `Cualquier consulta, escríbenos por WhatsApp al 6132-8183 — estamos aquí para ayudarte en cada paso del camino.\n\n` +
+    `¡Gracias por confiar en nosotros para hacer realidad tus sueños de viaje!`;
   document.getElementById("comprobanteMensajeModal").innerHTML = "";
   document.getElementById("modalRevisarComprobante").style.display = "flex";
 }
