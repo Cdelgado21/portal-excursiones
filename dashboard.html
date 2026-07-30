@@ -588,15 +588,19 @@
           const creadoEl = data.creado_el?.toDate ? data.creado_el.toDate() : (data.creado_el ? new Date(data.creado_el) : null);
           if (!creadoEl || creadoEl < desde || creadoEl > hasta) return;
           if (!data.vendedor) return;
-          porVendedor[data.vendedor] = (porVendedor[data.vendedor] || 0) + (Number(data.total) || 0);
+          if (!porVendedor[data.vendedor]) porVendedor[data.vendedor] = { total: 0, cantidad: 0 };
+          porVendedor[data.vendedor].total += (Number(data.total) || 0);
+          porVendedor[data.vendedor].cantidad += 1;
         });
 
-        const ranking = Object.entries(porVendedor).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        const ranking = Object.entries(porVendedor).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
 
         if (ranking.length === 0) {
           contenedor.innerHTML = `<li>Sin ventas con vendedor asignado este mes.</li>`;
         } else {
-          contenedor.innerHTML = ranking.map(([nombre, total]) => `<li>${nombre} – $${total.toFixed(2)}</li>`).join("");
+          contenedor.innerHTML = ranking.map(([nombre, v]) =>
+            `<li>${nombre} – $${v.total.toFixed(2)} (${v.cantidad} reserva${v.cantidad === 1 ? '' : 's'})</li>`
+          ).join("");
         }
       } catch (e) {
         console.error("Error al cargar el ranking de vendedores:", e);
