@@ -146,7 +146,7 @@
   }
 
   .encabezado img {
-    height: 250px;
+    height: 110px;
   }
 
   h2 {
@@ -1270,11 +1270,11 @@ async function construirDocumentoFactura() {
     doc.text(linea, 15, 40 + i * 4.5);
   });
 
-  // Logo (arriba a la derecha, igual que en el ejemplo)
+  // Logo (arriba a la derecha, más chico que antes, alineado al margen derecho)
   try {
     const logoElement = document.querySelector('.encabezado img');
     if (logoElement && logoElement.complete && logoElement.naturalWidth > 0) {
-      doc.addImage(logoElement, "PNG", 108, 6, 87, 53);
+      doc.addImage(logoElement, "PNG", 150, 10, 45, 27.4);
     }
   } catch (e) {
     console.warn("No se pudo agregar el logo al PDF:", e);
@@ -1284,7 +1284,7 @@ async function construirDocumentoFactura() {
   const yCaja = 72;
   doc.setDrawColor(220, 220, 220);
   doc.line(15, yCaja, 195, yCaja);
-  doc.line(15, yCaja + 34, 195, yCaja + 34);
+  doc.line(15, yCaja + 42, 195, yCaja + 42);
 
   doc.setFontSize(8);
   doc.setTextColor(140, 140, 140);
@@ -1310,9 +1310,10 @@ async function construirDocumentoFactura() {
     doc.text(String(valor || "---"), 195, y, { align: "right" });
   }
 
-  filaEtiquetaValor("FACTURA NÚMERO", numeroFactura, yCaja + 10);
-  filaEtiquetaValor("EMITIDO", fechaEmisionTexto, yCaja + 18);
-  filaEtiquetaValor("VENCIMIENTO", fechaVencimientoTexto, yCaja + 26);
+  filaEtiquetaValor("N° DE RESERVA", codigo, yCaja + 10);
+  filaEtiquetaValor("FACTURA NÚMERO", numeroFactura, yCaja + 18);
+  filaEtiquetaValor("EMITIDO", fechaEmisionTexto, yCaja + 26);
+  filaEtiquetaValor("VENCIMIENTO", fechaVencimientoTexto, yCaja + 34);
 
   // ---------- Tabla de artículos (con línea secundaria bajo cada uno) ----------
   const filasTabla = detalleFactura.map(item => [
@@ -1323,7 +1324,7 @@ async function construirDocumentoFactura() {
   ]);
 
   doc.autoTable({
-    startY: yCaja + 44,
+    startY: yCaja + 52,
     head: [["ARTÍCULO", "PRECIO", "CANTIDAD", "IMPORTE"]],
     body: filasTabla,
     theme: "plain",
