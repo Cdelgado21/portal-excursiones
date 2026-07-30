@@ -414,9 +414,18 @@ async function cargarOpcionesDeDestino() {
 
     document.getElementById("politicas").value = data.politicas || "";
 
+    // FIX: antes leía data.hoteles, un objeto embebido en el doc de "tours"
+    // que ya no se llena (los hoteles se manejan aparte como proveedores,
+    // categoría "Hospedaje", desde proveedores.html). Ahora consulta esa
+    // colección real, incluyendo proveedores marcados para "Todos los
+    // destinos" (destino vacío) además de los específicos de este destino.
     const hotelSelect = document.getElementById("hotel");
     hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
-   const hoteles = Object.values(data.hoteles || {});
+    const proveedoresSnap = await db.collection("proveedores")
+      .where("categoria", "==", "Hospedaje").get();
+    const hoteles = proveedoresSnap.docs
+      .map(d => d.data())
+      .filter(p => p.activo !== false && (p.destino === destino || !p.destino));
     hoteles.forEach(h => {
       const opt = document.createElement("option");
       opt.value = h.nombre;
@@ -426,12 +435,12 @@ async function cargarOpcionesDeDestino() {
     hotelSelect.onchange = () => {
       const seleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
       document.getElementById("info_hotel").value = seleccionado?.info || "";
-}
+    };
     if (data.hotel) {
-  hotelSelect.value = data.hotel;
-  const seleccionado = hoteles.find(h => h.nombre === data.hotel);
-  document.getElementById("info_hotel").value = seleccionado?.info || "";
-};
+      hotelSelect.value = data.hotel;
+      const seleccionado = hoteles.find(h => h.nombre === data.hotel);
+      document.getElementById("info_hotel").value = seleccionado?.info || "";
+    }
   }
 
 // NUEVO: función compartida para pintar la tabla de Tours Opcionales.
