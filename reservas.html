@@ -833,6 +833,11 @@
         const codigoVuelo = data.vueloIda?.codigo || "";
         const destino = data.nombreDestino || data.destino || "";
         const fechaViajeTexto = formatearFechaVisible(data.fechaReserva);
+        // NUEVO: "Paquete de Turismo" combina nivel (Flash/Esencial/Confort,
+        // solo aplica a salidas Individuales) + destino, mismo estilo que
+        // ya usás ("CONFORT MEDELLÍN"). "Precio de Tour" es el valor total
+        // de la reserva (mismo monto que ya se usa para calcular el saldo).
+        const paqueteTexto = data.nivel ? `${data.nivel.toUpperCase()} ${destino.toUpperCase()}` : destino.toUpperCase();
 
         function agregarFilaPasajero(nombreCompleto, documento, vencimiento, nacionalidad, nacimiento, genero) {
           filas.push({
@@ -849,8 +854,8 @@
             "MES": mesTexto,
             "DESTINO": destino,
             "Fecha de Viaje": fechaViajeTexto,
-            "Paquete de Turismo": "",
-            "Precio de Tour": "",
+            "Paquete de Turismo": paqueteTexto,
+            "Precio de Tour": total,
             "Abono": pagado,
             "Saldo": saldo,
             "Telefono": data.telefono || "",
