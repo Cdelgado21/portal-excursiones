@@ -239,6 +239,23 @@
       border-radius: 999px;
       white-space: nowrap;
     }
+
+    /* NUEVO: filas del panel de Avisos Pendientes — cada una es un enlace
+       de bloque completo, para poder darle clic en cualquier parte de la
+       fila y no solo en el texto. */
+    .fila-aviso-pendiente {
+      display: block;
+      background: #fbe2e0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      color: #02535a;
+      font-weight: bold;
+      text-decoration: none;
+      margin-bottom: 8px;
+    }
+    .fila-aviso-pendiente:last-child { margin-bottom: 0; }
+    .fila-aviso-pendiente:hover { background: #f6cfcb; text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -273,21 +290,15 @@
       <div class="card">📅 Viajes esta semana: <strong>3</strong></div>
     </div>
 
-    <!-- NUEVO: Reunión de Guía de Viaje pendiente — a diferencia de las
-         tarjetas de arriba (que todavía son datos de ejemplo), esta sección
-         SÍ se calcula en vivo desde Firestore (colección "reservas"). -->
-    <div class="dashboard-section alerta-reunion" id="seccionAlertaReunion">
-      <h2>📹 Reunión de Guía de Viaje pendiente</h2>
-      <p class="detalle-alerta">Reservas que viajan en menos de 15 días y todavía no tienen marcada la reunión virtual (Meet) de presentación de la guía.</p>
-      <div id="contenidoAlertaReunion">Cargando...</div>
-    </div>
-
+    <!-- NUEVO: Alertas internas — ahora con datos reales, juntando 3 tipos
+         de aviso en un solo panel (reunión de guía sin marcar, pasajeros
+         sin foto de pasaporte, proveedores sin confirmar), todos para
+         reservas que viajan en los próximos 15 días. Cada aviso es un
+         enlace directo a donde hay que resolverlo. -->
     <div class="dashboard-section alertas">
       <h2>⚠️ Alertas internas</h2>
-      <ul>
-        <li>Cliente Ana Pérez aún no ha enviado pasaporte</li>
-        <li>Reserva #568 sin abono confirmado</li>
-        <li>Viaje a Panamá sale en 3 días sin check-in</li>
+      <ul id="listaAlertasInternas">
+        <li>Cargando...</li>
       </ul>
     </div>
 
@@ -295,29 +306,28 @@
       <h2>🧳 Próximos viajes confirmados</h2>
       <table>
         <thead>
-          <tr><th>Destino</th><th>Fecha</th><th>Embajador</th></tr>
+          <tr><th>Destino</th><th>Fecha</th><th>Vendedor(a)</th></tr>
         </thead>
-        <tbody>
-          <tr><td>Medellín</td><td>05/06/2025</td><td>Yare</td></tr>
-          <tr><td>Guatemala</td><td>07/06/2025</td><td>Tatiana</td></tr>
+        <tbody id="tablaProximosViajesBody">
+          <tr><td colspan="3" style="text-align:center; color:#999;">Cargando...</td></tr>
         </tbody>
       </table>
     </div>
 
+    <!-- NUEVO: renombrado a "Vendedores destacados" — el ranking es por
+         Vendedor (quién cerró la venta), no por Embajadora (a quién se le
+         paga comisión) — son dos conceptos distintos en todo el sistema. -->
     <div class="dashboard-section ranking">
-      <h2>🏆 Embajadores destacados</h2>
-      <ol>
-        <li>Cristopher Delgado – $3,200</li>
-        <li>Marcela – $2,900</li>
-        <li>Yuliana – $2,700</li>
+      <h2>🏆 Vendedores destacados (este mes)</h2>
+      <ol id="listaVendedoresDestacados">
+        <li>Cargando...</li>
       </ol>
     </div>
 
     <div class="dashboard-section recordatorios">
-      <h2>🎉 Cumpleaños esta semana</h2>
-      <ul>
-        <li>María López – 04/06</li>
-        <li>Jorge Ramos – 06/06</li>
+      <h2>🎉 Cumpleaños próximos (7 días)</h2>
+      <ul id="listaCumpleanos">
+        <li>Cargando...</li>
       </ul>
     </div>
 
@@ -391,8 +401,6 @@
     // ahí); acá solo se consulta y se muestra la lista de pendientes.
     // ==========================================
 
-    const DIAS_ALERTA_REUNION = 15;
-
     // Mismo parseo flexible de fechas que usa el resto del sistema — la
     // fecha de viaje se ha guardado con formatos distintos a lo largo del
     // tiempo ("2025-06-08" con guiones, o "16/7/2026" con barras).
@@ -418,49 +426,227 @@
       return `${dia}/${mes}/${fecha.getFullYear()}`;
     }
 
-    async function cargarAlertaReunion() {
-      const contenedor = document.getElementById("contenidoAlertaReunion");
+    // ==========================================
+    // NUEVO: Alertas internas — junta 3 tipos de aviso operativo para
+    // reservas que viajan en los próximos 15 días:
+    // 1) Reunión de guía de viaje todavía sin marcar.
+    // 2) Pasajeros (titular o acompañantes) sin foto de pasaporte subida.
+    // 3) Proveedores (Hospedaje/Traslados/Tours/Comisión) con datos
+    //    cargados en costos_agregar.html pero SIN marcar "Confirmado".
+    // Cada aviso es un enlace directo a donde hay que resolverlo.
+    // ==========================================
+
+    const DIAS_AVISO_PENDIENTE = 15;
+
+    async function cargarAlertasInternas() {
+      const contenedor = document.getElementById("listaAlertasInternas");
       try {
-        const snapshot = await db.collection("reservas").get();
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
         const limite = new Date(hoy);
-        limite.setDate(limite.getDate() + DIAS_ALERTA_REUNION);
+        limite.setDate(limite.getDate() + DIAS_AVISO_PENDIENTE);
 
-        const pendientes = [];
-        snapshot.forEach(doc => {
+        const reservasSnap = await db.collection("reservas").get();
+        const enRango = [];
+        reservasSnap.forEach(doc => {
           const data = doc.data();
           const fecha = parseFechaReserva(data.fechaReserva);
           if (!fecha || fecha < hoy || fecha > limite) return;
-          if (data.reunionRealizada) return;
-          pendientes.push({ codigo: doc.id, data, fecha });
+          enRango.push({ codigo: doc.id, data, fecha });
         });
-        pendientes.sort((a, b) => a.fecha - b.fecha);
 
-        if (pendientes.length === 0) {
-          contenedor.innerHTML = `<div class="vacio">✅ Ninguna reserva con viaje en los próximos ${DIAS_ALERTA_REUNION} días está sin su reunión de guía.</div>`;
-          return;
+        const avisos = [];
+
+        // ---------- 1) Reunión de guía sin marcar ----------
+        enRango.forEach(({ codigo, data }) => {
+          if (!data.reunionRealizada) {
+            avisos.push({
+              texto: `${codigo} — ${data.nombreTitular || 'Titular'}: falta la reunión de guía de viaje`,
+              url: `detalle_reserva.html?codigo=${codigo}`
+            });
+          }
+        });
+
+        // ---------- 2) Pasajeros sin foto de pasaporte ----------
+        enRango.forEach(({ codigo, data }) => {
+          if (!data.pasaporteTitularURL) {
+            avisos.push({
+              texto: `${codigo} — ${data.nombreTitular || 'Titular'}: falta la foto del pasaporte`,
+              url: `detalle_reserva.html?codigo=${codigo}`
+            });
+          }
+          (data.pasajeros || []).forEach((p, i) => {
+            if (!p.pasaporteURL) {
+              avisos.push({
+                texto: `${codigo} — ${p.nombre || 'Acompañante ' + (i + 1)}: falta la foto del pasaporte`,
+                url: `detalle_reserva.html?codigo=${codigo}`
+              });
+            }
+          });
+        });
+
+        // ---------- 3) Proveedores sin confirmar ----------
+        if (enRango.length > 0) {
+          const costosSnap = await db.collection("costos_reservas").get();
+          const costosPorCodigo = {};
+          costosSnap.forEach(doc => {
+            const d = doc.data();
+            costosPorCodigo[d.codigo] = d;
+          });
+
+          enRango.forEach(({ codigo, data }) => {
+            const costos = costosPorCodigo[codigo];
+            if (!costos || !costos.categorias) {
+              avisos.push({
+                texto: `${codigo} — ${data.nombreTitular || 'Titular'}: todavía no tiene proveedores registrados`,
+                url: `costos_agregar.html?reserva=${codigo}`
+              });
+              return;
+            }
+            let faltan = 0;
+            ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+              let items = costos.categorias[clave];
+              if (!items) items = [];
+              else if (!Array.isArray(items)) items = [items];
+              items.forEach(item => {
+                const tieneDatos = item.proveedor || item.proyectado > 0;
+                if (tieneDatos && !item.confirmado) faltan++;
+              });
+            });
+            if (faltan > 0) {
+              avisos.push({
+                texto: `${codigo} — ${data.nombreTitular || 'Titular'}: faltan confirmar ${faltan} proveedor${faltan === 1 ? '' : 'es'}`,
+                url: `costos_agregar.html?reserva=${codigo}`
+              });
+            }
+          });
         }
 
-        const filas = pendientes.map(r => {
-          const diasRestantes = Math.round((r.fecha - hoy) / 86400000);
-          const etiquetaDias = diasRestantes === 0 ? "Hoy" : `${diasRestantes} día${diasRestantes === 1 ? '' : 's'}`;
-          return `
-            <div class="fila-alerta-reunion">
-              <span><a href="detalle_reserva.html?codigo=${r.codigo}">${r.codigo}</a> — ${r.data.nombreTitular || '-'} — ${r.data.nombreDestino || r.data.destino || '-'} — ${formatearFechaVisible(r.fecha)}</span>
-              <span class="badge-dias-reunion">${etiquetaDias}</span>
-            </div>
-          `;
-        }).join("");
-
-        contenedor.innerHTML = `<div class="lista-alerta-reunion">${filas}</div>`;
+        if (avisos.length === 0) {
+          contenedor.innerHTML = `<li style="background:#e0f5e0; color:#1b6e1b; font-weight:bold;">✅ Sin alertas pendientes en los próximos ${DIAS_AVISO_PENDIENTE} días.</li>`;
+        } else {
+          contenedor.innerHTML = avisos.map(a =>
+            `<li><a href="${a.url}" style="color:#02535a; font-weight:bold; text-decoration:none; display:block;">⚠️ ${a.texto}</a></li>`
+          ).join("");
+        }
       } catch (e) {
-        console.error("Error al cargar la alerta de Reunión de Guía de Viaje:", e);
-        contenedor.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo cargar esta alerta.</span>`;
+        console.error("Error al cargar las alertas internas:", e);
+        contenedor.innerHTML = `<li style="color:#a35b00;">⚠️ No se pudieron cargar las alertas.</li>`;
       }
     }
 
-    cargarAlertaReunion();
+    // NUEVO: Próximos viajes confirmados — las 5 reservas activas con la
+    // fecha de viaje más cercana (sin límite de días), clickeables directo
+    // a su detalle.
+    async function cargarProximosViajes() {
+      const tbody = document.getElementById("tablaProximosViajesBody");
+      try {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+        const snap = await db.collection("reservas").get();
+        const activas = [];
+        snap.forEach(doc => {
+          const data = doc.data();
+          const fecha = parseFechaReserva(data.fechaReserva);
+          if (!fecha || fecha < hoy) return;
+          activas.push({ codigo: doc.id, data, fecha });
+        });
+        activas.sort((a, b) => a.fecha - b.fecha);
+        const top5 = activas.slice(0, 5);
+
+        if (top5.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">No hay viajes próximos.</td></tr>`;
+        } else {
+          tbody.innerHTML = top5.map(r => `
+            <tr style="cursor:pointer;" onclick="window.location.href='detalle_reserva.html?codigo=${r.codigo}'">
+              <td>${r.data.nombreDestino || r.data.destino || '-'}</td>
+              <td>${formatearFechaVisible(r.fecha)}</td>
+              <td>${r.data.vendedor || '-'}</td>
+            </tr>
+          `).join("");
+        }
+      } catch (e) {
+        console.error("Error al cargar los próximos viajes:", e);
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#a35b00;">⚠️ No se pudo cargar.</td></tr>`;
+      }
+    }
+
+    // NUEVO: Vendedores destacados — ranking por total vendido (fecha de
+    // creación de la reserva) este mes, por campo "vendedor" — distinto de
+    // "Embajadora" (comisión), que se maneja aparte en comisiones.html.
+    async function cargarVendedoresDestacados() {
+      const contenedor = document.getElementById("listaVendedoresDestacados");
+      try {
+        const hoy = new Date();
+        const desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59);
+
+        const snap = await db.collection("reservas").get();
+        const porVendedor = {};
+        snap.forEach(doc => {
+          const data = doc.data();
+          const creadoEl = data.creado_el?.toDate ? data.creado_el.toDate() : (data.creado_el ? new Date(data.creado_el) : null);
+          if (!creadoEl || creadoEl < desde || creadoEl > hasta) return;
+          if (!data.vendedor) return;
+          porVendedor[data.vendedor] = (porVendedor[data.vendedor] || 0) + (Number(data.total) || 0);
+        });
+
+        const ranking = Object.entries(porVendedor).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+        if (ranking.length === 0) {
+          contenedor.innerHTML = `<li>Sin ventas con vendedor asignado este mes.</li>`;
+        } else {
+          contenedor.innerHTML = ranking.map(([nombre, total]) => `<li>${nombre} – $${total.toFixed(2)}</li>`).join("");
+        }
+      } catch (e) {
+        console.error("Error al cargar el ranking de vendedores:", e);
+        contenedor.innerHTML = `<li style="color:#a35b00;">⚠️ No se pudo cargar.</li>`;
+      }
+    }
+
+    // NUEVO: Cumpleaños próximos — clientes cuyo cumpleaños (mes/día, sin
+    // importar el año) cae dentro de los próximos 7 días.
+    async function cargarCumpleanosSemana() {
+      const contenedor = document.getElementById("listaCumpleanos");
+      try {
+        const hoy = new Date();
+        hoy.setHours(0, 0, 0, 0);
+
+        const snap = await db.collection("clientes").get();
+        const proximos = [];
+        snap.forEach(doc => {
+          const data = doc.data();
+          if (!data.fechaNacimiento) return;
+          const fn = parseFechaReserva(data.fechaNacimiento);
+          if (!fn) return;
+
+          let proximaFecha = new Date(hoy.getFullYear(), fn.getMonth(), fn.getDate());
+          if (proximaFecha < hoy) proximaFecha = new Date(hoy.getFullYear() + 1, fn.getMonth(), fn.getDate());
+
+          const diasFaltan = Math.round((proximaFecha - hoy) / 86400000);
+          if (diasFaltan <= 7) {
+            proximos.push({ nombre: data.nombre || 'Cliente', fecha: proximaFecha, diasFaltan });
+          }
+        });
+        proximos.sort((a, b) => a.diasFaltan - b.diasFaltan);
+
+        if (proximos.length === 0) {
+          contenedor.innerHTML = `<li>Ningún cumpleaños en los próximos 7 días.</li>`;
+        } else {
+          contenedor.innerHTML = proximos.map(c =>
+            `<li>${c.nombre} – ${formatearFechaVisible(c.fecha)}</li>`
+          ).join("");
+        }
+      } catch (e) {
+        console.error("Error al cargar los cumpleaños:", e);
+        contenedor.innerHTML = `<li style="color:#a35b00;">⚠️ No se pudo cargar.</li>`;
+      }
+    }
+
+    cargarAlertasInternas();
+    cargarProximosViajes();
+    cargarVendedoresDestacados();
+    cargarCumpleanosSemana();
   </script>
   <!-- NUEVO: barra superior compartida — siempre al final, después de que
        Firebase ya quedó inicializado arriba. -->
