@@ -9,7 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* Menú lateral de navegación (mismo estilo que dashboard.html) */
     .toggle-btn {
       position: fixed;
       top: 20px;
@@ -197,6 +196,16 @@
       color: #1b6e1b;
       font-weight: bold;
     }
+    .aviso-ya-confirmado {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #e8f2fb;
+      border: 1px solid #a9d0ec;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #1a5276;
+      font-weight: bold;
+    }
     .nota-boletos {
       font-weight: normal;
       font-size: 13px;
@@ -322,8 +331,6 @@
   </main>
 
 <script>
-  // FIX: firebaseConfig le faltaban storageBucket, messagingSenderId y
-  // appId — se completan aquí para que quede igual al resto del sistema.
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
     authDomain: "tours-460717.firebaseapp.com",
@@ -339,10 +346,6 @@
   const codigo = params.get("reserva");
   document.getElementById("codigoReserva").value = codigo;
 
-  // NUEVO: las 4 categorías que ahora llevan proveedor + proyectado/real por separado.
-  // "operador" se mantiene como nombre interno del campo en Firestore (por
-  // compatibilidad con datos viejos), aunque en pantalla y en el resto del
-  // sistema nuevo se llame "Traslados".
   const CATEGORIAS = [
     { clave: "hospedaje", campoInterno: "hospedaje" },
     { clave: "traslados", campoInterno: "operador" },
@@ -354,17 +357,9 @@
     return document.getElementById(`filas${clave.charAt(0).toUpperCase()}${clave.slice(1)}`);
   }
 
-  // NUEVO: cada categoría ahora puede tener VARIAS filas (proveedor +
-  // monto) — para viajes multi-destino ocasionales (ej. Cartagena, Medellín
-  // y Bogotá en una sola reserva), donde cada ciudad tiene su propio hotel u
-  // operador que hay que poder rastrear por separado.
   function crearFilaCategoria(clave, datos) {
     datos = datos || {};
 
-    // NUEVO: comisión se calcula por defecto como el 2% de la Venta Total —
-    // solo para filas realmente nuevas (sin monto guardado todavía), para no
-    // pisar un monto ya guardado al recargar la reserva. Sigue siendo
-    // editable a mano si en algún caso debe ser más o menos.
     if (clave === "comision" && datos.proyectado === undefined) {
       const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
       datos = { ...datos, proyectado: +(venta * 0.02).toFixed(2) };
@@ -390,25 +385,31 @@
           <label style="font-size:11px;">Pagado</label>
           <input type="checkbox" class="chk-pagado" onchange="alternarPagadoFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;" title="Marcar como ya pagado (real)">
         </div>
+        <div style="flex: 0 0 auto; text-align:center;">
+          <label style="font-size:11px;">Confirmado</label>
+          <input type="checkbox" class="chk-confirmado" onchange="alternarConfirmadoFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;" title="Marcar que el proveedor ya confirmó el servicio (independiente del pago)">
+        </div>
         <div style="flex: 0 0 auto;">
           <label>&nbsp;</label>
           <button type="button" class="btn-quitar-fila" onclick="quitarFilaCategoria(this)" title="Quitar esta fila">🗑️</button>
         </div>
       </div>
       <div class="aviso-real-fila" style="display:none;"></div>
+      <div class="aviso-confirmado-fila" style="display:none;"></div>
     `;
     contenedor.appendChild(fila);
 
     const selectProveedor = fila.querySelector(".select-proveedor");
     poblarUnSelectDeProveedor(selectProveedor, clave);
     if (datos.proveedor) selectProveedor.value = datos.proveedor;
-    // FIX: usar !== undefined/null en vez de "|| ''" — con "|| ''" un monto
-    // guardado legítimamente como 0 (real, ya pagado en 0) se mostraba en
-    // blanco en vez de mostrar "0".
     fila.querySelector(".input-proyectado").value = (datos.proyectado !== undefined && datos.proyectado !== null) ? datos.proyectado : "";
 
     if (typeof datos.real === "number") {
       marcarFilaComoPagada(fila, datos.real, datos.proveedor || "", datos.fecha_pago_real);
+    }
+
+    if (datos.confirmado) {
+      marcarFilaComoConfirmada(fila, datos.fecha_confirmado);
     }
 
     return fila;
@@ -424,10 +425,6 @@
     calcularGanancia();
   }
 
-  // Deja una fila específica marcada visualmente como "ya pagada" (real).
-  // NUEVO: ahora esto se puede activar directo desde el checkbox "Pagado"
-  // de la fila (antes solo se reflejaba si ya venía marcada desde el Panel
-  // de Costos). Incluye un enlace "deshacer" por si fue un error.
   function marcarFilaComoPagada(fila, monto, proveedor, fechaPago) {
     const select = fila.querySelector(".select-proveedor");
     const input = fila.querySelector(".input-proyectado");
@@ -450,9 +447,6 @@
     aviso.innerHTML = `✅ Ya pagado (real): $${monto.toFixed(2)}${fechaTexto} <a href="#" onclick="desmarcarFilaPagada(this); return false;" style="margin-left:10px; font-weight:normal; text-decoration:underline; color:#1b6e1b;">deshacer</a>`;
   }
 
-  // NUEVO: se activa al marcar el checkbox "Pagado" de una fila — toma el
-  // proveedor y monto proyectado que ya estén ahí y los convierte en el
-  // monto real (ya pagado), con la fecha de hoy.
   function alternarPagadoFila(checkbox) {
     if (!checkbox.checked) return;
     const fila = checkbox.closest(".fila-proveedor");
@@ -470,8 +464,6 @@
     calcularGanancia();
   }
 
-  // NUEVO: revierte una fila marcada como pagada, por si fue un error —
-  // vuelve a quedar editable como proyección.
   function desmarcarFilaPagada(enlace) {
     const fila = enlace.closest(".fila-proveedor");
     const select = fila.querySelector(".select-proveedor");
@@ -489,7 +481,53 @@
     calcularGanancia();
   }
 
-  // ---------- Menú lateral ----------
+  function marcarFilaComoConfirmada(fila, fechaConfirmado) {
+    const chk = fila.querySelector(".chk-confirmado");
+    const aviso = fila.querySelector(".aviso-confirmado-fila");
+    if (chk) chk.checked = true;
+
+    const fecha = fechaConfirmado?.toDate ? fechaConfirmado.toDate() : (fechaConfirmado ? new Date(fechaConfirmado) : null);
+    fila.dataset.confirmado = "true";
+    if (fecha) fila.dataset.fechaConfirmado = fecha.toISOString();
+
+    const fechaTexto = fecha ? ` el ${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : "";
+
+    aviso.style.display = "block";
+    aviso.className = "aviso-ya-confirmado aviso-confirmado-fila";
+    aviso.innerHTML = `📞 Confirmado con el proveedor${fechaTexto} <a href="#" onclick="desmarcarConfirmadoFila(this); return false;" style="margin-left:10px; font-weight:normal; text-decoration:underline; color:#1a5276;">deshacer</a>`;
+  }
+
+  function alternarConfirmadoFila(checkbox) {
+    const fila = checkbox.closest(".fila-proveedor");
+
+    if (checkbox.checked) {
+      const select = fila.querySelector(".select-proveedor");
+      if (!select.value) {
+        alert("Selecciona el proveedor antes de marcarlo como confirmado.");
+        checkbox.checked = false;
+        return;
+      }
+      marcarFilaComoConfirmada(fila, new Date());
+    } else {
+      quitarConfirmacionFila(fila);
+    }
+  }
+
+  function quitarConfirmacionFila(fila) {
+    const aviso = fila.querySelector(".aviso-confirmado-fila");
+    delete fila.dataset.confirmado;
+    delete fila.dataset.fechaConfirmado;
+    aviso.style.display = "none";
+    aviso.innerHTML = "";
+  }
+
+  function desmarcarConfirmadoFila(enlace) {
+    const fila = enlace.closest(".fila-proveedor");
+    const chk = fila.querySelector(".chk-confirmado");
+    if (chk) chk.checked = false;
+    quitarConfirmacionFila(fila);
+  }
+
   function inicializarMenuLateral() {
     const usuario = JSON.parse(localStorage.getItem("usuario"));
     const sidebar = document.getElementById("sidebar");
@@ -534,14 +572,6 @@
     btnVolver.href = codigo ? `detalle_reserva.html?codigo=${codigo}` : "reservas.html";
   }
 
-  // ---------- Proveedores (colección compartida y reutilizable) ----------
-  // NUEVO: en vez de escribir el proveedor a mano cada vez, se elige de una
-  // lista guardada en Firestore ("proveedores") — así "Hotel Obo" siempre se
-  // escribe exactamente igual, y luego se puede sumar correctamente cuánto
-  // se le debe/pagó a cada uno en el módulo de Finanzas. Además, cada
-  // proveedor tiene un destino asociado (gestionado en proveedores.html),
-  // así que aquí se agrupan primero los que coinciden con el destino de
-  // esta reserva.
   let listaProveedores = [];
   let listaUsuariosComision = [];
   let destinoActualReserva = "";
@@ -552,10 +582,6 @@
     const snap = await db.collection("proveedores").orderBy("nombre").get();
     listaProveedores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    // NUEVO: cualquier persona ya registrada en Usuarios (registro.html) se
-    // suma como opción para la categoría "Comisión" — sin tener que crearla
-    // aparte como proveedor. Se guarda separado de listaProveedores para no
-    // mezclar los dos orígenes de datos.
     const snapUsuarios = await db.collection("usuarios").get();
     listaUsuariosComision = snapUsuarios.docs
       .map(d => d.data())
@@ -565,19 +591,14 @@
     poblarTodosLosSelectsDeProveedor();
   }
 
-  // Puebla UN select de proveedor específico (una fila) según su categoría.
   function poblarUnSelectDeProveedor(select, clave) {
     const valorActual = select.value;
     const etiqueta = ETIQUETA_CATEGORIA[clave];
 
-    // Solo se listan proveedores activos, de esta categoría (o sin
-    // categoría asignada, por si vienen de antes de tener este campo).
     let relevantes = listaProveedores.filter(p =>
       p.activo !== false && (!p.categoria || p.categoria === etiqueta)
     );
 
-    // Para Comisión, se agregan también los usuarios registrados — evitando
-    // nombres repetidos si alguien ya existiera como proveedor manual.
     if (clave === "comision") {
       const nombresYaListados = new Set(relevantes.map(p => p.nombre.toLowerCase()));
       listaUsuariosComision.forEach(u => {
@@ -595,9 +616,6 @@
 
     let html = `<option value="">-- Seleccione --</option>`;
 
-    // NUEVO: Comisión no se agrupa por destino — las embajadoras no están
-    // ligadas a un lugar, así que mostrar "Todos los destinos" ahí no tenía
-    // sentido. Se muestra como lista simple, ya ordenada alfabéticamente.
     if (clave === "comision") {
       html += opciones(relevantes);
     } else {
@@ -621,8 +639,6 @@
     if (valorActual && valorActual !== "__nuevo__") select.value = valorActual;
   }
 
-  // NUEVO: ahora puede haber varias filas por categoría — se recorren TODOS
-  // los selects de proveedor que existan en la pantalla en ese momento.
   function poblarTodosLosSelectsDeProveedor() {
     document.querySelectorAll(".select-proveedor").forEach(select => {
       const clave = select.closest(".fila-proveedor")?.dataset.clave;
@@ -643,9 +659,6 @@
     const yaExiste = listaProveedores.some(p => p.nombre.toLowerCase() === nombreLimpio.toLowerCase());
 
     if (!yaExiste) {
-      // NUEVO: se etiqueta automático con el destino de esta reserva y la
-      // categoría de la fila desde la que se agregó — se puede ajustar
-      // después desde la hoja de Proveedores si hace falta.
       const claveCategoria = select.closest(".fila-proveedor")?.dataset.clave;
       const nuevoProveedor = {
         nombre: nombreLimpio,
@@ -670,9 +683,6 @@
     select.value = nombreLimpio;
   }
 
-  // ---------- Carga de datos existentes ----------
-  // NUEVO: guarda lo que ya existía en costos_reservas (si lo hay), para no
-  // perder nada de lo ya registrado (estado, fechas reales de pago, etc.)
   let datosExistentesCostos = null;
 
   async function precargarDatosReserva() {
@@ -718,9 +728,6 @@
 
       const docCostos = await db.collection("costos_reservas").doc(codigo).get();
 
-      // NUEVO: busca el nombre real del destino de esta reserva (a partir
-      // del catálogo de tours) para poder mostrar primero los proveedores
-      // asociados a ese destino.
       if (data.destino) {
         try {
           const tourDoc = await db.collection("tours").doc(data.destino).get();
@@ -730,13 +737,8 @@
         }
       }
 
-      // NUEVO: se carga la lista de proveedores ANTES de crear ninguna fila
-      // — si se hiciera al revés, los <select> todavía no tendrían las
-      // opciones (proveedores) y el valor no se fijaría.
       await cargarProveedores();
 
-      // Por defecto, cada categoría arranca con una fila vacía lista para
-      // llenar (así se ve igual que antes cuando no hay nada guardado).
       CATEGORIAS.forEach(cat => crearFilaCategoria(cat.clave, {}));
 
       if (docCostos.exists) {
@@ -745,10 +747,6 @@
         aviso.style.display = "block";
         aviso.innerHTML = `📋 Ya existen costos guardados para esta reserva (estado: <strong>${datosExistentesCostos.estado || "Proyectado"}</strong>).`;
 
-        // NUEVO: si el documento es del modelo VIEJO (desglose_proyectado /
-        // desglose_real planos, sin "categorias"), se traduce aquí mismo al
-        // modelo nuevo para precargar el formulario — al guardar, esta
-        // reserva queda automáticamente convertida al modelo nuevo.
         const esModeloViejo = !datosExistentesCostos.categorias;
 
         if (esModeloViejo) {
@@ -760,13 +758,6 @@
             const proyectadoViejo = proy[cat.campoInterno] || 0;
             const realViejo = real[cat.campoInterno];
             contenedorFilas(cat.clave).innerHTML = "";
-            // FIX: si no había nada guardado (proyectadoViejo es 0 porque el
-            // campo nunca existió), se deja "proyectado" sin definir en vez
-            // de ponerle 0 explícito — así el cálculo automático del 2% de
-            // Comisión sí se dispara, igual que en una reserva sin costos
-            // previos. Un 0 real (el usuario sí puso 0 a propósito) no
-            // puede distinguirse de "vacío" en este modelo viejo, pero es
-            // preferible recalcular el 2% a quedarse pegado en blanco.
             const datosFila = {};
             if (proyectadoViejo > 0) datosFila.proyectado = proyectadoViejo;
             if (typeof realViejo === "number") datosFila.real = realViejo;
@@ -779,20 +770,11 @@
         } else {
           document.getElementById("costoBoletos").value = datosExistentesCostos.boletos_real || "";
 
-          // NUEVO: cada categoría ahora puede traer varias filas (arreglo) o
-          // — si viene de antes de este cambio — un solo objeto (se trata
-          // como un arreglo de un elemento, para no perder nada).
           CATEGORIAS.forEach(cat => {
             let items = datosExistentesCostos.categorias?.[cat.clave];
             if (!items) items = [];
             else if (!Array.isArray(items)) items = [items];
 
-            // FIX: una fila guardada sin proveedor, sin monto proyectado y
-            // sin pago real es, en la práctica, una fila vacía — no debe
-            // tratarse como "el usuario ya decidió que este monto es 0",
-            // porque eso bloqueaba el cálculo automático del 2% de
-            // Comisión en reservas que ya tenían costos guardados de antes
-            // de que existiera esa función.
             items = items.filter(it => it && (it.proveedor || it.proyectado > 0 || typeof it.real === "number"));
             if (items.length === 0) items = [{}];
 
@@ -808,7 +790,6 @@
     }
   }
 
-  // ---------- Cálculo de ganancia ----------
   function calcularGanancia() {
     const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
     const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
@@ -827,7 +808,6 @@
     document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
   }
 
-  // ---------- Guardar ----------
   async function guardarCostos() {
     const fechaViaje = document.getElementById("fechaViaje").value;
     const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
@@ -838,10 +818,6 @@
       return;
     }
 
-    // NUEVO: cada categoría se guarda como un ARREGLO de filas (proveedor +
-    // monto), para poder rastrear por separado el costo de cada ciudad en
-    // un viaje multi-destino. Las filas totalmente vacías (sin proveedor ni
-    // monto) no se guardan.
     const categorias = {};
     CATEGORIAS.forEach(cat => {
       const filas = Array.from(contenedorFilas(cat.clave).querySelectorAll(".fila-proveedor"));
@@ -849,12 +825,15 @@
         const select = fila.querySelector(".select-proveedor");
         const input = fila.querySelector(".input-proyectado");
         const yaEsReal = fila.dataset.real !== undefined;
+        const yaConfirmado = fila.dataset.confirmado === "true";
 
         return {
           proveedor: select.value || "",
           proyectado: parseFloat(input.value) || 0,
           real: yaEsReal ? parseFloat(fila.dataset.real) : null,
-          fecha_pago_real: yaEsReal && fila.dataset.fechaPagoReal ? new Date(fila.dataset.fechaPagoReal) : null
+          fecha_pago_real: yaEsReal && fila.dataset.fechaPagoReal ? new Date(fila.dataset.fechaPagoReal) : null,
+          confirmado: yaConfirmado,
+          fecha_confirmado: yaConfirmado && fila.dataset.fechaConfirmado ? new Date(fila.dataset.fechaConfirmado) : null
         };
       }).filter(item => item.proveedor || item.proyectado > 0 || item.real !== null);
 
@@ -874,9 +853,6 @@
       }, { merge: true });
 
       alert("✅ Costos guardados correctamente.");
-      // NUEVO: ya no redirige a panel_costos.html (queda en pausa por
-      // ahora, ese panorama se va a ver desde Finanzas) — vuelve a la
-      // reserva de la que salió.
       window.location.href = `detalle_reserva.html?codigo=${codigo}`;
     } catch (error) {
       console.error("❌ Error al guardar:", error);
@@ -887,7 +863,6 @@
   window.addEventListener("DOMContentLoaded", precargarDatosReserva);
 </script>
   <script src="topbar.js"></script>
-  <!-- Verificación real de sesión (Firebase Authentication). -->
   <script src="auth-guard.js"></script>
 </body>
 </html>
