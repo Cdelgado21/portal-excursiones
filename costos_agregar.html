@@ -381,15 +381,15 @@
           <label>Monto proyectado</label>
           <input type="number" class="input-proyectado" oninput="calcularGanancia()">
         </div>
-        <div style="flex: 0 0 auto; text-align:center;">
+        <div style="flex: 0 0 auto; min-width:0; text-align:center;">
           <label style="font-size:11px;">Pagado</label>
           <input type="checkbox" class="chk-pagado" onchange="alternarPagadoFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;" title="Marcar como ya pagado (real)">
         </div>
-        <div style="flex: 0 0 auto; text-align:center;">
+        <div style="flex: 0 0 auto; min-width:0; text-align:center;">
           <label style="font-size:11px;">Confirmado</label>
           <input type="checkbox" class="chk-confirmado" onchange="alternarConfirmadoFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;" title="Marcar que el proveedor ya confirmó el servicio (independiente del pago)">
         </div>
-        <div style="flex: 0 0 auto;">
+        <div style="flex: 0 0 auto; min-width:0;">
           <label>&nbsp;</label>
           <button type="button" class="btn-quitar-fila" onclick="quitarFilaCategoria(this)" title="Quitar esta fila">🗑️</button>
         </div>
