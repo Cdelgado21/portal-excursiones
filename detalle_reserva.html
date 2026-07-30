@@ -541,6 +541,43 @@
     </table>
   </div>
 
+  <!-- NUEVO: revisar Para/CC/CCO/Asunto/Mensaje antes de enviar el
+       comprobante por correo — mismo patrón que en facturacion.html. -->
+  <div id="modalRevisarComprobante" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; max-height:88vh; overflow-y:auto; position:relative;">
+      <h3 style="margin-top:0; color:#02535a;">✉️ Revisar correo antes de enviar</h3>
+
+      <label>Para</label>
+      <input type="text" id="comprobante_modal_para" placeholder="correo@ejemplo.com" style="width:100%; margin-bottom:10px; padding:8px;">
+
+      <div style="display:flex; gap:12px;">
+        <div style="flex:1;">
+          <label>CC (opcional)</label>
+          <input type="text" id="comprobante_modal_cc" placeholder="separá varios con coma" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+        </div>
+        <div style="flex:1;">
+          <label>CCO (opcional)</label>
+          <input type="text" id="comprobante_modal_cco" placeholder="separá varios con coma" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+        </div>
+      </div>
+
+      <label>Asunto</label>
+      <input type="text" id="comprobante_modal_asunto" style="width:100%; margin-bottom:10px; padding:8px;">
+
+      <label>Mensaje</label>
+      <textarea id="comprobante_modal_mensaje" rows="4" style="width:100%; padding:8px;"></textarea>
+
+      <div style="margin-top:12px; padding:10px 12px; background:#f0f7f7; border-radius:6px; font-size:13px; color:#5f9296;">📎 Se adjunta automáticamente el comprobante de esta reserva.</div>
+
+      <div id="comprobanteMensajeModal" style="margin-top:10px; font-size: 0.85rem;"></div>
+
+      <div style="margin-top:15px; text-align:right;">
+        <button onclick="cerrarModalRevisarComprobante()" style="margin-right:10px; background:#ccc; border:none; padding:8px 14px; border-radius:6px;">Cancelar</button>
+        <button id="btnConfirmarEnvioComprobante" onclick="confirmarEnvioComprobante()" style="background:#02535a; color:white; border:none; padding:8px 16px; border-radius:6px;">Enviar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modalHotel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; position:relative;">
       <h3 style="margin-top:0; color:#02535a;">Agregar Hotel</h3>
@@ -3970,19 +4007,55 @@ async function descargarComprobante() {
   }
 }
 
+// NUEVO: en vez de enviar directo, primero abre un modal de revisión
+// (Para/CC/CCO/Asunto/Mensaje editables) — mismo patrón que se armó en
+// facturacion.html. El envío real solo pasa al confirmar ahí.
 async function enviarComprobantePorCorreo() {
   const mensajeEl = document.getElementById("comprobanteMensaje");
+  mensajeEl.innerHTML = "";
+
+  const datos = await obtenerDatosReservaActual();
+  if (!datos) return;
+
+  // NUEVO: como el campo "Para" ahora es editable en el modal, ya no hace
+  // falta bloquear el envío si la reserva no tiene correo guardado — se
+  // puede escribir ahí mismo. Solo queda vacío por defecto en ese caso.
+  window.datosReservaParaComprobante = datos;
+
+  document.getElementById("comprobante_modal_para").value = datos.correo || "";
+  document.getElementById("comprobante_modal_cc").value = "";
+  document.getElementById("comprobante_modal_cco").value = "";
+  document.getElementById("comprobante_modal_asunto").value = "Comprobante de Reserva | Excursiones Delgado";
+  document.getElementById("comprobante_modal_mensaje").value = "Adjunto encontrará el comprobante de su reserva. Cualquier duda, quedamos atentos.";
+  document.getElementById("comprobanteMensajeModal").innerHTML = "";
+  document.getElementById("modalRevisarComprobante").style.display = "flex";
+}
+
+function cerrarModalRevisarComprobante() {
+  document.getElementById("modalRevisarComprobante").style.display = "none";
+}
+
+async function confirmarEnvioComprobante() {
+  const mensajeModalEl = document.getElementById("comprobanteMensajeModal");
+  const mensajeEl = document.getElementById("comprobanteMensaje");
+  const datos = window.datosReservaParaComprobante;
+
+  const para = document.getElementById("comprobante_modal_para").value.trim();
+  if (!para) {
+    alert("El campo \"Para\" no puede quedar vacío.");
+    return;
+  }
+  if (!datos) {
+    alert("No se encontraron los datos de la reserva. Cerrá el modal e intentá de nuevo.");
+    return;
+  }
+
+  const boton = document.getElementById("btnConfirmarEnvioComprobante");
+  boton.disabled = true;
+  boton.textContent = "Enviando...";
+  mensajeModalEl.innerHTML = `<span style="color:#555;">⏳ Generando y enviando comprobante...</span>`;
+
   try {
-    const datos = await obtenerDatosReservaActual();
-    if (!datos) return;
-
-    if (!datos.correo) {
-      alert("⚠️ Esta reserva no tiene correo del cliente guardado. Agrégalo en 'Información del Titular' y guarda la reserva antes de enviar el comprobante.");
-      return;
-    }
-
-    mensajeEl.innerHTML = `<span style="color:#555;">⏳ Generando y enviando comprobante...</span>`;
-
     const { bytes: bytesFinal, errores, avisos } = await construirComprobanteCompleto(datos);
 
     if (avisos.length > 0) {
@@ -3991,18 +4064,25 @@ async function enviarComprobantePorCorreo() {
         `Revisa el PDF con cuidado antes de mandarlo. ¿Enviar de todas formas?`
       );
       if (!continuar) {
-        mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ Envío cancelado — descarga el comprobante y revísalo antes de enviarlo manualmente.</span>`;
+        mensajeModalEl.innerHTML = `<span style="color:#a35b00;">⚠️ Envío cancelado — descarga el comprobante y revísalo antes de enviarlo manualmente.</span>`;
         return;
       }
     }
 
     const base64Final = btoa(new Uint8Array(bytesFinal).reduce((data, byte) => data + String.fromCharCode(byte), ""));
 
+    // NUEVO: cc/cco/asunto/mensaje — ojo, la Apps Script del otro lado
+    // tiene que leer estos campos y usarlos en MailApp.sendEmail para que
+    // realmente tengan efecto (puede que hoy tenga un asunto/mensaje fijo).
     const respuesta = await fetch(WORKER_COMPROBANTE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        correoDestino: datos.correo,
+        correoDestino: para,
+        cc: document.getElementById("comprobante_modal_cc").value.trim(),
+        cco: document.getElementById("comprobante_modal_cco").value.trim(),
+        asunto: document.getElementById("comprobante_modal_asunto").value.trim(),
+        mensaje: document.getElementById("comprobante_modal_mensaje").value.trim(),
         nombreTitular: datos.nombreTitular,
         codigo: datos.codigo,
         pdfBase64: base64Final
@@ -4016,13 +4096,17 @@ async function enviarComprobantePorCorreo() {
     }
 
     if (errores.length > 0) {
-      mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ Comprobante enviado a ${datos.correo}, pero sin adjuntar: ${errores.join("; ")}.</span>`;
+      mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ Comprobante enviado a ${para}, pero sin adjuntar: ${errores.join("; ")}.</span>`;
     } else {
-      mensajeEl.innerHTML = `<span style="color:#0a7a2f;">✅ Comprobante enviado a ${datos.correo}.</span>`;
+      mensajeEl.innerHTML = `<span style="color:#0a7a2f;">✅ Comprobante enviado a ${para}.</span>`;
     }
+    cerrarModalRevisarComprobante();
   } catch (e) {
     console.error("Error al enviar el comprobante:", e);
-    mensajeEl.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo enviar el comprobante. Revisa la consola (F12) para más detalle.</span>`;
+    mensajeModalEl.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo enviar el comprobante. Revisa la consola (F12) para más detalle.</span>`;
+  } finally {
+    boton.disabled = false;
+    boton.textContent = "Enviar";
   }
 }
 </script>
