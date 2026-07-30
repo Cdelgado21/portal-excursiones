@@ -116,6 +116,14 @@
       margin: 0;
       padding: 0;
     }
+
+    /* FIX: los navegadores no le dan a los campos de formulario (select,
+       input, textarea, button) la misma fuente que al resto de la página
+       por defecto — usan la fuente del sistema operativo, que se ve
+       distinta a la Arial del resto del texto. Se fuerza a heredar. */
+    input, select, textarea, button {
+      font-family: inherit;
+    }
     h2 {
       background-color: #02535a;
       color: white;
@@ -535,6 +543,7 @@
           <th>Tipo de Habitación</th>
           <th>Cantidad</th>
           <th>Observaciones</th>
+          <th style="text-align:center;">Acciones</th>
         </tr>
       </thead>
       <tbody id="tablaHotelesBody"></tbody>
@@ -580,7 +589,7 @@
 
   <div id="modalHotel" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; position:relative;">
-      <h3 style="margin-top:0; color:#02535a;">Agregar Hotel</h3>
+      <h3 id="tituloModalHotel" style="margin-top:0; color:#02535a;">Agregar Hotel</h3>
 
       <label>Nombre del Hotel</label>
       <select id="modal_nombre_hotel" onchange="manejarSeleccionProveedorHotel(this)" style="width:100%; margin-bottom:10px; padding:8px;">
@@ -2919,7 +2928,12 @@ async function manejarSeleccionProveedorHotel(select) {
   select.value = nombreLimpio;
 }
 
-function abrirModalHotel() {
+function abrirModalHotel(filaAEditar) {
+  // NUEVO: si se pasa una fila (desde editarFilaHotel), el modal abre en
+  // modo edición — actualiza esa fila en vez de crear una nueva al guardar.
+  window.filaHotelEnEdicion = filaAEditar || null;
+  document.getElementById("tituloModalHotel").textContent = filaAEditar ? "Editar Hotel" : "Agregar Hotel";
+
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
   const selectHotel = document.getElementById("modal_nombre_hotel");
 
@@ -2936,6 +2950,20 @@ function abrirModalHotel() {
   // Para Personalizado, destinoNombre queda vacío a propósito — se muestran
   // todos los hoteles guardados, sin filtrar por destino.
   window.destinoActualParaHotel = destinoNombre;
+
+  // NUEVO: prellenar Tipo/Cantidad/Observaciones si es edición (esto no
+  // depende de la carga de proveedores, se puede hacer ya mismo).
+  if (filaAEditar) {
+    const celdas = filaAEditar.querySelectorAll("td");
+    document.getElementById("modal_tipoHabitacion_hotel").value = celdas[1]?.innerText || "Doble";
+    document.getElementById("modal_cantidadHabitacion_hotel").value = celdas[2]?.innerText || "";
+    const obsTexto = celdas[3]?.innerText || "";
+    document.getElementById("modal_observaciones_hotel").value = (obsTexto === "Sin observaciones") ? "" : obsTexto;
+  } else {
+    document.getElementById("modal_tipoHabitacion_hotel").value = "Doble";
+    document.getElementById("modal_cantidadHabitacion_hotel").value = "";
+    document.getElementById("modal_observaciones_hotel").value = "";
+  }
 
   selectHotel.innerHTML = "<option value=''>Cargando hoteles...</option>";
 
@@ -2960,6 +2988,12 @@ function abrirModalHotel() {
     if (otros.length > 0) html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
     html += `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
     selectHotel.innerHTML = html;
+
+    // NUEVO: si es edición, selecciona el hotel que ya tenía esta fila.
+    if (window.filaHotelEnEdicion) {
+      const celdas = window.filaHotelEnEdicion.querySelectorAll("td");
+      selectHotel.value = celdas[0]?.innerText || "";
+    }
   }).catch(e => {
     console.error("Error al cargar hoteles desde Proveedores:", e);
     selectHotel.innerHTML = `<option value=''>Seleccione un hotel</option><option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
@@ -2970,6 +3004,16 @@ function abrirModalHotel() {
 
 function cerrarModalHotel() {
   document.getElementById("modalHotel").style.display = "none";
+  window.filaHotelEnEdicion = null;
+}
+
+function editarFilaHotel(boton) {
+  abrirModalHotel(boton.closest("tr"));
+}
+
+function eliminarFilaHotel(boton) {
+  if (!confirm("¿Eliminar este hotel de la reserva?")) return;
+  boton.closest("tr").remove();
 }
 
 function guardarHotelModal() {
@@ -2983,17 +3027,27 @@ function guardarHotelModal() {
   const cantidad = document.getElementById("modal_cantidadHabitacion_hotel").value;
   const obs = document.getElementById("modal_observaciones_hotel").value;
 
-  const tbody = document.getElementById("tablaHotelesBody");
-  const row = document.createElement("tr");
-
-  row.innerHTML = `
+  const contenidoFila = `
     <td>${hotel}</td>
     <td>${tipo}</td>
     <td>${cantidad}</td>
     <td>${obs || 'Sin observaciones'}</td>
+    <td style="text-align:center;">
+      <button type="button" onclick="editarFilaHotel(this)" title="Editar" style="background:transparent; border:none; cursor:pointer; font-size:15px;">✏️</button>
+      <button type="button" onclick="eliminarFilaHotel(this)" title="Eliminar" style="background:transparent; border:none; cursor:pointer; font-size:15px;">🗑️</button>
+    </td>
   `;
 
-  tbody.appendChild(row);
+  if (window.filaHotelEnEdicion) {
+    // NUEVO: modo edición — actualiza la fila existente en vez de agregar una nueva.
+    window.filaHotelEnEdicion.innerHTML = contenidoFila;
+  } else {
+    const tbody = document.getElementById("tablaHotelesBody");
+    const row = document.createElement("tr");
+    row.innerHTML = contenidoFila;
+    tbody.appendChild(row);
+  }
+
   cerrarModalHotel();
 }
 
@@ -3293,6 +3347,10 @@ async function cargarReservaExistente(codigo) {
             <td>${h.tipo || ""}</td>
             <td>${h.cantidad || ""}</td>
             <td>${h.observaciones || "Sin observaciones"}</td>
+            <td style="text-align:center;">
+              <button type="button" onclick="editarFilaHotel(this)" title="Editar" style="background:transparent; border:none; cursor:pointer; font-size:15px;">✏️</button>
+              <button type="button" onclick="eliminarFilaHotel(this)" title="Eliminar" style="background:transparent; border:none; cursor:pointer; font-size:15px;">🗑️</button>
+            </td>
           `;
           tbody.appendChild(row);
         });
@@ -3354,7 +3412,7 @@ function cargarHistorialPagos() {
   pagos.forEach(p => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td style="padding: 8px;">${p.fecha}</td>
+      <td style="padding: 8px;">${formatearFechaComprobante(p.fecha)}</td>
       <td style="padding: 8px;">${p.metodo}</td>
       <td style="padding: 8px;">$${parseFloat(p.monto).toFixed(2)}</td>
       <td style="padding: 8px;">${p.nota || "—"}</td>
@@ -3386,7 +3444,11 @@ const MESES_LARGO = ["enero","febrero","marzo","abril","mayo","junio","julio","a
 
 function formatearFechaComprobante(fecha) {
   if (!fecha) return "";
-  const f = new Date(fecha);
+  // FIX: las fechas guardadas como "AAAA-MM-DD" se interpretaban en UTC —
+  // como Costa Rica está en UTC-6, esto podía mostrar el día ANTERIOR al
+  // real. Se agrega la hora explícita para que se interprete en huso local.
+  const fechaConHora = /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha + "T00:00:00" : fecha;
+  const f = new Date(fechaConHora);
   if (isNaN(f.getTime())) return fecha;
   return f.toLocaleDateString("es-CR");
 }
