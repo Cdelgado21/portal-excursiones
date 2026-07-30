@@ -1640,10 +1640,19 @@
       return true;
     });
 
+    // FIX: antes se sumaba el ingreso de TODAS las reservas en el rango,
+    // aunque no tuvieran costos cargados todavía — eso inflaba la ganancia
+    // (contaba la venta sin su costo real, no que costara $0). Ahora, igual
+    // que en "Ranking de Destinos por Margen", solo se cuentan reservas que
+    // SÍ tienen costos registrados en costos_agregar.html — las demás se
+    // excluyen del cálculo de dinero, pero se avisa cuántas quedaron afuera.
+    const conCostos = incluidas.filter(([codigo]) => datosCostosPorCodigo[codigo]);
+    const sinCostos = incluidas.length - conCostos.length;
+
     let ingreso = 0;
     const desglose = { boletos: 0, hospedaje: 0, traslados: 0, tours: 0, comision: 0 };
 
-    incluidas.forEach(([codigo, r]) => {
+    conCostos.forEach(([codigo, r]) => {
       ingreso += r.ingreso;
       const d = calcularDesgloseCostos(codigo);
       desglose.boletos += d.boletos;
@@ -1658,7 +1667,9 @@
     const margen = ingreso > 0 ? (ganancia / ingreso * 100) : 0;
 
     document.getElementById("balanceIngreso").textContent = formatoMoneda(ingreso);
-    document.getElementById("balanceCantidad").textContent = `${incluidas.length} reserva${incluidas.length === 1 ? '' : 's'}`;
+    document.getElementById("balanceCantidad").textContent =
+      `${conCostos.length} reserva${conCostos.length === 1 ? '' : 's'} con costos` +
+      (sinCostos > 0 ? ` (${sinCostos} sin costos registrados, no incluida${sinCostos === 1 ? '' : 's'})` : '');
     document.getElementById("balanceCosto").textContent = formatoMoneda(costo);
     document.getElementById("balanceGanancia").textContent = formatoMoneda(ganancia);
     document.getElementById("balanceMargen").textContent = `margen: ${margen.toFixed(1)}%`;
@@ -1681,7 +1692,7 @@
     // volver a calcular ni leer los valores desde el DOM.
     ultimoBalanceCalculado = {
       desdeStr, hastaStr, ingreso, costo, ganancia, margen,
-      cantidad: incluidas.length, desglose
+      cantidad: conCostos.length, sinCostos, desglose
     };
   }
 
@@ -1707,7 +1718,8 @@
     doc.setTextColor(60, 60, 60);
     const periodoTexto = `Período: ${b.desdeStr ? formatearFechaVisible(new Date(b.desdeStr + "T00:00:00")) : "—"} al ${b.hastaStr ? formatearFechaVisible(new Date(b.hastaStr + "T00:00:00")) : "—"}`;
     doc.text(periodoTexto, 18, 28);
-    doc.text(`Generado el ${formatearFechaVisible(new Date())} — ${b.cantidad} reserva${b.cantidad === 1 ? '' : 's'} con fecha de viaje en el rango`, 18, 34);
+    const notaSinCostos = b.sinCostos > 0 ? ` (${b.sinCostos} reserva${b.sinCostos === 1 ? '' : 's'} sin costos registrados, no incluida${b.sinCostos === 1 ? '' : 's'})` : '';
+    doc.text(`Generado el ${formatearFechaVisible(new Date())} — ${b.cantidad} reserva${b.cantidad === 1 ? '' : 's'} con costos registrados${notaSinCostos}`, 18, 34);
 
     doc.autoTable({
       startY: 42,
