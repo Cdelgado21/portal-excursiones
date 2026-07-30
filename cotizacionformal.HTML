@@ -387,9 +387,10 @@ async function cargarOpcionesDeDestino() {
       select.appendChild(opt);
   });
   }
+
   async function cargarDatosDelTour() {
     const destino = document.getElementById("destino").value;
-if (!destino) return;
+    if (!destino) return;
 
     const snap = await db.collection("tours").where("nombre", "==", destino).get();
     if (snap.empty) return;
@@ -399,36 +400,21 @@ if (!destino) return;
     document.getElementById("incluye").value = data.incluye || "";
     document.getElementById("no_incluye").value = data.no_incluye || "";
     document.getElementById("itinerario").value = data.itinerario_tours || "";
-console.log("Tours opcionales desde catálogo de tours:", data.tours_opcionales);
-if (Array.isArray(data.tours_opcionales)) {
-  const contenedor = document.getElementById("contenedor_tours_opcionales");
-  contenedor.innerHTML = `
-    <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
-      <thead>
-        <tr style="background-color:#02535a; color:white;">
-          <th style="padding: 8px; border: 1px solid #ccc;">Tour Opcional</th>
-          <th style="padding: 8px; border: 1px solid #ccc;">Descripción</th>
-          <th style="padding: 8px; border: 1px solid #ccc;">Precio ($)</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.tours_opcionales.map(tour => `
-          <tr>
-            <td style="padding: 8px; border: 1px solid #ccc;">${tour.nombre}</td>
-            <td style="padding: 8px; border: 1px solid #ccc;">${tour.descripcion}</td>
-            <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">${tour.precio}</td>
 
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-} else {
-  document.getElementById("contenedor_tours_opcionales").innerHTML = `<p style="color:#999">No hay tours opcionales disponibles.</p>`;
-}
-document.getElementById("politicas").value = data.politicas || "";
+    // FIX: antes leía data.tours_opcionales, un array embebido en el doc
+    // de "tours" que detalle_tours.html NUNCA llena (por eso siempre salía
+    // vacío en el PDF, incluso con opcionales reales cargados). Ahora
+    // consulta la colección real "tours_opcionales" filtrando por destino,
+    // igual que hace detalle_tours.html para mostrarlos/editarlos.
+    const opcionalesSnap = await db.collection("tours_opcionales")
+      .where("destino", "==", destino).get();
+    const listaOpcionales = opcionalesSnap.docs.map(d => d.data());
+    console.log("Tours opcionales desde colección real tours_opcionales:", listaOpcionales);
+    renderizarTablaOpcionales(listaOpcionales);
 
-const hotelSelect = document.getElementById("hotel");
+    document.getElementById("politicas").value = data.politicas || "";
+
+    const hotelSelect = document.getElementById("hotel");
     hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
    const hoteles = Object.values(data.hoteles || {});
     hoteles.forEach(h => {
@@ -447,6 +433,38 @@ const hotelSelect = document.getElementById("hotel");
   document.getElementById("info_hotel").value = seleccionado?.info || "";
 };
   }
+
+// NUEVO: función compartida para pintar la tabla de Tours Opcionales.
+// La usan tanto cargarDatosDelTour() (catálogo, colección tours_opcionales)
+// como mostrarToursOpcionalesGuardados() (lo ya guardado en la cotización).
+function renderizarTablaOpcionales(lista) {
+  const contenedor = document.getElementById("contenedor_tours_opcionales");
+  if (Array.isArray(lista) && lista.length > 0) {
+    contenedor.innerHTML = `
+      <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
+        <thead>
+          <tr style="background-color:#02535a; color:white;">
+            <th style="padding: 8px; border: 1px solid #ccc;">Tour Opcional</th>
+            <th style="padding: 8px; border: 1px solid #ccc;">Descripción</th>
+            <th style="padding: 8px; border: 1px solid #ccc;">Precio ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lista.map(tour => `
+            <tr>
+              <td style="padding: 8px; border: 1px solid #ccc;">${tour.nombre}</td>
+              <td style="padding: 8px; border: 1px solid #ccc;">${tour.descripcion}</td>
+              <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">${tour.precio}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } else {
+    contenedor.innerHTML = `<p style="color:#999">No hay tours opcionales disponibles.</p>`;
+  }
+}
+
 function ajustarAlturaTextareas() {
   document.querySelectorAll("textarea").forEach(textarea => {
     const ajustar = () => {
@@ -467,32 +485,10 @@ mostrarToursOpcionalesGuardados(data);
   }
 }
 function mostrarToursOpcionalesGuardados(data) {
-  const contenedor = document.getElementById("contenedor_tours_opcionales");
-
-  if (Array.isArray(data.tours_opcionales) && data.tours_opcionales.length > 0) {
-    contenedor.innerHTML = `
-      <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
-        <thead>
-          <tr style="background-color:#02535a; color:white;">
-            <th style="padding: 8px; border: 1px solid #ccc;">Tour Opcional</th>
-            <th style="padding: 8px; border: 1px solid #ccc;">Descripción</th>
-            <th style="padding: 8px; border: 1px solid #ccc;">Precio ($)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.tours_opcionales.map(tour => `
-            <tr>
-              <td style="padding: 8px; border: 1px solid #ccc;">${tour.nombre}</td>
-              <td style="padding: 8px; border: 1px solid #ccc;">${tour.descripcion}</td>
-              <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">${tour.precio}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
-  } else {
-    contenedor.innerHTML = `<p style="color:#999">No hay tours opcionales disponibles.</p>`;
-  }
+  // NUEVO: ahora reutiliza renderizarTablaOpcionales() en vez de tener su
+  // propia copia del HTML de la tabla (antes había dos versiones idénticas
+  // del mismo bloque, una aquí y otra en cargarDatosDelTour).
+  renderizarTablaOpcionales(data.tours_opcionales);
 }
  if (data.hotel) {
     hotelGuardado = {
