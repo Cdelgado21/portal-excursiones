@@ -430,6 +430,7 @@
           <th>Costo total</th>
           <th>Ganancia</th>
           <th>Por cobrar</th>
+          <th>Por pagar</th>
         </tr>
       </thead>
       <tbody id="tablaProximosViajes"></tbody>
@@ -895,6 +896,30 @@
     renderizarAlertaCobro();
   }
 
+  // NUEVO: cuánto falta pagar A PROVEEDORES de una reserva específica —
+  // suma el proyectado de las filas de hospedaje/traslados/tours/comisión
+  // que TODAVÍA no se marcaron como pagadas (real). Distinto del "Costo
+  // Total" (que suma TODO el costo, esté pagado o no) — esto es solo la
+  // porción que sigue pendiente de salir de la cuenta.
+  function calcularPendientePagarProveedores(codigo) {
+    const categorias = datosCategoriasPorCodigo[codigo];
+    if (!categorias) return 0;
+
+    let pendiente = 0;
+    ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+      let items = categorias[clave];
+      if (!items) items = [];
+      else if (!Array.isArray(items)) items = [items];
+      items.forEach(item => {
+        const esReal = typeof item.real === "number";
+        if (esReal) return; // ya pagado, no cuenta
+        if (!item.proveedor && !(item.proyectado > 0)) return; // fila vacía
+        pendiente += Number(item.proyectado || 0);
+      });
+    });
+    return pendiente;
+  }
+
   // NUEVO: filtra y vuelve a dibujar la tabla de "Viajes por fecha" según
   // los valores actuales de los campos Desde/Hasta — no vuelve a consultar
   // Firebase, solo reutiliza los datos ya cargados en memoria.
@@ -923,6 +948,10 @@
       filtrados.forEach(([codigo, r]) => {
         const costos = datosCostosPorCodigo[codigo];
         const claseCosto = costos ? (costos.todosPagados ? 'costo-pagado' : 'costo-proyectado') : '';
+        // NUEVO: "Por pagar" — cuánto de esta reserva todavía le falta
+        // pagar a proveedores (hospedaje/traslados/tours/comisión), no el
+        // costo total. En $0.00 y sin datos de costos, no se resalta.
+        const porPagar = calcularPendientePagarProveedores(codigo);
         const fila = document.createElement("tr");
         fila.innerHTML = `
           <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
@@ -932,6 +961,7 @@
           <td class="${claseCosto}">${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Editar costos de esta reserva">${formatoMoneda(costos.costoTotal)}</a>` : `<span class="aviso-sin-costos">⚠️ sin costos — <a class="enlace-fila" href="costos_agregar.html?reserva=${codigo}">agregar</a></span>`}</td>
           <td class="${costos ? (costos.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta') : ''}">${costos ? formatoMoneda(costos.ganancia) : '-'}</td>
           <td class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}"><a class="enlace-fila" style="color:inherit;" href="detalle_reserva.html?codigo=${codigo}" title="Ver detalle y registrar pagos">${formatoMoneda(r.saldo)}</a></td>
+          <td class="${porPagar > 0.01 ? 'costo-proyectado' : ''}">${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Ver y marcar pagos a proveedores">${formatoMoneda(porPagar)}</a>` : '-'}</td>
         `;
         tabla.appendChild(fila);
       });
