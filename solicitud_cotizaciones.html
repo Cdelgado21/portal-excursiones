@@ -663,7 +663,11 @@
       fecha_asignacion: fechaAsignacion,
       tiempo_respuesta_min: tiempoRespuestaMin
     });
-    cargarCotizaciones();
+
+    // NUEVO: al asignar el cotizador, se abre directo el detalle de esa
+    // cotización (cotizacionformal.html) para empezar a atenderla de una
+    // vez, en vez de quedarse en esta bandeja.
+    window.location.href = `cotizacionformal.html?codigo=${encodeURIComponent(numero)}`;
   }
 
   form.addEventListener("submit", async (e) => {
