@@ -117,7 +117,7 @@
       background: white;
       border-radius: 10px;
       padding: 30px;
-      max-width: 900px;
+      max-width: 950px;
       margin: 30px auto;
       box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
@@ -169,7 +169,7 @@
       border: 1px solid #ccc;
       padding: 10px;
       text-align: left;
-      font-size: 15px;
+      font-size: 14px;
     }
     th {
       background-color: #02535a;
@@ -200,7 +200,7 @@
       padding: 20px;
       border-radius: 10px;
       width: 90%;
-      max-width: 500px;
+      max-width: 520px;
       max-height: 85vh;
       overflow-y: auto;
       box-shadow: 0 0 15px rgba(0,0,0,0.2);
@@ -217,18 +217,7 @@
       color: #777;
       margin-top: 4px;
     }
-    /* NUEVO: pastilla de Tipo (Incluido/Opcional) en la tabla de tours opcionales */
-    .pastilla-tipo {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: bold;
-      color: white;
-    }
-    .pastilla-tipo.incluido { background-color: #02535a; }
-    .pastilla-tipo.opcional { background-color: #f49859; }
-    /* NUEVO: galería de fotos dentro del modal de tour opcional */
+    /* NUEVO: galería/preview de imágenes dentro del modal de tour opcional */
     #opcionalFotosPreview {
       display: flex;
       flex-wrap: wrap;
@@ -289,6 +278,48 @@
       margin-right: 3px;
       border: 1px solid #ccc;
     }
+    /* NUEVO: preview de la diapositiva ya diseñada (imagen única, no collage) */
+    #opcionalSlidePreview img {
+      max-width: 220px;
+      max-height: 130px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      object-fit: contain;
+      display: block;
+      margin-top: 8px;
+    }
+    #opcionalSlidePreview button {
+      background-color: #c0392b;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    /* NUEVO: checklist de actividades incluidas por variante de tour */
+    .tabla-incluidas th:first-child, .tabla-incluidas td:first-child {
+      text-align: center;
+      width: 40px;
+    }
+    .badge-diapositiva {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: bold;
+      color: white;
+      background-color: #02535a;
+    }
+    .badge-sin-diapositiva {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      color: #999;
+      background-color: #eee;
+    }
   </style>
 </head>
 <body>
@@ -303,12 +334,12 @@
     <ul class="nav-links">
       <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
       <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
       <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
       <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
       <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
       <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
       <li><a href="tours.html" class="activo"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
       <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
       <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
     </ul>
@@ -368,13 +399,23 @@
          proveedores (categoría "Hospedaje") en proveedores.html, asociados
          al destino correspondiente. -->
 
-    <label>Tours Opcionales</label>
-    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Esta lista es compartida por destino — lo que agregues o edites aquí aplica a TODAS las variantes (Flash/Esencial/Confort) de este mismo destino, no solo a esta. "Incluido" son actividades que ya vienen en el precio del paquete (tendrán su propia foto/descripción en la cotización visual); "Opcional" se cobra aparte.</div>
+    <label>Catálogo de Actividades / Tours Opcionales</label>
+    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Esta lista (nombre, descripción, precio, fotos, diapositiva ya diseñada) es compartida por destino — se sube una sola vez y aplica a TODAS las variantes de este mismo destino. Lo que SÍ cambia por variante es la columna "Incluida", justo abajo.</div>
     <table>
-      <thead><tr><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Tipo</th><th>Fotos</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>Nombre</th><th>Descripción</th><th>Precio</th><th>Diapositiva</th><th>Fotos</th><th>Acciones</th></tr></thead>
       <tbody id="opcionalesContainer"></tbody>
     </table>
-    <button class="btn" onclick="abrirModalOpcional()">+ Agregar tour opcional</button>
+    <button class="btn" onclick="abrirModalOpcional()">+ Agregar actividad al catálogo</button>
+
+    <!-- NUEVO: checklist de cuáles actividades del catálogo vienen
+         incluidas en ESTA variante puntual (ej. Confort incluye más que
+         Flash) — esto sí es propio de cada tour, no del catálogo compartido. -->
+    <label>Actividades Incluidas en este Paquete</label>
+    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Marca cuáles actividades del catálogo de arriba vienen incluidas en el precio de esta variante puntual (el destino y nivel elegidos arriba). Las que no marques se ofrecen como opcionales con su precio en la cotización.</div>
+    <table class="tabla-incluidas">
+      <thead><tr><th>✓</th><th>Nombre</th><th>Precio</th></tr></thead>
+      <tbody id="incluidasContainer"></tbody>
+    </table>
 
     <label>Políticas y Condiciones</label>
     <textarea id="politicas"></textarea>
@@ -382,31 +423,30 @@
     <button class="boton-guardar" onclick="guardarTour()">Guardar Tour</button>
   </div>
 
-  <!-- Modal para tour opcional -->
+  <!-- Modal para actividad del catálogo -->
   <div id="modalOpcional" class="modal">
     <div class="modal-content">
       <span class="close" onclick="cerrarModal('modalOpcional')">&times;</span>
-      <h3>Editar Tour Opcional</h3>
+      <h3>Editar Actividad del Catálogo</h3>
       <label>Nombre</label>
       <input type="text" id="opcionalNombre" />
       <label>Descripción corta</label>
-      <div style="font-size:12px; color:#777; margin-top:-4px;">Se usa tanto en la tabla de opcionales como en la cotización visual — se guarda una sola vez aquí y se reutiliza en todas las cotizaciones de este destino.</div>
+      <div style="font-size:12px; color:#777; margin-top:-4px;">Se usa en la tabla y como respaldo de texto en la cotización visual si no hay diapositiva diseñada.</div>
       <input type="text" id="opcionalDescripcion" />
       <label>Precio</label>
       <input type="number" id="opcionalPrecio" />
 
-      <!-- NUEVO: Tipo — distingue actividades incluidas en el paquete
-           (tendrán slide propio en la cotización visual) de las opcionales
-           (se cobran aparte). -->
-      <label>Tipo</label>
-      <select id="opcionalTipo">
-        <option value="opcional">Opcional (se cobra aparte)</option>
-        <option value="incluido">Incluido (viene en el paquete)</option>
-      </select>
+      <!-- NUEVO: diapositiva ya diseñada (imagen única, tipo Canva/PowerPoint,
+           1280x720) — si existe, se usa tal cual en la Cotización Visual en
+           vez de armar un collage automático con las fotos de abajo. -->
+      <label>Diapositiva ya diseñada (opcional)</label>
+      <div style="font-size:12px; color:#777; margin-top:-4px;">Imagen de la slide completa ya lista (ej. hecha en Canva), 1280x720. Si la subís, reemplaza al collage automático de fotos en la Cotización Visual.</div>
+      <input type="file" id="opcionalSlideInput" accept="image/*" />
+      <div id="opcionalSlidePreview"></div>
 
-      <!-- NUEVO: fotos — se suben una por una directo a Firebase Storage,
-           varias fotos por tour opcional (collage en la cotización visual). -->
-      <label>Fotos</label>
+      <!-- Fotos sueltas — respaldo para el collage automático mientras no
+           haya diapositiva diseñada, o para quien prefiera ese estilo. -->
+      <label>Fotos sueltas (respaldo — collage automático)</label>
       <input type="file" id="opcionalFotoInput" accept="image/*" multiple />
       <div id="opcionalFotosPreview"></div>
 
@@ -435,6 +475,11 @@
 
     const params = new URLSearchParams(window.location.search);
   const tourId = params.get("id");
+
+  // NUEVO: cuáles actividades del catálogo (ids de tours_opcionales) vienen
+  // incluidas en ESTA variante de tour — se guarda en el propio doc de
+  // "tours" como actividadesIncluidas: [id1, id2, ...].
+  let actividadesIncluidasSeleccionadas = new Set();
 
   // NUEVO: muestra/oculta el campo de Nivel según el Tipo de Salida elegido.
   function actualizarVisibilidadNivel() {
@@ -469,7 +514,9 @@ function guardarTour() {
     no_incluye: document.getElementById("no_incluye").value,
     itinerario_tours: document.getElementById("itinerario_tours").value,
     politicas: document.getElementById("politicas").value,
-    estado: "ACTIVO"
+    estado: "ACTIVO",
+    // NUEVO: actividades del catálogo incluidas en ESTA variante puntual.
+    actividadesIncluidas: Array.from(actividadesIncluidasSeleccionadas)
   };
 
 // FIX: el ID se generaba solo con el nombre (destino) — si ya existía un
@@ -522,6 +569,11 @@ if (tourId) {
       document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
       document.getElementById("politicas").value = t.politicas || "";
 
+      // NUEVO: se cargan las actividades ya marcadas como incluidas en esta
+      // variante ANTES de pintar la tabla del catálogo, para que los
+      // checkboxes salgan marcados correctamente desde el principio.
+      actividadesIncluidasSeleccionadas = new Set(t.actividadesIncluidas || []);
+
       // NUEVO: los tours opcionales ahora son compartidos por destino, no
       // por variante — se cargan directo desde la colección compartida.
       cargarOpcionalesDelDestino(t.nombre);
@@ -550,43 +602,46 @@ if (tourId) {
 
 // NUEVO: si se está creando un tour totalmente nuevo (sin destino
 // prellenado), en cuanto se escribe el nombre del destino se recarga la
-// lista de opcionales compartidos que ya existan para ese destino.
+// lista de actividades del catálogo que ya existan para ese destino.
 document.getElementById("nombre").addEventListener("blur", function () {
   if (!tourId) cargarOpcionalesDelDestino(this.value.trim());
 });
 
-  // NUEVO: los tours opcionales viven en su propia colección compartida
-  // ("tours_opcionales"), etiquetados por destino — así "Globos en
+  // NUEVO: el catálogo de actividades vive en su propia colección compartida
+  // ("tours_opcionales"), etiquetado por destino — así "Globos en
   // Teotihuacán" se carga UNA sola vez para "CDMX" y aparece automáticamente
-  // en Flash, Esencial y Confort de ese destino, sin duplicar nada.
+  // en Flash, Esencial y Confort de ese destino, sin duplicar nada. Cuáles
+  // vienen incluidas es lo único que cambia por variante (ver checklist).
   let destinoActualOpcionales = "";
+  let catalogoActividadesActual = []; // [{id, ...datos}] del destino actual
 
   function cargarOpcionalesDelDestino(destino) {
     destinoActualOpcionales = destino || "";
     const tabla = document.getElementById("opcionalesContainer");
     tabla.innerHTML = "";
-    if (!destino) return;
+    catalogoActividadesActual = [];
+    if (!destino) {
+      renderizarChecklistIncluidas();
+      return;
+    }
 
     db.collection("tours_opcionales").where("destino", "==", destino).get().then(snapshot => {
-      snapshot.forEach(doc => agregarTourOpcional(doc.id, doc.data()));
+      snapshot.forEach(doc => {
+        catalogoActividadesActual.push({ id: doc.id, ...doc.data() });
+        agregarTourOpcional(doc.id, doc.data());
+      });
+      renderizarChecklistIncluidas();
     }).catch(err => {
-      console.error("Error al cargar tours opcionales del destino:", err);
+      console.error("Error al cargar el catálogo de actividades del destino:", err);
     });
   }
 
   function agregarTourOpcional(id, datos) {
     const fila = document.createElement("tr");
     fila.dataset.id = id || "";
-    // NUEVO: se guarda el objeto completo (incluye tipo y fotos) directo en
-    // la fila para poder recuperarlo al editar, sin tener que re-consultar
-    // Firestore ni serializar arrays en dataset.
+    // NUEVO: se guarda el objeto completo directo en la fila para poder
+    // recuperarlo al editar, sin tener que re-consultar Firestore.
     fila._datos = datos;
-
-    // NUEVO: tipo — si el documento es de antes de este cambio (sin campo
-    // "tipo"), se trata como "opcional" por defecto, que es como se venían
-    // usando todos hasta ahora.
-    const tipo = datos.tipo === "incluido" ? "incluido" : "opcional";
-    const etiquetaTipo = tipo === "incluido" ? "Incluido" : "Opcional";
 
     const fotos = Array.isArray(datos.fotos) ? datos.fotos : [];
     const miniaturas = fotos.slice(0, 3).map(url => `<img class="miniatura-tabla" src="${url}" alt="">`).join('');
@@ -594,11 +649,15 @@ document.getElementById("nombre").addEventListener("blur", function () {
       ? `${miniaturas}${fotos.length > 3 ? `<span style="font-size:12px; color:#777;">+${fotos.length - 3}</span>` : ''}`
       : `<span style="font-size:12px; color:#999;">Sin fotos</span>`;
 
+    const celdaDiapositiva = datos.imagenSlide
+      ? `<span class="badge-diapositiva">✓ Lista</span>`
+      : `<span class="badge-sin-diapositiva">Sin subir</span>`;
+
     fila.innerHTML = `
       <td>${datos.nombre || ""}</td>
       <td>${datos.descripcion || ""}</td>
       <td>${datos.precio ?? ""}</td>
-      <td><span class="pastilla-tipo ${tipo}">${etiquetaTipo}</span></td>
+      <td>${celdaDiapositiva}</td>
       <td>${celdaFotos}</td>
       <td>
         <button class="btn" onclick="editarOpcional(this)">✏️</button>
@@ -608,24 +667,48 @@ document.getElementById("nombre").addEventListener("blur", function () {
     document.getElementById("opcionalesContainer").appendChild(fila);
   }
 
+  // NUEVO: pinta el checklist "Actividades Incluidas en este Paquete" a
+  // partir del catálogo cargado para el destino actual.
+  function renderizarChecklistIncluidas() {
+    const tabla = document.getElementById("incluidasContainer");
+    if (catalogoActividadesActual.length === 0) {
+      tabla.innerHTML = `<tr><td colspan="3" style="color:#999;">Agrega actividades al catálogo arriba para poder marcarlas como incluidas.</td></tr>`;
+      return;
+    }
+    tabla.innerHTML = catalogoActividadesActual.map(act => `
+      <tr>
+        <td><input type="checkbox" ${actividadesIncluidasSeleccionadas.has(act.id) ? "checked" : ""} onchange="toggleActividadIncluida('${act.id}', this.checked)"></td>
+        <td>${act.nombre || ""}</td>
+        <td>${act.precio ?? ""}</td>
+      </tr>
+    `).join('');
+  }
+
+  function toggleActividadIncluida(id, marcado) {
+    if (marcado) actividadesIncluidasSeleccionadas.add(id);
+    else actividadesIncluidasSeleccionadas.delete(id);
+  }
+
   let filaActualOpcional = null;
-  // NUEVO: fotos del tour opcional que se está creando/editando en el modal
-  // — se va llenando a medida que se suben, y se guarda junto al resto de
-  // los datos al presionar "Guardar".
+  // Fotos sueltas (respaldo de collage) del tour opcional en edición.
   let fotosActuales = [];
+  // NUEVO: diapositiva ya diseñada (imagen única) del tour opcional en edición.
+  let imagenSlideActual = "";
 
   function abrirModalOpcional() {
     if (!destinoActualOpcionales) {
-      alert("Primero escribe el nombre del destino arriba, antes de agregar un tour opcional.");
+      alert("Primero escribe el nombre del destino arriba, antes de agregar una actividad al catálogo.");
       return;
     }
     document.getElementById("opcionalNombre").value = "";
     document.getElementById("opcionalDescripcion").value = "";
     document.getElementById("opcionalPrecio").value = "";
-    document.getElementById("opcionalTipo").value = "opcional";
     document.getElementById("opcionalFotoInput").value = "";
+    document.getElementById("opcionalSlideInput").value = "";
     fotosActuales = [];
+    imagenSlideActual = "";
     renderizarFotosPreview();
+    renderizarSlidePreview();
     filaActualOpcional = null;
     document.getElementById("modalOpcional").style.display = "block";
   }
@@ -640,28 +723,33 @@ document.getElementById("nombre").addEventListener("blur", function () {
     document.getElementById("opcionalNombre").value = datos.nombre || filaActualOpcional.cells[0].innerText;
     document.getElementById("opcionalDescripcion").value = datos.descripcion || filaActualOpcional.cells[1].innerText;
     document.getElementById("opcionalPrecio").value = datos.precio ?? filaActualOpcional.cells[2].innerText;
-    document.getElementById("opcionalTipo").value = datos.tipo === "incluido" ? "incluido" : "opcional";
     document.getElementById("opcionalFotoInput").value = "";
+    document.getElementById("opcionalSlideInput").value = "";
     fotosActuales = Array.isArray(datos.fotos) ? [...datos.fotos] : [];
+    imagenSlideActual = datos.imagenSlide || "";
     renderizarFotosPreview();
+    renderizarSlidePreview();
     document.getElementById("modalOpcional").style.display = "block";
   }
 
   async function eliminarOpcional(btn) {
     const fila = btn.closest("tr");
     const id = fila.dataset.id;
-    if (!confirm("¿Eliminar este tour opcional? Esto lo quita para TODAS las variantes de este destino.")) return;
+    if (!confirm("¿Eliminar esta actividad del catálogo? Esto la quita para TODAS las variantes de este destino.")) return;
     try {
       if (id) await db.collection("tours_opcionales").doc(id).delete();
       fila.remove();
+      actividadesIncluidasSeleccionadas.delete(id);
+      catalogoActividadesActual = catalogoActividadesActual.filter(a => a.id !== id);
+      renderizarChecklistIncluidas();
     } catch (e) {
-      console.error("Error al eliminar tour opcional:", e);
+      console.error("Error al eliminar actividad del catálogo:", e);
       alert("❌ No se pudo eliminar.");
     }
   }
 
-  // NUEVO: pinta las miniaturas de las fotos ya subidas (o en proceso) en
-  // el modal, cada una con su botón "✕" para quitarla antes de guardar.
+  // NUEVO: pinta las miniaturas de las fotos sueltas ya subidas (respaldo
+  // de collage), cada una con su botón "✕" para quitarla antes de guardar.
   function renderizarFotosPreview() {
     const contenedor = document.getElementById("opcionalFotosPreview");
     contenedor.innerHTML = fotosActuales.map((url, i) => `
@@ -673,16 +761,29 @@ document.getElementById("nombre").addEventListener("blur", function () {
   }
 
   function quitarFoto(indice) {
-    // NUEVO: quita la foto de la lista del tour opcional. El archivo queda
-    // en Storage (no se borra), solo se deja de usar en este tour — así se
-    // evita borrar por error algo que otro tour pudiera estar usando.
     fotosActuales.splice(indice, 1);
     renderizarFotosPreview();
   }
 
-  // NUEVO: sube cada foto seleccionada directo a Firebase Storage, una por
-  // una, y agrega su URL a fotosActuales apenas termina — así el usuario ve
-  // el avance sin tener que esperar a que todas terminen.
+  // NUEVO: pinta la previsualización de la diapositiva ya diseñada.
+  function renderizarSlidePreview() {
+    const contenedor = document.getElementById("opcionalSlidePreview");
+    if (!imagenSlideActual) {
+      contenedor.innerHTML = "";
+      return;
+    }
+    contenedor.innerHTML = `
+      <img src="${imagenSlideActual}" alt="Diapositiva">
+      <button type="button" onclick="quitarSlide()">🗑️ Quitar diapositiva</button>
+    `;
+  }
+
+  function quitarSlide() {
+    imagenSlideActual = "";
+    renderizarSlidePreview();
+  }
+
+  // Sube cada foto suelta seleccionada directo a Firebase Storage.
   document.getElementById("opcionalFotoInput").addEventListener("change", async function (e) {
     const archivos = Array.from(e.target.files || []);
     if (archivos.length === 0) return;
@@ -714,14 +815,36 @@ document.getElementById("nombre").addEventListener("blur", function () {
     e.target.value = "";
   });
 
+  // NUEVO: sube la diapositiva ya diseñada (una sola imagen) a Storage.
+  document.getElementById("opcionalSlideInput").addEventListener("change", async function (e) {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+
+    const destinoSlug = (destinoActualOpcionales || "sin-destino").replace(/\s+/g, "_");
+    const contenedor = document.getElementById("opcionalSlidePreview");
+    contenedor.innerHTML = `<span style="font-size:13px; color:#777;">⏳ Subiendo diapositiva...</span>`;
+
+    try {
+      const nombreArchivo = `${Date.now()}_${archivo.name}`;
+      const ref = storage.ref().child(`tours_opcionales_slides/${destinoSlug}/${nombreArchivo}`);
+      await ref.put(archivo);
+      imagenSlideActual = await ref.getDownloadURL();
+      renderizarSlidePreview();
+    } catch (err) {
+      console.error("Error al subir la diapositiva:", err);
+      alert("❌ No se pudo subir la diapositiva.");
+      contenedor.innerHTML = "";
+    }
+    e.target.value = "";
+  });
+
   async function guardarEdicionOpcional() {
     const nombre = document.getElementById("opcionalNombre").value.trim();
     const descripcion = document.getElementById("opcionalDescripcion").value.trim();
     const precio = parseFloat(document.getElementById("opcionalPrecio").value) || 0;
-    const tipo = document.getElementById("opcionalTipo").value === "incluido" ? "incluido" : "opcional";
 
     if (!nombre) {
-      alert("Escribe el nombre del tour opcional.");
+      alert("Escribe el nombre de la actividad.");
       return;
     }
 
@@ -731,21 +854,24 @@ document.getElementById("nombre").addEventListener("blur", function () {
       precio,
       destino: destinoActualOpcionales,
       activo: true,
-      tipo,
-      fotos: fotosActuales
+      fotos: fotosActuales,
+      imagenSlide: imagenSlideActual
     };
 
     try {
+      let idGuardado;
       if (filaActualOpcional && filaActualOpcional.dataset.id) {
-        await db.collection("tours_opcionales").doc(filaActualOpcional.dataset.id).update(datos);
+        idGuardado = filaActualOpcional.dataset.id;
+        await db.collection("tours_opcionales").doc(idGuardado).update(datos);
       } else {
-        await db.collection("tours_opcionales").add(datos);
+        const nuevoDoc = await db.collection("tours_opcionales").add(datos);
+        idGuardado = nuevoDoc.id;
       }
       cerrarModal("modalOpcional");
       cargarOpcionalesDelDestino(destinoActualOpcionales);
     } catch (e) {
-      console.error("Error al guardar tour opcional:", e);
-      alert("❌ No se pudo guardar el tour opcional.");
+      console.error("Error al guardar la actividad del catálogo:", e);
+      alert("❌ No se pudo guardar.");
     }
   }
 
