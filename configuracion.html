@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
+  <style>
+    /* Menú lateral de navegación (mismo estilo que el resto del sistema) */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links li a.activo {
+      background-color: #ffb703;
+      color: #02535a;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+      padding-left: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+        padding-left: 70px;
+      }
+    }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f7f7;
+      padding: 0;
+      margin: 0;
+      color: #02535a;
+    }
+    h2 {
+      text-align: center;
+      font-size: 24px;
+      margin-top: 20px;
+      margin-bottom: 6px;
+      color: #02535a;
+    }
+    .subtitulo {
+      text-align: center;
+      color: #5f9296;
+      font-size: 0.9rem;
+      margin-bottom: 25px;
+    }
+
+    /* NUEVO: layout de dos columnas — navegación interna de secciones a la
+       izquierda, contenido de la sección activa a la derecha. Agregar una
+       sección nueva a futuro es solo sumar un botón acá y un panel abajo. */
+    .config-layout {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    .config-nav {
+      width: 240px;
+      flex-shrink: 0;
+      background: white;
+      border-radius: 14px;
+      box-shadow: 0 2px 14px rgba(2,83,90,0.08);
+      padding: 12px;
+    }
+    .config-nav button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      background: none;
+      border: none;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      color: #02535a;
+      cursor: pointer;
+      margin-bottom: 4px;
+    }
+    .config-nav button:hover {
+      background: #f0f7f7;
+    }
+    .config-nav button.activo {
+      background: #02535a;
+      color: white;
+    }
+    .config-nav .proxima-seccion {
+      padding: 12px 14px;
+      font-size: 13px;
+      color: #aaa;
+      font-style: italic;
+    }
+    .config-contenido {
+      flex: 1;
+      min-width: 0;
+    }
+    .config-panel {
+      display: none;
+    }
+    .config-panel.activo {
+      display: block;
+    }
+
+    .tarjeta {
+      background: white;
+      padding: 25px 30px;
+      border-radius: 14px;
+      box-shadow: 0 2px 14px rgba(2,83,90,0.08);
+      margin-bottom: 24px;
+    }
+    .tarjeta h3 {
+      margin-top: 0;
+      color: #02535a;
+    }
+    .tarjeta .descripcion {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 14px;
+    }
+    input[type="file"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #cfe3e4;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    .preview {
+      margin-top: 16px;
+    }
+    .preview img {
+      width: 100%;
+      max-width: 480px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      display: block;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .preview .sin-imagen {
+      padding: 30px;
+      text-align: center;
+      color: #999;
+      background: #f7fbfb;
+      border-radius: 10px;
+      border: 1px dashed #cfe3e4;
+    }
+    .preview button {
+      margin-top: 10px;
+      background-color: #c0392b;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .estado-subida {
+      font-size: 13px;
+      color: #777;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 768px) {
+      .config-layout { flex-direction: column; }
+      .config-nav { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="configuracion.html" class="activo"><span class="icon">⚙️</span>Configuración</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+
+  <h2>Configuración</h2>
+  <p class="subtitulo">Ajustes generales del sistema que no cambian por cotización ni por reserva — se configuran una vez y se reutilizan en todo el sistema.</p>
+
+  <div class="config-layout">
+    <!-- NUEVO: navegación interna — cada botón muestra un panel distinto.
+         Para agregar una sección nueva a futuro: sumar un <button> aquí y
+         un <div class="config-panel"> abajo con el mismo data-seccion. -->
+    <div class="config-nav">
+      <button class="activo" data-seccion="cotizaciones-individuales" onclick="mostrarSeccion('cotizaciones-individuales')">📄 Cotizaciones Individuales</button>
+      <div class="proxima-seccion">Más secciones próximamente...</div>
+    </div>
+
+    <div class="config-contenido">
+
+      <!-- SECCIÓN: Cotizaciones Individuales -->
+      <div class="config-panel activo" id="panel-cotizaciones-individuales">
+
+        <div class="tarjeta">
+          <h3>Diapositiva de Agradecimiento</h3>
+          <div class="descripcion">Es la segunda slide de la Cotización Visual, justo después de la portada — el mensaje de bienvenida/agradecimiento al cliente. Se sube una sola vez y se reutiliza en TODAS las cotizaciones.</div>
+          <input type="file" id="inputAgradecer" accept="image/*">
+          <div class="estado-subida" id="estadoAgradecer"></div>
+          <div class="preview" id="previewAgradecer"></div>
+        </div>
+
+        <div class="tarjeta">
+          <h3>Diapositiva de Cierre</h3>
+          <div class="descripcion">Es la última slide de la Cotización Visual — redes sociales y formas de pago. Se sube una sola vez y se reutiliza en TODAS las cotizaciones.</div>
+          <input type="file" id="inputCierre" accept="image/*">
+          <div class="estado-subida" id="estadoCierre"></div>
+          <div class="preview" id="previewCierre"></div>
+        </div>
+
+      </div>
+      <!-- Futuras secciones van aquí como nuevos <div class="config-panel" id="panel-..."> -->
+
+    </div>
+  </div>
+
+  </main>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.firebasestorage.app",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // NUEVO: navegación interna entre secciones de configuración.
+    function mostrarSeccion(id) {
+      document.querySelectorAll(".config-panel").forEach(p => p.classList.remove("activo"));
+      document.querySelectorAll(".config-nav button[data-seccion]").forEach(b => b.classList.remove("activo"));
+      document.getElementById(`panel-${id}`).classList.add("activo");
+      document.querySelector(`.config-nav button[data-seccion="${id}"]`).classList.add("activo");
+    }
+
+    // Las imágenes fijas de la Cotización Visual se guardan en un único
+    // documento — "configuracion/cotizacion_visual" — con los campos
+    // imagenAgradecer e imagenCierre. cotizacionformal.html lee este mismo
+    // documento al generar el PDF.
+    const REF_CONFIG_COTIZACION_VISUAL = db.collection("configuracion").doc("cotizacion_visual");
+
+    function renderizarPreview(idContenedor, url, campo) {
+      const contenedor = document.getElementById(idContenedor);
+      if (!url) {
+        contenedor.innerHTML = `<div class="sin-imagen">Todavía no se ha subido ninguna imagen.</div>`;
+        return;
+      }
+      contenedor.innerHTML = `
+        <img src="${url}" alt="Vista previa">
+        <button type="button" onclick="quitarImagenCotizacionVisual('${campo}', '${idContenedor}')">🗑️ Quitar imagen</button>
+      `;
+    }
+
+    async function cargarImagenesCotizacionVisual() {
+      try {
+        const doc = await REF_CONFIG_COTIZACION_VISUAL.get();
+        const data = doc.exists ? doc.data() : {};
+        renderizarPreview("previewAgradecer", data.imagenAgradecer || "", "imagenAgradecer");
+        renderizarPreview("previewCierre", data.imagenCierre || "", "imagenCierre");
+      } catch (err) {
+        console.error("Error al cargar las imágenes fijas:", err);
+      }
+    }
+
+    async function subirImagenCotizacionVisual(archivo, campo, idEstado, idPreview) {
+      const estado = document.getElementById(idEstado);
+      estado.textContent = "⏳ Subiendo imagen...";
+      try {
+        const nombreArchivo = `${campo}_${Date.now()}_${archivo.name}`;
+        const ref = storage.ref().child(`configuracion_cotizacion_visual/${nombreArchivo}`);
+        await ref.put(archivo);
+        const url = await ref.getDownloadURL();
+        await REF_CONFIG_COTIZACION_VISUAL.set({ [campo]: url }, { merge: true });
+        renderizarPreview(idPreview, url, campo);
+        estado.textContent = "✅ Imagen guardada — se usará en todas las cotizaciones visuales de aquí en adelante.";
+        setTimeout(() => { estado.textContent = ""; }, 4000);
+      } catch (err) {
+        console.error(`Error al subir ${campo}:`, err);
+        estado.textContent = "❌ No se pudo subir la imagen.";
+      }
+    }
+
+    async function quitarImagenCotizacionVisual(campo, idPreview) {
+      if (!confirm("¿Quitar esta imagen? Las próximas cotizaciones visuales se generarán sin esta slide hasta que subas una nueva.")) return;
+      try {
+        await REF_CONFIG_COTIZACION_VISUAL.set({ [campo]: "" }, { merge: true });
+        renderizarPreview(idPreview, "", campo);
+      } catch (err) {
+        console.error("Error al quitar la imagen:", err);
+        alert("❌ No se pudo quitar la imagen.");
+      }
+    }
+
+    document.getElementById("inputAgradecer").addEventListener("change", (e) => {
+      const archivo = e.target.files?.[0];
+      if (archivo) subirImagenCotizacionVisual(archivo, "imagenAgradecer", "estadoAgradecer", "previewAgradecer");
+      e.target.value = "";
+    });
+
+    document.getElementById("inputCierre").addEventListener("change", (e) => {
+      const archivo = e.target.files?.[0];
+      if (archivo) subirImagenCotizacionVisual(archivo, "imagenCierre", "estadoCierre", "previewCierre");
+      e.target.value = "";
+    });
+
+    // Menú lateral de navegación (igual que el resto del sistema)
+    function inicializarMenuLateral() {
+      const usuario = JSON.parse(localStorage.getItem("usuario"));
+      const sidebar = document.getElementById("sidebar");
+      const contenido = document.getElementById("contenidoPrincipal");
+      const toggleBtn = document.querySelector('.toggle-btn');
+
+      if (usuario) {
+        document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+        document.getElementById("rolUsuario").innerText = usuario.rol || "";
+      } else {
+        document.getElementById("nombreUsuario").innerText = "Invitado";
+      }
+
+      window.toggleSidebar = function () {
+        sidebar.classList.toggle('active');
+        contenido.classList.toggle('sidebar-visible');
+      };
+
+      window.cerrarSesionYRedirigir = function () {
+        localStorage.removeItem("usuario");
+        window.location.href = "login.html";
+      };
+
+      function checkScreenSize() {
+        if (window.innerWidth <= 768) {
+          sidebar.classList.remove('active');
+          contenido.classList.remove('sidebar-visible');
+        } else {
+          sidebar.classList.add('active');
+          contenido.classList.add('sidebar-visible');
+        }
+        toggleBtn.style.display = "block";
+      }
+
+      window.addEventListener('resize', checkScreenSize);
+      checkScreenSize();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      inicializarMenuLateral();
+      cargarImagenesCotizacionVisual();
+    });
+  </script>
+  <script src="topbar.js"></script>
+  <!-- Verificación real de sesión (Firebase Authentication). -->
+  <script src="auth-guard.js"></script>
+</body>
+</html>
