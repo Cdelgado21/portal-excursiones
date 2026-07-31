@@ -197,6 +197,16 @@ body, input, textarea, select, button {
   font-size: 13px;
   align-self: center;
 }
+/* NUEVO: aviso de qué actividades vienen incluidas según la variante de tour */
+#avisoActividadesIncluidas {
+  font-size: 13px;
+  color: #02535a;
+  background: #eaf4f4;
+  border: 1px solid #cfe3e4;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 8px;
+}
   </style>
 </head>
 <body>
@@ -216,7 +226,9 @@ body, input, textarea, select, button {
       <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
       <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
       <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
       <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="configuracion.html"><span class="icon">⚙️</span>Configuración</a></li>
       <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
     </ul>
   </div>
@@ -260,8 +272,10 @@ body, input, textarea, select, button {
     <label>No incluye</label>
     <textarea id="no_incluye" ></textarea>
 
-    <label>Itinerario</label>
+    <label>Itinerario <span style="font-weight:normal; font-size:12px; color:#777;">(un día por línea — ej. "Llegada a Medellín, noche libre" — así la Cotización Visual arma la tabla Día 1 / Día 2 / Día 3 automáticamente)</span></label>
     <textarea id="itinerario" ></textarea>
+
+    <div id="avisoActividadesIncluidas"></div>
   </section>
 <section>
   <h2>Vuelo y Hotel</h2>
@@ -280,11 +294,9 @@ body, input, textarea, select, button {
   <label>Vuelo de Regreso</label>
   <textarea id="vuelo_vuelta"></textarea>
 
-  <!-- NUEVO: captura de pantalla del itinerario (ej. de la aerolínea o
-       buscador de vuelos) — se sube directo a Storage, se guarda con la
-       cotización, y también aparece como su propio slide en la Cotización
-       Visual. No reemplaza los campos de texto de arriba, es un respaldo
-       visual además de ellos. -->
+  <!-- Captura de pantalla del itinerario (ej. de la aerolínea o buscador de
+       vuelos) — se sube directo a Storage, se guarda con la cotización, y
+       aparece como su propio slide en la Cotización Visual. -->
   <label>Captura de Itinerario de Vuelo (opcional)</label>
   <div style="font-size:12px; color:#777; margin-top:-4px; margin-bottom:6px;">Sube una captura de pantalla (ej. de la página de la aerolínea o un buscador de vuelos) — se guarda con la cotización y sale como imagen en la Cotización Visual.</div>
   <input type="file" id="imagenVueloInput" accept="image/*" />
@@ -342,6 +354,7 @@ body, input, textarea, select, button {
 
 <section>
   <h2>Tours Opcionales</h2>
+  <div style="font-size:13px; color:#777; margin-top:-8px; margin-bottom:8px;">Son las actividades del catálogo del destino que NO están marcadas como incluidas en esta variante de tour (eso se define en Productos → editar el tour → "Actividades Incluidas en este Paquete").</div>
   <div id="contenedor_tours_opcionales"></div>
 </section>
 
@@ -387,9 +400,15 @@ let hotelGuardado = null;
 
   document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
 
+  // NUEVO: id exacto de la variante de tour (Flash/Esencial/Confort/Grupal)
+  // que corresponde a esta cotización. Viene de solicitud_cotizaciones.tourId
+  // (guardado desde que se armó la solicitud) o, si ya se había guardado
+  // antes, de cotizacionformal.tourId. Se usa para saber exactamente cuáles
+  // actividades vienen incluidas en ESTA variante puntual — ya no se adivina
+  // por nombre de destino.
+  let tourIdActual = "";
+
   // NUEVO: URL de la captura de itinerario de vuelo ya subida (si existe).
-  // No hay un <input> de texto que la contenga, por eso se guarda en esta
-  // variable — se lee al guardar la cotización y al generar el PDF.
   let imagenVueloUrl = "";
 
   function renderizarImagenVueloPreview() {
@@ -405,8 +424,6 @@ let hotelGuardado = null;
   }
 
   function quitarImagenVuelo() {
-    // NUEVO: solo deja de usarse en esta cotización — el archivo queda en
-    // Storage (no se borra), igual que se maneja con las fotos de tours.
     imagenVueloUrl = "";
     renderizarImagenVueloPreview();
   }
@@ -444,12 +461,26 @@ let hotelGuardado = null;
 
  if (docFormal.exists) {
   cargadoDesdeFormal = true;
-  console.log("✅ Cargando desde cotizacionformal", docFormal.data());
-  rellenarCampos(docFormal.data()); // ya incluye hotel, política, etc.
+  const dataFormal = docFormal.data();
+  console.log("✅ Cargando desde cotizacionformal", dataFormal);
+  // NUEVO: recupera el tourId guardado (o, si es una cotización vieja sin
+  // ese campo, el de la solicitud original) para saber qué actividades
+  // están incluidas en esta variante al momento de generar el PDF.
+  tourIdActual = dataFormal.tourId || docSolicitud.data().tourId || "";
+  rellenarCampos(dataFormal); // ya incluye hotel, política, etc.
+  actualizarAvisoActividadesIncluidas();
   ajustarAlturaTextareas();
 } else {
-  rellenarCampos(docSolicitud.data()); // si no hay cotización formal, se rellena base
-  cargarDatosDelTour(); // ahora sí, se jala desde el catálogo (por defecto)
+  const dataSolicitud = docSolicitud.data();
+  rellenarCampos(dataSolicitud); // si no hay cotización formal, se rellena base
+  tourIdActual = dataSolicitud.tourId || "";
+  if (tourIdActual) {
+    await cargarDatosDelTourPorId(tourIdActual);
+  } else {
+    // Solicitud vieja sin tourId (de antes de que existiera Experiencia) —
+    // recae en buscar por nombre de destino, como se hacía antes.
+    cargarDatosDelTour();
+  }
 }
 }
 
@@ -465,6 +496,35 @@ async function cargarOpcionesDeDestino() {
   });
   }
 
+  // NUEVO: carga los datos de la variante EXACTA de tour por su id — ya no
+  // adivina por nombre de destino (que podía traer cualquiera de las
+  // variantes Flash/Esencial/Confort si compartían el mismo nombre).
+  async function cargarDatosDelTourPorId(tourId) {
+    const doc = await db.collection("tours").doc(tourId).get();
+    if (!doc.exists) {
+      // El tourId guardado ya no existe (se borró el tour) — recae en el
+      // método viejo por nombre, mejor que dejar el formulario vacío.
+      cargarDatosDelTour();
+      return;
+    }
+    const data = doc.data();
+    tourIdActual = tourId;
+    if (data.nombre) document.getElementById("destino").value = data.nombre;
+    document.getElementById("duracion").value = data.duracion || "";
+    document.getElementById("incluye").value = data.incluye || "";
+    document.getElementById("no_incluye").value = data.no_incluye || "";
+    document.getElementById("itinerario").value = data.itinerario_tours || "";
+    document.getElementById("politicas").value = data.politicas || "";
+
+    const destino = document.getElementById("destino").value;
+    await refrescarTablaOpcionalesSegunTour(destino, tourId);
+    await cargarHotelesDelDestino(destino, null);
+    actualizarAvisoActividadesIncluidas();
+  }
+
+  // Método viejo (por nombre de destino) — se mantiene como respaldo para
+  // solicitudes de antes de que existiera "Experiencia"/tourId, y para
+  // cuando el usuario cambia el Destino a mano desde este formulario.
   async function cargarDatosDelTour() {
     const destino = document.getElementById("destino").value;
     if (!destino) return;
@@ -473,32 +533,57 @@ async function cargarOpcionesDeDestino() {
     if (snap.empty) return;
 
     const data = snap.docs[0].data();
+    tourIdActual = snap.docs[0].id;
     document.getElementById("duracion").value = data.duracion || "";
     document.getElementById("incluye").value = data.incluye || "";
     document.getElementById("no_incluye").value = data.no_incluye || "";
     document.getElementById("itinerario").value = data.itinerario_tours || "";
-
-    // FIX: antes leía data.tours_opcionales, un array embebido en el doc
-    // de "tours" que detalle_tours.html NUNCA llena (por eso siempre salía
-    // vacío en el PDF, incluso con opcionales reales cargados). Ahora
-    // consulta la colección real "tours_opcionales" filtrando por destino,
-    // igual que hace detalle_tours.html para mostrarlos/editarlos. Solo se
-    // muestra en esta tabla del formulario los de tipo "opcional" — los
-    // "incluido" se usan directo en la generación de la cotización visual.
-    const opcionalesSnap = await db.collection("tours_opcionales")
-      .where("destino", "==", destino).get();
-    const listaOpcionales = opcionalesSnap.docs.map(d => d.data())
-      .filter(t => t.tipo !== "incluido");
-    console.log("Tours opcionales desde colección real tours_opcionales:", listaOpcionales);
-    renderizarTablaOpcionales(listaOpcionales);
-
     document.getElementById("politicas").value = data.politicas || "";
 
-    // FIX: antes leía data.hoteles, un objeto embebido en el doc de "tours"
-    // que ya no se llena (los hoteles se manejan aparte como proveedores,
-    // categoría "Hospedaje", desde proveedores.html). Ahora consulta esa
-    // colección real, incluyendo proveedores marcados para "Todos los
-    // destinos" (destino vacío) además de los específicos de este destino.
+    await refrescarTablaOpcionalesSegunTour(destino, tourIdActual);
+    await cargarHotelesDelDestino(destino, data.hotel);
+    actualizarAvisoActividadesIncluidas();
+  }
+
+  // NUEVO: arma la tabla de Tours Opcionales en pantalla = catálogo del
+  // destino MENOS las actividades marcadas como incluidas en esta variante
+  // puntual de tour (tours.actividadesIncluidas). Ya no depende del viejo
+  // campo "tipo" en tours_opcionales.
+  async function refrescarTablaOpcionalesSegunTour(destino, tourId) {
+    if (!destino) return;
+    const catalogoSnap = await db.collection("tours_opcionales").where("destino", "==", destino).get();
+    let incluidas = [];
+    if (tourId) {
+      const tourDoc = await db.collection("tours").doc(tourId).get();
+      incluidas = tourDoc.exists && Array.isArray(tourDoc.data().actividadesIncluidas) ? tourDoc.data().actividadesIncluidas : [];
+    }
+    const opcionales = catalogoSnap.docs.filter(d => !incluidas.includes(d.id)).map(d => d.data());
+    renderizarTablaOpcionales(opcionales);
+  }
+
+  // NUEVO: pequeño aviso en pantalla de cuántas actividades vienen
+  // incluidas en esta variante, para que quede claro de un vistazo qué se
+  // va a usar al generar el PDF.
+  async function actualizarAvisoActividadesIncluidas() {
+    const aviso = document.getElementById("avisoActividadesIncluidas");
+    if (!tourIdActual) {
+      aviso.textContent = "";
+      return;
+    }
+    const tourDoc = await db.collection("tours").doc(tourIdActual).get();
+    const incluidas = tourDoc.exists && Array.isArray(tourDoc.data().actividadesIncluidas) ? tourDoc.data().actividadesIncluidas : [];
+    if (incluidas.length === 0) {
+      aviso.textContent = "ℹ️ Esta variante de tour no tiene actividades marcadas como incluidas (se editan en Productos → este tour → \"Actividades Incluidas en este Paquete\").";
+    } else {
+      aviso.textContent = `ℹ️ ${incluidas.length} actividad(es) incluida(s) en esta variante — cada una saldrá con su propio slide en la Cotización Visual.`;
+    }
+  }
+
+  // Hotel: consulta proveedores (categoría Hospedaje) del destino + los
+  // marcados "Todos los destinos". La imagen (imagenSlide) de cada hotel se
+  // vuelve a consultar fresca al momento de generar el PDF, no se cachea
+  // aquí, para evitar mostrar una versión vieja si se actualizó después.
+  async function cargarHotelesDelDestino(destino, hotelGuardadoNombre) {
     const hotelSelect = document.getElementById("hotel");
     hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
     const proveedoresSnap = await db.collection("proveedores")
@@ -516,16 +601,14 @@ async function cargarOpcionesDeDestino() {
       const seleccionado = hoteles.find(h => h.nombre === hotelSelect.value);
       document.getElementById("info_hotel").value = seleccionado?.info || "";
     };
-    if (data.hotel) {
-      hotelSelect.value = data.hotel;
-      const seleccionado = hoteles.find(h => h.nombre === data.hotel);
-      document.getElementById("info_hotel").value = seleccionado?.info || "";
+    if (hotelGuardadoNombre) {
+      hotelSelect.value = hotelGuardadoNombre;
+      const seleccionado = hoteles.find(h => h.nombre === hotelGuardadoNombre);
+      if (seleccionado) document.getElementById("info_hotel").value = seleccionado.info || "";
     }
   }
 
 // NUEVO: función compartida para pintar la tabla de Tours Opcionales.
-// La usan tanto cargarDatosDelTour() (catálogo, colección tours_opcionales)
-// como mostrarToursOpcionalesGuardados() (lo ya guardado en la cotización).
 function renderizarTablaOpcionales(lista) {
   const contenedor = document.getElementById("contenedor_tours_opcionales");
   if (Array.isArray(lista) && lista.length > 0) {
@@ -574,9 +657,6 @@ mostrarToursOpcionalesGuardados(data);
   }
 }
 function mostrarToursOpcionalesGuardados(data) {
-  // NUEVO: ahora reutiliza renderizarTablaOpcionales() en vez de tener su
-  // propia copia del HTML de la tabla (antes había dos versiones idénticas
-  // del mismo bloque, una aquí y otra en cargarDatosDelTour).
   renderizarTablaOpcionales(data.tours_opcionales);
 }
  if (data.hotel) {
@@ -592,8 +672,6 @@ function mostrarToursOpcionalesGuardados(data) {
     document.getElementById("info_hotel").value = hotelGuardado.info;
   }
 
-  // NUEVO: si la cotización ya tenía una captura de itinerario de vuelo
-  // guardada, se recupera y se muestra en la previsualización.
   if (data.imagen_vuelo) {
     imagenVueloUrl = data.imagen_vuelo;
     renderizarImagenVueloPreview();
@@ -617,6 +695,7 @@ ajustarAlturaTextareas();
 tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
     telefono: document.getElementById("telefono").value,
     destino: document.getElementById("destino").value,
+    tourId: tourIdActual,
     fechas: document.getElementById("fechas").value,
     adultos: parseInt(document.getElementById("adultos").value) || 0,
     ninos: parseInt(document.getElementById("ninos").value) || 0,
@@ -626,7 +705,7 @@ tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
     duracion: document.getElementById("duracion").value,
     incluye: document.getElementById("incluye").value,
     no_incluye: document.getElementById("no_incluye").value,
-    itinerario: document.getElementById("itinerario").value, // ✅ nombre corregido
+    itinerario: document.getElementById("itinerario").value,
 
     aerolinea: document.getElementById("aerolinea").value,
     vuelo_ida: document.getElementById("vuelo_ida").value,
@@ -666,10 +745,6 @@ function obtenerToursOpcionalesDesdeDOM() {
   try {
     await db.collection("cotizacionformal").doc(codigo).set(data, { merge: true });
 
-    // NUEVO: al guardar la cotización formal, se marca la solicitud
-    // original como "Enviada" — así en solicitud_cotizaciones.html pasa de
-    // "Cotizaciones Pendientes" (En Proceso) a "Cotización Histórica"
-    // (Enviada) automáticamente, sin un paso manual aparte.
     try {
       await db.collection("solicitud_cotizaciones").doc(codigo).update({ estado: "Enviada" });
     } catch (errEstado) {
@@ -696,7 +771,6 @@ function agregarEquipaje() {
   const linea = `${cantidad} ${tipo.toLowerCase()}(s) ${uso}`;
   textarea.value += (textarea.value ? '\n' : '') + linea;
 
-  // Limpiar campos
   document.getElementById("tipo_equipaje").value = "";
   document.getElementById("cantidad_equipaje").value = "";
   document.getElementById("uso_equipaje").value = "";
@@ -706,7 +780,11 @@ function restablecerDatosDelTour() {
   const confirmacion = confirm("¿Deseas restablecer toda la información del tour desde el catálogo?");
   if (!confirmacion) return;
 
-  cargarDatosDelTour();
+  if (tourIdActual) {
+    cargarDatosDelTourPorId(tourIdActual);
+  } else {
+    cargarDatosDelTour();
+  }
 
   document.getElementById("aerolinea").value = "";
   document.getElementById("vuelo_ida").value = "";
@@ -736,14 +814,8 @@ async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
   try {
     const storageRef = firebase.storage().ref();
     const archivoRef = storageRef.child(`cotizaciones/${codigo}.pdf`);
-
-    // Subir el PDF
     await archivoRef.put(pdfBlob);
-
-    // Obtener el enlace público
     const urlDescarga = await archivoRef.getDownloadURL();
-
-    // Guardar el enlace en Firestore
     await firebase.firestore().collection("cotizacionformal").doc(codigo).update({
       link_pdf: urlDescarga
     });
@@ -753,10 +825,9 @@ async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
   }
 }
 
-// NUEVO: carga una imagen (URL de Firebase Storage) y la convierte a
-// dataURL vía canvas — así jsPDF puede insertarla sin importar el formato
-// original, y evitamos problemas de CORS con addImage directo sobre una
-// URL externa.
+// Carga una imagen (URL de Firebase Storage) y la convierte a dataURL vía
+// canvas — así jsPDF puede insertarla sin importar el formato original, y
+// evitamos problemas de CORS con addImage directo sobre una URL externa.
 function cargarImagenComoDataURL(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -782,9 +853,10 @@ function cargarImagenComoDataURL(url) {
   });
 }
 
-// NUEVO: calcula la distribución de hasta 4 fotos dentro de un área
-// rectangular (collage) — 1 foto ocupa todo, 2 van lado a lado, 3 son una
-// grande arriba y dos abajo, 4 son una grilla 2x2.
+// Calcula la distribución de hasta 4 fotos dentro de un área rectangular
+// (collage de respaldo, cuando una actividad no tiene diapositiva ya
+// diseñada) — 1 foto ocupa todo, 2 van lado a lado, 3 son una grande arriba
+// y dos abajo, 4 son una grilla 2x2.
 function distribuirCollage(cantidad, areaW, areaH) {
   const gap = 12;
   if (cantidad <= 1) {
@@ -817,10 +889,6 @@ function distribuirCollage(cantidad, areaW, areaH) {
   ];
 }
 
-// NUEVO: dibuja hasta 4 fotos dentro de un área (x, y, areaW, areaH),
-// cada una ajustada ("contain") dentro de su casilla del collage, sin
-// deformarla. Si una foto falla al cargar (ej. bloqueo de CORS), se
-// omite esa casilla y sigue con las demás.
 async function dibujarCollageFotos(doc, urls, x, y, areaW, areaH) {
   const lista = (urls || []).slice(0, 4);
   if (lista.length === 0) return;
@@ -851,9 +919,6 @@ async function generarPDF() {
 
   try {
     const { jsPDF } = window.jspdf;
-    // NUEVO: slides 16:9 (1280x720 px) en vez del A4 vertical de antes —
-    // el fondo oscuro se dibuja en código, ya no depende de las imágenes
-    // PNG prediseñadas (Portadacotizaciones.png / fondooficio.png / etc.).
     const W = 1280, H = 720;
     const doc = new jsPDF({ unit: "px", format: [W, H], orientation: "landscape" });
 
@@ -891,6 +956,24 @@ async function generarPDF() {
       doc.setLineWidth(2);
       doc.line(60, y + 16, 60 + doc.getTextWidth(texto), y + 16);
     }
+    // NUEVO: slide de imagen ya diseñada a pantalla completa (Agradecer,
+    // Cierre, actividad o hotel con su propia diapositiva) — no se le pone
+    // título encima porque la imagen ya trae su propio diseño terminado.
+    async function agregarSlideImagenCompleta(urlImagen) {
+      nuevaSlide();
+      try {
+        const { dataUrl, width, height } = await cargarImagenComoDataURL(urlImagen);
+        const ratio = Math.min(W / width, H / height);
+        const dw = width * ratio;
+        const dh = height * ratio;
+        const dx = (W - dw) / 2;
+        const dy = (H - dh) / 2;
+        doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
+      } catch (err) {
+        console.warn("No se pudo cargar una imagen de slide completa:", err);
+      }
+      piePagina(codigo);
+    }
 
     const destino = document.getElementById("destino")?.value || "Tour no definido";
 
@@ -903,6 +986,8 @@ async function generarPDF() {
       bebes: document.getElementById("bebes").value,
       duracion: document.getElementById("duracion").value,
       itinerario: document.getElementById("itinerario").value,
+      incluye: document.getElementById("incluye").value,
+      no_incluye: document.getElementById("no_incluye").value,
       imagen_vuelo: imagenVueloUrl,
       hotel: document.getElementById("hotel").value,
       info_hotel: document.getElementById("info_hotel").value,
@@ -914,13 +999,33 @@ async function generarPDF() {
       politicas: document.getElementById("politicas").value
     };
 
-    // Trae los tours opcionales frescos de la colección real, separando
-    // "incluido" (slide propio con fotos) de "opcional" (tabla de precios).
+    // ---- Datos que hay que traer frescos antes de armar las slides ----
     estado.textContent = "⏳ Cargando actividades del tour...";
-    const opcionalesSnap = await db.collection("tours_opcionales").where("destino", "==", destino).get();
-    const todosOpcionales = opcionalesSnap.docs.map(d => d.data());
-    const incluidos = todosOpcionales.filter(t => t.tipo === "incluido");
-    const opcionales = todosOpcionales.filter(t => t.tipo !== "incluido");
+    const catalogoSnap = await db.collection("tours_opcionales").where("destino", "==", destino).get();
+    const catalogo = catalogoSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    let actividadesIncluidasIds = [];
+    if (tourIdActual) {
+      const tourDoc = await db.collection("tours").doc(tourIdActual).get();
+      actividadesIncluidasIds = tourDoc.exists && Array.isArray(tourDoc.data().actividadesIncluidas)
+        ? tourDoc.data().actividadesIncluidas : [];
+    }
+    const incluidos = catalogo.filter(a => actividadesIncluidasIds.includes(a.id));
+    const opcionales = catalogo.filter(a => !actividadesIncluidasIds.includes(a.id));
+
+    // Imágenes fijas de la empresa (Agradecer / Cierre) — configuracion.html
+    const configDoc = await db.collection("configuracion").doc("cotizacion_visual").get();
+    const configVisual = configDoc.exists ? configDoc.data() : {};
+
+    // Diapositiva del hotel elegido (si tiene una diseñada) — se busca
+    // fresca en vez de cachearla, por si se actualizó después.
+    let hotelImagenSlide = "";
+    if (data.hotel) {
+      const hotelSnap = await db.collection("proveedores")
+        .where("categoria", "==", "Hospedaje")
+        .where("nombre", "==", data.hotel).limit(1).get();
+      if (!hotelSnap.empty) hotelImagenSlide = hotelSnap.docs[0].data().imagenSlide || "";
+    }
 
     // ---- Slide 1: Portada ----
     nuevaSlide();
@@ -937,14 +1042,20 @@ async function generarPDF() {
     doc.text(codigo, W / 2, H / 2 + 25, { align: "center" });
     piePagina(codigo);
 
-    // ---- Slide 2: Detalle del viaje ----
+    // ---- Slide: Agradecimiento (imagen fija) ----
+    if (configVisual.imagenAgradecer) {
+      estado.textContent = "⏳ Cargando slide de agradecimiento...";
+      await agregarSlideImagenCompleta(configVisual.imagenAgradecer);
+    }
+
+    // ---- Slide: Detalle del Viaje ----
     nuevaSlide();
     tituloSlide("Detalle del Viaje");
     doc.setFont("helvetica", "normal");
     doc.setFontSize(18);
     doc.setTextColor(...BLANCO);
     let yDetalle = 160;
-    const filas = [
+    const filasDetalle = [
       ["Teléfono", data.telefono],
       ["Fechas", data.fechas],
       ["Adultos", data.adultos],
@@ -952,7 +1063,7 @@ async function generarPDF() {
       ["Bebés", data.bebes !== "0" ? data.bebes : null],
       ["Duración", data.duracion]
     ];
-    filas.forEach(([label, valor]) => {
+    filasDetalle.forEach(([label, valor]) => {
       if (!valor) return;
       doc.setFont("helvetica", "bold");
       doc.text(`${label}:`, 60, yDetalle);
@@ -964,7 +1075,7 @@ async function generarPDF() {
     });
     piePagina(codigo);
 
-    // ---- Slide de Itinerario de Vuelo (imagen subida) ----
+    // ---- Slide: Itinerario de Vuelo (imagen subida) ----
     if (data.imagen_vuelo) {
       nuevaSlide();
       tituloSlide("Itinerario de Vuelo");
@@ -988,52 +1099,105 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Slide de Itinerario (texto) ----
+    // ---- Slide: Itinerario de Viaje (tabla por día) ----
     if (data.itinerario && data.itinerario.trim()) {
       nuevaSlide();
       tituloSlide("Itinerario del Viaje");
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(17);
-      doc.setTextColor(...GRIS_CLARO);
-      const lineasItinerario = doc.splitTextToSize(data.itinerario, 1160);
-      doc.text(lineasItinerario, 60, 160);
-      piePagina(codigo);
-    }
-
-    // ---- Un slide por cada actividad incluida, con su collage de fotos ----
-    for (const actividad of incluidos) {
-      nuevaSlide();
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(28);
-      doc.setTextColor(...BLANCO);
-      doc.text(actividad.nombre || "Actividad incluida", 60, 90);
-
-      const tieneFotos = Array.isArray(actividad.fotos) && actividad.fotos.length > 0;
-      const anchoTexto = tieneFotos ? 520 : 1160;
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(16);
-      doc.setTextColor(...GRIS_CLARO);
-      const lineasDescripcion = doc.splitTextToSize(actividad.descripcion || "", anchoTexto);
-      doc.text(lineasDescripcion, 60, 150);
-
-      if (tieneFotos) {
-        estado.textContent = `⏳ Cargando fotos de "${actividad.nombre}"...`;
-        await dibujarCollageFotos(doc, actividad.fotos, 660, 110, 560, 500);
+      const lineas = data.itinerario.split("\n").map(l => l.trim()).filter(Boolean);
+      if (lineas.length > 0) {
+        const limpiarPrefijo = (linea) => linea.replace(/^d[ií]a\s*\d+\s*[:\-–]?\s*/i, "").trim();
+        const encabezados = lineas.map((_, i) => `Día ${i + 1}`);
+        const contenido = lineas.map(limpiarPrefijo);
+        doc.autoTable({
+          startY: 140,
+          head: [encabezados],
+          body: [contenido],
+          theme: "grid",
+          styles: { fontSize: 11, textColor: [20, 20, 20], cellPadding: 8, valign: "top" },
+          headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", halign: "center" },
+          margin: { left: 40, right: 40 }
+        });
       }
       piePagina(codigo);
     }
 
+    // ---- Slide: Incluye / No incluye ----
+    if ((data.incluye && data.incluye.trim()) || (data.no_incluye && data.no_incluye.trim())) {
+      nuevaSlide();
+      tituloSlide("¿Qué Incluye?");
+      let yIncluye = 150;
+      if (data.incluye && data.incluye.trim()) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(...BLANCO);
+        doc.text("Incluye:", 60, yIncluye);
+        yIncluye += 32;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(15);
+        doc.setTextColor(...GRIS_CLARO);
+        const lineasIncluye = doc.splitTextToSize(data.incluye, 1160);
+        doc.text(lineasIncluye, 60, yIncluye);
+        yIncluye += lineasIncluye.length * 20 + 30;
+      }
+      if (data.no_incluye && data.no_incluye.trim()) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(...ACENTO);
+        doc.text("No incluye:", 60, yIncluye);
+        yIncluye += 32;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(15);
+        doc.setTextColor(...GRIS_CLARO);
+        const lineasNoIncluye = doc.splitTextToSize(data.no_incluye, 1160);
+        doc.text(lineasNoIncluye, 60, yIncluye);
+      }
+      piePagina(codigo);
+    }
+
+    // ---- Un slide por cada actividad incluida en esta variante ----
+    for (const actividad of incluidos) {
+      if (actividad.imagenSlide) {
+        estado.textContent = `⏳ Cargando diapositiva de "${actividad.nombre}"...`;
+        await agregarSlideImagenCompleta(actividad.imagenSlide);
+      } else {
+        nuevaSlide();
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(28);
+        doc.setTextColor(...BLANCO);
+        doc.text(actividad.nombre || "Actividad incluida", 60, 90);
+
+        const tieneFotos = Array.isArray(actividad.fotos) && actividad.fotos.length > 0;
+        const anchoTexto = tieneFotos ? 520 : 1160;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(16);
+        doc.setTextColor(...GRIS_CLARO);
+        const lineasDescripcion = doc.splitTextToSize(actividad.descripcion || "", anchoTexto);
+        doc.text(lineasDescripcion, 60, 150);
+
+        if (tieneFotos) {
+          estado.textContent = `⏳ Cargando fotos de "${actividad.nombre}"...`;
+          await dibujarCollageFotos(doc, actividad.fotos, 660, 110, 560, 500);
+        }
+        piePagina(codigo);
+      }
+    }
+
     // ---- Slide de Hotel ----
     if (data.hotel) {
-      nuevaSlide();
-      tituloSlide(`Nuestro Hotel: ${data.hotel}`);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(17);
-      doc.setTextColor(...GRIS_CLARO);
-      const lineasHotel = doc.splitTextToSize(data.info_hotel || "", 1160);
-      doc.text(lineasHotel, 60, 160);
-      piePagina(codigo);
+      if (hotelImagenSlide) {
+        estado.textContent = "⏳ Cargando diapositiva del hotel...";
+        await agregarSlideImagenCompleta(hotelImagenSlide);
+      } else {
+        nuevaSlide();
+        tituloSlide(`Nuestro Hotel: ${data.hotel}`);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(17);
+        doc.setTextColor(...GRIS_CLARO);
+        const lineasHotel = doc.splitTextToSize(data.info_hotel || "", 1160);
+        doc.text(lineasHotel, 60, 160);
+        piePagina(codigo);
+      }
     }
 
     // ---- Slide de Inversión ----
@@ -1097,27 +1261,31 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Slide de cierre: Formas de Pago + Redes ----
-    nuevaSlide();
-    tituloSlide("Nuestras Formas de Pago");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(17);
-    doc.setTextColor(...BLANCO);
-    doc.text("SINPE Móvil: 6132-8183", 60, 180);
-    doc.text("Transferencia: Christofer Delgado Naranjo — Cédula 207040582", 60, 220);
-    doc.setFontSize(14);
-    doc.setTextColor(...GRIS_CLARO);
-    doc.text("Pago con tarjeta disponible (recargo del 5%) — consulta a tu asesor.", 60, 260);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.setTextColor(...ACENTO);
-    doc.text("Síguenos en nuestras redes sociales", W / 2, H - 130, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(14);
-    doc.setTextColor(...GRIS_CLARO);
-    doc.text("Facebook: Excursiones Delgado CR   ·   Instagram: Excursiones_Delgado", W / 2, H - 100, { align: "center" });
-    piePagina(codigo);
+    // ---- Slide de Cierre ----
+    if (configVisual.imagenCierre) {
+      estado.textContent = "⏳ Cargando slide de cierre...";
+      await agregarSlideImagenCompleta(configVisual.imagenCierre);
+    } else {
+      nuevaSlide();
+      tituloSlide("Nuestras Formas de Pago");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(17);
+      doc.setTextColor(...BLANCO);
+      doc.text("SINPE Móvil: 6132-8183", 60, 180);
+      doc.text("Transferencia: Christofer Delgado Naranjo — Cédula 207040582", 60, 220);
+      doc.setFontSize(14);
+      doc.setTextColor(...GRIS_CLARO);
+      doc.text("Pago con tarjeta disponible (recargo del 5%) — consulta a tu asesor.", 60, 260);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(...ACENTO);
+      doc.text("Síguenos en nuestras redes sociales", W / 2, H - 130, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(14);
+      doc.setTextColor(...GRIS_CLARO);
+      doc.text("Facebook: Excursiones Delgado CR   ·   Instagram: Excursiones_Delgado", W / 2, H - 100, { align: "center" });
+      piePagina(codigo);
+    }
 
     // ---- Guardar y subir ----
     estado.textContent = "⏳ Guardando PDF en el sistema...";
