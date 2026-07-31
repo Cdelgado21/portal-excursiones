@@ -210,8 +210,7 @@ body, input, textarea, select, button {
     </div>
     <ul class="nav-links">
       <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html" class="activo"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="solicitud_cotizaciones.html" class="activo"><span class="icon">📨</span>Solicitud de Cotización</a></li>
       <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
       <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
       <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
@@ -666,6 +665,17 @@ function obtenerToursOpcionalesDesdeDOM() {
 }
   try {
     await db.collection("cotizacionformal").doc(codigo).set(data, { merge: true });
+
+    // NUEVO: al guardar la cotización formal, se marca la solicitud
+    // original como "Enviada" — así en solicitud_cotizaciones.html pasa de
+    // "Cotizaciones Pendientes" (En Proceso) a "Cotización Histórica"
+    // (Enviada) automáticamente, sin un paso manual aparte.
+    try {
+      await db.collection("solicitud_cotizaciones").doc(codigo).update({ estado: "Enviada" });
+    } catch (errEstado) {
+      console.warn("No se pudo marcar la solicitud como Enviada:", errEstado);
+    }
+
     alert("✅ Cotización guardada correctamente.");
   } catch (err) {
     console.error("❌ Error al guardar:", err);
