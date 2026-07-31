@@ -10,7 +10,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
     /* NUEVO: menú lateral de navegación (mismo estilo que el resto del
@@ -324,11 +323,9 @@ body, input, textarea, select, button {
 <button onclick="guardarCotizacion()" id="btn-guardar">💾 Guardar Cotización</button>
 <button type="button" onclick="restablecerDatosDelTour()" id="btn-restablecerDatosDelTour">🔄 Restablecer información del tour</button>
 <button onclick="generarPDF()" id="btn-generar-pdf" style="margin-left: 10px; background-color: #02535a; color: white; font-weight: bold; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer;">
-  📄 Generar PDF
+  🎨 Generar Cotización Visual (PDF)
 </button>
-<img id="fondoPagina1" src="Portadacotizaciones.png" style="display:none" crossorigin="anonymous">
-<img id="fondoPagina2" src="fondooficio.png" style="display:none" crossorigin="anonymous">
-<img id="fondoPaginaFinal" src="FINALCUENTASRRSS.PNG" style="display:none" crossorigin="anonymous">
+<div id="estado-generacion-pdf" style="display:none; margin-top:10px; font-weight:bold; color:#02535a;"></div>
 
   </main>
 
@@ -405,10 +402,13 @@ async function cargarOpcionesDeDestino() {
     // de "tours" que detalle_tours.html NUNCA llena (por eso siempre salía
     // vacío en el PDF, incluso con opcionales reales cargados). Ahora
     // consulta la colección real "tours_opcionales" filtrando por destino,
-    // igual que hace detalle_tours.html para mostrarlos/editarlos.
+    // igual que hace detalle_tours.html para mostrarlos/editarlos. Solo se
+    // muestra en esta tabla del formulario los de tipo "opcional" — los
+    // "incluido" se usan directo en la generación de la cotización visual.
     const opcionalesSnap = await db.collection("tours_opcionales")
       .where("destino", "==", destino).get();
-    const listaOpcionales = opcionalesSnap.docs.map(d => d.data());
+    const listaOpcionales = opcionalesSnap.docs.map(d => d.data())
+      .filter(t => t.tipo !== "incluido");
     console.log("Tours opcionales desde colección real tours_opcionales:", listaOpcionales);
     renderizarTablaOpcionales(listaOpcionales);
 
@@ -648,220 +648,367 @@ async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
     await firebase.firestore().collection("cotizacionformal").doc(codigo).update({
       link_pdf: urlDescarga
     });
-
-    alert("✅ PDF generado y guardado en Firebase correctamente.");
   } catch (error) {
     console.error("❌ Error al subir PDF a Firebase:", error);
-    alert("❌ No se pudo guardar el PDF.");
+    throw error;
   }
 }
-  async function generarPDF() {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
 
-  const width = doc.internal.pageSize.getWidth();
-  const height = doc.internal.pageSize.getHeight();
-
-  // Obtener referencias de las imágenes
-  const portadaImg = document.getElementById("fondoPagina1");
-  const fondoContenido = document.getElementById("fondoPagina2");
-  const cierreImg = document.getElementById("fondoPaginaFinal");
-
-  // Validar que estén cargadas
-  if (!portadaImg || !fondoContenido || !cierreImg) {
-    alert("❌ No se pudieron cargar las imágenes de fondo. Revisa los IDs o rutas.");
-    return;
-  }
-
-  const codigo = new URLSearchParams(window.location.search).get("codigo") || "COT-XXX-2025";
-  const destino = document.getElementById("destino")?.value || "Tour no definido";
-
-  // 🧾 Página 1 - Portada
-  doc.addImage(portadaImg, "PNG", 0, 0, width, height);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  doc.text(codigo, width / 2, 125, { align: "center" });
-  doc.setFontSize(18);
-  doc.text(destino, width / 2, 135, { align: "center" });
-
-  // Página 2 - Contenido principal
-  doc.addPage();
-  doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text("Detalle de Cotización", width / 2, 30, { align: "center" });
-
-  const data = {
-    telefono: document.getElementById("telefono").value,
-    destino,
-    fechas: document.getElementById("fechas").value,
-    adultos: document.getElementById("adultos").value,
-    ninos: document.getElementById("ninos").value,
-    bebes: document.getElementById("bebes").value,
-    duracion: document.getElementById("duracion").value,
-    incluye: document.getElementById("incluye").value,
-    no_incluye: document.getElementById("no_incluye").value,
-    itinerario: document.getElementById("itinerario").value,
-    aerolinea: document.getElementById("aerolinea").value,
-    vuelo_ida: document.getElementById("vuelo_ida").value,
-    vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
-    equipaje: document.getElementById("equipaje").value,
-    hotel: document.getElementById("hotel").value,
-    info_hotel: document.getElementById("info_hotel").value,
-    precio_adulto: document.getElementById("precio_adulto").value,
-    precio_nino: document.getElementById("precio_nino").value,
-    precio_bebe: document.getElementById("precio_bebe").value,
-    total_general: document.getElementById("total_general").value,
-    monto_reserva: document.getElementById("monto_reserva").value,
-    politicas: document.getElementById("politicas").value,
-  };
-
-  let y = 40;
-  const margenX = 25;
-  const salto = 11;
-
-function agregarSeccion(titulo, textoPlano) {
-  if (!textoPlano?.trim()) return;
-
-  if (y > 250) {
-    doc.addPage();
-    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
-    y = 35;
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.text(`${titulo}:`, margenX, y);
-  y += 8;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-
-  const anchoTexto = width - 2 * margenX - 10;
-  const texto = doc.splitTextToSize(textoPlano, anchoTexto);
-
-  texto.forEach(linea => {
-    if (y > 270) {
-      doc.addPage();
-      doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
-      y = 35;
-    }
-    doc.text(linea, margenX, y, { align: 'justify' });
-    y += 6;
+// NUEVO: carga una imagen (URL de Firebase Storage) y la convierte a
+// dataURL vía canvas — así jsPDF puede insertarla sin importar el formato
+// original, y evitamos problemas de CORS con addImage directo sobre una
+// URL externa.
+function cargarImagenComoDataURL(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        resolve({
+          dataUrl: canvas.toDataURL("image/jpeg", 0.85),
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    img.onerror = () => reject(new Error("No se pudo cargar la imagen: " + url));
+    img.src = url;
   });
 }
-function agregarTituloSeccion(nombre) {
-  if (y > 270) {
-    doc.addPage();
-    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
-    y = 50;
+
+// NUEVO: calcula la distribución de hasta 4 fotos dentro de un área
+// rectangular (collage) — 1 foto ocupa todo, 2 van lado a lado, 3 son una
+// grande arriba y dos abajo, 4 son una grilla 2x2.
+function distribuirCollage(cantidad, areaW, areaH) {
+  const gap = 12;
+  if (cantidad <= 1) {
+    return [{ bx: 0, by: 0, bw: areaW, bh: areaH }];
   }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(15); // tamaño más grande
-  doc.text(nombre, width / 2, y, { align: "center" })
-  y += 3;
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.text("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -", width / 2, y, { align: "center" })
-  y += 6;
+  if (cantidad === 2) {
+    const w = (areaW - gap) / 2;
+    return [
+      { bx: 0, by: 0, bw: w, bh: areaH },
+      { bx: w + gap, by: 0, bw: w, bh: areaH }
+    ];
+  }
+  if (cantidad === 3) {
+    const hArriba = (areaH - gap) * 0.55;
+    const hAbajo = (areaH - gap) - hArriba;
+    const wAbajo = (areaW - gap) / 2;
+    return [
+      { bx: 0, by: 0, bw: areaW, bh: hArriba },
+      { bx: 0, by: hArriba + gap, bw: wAbajo, bh: hAbajo },
+      { bx: wAbajo + gap, by: hArriba + gap, bw: wAbajo, bh: hAbajo }
+    ];
+  }
+  const w = (areaW - gap) / 2;
+  const h = (areaH - gap) / 2;
+  return [
+    { bx: 0, by: 0, bw: w, bh: h },
+    { bx: w + gap, by: 0, bw: w, bh: h },
+    { bx: 0, by: h + gap, bw: w, bh: h },
+    { bx: w + gap, by: h + gap, bw: w, bh: h }
+  ];
 }
 
-function agregarLinea(label, valor) {
-  if (!valor || valor === "0") return;
+// NUEVO: dibuja hasta 4 fotos dentro de un área (x, y, areaW, areaH),
+// cada una ajustada ("contain") dentro de su casilla del collage, sin
+// deformarla. Si una foto falla al cargar (ej. bloqueo de CORS), se
+// omite esa casilla y sigue con las demás.
+async function dibujarCollageFotos(doc, urls, x, y, areaW, areaH) {
+  const lista = (urls || []).slice(0, 4);
+  if (lista.length === 0) return;
+  const casillas = distribuirCollage(lista.length, areaW, areaH);
 
-  if (y > 270) {
-    doc.addPage();
-    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
-    y = 50;
+  for (let i = 0; i < lista.length; i++) {
+    try {
+      const { dataUrl, width, height } = await cargarImagenComoDataURL(lista[i]);
+      const casilla = casillas[i];
+      const ratio = Math.min(casilla.bw / width, casilla.bh / height);
+      const dw = width * ratio;
+      const dh = height * ratio;
+      const dx = x + casilla.bx + (casilla.bw - dw) / 2;
+      const dy = y + casilla.by + (casilla.bh - dh) / 2;
+      doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
+    } catch (err) {
+      console.warn("No se pudo dibujar una foto del collage:", err);
+    }
   }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  const labelText = `${label}: `;
-  doc.text(labelText, margenX, y);
-
-  const anchoLabel = doc.getTextWidth(labelText);
-  doc.setFont("helvetica", "normal");
-  doc.text(valor, margenX + anchoLabel, y);
-  y += salto;
 }
-  agregarLinea("Teléfono", data.telefono);
-  agregarLinea("Destino", data.destino);
-  agregarLinea("Fechas", data.fechas);
-  agregarLinea("Adultos", data.adultos);
-  if (data.ninos !== "0") agregarLinea("Niños", data.ninos);
-  if (data.bebes !== "0") agregarLinea("Bebés", data.bebes);
-  agregarLinea("Duración", data.duracion);
-y += 5;
-agregarTituloSeccion("Información del Tour");
-  agregarSeccion("Incluye", data.incluye);
-  agregarSeccion("No Incluye", data.no_incluye);
-  agregarSeccion("Itinerario de Tours", data.itinerario);
-y += 5;
-agregarTituloSeccion("Itinerario de Vuelo y Hotel");
-  agregarLinea("Aerolínea", data.aerolinea);
-  agregarSeccion("Vuelo de Ida", data.vuelo_ida);
-y += 5;
-  agregarSeccion("Vuelo de Regreso", data.vuelo_vuelta);
-y += 5;
-  agregarSeccion("Equipaje", data.equipaje);
-y += 5;
-  agregarLinea("Hotel", data.hotel);
-  agregarSeccion("Información del Hotel", data.info_hotel);
-y += 7;
-agregarTituloSeccion("Inversión por Viajero");
-  agregarLinea("Precio Adulto", `$${data.precio_adulto}`);
-  if (data.precio_nino !== "0") agregarLinea("Precio Niño", `$${data.precio_nino}`);
-  if (data.precio_bebe !== "0") agregarLinea("Precio Bebé", `$${data.precio_bebe}`);
-  agregarLinea("Total General", `$${data.total_general}`);
-  agregarLinea("Monto de Reserva", `$${data.monto_reserva}`);
-y += 5;
-  agregarSeccion("Políticas y Condiciones Generales", data.politicas);
 
-  // Página 3: Tabla de tours opcionales
-  const tablaOpcionales = document.querySelector("#contenedor_tours_opcionales table");
-  if (tablaOpcionales) {
-    doc.addPage();
-    doc.addImage(fondoContenido, 'PNG', 0, 0, width, height);
-    doc.setTextColor(255, 255, 255);
+async function generarPDF() {
+  const btn = document.getElementById("btn-generar-pdf");
+  const estado = document.getElementById("estado-generacion-pdf");
+  btn.disabled = true;
+  estado.style.display = "block";
+  estado.textContent = "⏳ Generando cotización visual...";
+
+  try {
+    const { jsPDF } = window.jspdf;
+    // NUEVO: slides 16:9 (1280x720 px) en vez del A4 vertical de antes —
+    // el fondo oscuro se dibuja en código, ya no depende de las imágenes
+    // PNG prediseñadas (Portadacotizaciones.png / fondooficio.png / etc.).
+    const W = 1280, H = 720;
+    const doc = new jsPDF({ unit: "px", format: [W, H], orientation: "landscape" });
+
+    const FONDO = [8, 38, 42];
+    const ACENTO = [244, 152, 89];
+    const TEAL = [2, 83, 90];
+    const BLANCO = [255, 255, 255];
+    const GRIS_CLARO = [210, 210, 210];
+
+    let primeraSlide = true;
+    function nuevaSlide() {
+      if (!primeraSlide) doc.addPage([W, H], "landscape");
+      primeraSlide = false;
+      doc.setFillColor(...FONDO);
+      doc.rect(0, 0, W, H, "F");
+      doc.setFillColor(...ACENTO);
+      doc.rect(0, H - 6, W, 6, "F");
+    }
+    function piePagina(codigoTexto) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(...BLANCO);
+      doc.text("EXCURSIONES DELGADO", 40, H - 22);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(...GRIS_CLARO);
+      doc.text(codigoTexto, W - 40, H - 22, { align: "right" });
+    }
+    function tituloSlide(texto, y = 90) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(30);
+      doc.setTextColor(...BLANCO);
+      doc.text(texto, 60, y);
+      doc.setDrawColor(...ACENTO);
+      doc.setLineWidth(2);
+      doc.line(60, y + 16, 60 + doc.getTextWidth(texto), y + 16);
+    }
+
+    const destino = document.getElementById("destino")?.value || "Tour no definido";
+
+    const data = {
+      telefono: document.getElementById("telefono").value,
+      destino,
+      fechas: document.getElementById("fechas").value,
+      adultos: document.getElementById("adultos").value,
+      ninos: document.getElementById("ninos").value,
+      bebes: document.getElementById("bebes").value,
+      duracion: document.getElementById("duracion").value,
+      itinerario: document.getElementById("itinerario").value,
+      hotel: document.getElementById("hotel").value,
+      info_hotel: document.getElementById("info_hotel").value,
+      precio_adulto: document.getElementById("precio_adulto").value,
+      precio_nino: document.getElementById("precio_nino").value,
+      precio_bebe: document.getElementById("precio_bebe").value,
+      total_general: document.getElementById("total_general").value,
+      monto_reserva: document.getElementById("monto_reserva").value,
+      politicas: document.getElementById("politicas").value
+    };
+
+    // Trae los tours opcionales frescos de la colección real, separando
+    // "incluido" (slide propio con fotos) de "opcional" (tabla de precios).
+    estado.textContent = "⏳ Cargando actividades del tour...";
+    const opcionalesSnap = await db.collection("tours_opcionales").where("destino", "==", destino).get();
+    const todosOpcionales = opcionalesSnap.docs.map(d => d.data());
+    const incluidos = todosOpcionales.filter(t => t.tipo === "incluido");
+    const opcionales = todosOpcionales.filter(t => t.tipo !== "incluido");
+
+    // ---- Slide 1: Portada ----
+    nuevaSlide();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(58);
+    doc.setTextColor(...BLANCO);
+    doc.text("COTIZACIÓN", W / 2, H / 2 - 70, { align: "center" });
+    doc.setFontSize(30);
+    doc.setTextColor(...ACENTO);
+    doc.text(destino, W / 2, H / 2 - 15, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(16);
+    doc.setTextColor(...GRIS_CLARO);
+    doc.text(codigo, W / 2, H / 2 + 25, { align: "center" });
+    piePagina(codigo);
+
+    // ---- Slide 2: Detalle del viaje ----
+    nuevaSlide();
+    tituloSlide("Detalle del Viaje");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(18);
+    doc.setTextColor(...BLANCO);
+    let yDetalle = 160;
+    const filas = [
+      ["Teléfono", data.telefono],
+      ["Fechas", data.fechas],
+      ["Adultos", data.adultos],
+      ["Niños", data.ninos !== "0" ? data.ninos : null],
+      ["Bebés", data.bebes !== "0" ? data.bebes : null],
+      ["Duración", data.duracion]
+    ];
+    filas.forEach(([label, valor]) => {
+      if (!valor) return;
+      doc.setFont("helvetica", "bold");
+      doc.text(`${label}:`, 60, yDetalle);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...GRIS_CLARO);
+      doc.text(String(valor), 260, yDetalle);
+      doc.setTextColor(...BLANCO);
+      yDetalle += 40;
+    });
+    piePagina(codigo);
+
+    // ---- Slide 3: Itinerario ----
+    if (data.itinerario && data.itinerario.trim()) {
+      nuevaSlide();
+      tituloSlide("Itinerario del Viaje");
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(17);
+      doc.setTextColor(...GRIS_CLARO);
+      const lineasItinerario = doc.splitTextToSize(data.itinerario, 1160);
+      doc.text(lineasItinerario, 60, 160);
+      piePagina(codigo);
+    }
+
+    // ---- Un slide por cada actividad incluida, con su collage de fotos ----
+    for (const actividad of incluidos) {
+      nuevaSlide();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(28);
+      doc.setTextColor(...BLANCO);
+      doc.text(actividad.nombre || "Actividad incluida", 60, 90);
+
+      const tieneFotos = Array.isArray(actividad.fotos) && actividad.fotos.length > 0;
+      const anchoTexto = tieneFotos ? 520 : 1160;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(16);
+      doc.setTextColor(...GRIS_CLARO);
+      const lineasDescripcion = doc.splitTextToSize(actividad.descripcion || "", anchoTexto);
+      doc.text(lineasDescripcion, 60, 150);
+
+      if (tieneFotos) {
+        estado.textContent = `⏳ Cargando fotos de "${actividad.nombre}"...`;
+        await dibujarCollageFotos(doc, actividad.fotos, 660, 110, 560, 500);
+      }
+      piePagina(codigo);
+    }
+
+    // ---- Slide de Hotel ----
+    if (data.hotel) {
+      nuevaSlide();
+      tituloSlide(`Nuestro Hotel: ${data.hotel}`);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(17);
+      doc.setTextColor(...GRIS_CLARO);
+      const lineasHotel = doc.splitTextToSize(data.info_hotel || "", 1160);
+      doc.text(lineasHotel, 60, 160);
+      piePagina(codigo);
+    }
+
+    // ---- Slide de Inversión ----
+    nuevaSlide();
+    tituloSlide("Inversión por Viajero");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(19);
+    doc.setTextColor(...BLANCO);
+    let yInversion = 180;
+    const filasInversion = [
+      ["Precio Adulto", data.precio_adulto ? `$${data.precio_adulto}` : null],
+      ["Precio Niño", data.precio_nino && data.precio_nino !== "0" ? `$${data.precio_nino}` : null],
+      ["Precio Bebé", data.precio_bebe && data.precio_bebe !== "0" ? `$${data.precio_bebe}` : null]
+    ];
+    filasInversion.forEach(([label, valor]) => {
+      if (!valor) return;
+      doc.setFont("helvetica", "normal");
+      doc.text(`${label}:`, 60, yInversion);
+      doc.text(valor, 340, yInversion);
+      yInversion += 36;
+    });
+    yInversion += 20;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(26);
+    doc.setTextColor(...ACENTO);
+    doc.text(`Total General: $${data.total_general || "0"}`, 60, yInversion);
+    if (data.monto_reserva) {
+      yInversion += 40;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(16);
+      doc.setTextColor(...GRIS_CLARO);
+      doc.text(`Monto de reserva por persona: $${data.monto_reserva}`, 60, yInversion);
+    }
+    piePagina(codigo);
+
+    // ---- Slide de Tours Opcionales ----
+    if (opcionales.length > 0) {
+      nuevaSlide();
+      tituloSlide("Tours Opcionales");
+      doc.autoTable({
+        startY: 130,
+        head: [["Tour Opcional", "Descripción", "Precio ($)"]],
+        body: opcionales.map(o => [o.nombre || "", o.descripcion || "", `$${o.precio ?? 0}`]),
+        theme: "grid",
+        styles: { fontSize: 13, textColor: [20, 20, 20], cellPadding: 8 },
+        headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold" },
+        margin: { left: 60, right: 60 }
+      });
+      piePagina(codigo);
+    }
+
+    // ---- Slide de Condiciones Generales ----
+    if (data.politicas && data.politicas.trim()) {
+      nuevaSlide();
+      tituloSlide("Condiciones Generales", 70);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(13);
+      doc.setTextColor(...GRIS_CLARO);
+      const lineasPoliticas = doc.splitTextToSize(data.politicas, 1160);
+      doc.text(lineasPoliticas, 60, 130);
+      piePagina(codigo);
+    }
+
+    // ---- Slide de cierre: Formas de Pago + Redes ----
+    nuevaSlide();
+    tituloSlide("Nuestras Formas de Pago");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(17);
+    doc.setTextColor(...BLANCO);
+    doc.text("SINPE Móvil: 6132-8183", 60, 180);
+    doc.text("Transferencia: Christofer Delgado Naranjo — Cédula 207040582", 60, 220);
+    doc.setFontSize(14);
+    doc.setTextColor(...GRIS_CLARO);
+    doc.text("Pago con tarjeta disponible (recargo del 5%) — consulta a tu asesor.", 60, 260);
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(16);
-    doc.text("Tours Opcionales", width / 2, 40, { align: "center" });
+    doc.setTextColor(...ACENTO);
+    doc.text("Síguenos en nuestras redes sociales", W / 2, H - 130, { align: "center" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(14);
+    doc.setTextColor(...GRIS_CLARO);
+    doc.text("Facebook: Excursiones Delgado CR   ·   Instagram: Excursiones_Delgado", W / 2, H - 100, { align: "center" });
+    piePagina(codigo);
 
-    doc.autoTable({
-      html: "#contenedor_tours_opcionales table",
-      startY: 60,
-      theme: 'grid',
-      styles: {
-        fontSize: 10,
-        textColor: [0, 0, 0],
-        halign: 'center',
-        cellPadding: 4
-      },
-      headStyles: {
-        fillColor: [2, 83, 90],
-        textColor: 255,
-        fontStyle: 'bold',
-      },
-      margin: { left: 20, right: 20 }
-    });
+    // ---- Guardar y subir ----
+    estado.textContent = "⏳ Guardando PDF en el sistema...";
+    const pdfBlob = doc.output("blob");
+    await subirPDFyGuardarEnFirestore(pdfBlob, codigo);
+    doc.save(`Cotización ${codigo}.pdf`);
+
+    estado.textContent = "✅ Cotización visual generada y guardada correctamente.";
+    setTimeout(() => { estado.style.display = "none"; }, 4000);
+  } catch (err) {
+    console.error("❌ Error al generar la cotización visual:", err);
+    estado.textContent = "❌ Ocurrió un error generando el PDF. Revisa la consola.";
+  } finally {
+    btn.disabled = false;
   }
-
-  // Página final con cierre
-  doc.addPage();
-  doc.addImage(cierreImg, 'PNG', 0, 0, width, height);
-const pdfBlob = doc.output("blob");
-
-// Envuelve en una función async interna
-(async () => {
-  await subirPDFyGuardarEnFirestore(pdfBlob, codigo);
-})();
-
-doc.save(`Cotización ${codigo}.pdf`);
 }
 
 // NUEVO: menú lateral de navegación (igual que el resto del sistema)
