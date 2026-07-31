@@ -171,6 +171,32 @@ body, input, textarea, select, button {
   font-family: 'Segoe UI', sans-serif;
   font-size: 15px;
 }
+
+/* NUEVO: previsualización de la captura de itinerario de vuelo */
+#imagenVueloPreview {
+  margin-top: 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+#imagenVueloPreview img {
+  max-width: 260px;
+  max-height: 220px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  object-fit: contain;
+}
+#imagenVueloPreview button {
+  background-color: #c0392b;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  align-self: center;
+}
   </style>
 </head>
 <body>
@@ -254,6 +280,16 @@ body, input, textarea, select, button {
 
   <label>Vuelo de Regreso</label>
   <textarea id="vuelo_vuelta"></textarea>
+
+  <!-- NUEVO: captura de pantalla del itinerario (ej. de la aerolínea o
+       buscador de vuelos) — se sube directo a Storage, se guarda con la
+       cotización, y también aparece como su propio slide en la Cotización
+       Visual. No reemplaza los campos de texto de arriba, es un respaldo
+       visual además de ellos. -->
+  <label>Captura de Itinerario de Vuelo (opcional)</label>
+  <div style="font-size:12px; color:#777; margin-top:-4px; margin-bottom:6px;">Sube una captura de pantalla (ej. de la página de la aerolínea o un buscador de vuelos) — se guarda con la cotización y sale como imagen en la Cotización Visual.</div>
+  <input type="file" id="imagenVueloInput" accept="image/*" />
+  <div id="imagenVueloPreview"></div>
 
   <label>Equipaje</label>
   <label>Tipo de Equipaje</label>
@@ -351,6 +387,51 @@ let hotelGuardado = null;
   const codigo = params.get("codigo");
 
   document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
+
+  // NUEVO: URL de la captura de itinerario de vuelo ya subida (si existe).
+  // No hay un <input> de texto que la contenga, por eso se guarda en esta
+  // variable — se lee al guardar la cotización y al generar el PDF.
+  let imagenVueloUrl = "";
+
+  function renderizarImagenVueloPreview() {
+    const contenedor = document.getElementById("imagenVueloPreview");
+    if (!imagenVueloUrl) {
+      contenedor.innerHTML = "";
+      return;
+    }
+    contenedor.innerHTML = `
+      <img src="${imagenVueloUrl}" alt="Itinerario de vuelo">
+      <button type="button" onclick="quitarImagenVuelo()">🗑️ Quitar</button>
+    `;
+  }
+
+  function quitarImagenVuelo() {
+    // NUEVO: solo deja de usarse en esta cotización — el archivo queda en
+    // Storage (no se borra), igual que se maneja con las fotos de tours.
+    imagenVueloUrl = "";
+    renderizarImagenVueloPreview();
+  }
+
+  document.getElementById("imagenVueloInput").addEventListener("change", async function (e) {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+
+    const contenedor = document.getElementById("imagenVueloPreview");
+    contenedor.innerHTML = `<span style="font-size:13px; color:#777;">⏳ Subiendo imagen...</span>`;
+
+    try {
+      const nombreArchivo = `${Date.now()}_${archivo.name}`;
+      const ref = storage.ref().child(`cotizaciones_vuelos/${codigo}/${nombreArchivo}`);
+      await ref.put(archivo);
+      imagenVueloUrl = await ref.getDownloadURL();
+      renderizarImagenVueloPreview();
+    } catch (err) {
+      console.error("Error al subir la imagen de vuelo:", err);
+      alert("❌ No se pudo subir la imagen.");
+      contenedor.innerHTML = "";
+    }
+    e.target.value = "";
+  });
 
   async function cargarDatosIniciales() {
   await cargarOpcionesDeDestino();
@@ -512,6 +593,13 @@ function mostrarToursOpcionalesGuardados(data) {
     document.getElementById("info_hotel").value = hotelGuardado.info;
   }
 
+  // NUEVO: si la cotización ya tenía una captura de itinerario de vuelo
+  // guardada, se recupera y se muestra en la previsualización.
+  if (data.imagen_vuelo) {
+    imagenVueloUrl = data.imagen_vuelo;
+    renderizarImagenVueloPreview();
+  }
+
 ajustarAlturaTextareas();
 }
 
@@ -544,6 +632,7 @@ tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
     aerolinea: document.getElementById("aerolinea").value,
     vuelo_ida: document.getElementById("vuelo_ida").value,
     vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
+    imagen_vuelo: imagenVueloUrl,
     equipaje: document.getElementById("equipaje").value,
     hotel: document.getElementById("hotel").value,
     info_hotel: document.getElementById("info_hotel").value,
@@ -804,6 +893,7 @@ async function generarPDF() {
       bebes: document.getElementById("bebes").value,
       duracion: document.getElementById("duracion").value,
       itinerario: document.getElementById("itinerario").value,
+      imagen_vuelo: imagenVueloUrl,
       hotel: document.getElementById("hotel").value,
       info_hotel: document.getElementById("info_hotel").value,
       precio_adulto: document.getElementById("precio_adulto").value,
@@ -864,7 +954,31 @@ async function generarPDF() {
     });
     piePagina(codigo);
 
-    // ---- Slide 3: Itinerario ----
+    // ---- Slide de Itinerario de Vuelo (imagen subida) ----
+    if (data.imagen_vuelo) {
+      nuevaSlide();
+      tituloSlide("Itinerario de Vuelo");
+      estado.textContent = "⏳ Cargando itinerario de vuelo...";
+      try {
+        const { dataUrl, width, height } = await cargarImagenComoDataURL(data.imagen_vuelo);
+        const areaW = 1160, areaH = 520;
+        const ratio = Math.min(areaW / width, areaH / height);
+        const dw = width * ratio;
+        const dh = height * ratio;
+        const dx = (W - dw) / 2;
+        const dy = 140 + (areaH - dh) / 2;
+        doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
+      } catch (err) {
+        console.warn("No se pudo cargar la imagen del itinerario de vuelo:", err);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(16);
+        doc.setTextColor(...GRIS_CLARO);
+        doc.text("No se pudo cargar la imagen del itinerario.", 60, 200);
+      }
+      piePagina(codigo);
+    }
+
+    // ---- Slide de Itinerario (texto) ----
     if (data.itinerario && data.itinerario.trim()) {
       nuevaSlide();
       tituloSlide("Itinerario del Viaje");
