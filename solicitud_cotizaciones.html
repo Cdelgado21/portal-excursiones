@@ -193,6 +193,12 @@
       color: #02535a;
       margin: 0;
     }
+    .encabezado-tabla .subtitulo-seccion {
+      font-size: 12.5px;
+      color: #888;
+      font-weight: normal;
+      margin-top: 3px;
+    }
     /* NUEVO: un solo buscador por tabla en vez de un input de filtro por
        columna — busca en cualquier campo de la fila (número, teléfono,
        destino, embajador, etc.) */
@@ -241,6 +247,15 @@
     }
     tbody tr:hover { background-color: #f7fbfb; }
 
+    /* NUEVO: N° de Cotización como link directo al detalle en cotizacionformal.html */
+    .link-cotizacion {
+      color: #02535a;
+      font-weight: bold;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+    .link-cotizacion:hover { color: #f49859; }
+
     /* NUEVO: pastilla de Experiencia — mismo criterio de color que en tours.html */
     .pastilla-experiencia {
       display: inline-block;
@@ -258,6 +273,7 @@
 
     .estado-pendiente { background-color: #ff4d4d; color: white; padding: 5px 8px; border-radius: 999px; font-weight: bold; text-align: center; font-size: 12px; }
     .estado-proceso { background-color: #ffa500; color: white; padding: 5px 8px; border-radius: 999px; font-weight: bold; text-align: center; font-size: 12px; }
+    .estado-enviada { background-color: #28a745; color: white; padding: 5px 8px; border-radius: 999px; font-weight: bold; text-align: center; font-size: 12px; }
     .btn-cotizar { background-color: #f49859; color: white; padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; }
     .btn-cotizar[disabled] { background-color: #ccc; cursor: not-allowed; }
     .btn-icono {
@@ -281,7 +297,6 @@
     <ul class="nav-links">
       <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
       <li><a href="solicitud_cotizaciones.html" class="activo"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
       <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
       <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
       <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
@@ -347,9 +362,13 @@
     </form>
   </div>
 
+  <!-- SECCIÓN 1: aún sin asignar -->
   <div class="tabla-container">
     <div class="encabezado-tabla">
-      <h3>Solicitudes Pendientes</h3>
+      <div>
+        <h3>Solicitudes Pendientes</h3>
+        <div class="subtitulo-seccion">Sin asignar todavía — usa "Tomar" para atenderla.</div>
+      </div>
       <div class="buscador-tabla">
         <input type="search" placeholder="🔍 Buscar por número, teléfono, destino, embajador..." oninput="filtrarTabla('tablaPendientes', this.value)">
       </div>
@@ -382,17 +401,18 @@
     <div id="vacioPendientes" class="vacio-tabla" style="display:none;">No hay solicitudes pendientes que coincidan con la búsqueda.</div>
   </div>
 
+  <!-- SECCIÓN 2: ya asignadas (En Proceso), aún sin cotización formal guardada -->
   <div class="tabla-container">
     <div class="encabezado-tabla">
-      <h3>Solicitudes Históricas</h3>
+      <div>
+        <h3>Cotizaciones Pendientes</h3>
+        <div class="subtitulo-seccion">Ya asignadas — falta armar y guardar la cotización formal. Click en el N° para abrirla.</div>
+      </div>
       <div class="buscador-tabla">
-        <input type="search" placeholder="🔍 Buscar por número, teléfono, destino, embajador..." oninput="filtrarTabla('tablaHistoricas', this.value)">
-        <button class="btn-descarga" onclick="descargarCSV()">📥 CSV</button>
-        <button class="btn-descarga" onclick="descargarPDF()">📄 PDF</button>
-        <button class="btn-descarga" onclick="window.print()">🖨️ Imprimir</button>
+        <input type="search" placeholder="🔍 Buscar por número, teléfono, destino, embajador..." oninput="filtrarTabla('tablaEnProceso', this.value)">
       </div>
     </div>
-    <table id="tablaHistoricas">
+    <table id="tablaEnProceso">
       <thead>
         <tr>
           <th>N° Cotización</th>
@@ -415,7 +435,47 @@
       </thead>
       <tbody></tbody>
     </table>
-    <div id="vacioHistoricas" class="vacio-tabla" style="display:none;">No hay solicitudes históricas que coincidan con la búsqueda.</div>
+    <div id="vacioEnProceso" class="vacio-tabla" style="display:none;">No hay cotizaciones pendientes que coincidan con la búsqueda.</div>
+  </div>
+
+  <!-- SECCIÓN 3: cotización formal ya guardada (Enviada) -->
+  <div class="tabla-container">
+    <div class="encabezado-tabla">
+      <div>
+        <h3>Cotización Histórica</h3>
+        <div class="subtitulo-seccion">Cotización formal ya guardada. Click en el N° para verla o ajustarla.</div>
+      </div>
+      <div class="buscador-tabla">
+        <input type="search" placeholder="🔍 Buscar por número, teléfono, destino, embajador..." oninput="filtrarTabla('tablaEnviadas', this.value)">
+        <button class="btn-descarga" onclick="descargarCSV()">📥 CSV</button>
+        <button class="btn-descarga" onclick="descargarPDF()">📄 PDF</button>
+        <button class="btn-descarga" onclick="window.print()">🖨️ Imprimir</button>
+      </div>
+    </div>
+    <table id="tablaEnviadas">
+      <thead>
+        <tr>
+          <th>N° Cotización</th>
+          <th>Teléfono</th>
+          <th>Destino</th>
+          <th>Experiencia</th>
+          <th>Fechas</th>
+          <th>Ad.</th>
+          <th>Niñ.</th>
+          <th>Bebés</th>
+          <th>Observaciones</th>
+          <th>Embajador(a)</th>
+          <th>Estado</th>
+          <th>Registro</th>
+          <th>Espera</th>
+          <th>Encargado</th>
+          <th>Asignación</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div id="vacioEnviadas" class="vacio-tabla" style="display:none;">No hay cotizaciones históricas que coincidan con la búsqueda.</div>
   </div>
 
   </main>
@@ -522,11 +582,19 @@
     tourIdSeleccionado = tourId || "";
   }
 
+  // NUEVO: abre el detalle de la cotización (cotizacionformal.html) — se
+  // usa tanto desde el link del N° de Cotización como desde el botón "Ver".
+  function verCotizacion(numero) {
+    window.location.href = `cotizacionformal.html?codigo=${encodeURIComponent(numero)}`;
+  }
+
   async function cargarCotizaciones() {
     const tablaPendientes = document.querySelector("#tablaPendientes tbody");
-    const tablaHistoricas = document.querySelector("#tablaHistoricas tbody");
+    const tablaEnProceso = document.querySelector("#tablaEnProceso tbody");
+    const tablaEnviadas = document.querySelector("#tablaEnviadas tbody");
     tablaPendientes.innerHTML = "";
-    tablaHistoricas.innerHTML = "";
+    tablaEnProceso.innerHTML = "";
+    tablaEnviadas.innerHTML = "";
 
     const snapshot = await db.collection("solicitud_cotizaciones").orderBy("registro", "desc").get();
 
@@ -549,24 +617,19 @@
         : null;
       const tiempoEspera = minutosEspera !== null ? formatearTiempo(minutosEspera) : '-';
 
-      const fila = document.createElement("tr");
       const etiquetaExperiencia = d.experiencia
         ? `<span class="pastilla-experiencia ${claseVariante(d.experiencia)}">${d.experiencia}</span>`
         : '-';
 
-      let acciones = '';
-      if (d.estado === "Pendiente") {
-        acciones = `
-          <td><button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button></td>
-          <td><button class="btn-icono" onclick="editarCotizacion('${doc.id}')">✏️</button></td>
-          <td><button class="btn-icono" onclick="eliminarCotizacion('${doc.id}')">🗑️</button></td>
-        `;
-      } else {
-        acciones = `<td colspan="3"></td>`;
-      }
+      const claseEstado = d.estado === "En Proceso" ? "estado-proceso"
+        : d.estado === "Enviada" ? "estado-enviada"
+        : "estado-pendiente";
 
-      fila.innerHTML = `
-        <td>${d.numero}</td>
+      // NUEVO: el N° de Cotización es un link directo a cotizacionformal.html
+      const numeroLink = `<a class="link-cotizacion" href="cotizacionformal.html?codigo=${encodeURIComponent(d.numero)}">${d.numero}</a>`;
+
+      const celdasComunes = `
+        <td>${numeroLink}</td>
         <td>${d.telefono}</td>
         <td>${d.destino}</td>
         <td>${etiquetaExperiencia}</td>
@@ -576,18 +639,33 @@
         <td>${d.bebes}</td>
         <td>${d.observaciones}</td>
         <td>${d.embajador}</td>
-        <td><div class="${d.estado === 'En Proceso' ? 'estado-proceso' : 'estado-pendiente'}">${d.estado}</div></td>
+        <td><div class="${claseEstado}">${d.estado}</div></td>
         <td>${d.registro?.toDate().toLocaleString()}</td>
         <td>${tiempoEspera}</td>
         <td>${d.encargado || '-'}</td>
         <td>${d.fecha_asignacion ? d.fecha_asignacion.toDate().toLocaleString() : '-'}</td>
-        ${acciones}
       `;
 
+      const fila = document.createElement("tr");
+
       if (d.estado === "Pendiente") {
+        fila.innerHTML = celdasComunes + `
+          <td><button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button></td>
+          <td><button class="btn-icono" onclick="editarCotizacion('${doc.id}')">✏️</button></td>
+          <td><button class="btn-icono" onclick="eliminarCotizacion('${doc.id}')">🗑️</button></td>
+        `;
         tablaPendientes.appendChild(fila);
-      } else if (d.estado === "En Proceso" || d.estado === "Enviada") {
-        tablaHistoricas.appendChild(fila);
+      } else if (d.estado === "En Proceso") {
+        fila.innerHTML = celdasComunes + `
+          <td><button class="btn-cotizar" onclick="verCotizacion('${d.numero}')">Ver</button></td>
+        `;
+        tablaEnProceso.appendChild(fila);
+      } else {
+        // "Enviada" (o cualquier otro estado que no sea Pendiente/En Proceso)
+        fila.innerHTML = celdasComunes + `
+          <td><button class="btn-cotizar" onclick="verCotizacion('${d.numero}')">Ver</button></td>
+        `;
+        tablaEnviadas.appendChild(fila);
       }
     });
   }
@@ -761,13 +839,13 @@
       row.style.display = coincide ? "" : "none";
       if (coincide) visibles++;
     });
-    const idVacio = idTabla === "tablaPendientes" ? "vacioPendientes" : "vacioHistoricas";
-    const avisoVacio = document.getElementById(idVacio);
+    const mapaVacio = { tablaPendientes: "vacioPendientes", tablaEnProceso: "vacioEnProceso", tablaEnviadas: "vacioEnviadas" };
+    const avisoVacio = document.getElementById(mapaVacio[idTabla]);
     if (avisoVacio) avisoVacio.style.display = (filas.length > 0 && visibles === 0) ? "block" : "none";
   }
 
   function descargarCSV() {
-    const rows = [...document.querySelectorAll("#tablaHistoricas tr")];
+    const rows = [...document.querySelectorAll("#tablaEnviadas tr")];
     const csvContent = rows.map(row =>
       [...row.children].map(cell => `"${cell.textContent.trim()}"`).join(",")
     ).join("\n");
@@ -784,7 +862,7 @@
 
   function descargarPDF() {
     const printWindow = window.open('', '_blank');
-    const tabla = document.getElementById("tablaHistoricas").outerHTML;
+    const tabla = document.getElementById("tablaEnviadas").outerHTML;
 
     printWindow.document.write(`
       <html>
@@ -798,7 +876,7 @@
           </style>
         </head>
         <body>
-          <h2 style="color:#02535a;">Solicitudes Históricas</h2>
+          <h2 style="color:#02535a;">Cotización Histórica</h2>
           ${tabla}
         </body>
       </html>
