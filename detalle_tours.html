@@ -298,6 +298,26 @@
       font-size: 13px;
       margin-top: 6px;
     }
+    /* NUEVO: preview del fondo de portada del destino */
+    #fondoPortadaDestinoPreview img {
+      max-width: 320px;
+      max-height: 180px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      object-fit: cover;
+      display: block;
+      margin-top: 8px;
+    }
+    #fondoPortadaDestinoPreview button {
+      background-color: #c0392b;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 6px;
+    }
     /* NUEVO: checklist de actividades incluidas por variante de tour */
     .tabla-incluidas th:first-child, .tabla-incluidas td:first-child {
       text-align: center;
@@ -341,6 +361,7 @@
       <li><a href="tours.html" class="activo"><span class="icon">🌎</span>Productos</a></li>
       <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
       <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="configuracion.html"><span class="icon">⚙️</span>Configuración</a></li>
       <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
     </ul>
   </div>
@@ -353,6 +374,15 @@
     <label>Destino</label>
     <input type="text" id="nombre" placeholder="Ej. Medellín — solo el lugar, sin el nivel (el nivel se elige aparte, abajo)" />
     <div style="font-size:13px; color:#777; margin-top:-4px;">Si ya existe un tour con este mismo destino, usa exactamente el mismo texto (ej. siempre "Medellín", nunca "medellin" o "Medellín, Colombia") para que las variantes queden agrupadas juntas en el catálogo.</div>
+
+    <!-- NUEVO: fondo de portada — es del DESTINO, no de esta variante en
+         particular. Se sube una sola vez por destino y se reutiliza en
+         Flash/Esencial/Confort/Grupal de ese mismo lugar, igual que el
+         catálogo de actividades de abajo. -->
+    <label>Fondo de Portada de este Destino</label>
+    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Imagen de fondo (1280x720) para la primera slide de la Cotización Visual — es propia de este destino (ej. Medellín se ve distinto a CDMX), se sube UNA vez y aplica a todas las variantes (Flash/Esencial/Confort/Grupal) de este mismo destino. Si no se sube, se usa el Fondo de Portada genérico de Configuración.</div>
+    <input type="file" id="fondoPortadaDestinoInput" accept="image/*" />
+    <div id="fondoPortadaDestinoPreview"></div>
 
     <!-- NUEVO: distinción entre salida grupal (fecha fija, catálogo compartido)
          y salida individual (personalizada, con 3 niveles de experiencia:
@@ -477,9 +507,85 @@
   const tourId = params.get("id");
 
   // NUEVO: cuáles actividades del catálogo (ids de tours_opcionales) vienen
-  // incluidas en ESTA variante de tour — se guarda en el propio doc de
-  // "tours" como actividadesIncluidas: [id1, id2, ...].
+  // incluidas en ESTA variante de tour.
   let actividadesIncluidasSeleccionadas = new Set();
+
+  // NUEVO: id de destino usado como doc en la colección "destinos_config"
+  // (fondo de portada compartido por destino) — mismo criterio de
+  // normalización que se usa en el resto del sistema para agrupar variantes.
+  function slugDestino(nombre) {
+    return (nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, "_");
+  }
+
+  let fondoPortadaDestinoUrl = "";
+
+  function renderizarFondoPortadaDestinoPreview() {
+    const contenedor = document.getElementById("fondoPortadaDestinoPreview");
+    if (!fondoPortadaDestinoUrl) {
+      contenedor.innerHTML = "";
+      return;
+    }
+    contenedor.innerHTML = `
+      <img src="${fondoPortadaDestinoUrl}" alt="Fondo de portada">
+      <button type="button" onclick="quitarFondoPortadaDestino()">🗑️ Quitar fondo</button>
+    `;
+  }
+
+  async function quitarFondoPortadaDestino() {
+    const destino = document.getElementById("nombre").value.trim();
+    if (!destino) { fondoPortadaDestinoUrl = ""; renderizarFondoPortadaDestinoPreview(); return; }
+    if (!confirm("¿Quitar el fondo de portada de este destino? Las próximas cotizaciones de este destino usarán el fondo genérico de Configuración hasta que subas uno nuevo.")) return;
+    try {
+      await db.collection("destinos_config").doc(slugDestino(destino)).set({ fondoPortada: "" }, { merge: true });
+      fondoPortadaDestinoUrl = "";
+      renderizarFondoPortadaDestinoPreview();
+    } catch (e) {
+      console.error("Error al quitar el fondo de portada del destino:", e);
+      alert("❌ No se pudo quitar el fondo.");
+    }
+  }
+
+  async function cargarFondoPortadaDelDestino(destino) {
+    fondoPortadaDestinoUrl = "";
+    document.getElementById("fondoPortadaDestinoInput").value = "";
+    if (!destino) { renderizarFondoPortadaDestinoPreview(); return; }
+    try {
+      const doc = await db.collection("destinos_config").doc(slugDestino(destino)).get();
+      fondoPortadaDestinoUrl = doc.exists ? (doc.data().fondoPortada || "") : "";
+    } catch (e) {
+      console.error("Error al cargar el fondo de portada del destino:", e);
+    }
+    renderizarFondoPortadaDestinoPreview();
+  }
+
+  document.getElementById("fondoPortadaDestinoInput").addEventListener("change", async function (e) {
+    const archivo = e.target.files?.[0];
+    const destino = document.getElementById("nombre").value.trim();
+    if (!archivo) return;
+    if (!destino) {
+      alert("Primero escribe el nombre del destino arriba.");
+      e.target.value = "";
+      return;
+    }
+
+    const contenedor = document.getElementById("fondoPortadaDestinoPreview");
+    contenedor.innerHTML = `<span style="font-size:13px; color:#777;">⏳ Subiendo fondo...</span>`;
+
+    try {
+      const nombreArchivo = `${Date.now()}_${archivo.name}`;
+      const ref = storage.ref().child(`destinos_fondos_portada/${slugDestino(destino)}/${nombreArchivo}`);
+      await ref.put(archivo);
+      const url = await ref.getDownloadURL();
+      await db.collection("destinos_config").doc(slugDestino(destino)).set({ destino, fondoPortada: url }, { merge: true });
+      fondoPortadaDestinoUrl = url;
+      renderizarFondoPortadaDestinoPreview();
+    } catch (err) {
+      console.error("Error al subir el fondo de portada del destino:", err);
+      alert("❌ No se pudo subir el fondo.");
+      contenedor.innerHTML = "";
+    }
+    e.target.value = "";
+  });
 
   // NUEVO: muestra/oculta el campo de Nivel según el Tipo de Salida elegido.
   function actualizarVisibilidadNivel() {
@@ -569,14 +675,12 @@ if (tourId) {
       document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
       document.getElementById("politicas").value = t.politicas || "";
 
-      // NUEVO: se cargan las actividades ya marcadas como incluidas en esta
-      // variante ANTES de pintar la tabla del catálogo, para que los
-      // checkboxes salgan marcados correctamente desde el principio.
       actividadesIncluidasSeleccionadas = new Set(t.actividadesIncluidas || []);
 
-      // NUEVO: los tours opcionales ahora son compartidos por destino, no
-      // por variante — se cargan directo desde la colección compartida.
+      // NUEVO: los tours opcionales y el fondo de portada son compartidos
+      // por destino, no por variante — se cargan directo desde el destino.
       cargarOpcionalesDelDestino(t.nombre);
+      cargarFondoPortadaDelDestino(t.nombre);
   } else {
         alert("El tour no existe.");
       }
@@ -584,36 +688,30 @@ if (tourId) {
       console.error("Error al cargar tour:", err);
     });
 } else {
-  // NUEVO: tour nuevo (sin id) — asegura que el campo Nivel arranque oculto
-  // hasta que se elija "Individual".
   actualizarVisibilidadNivel();
 
-  // NUEVO: si se llegó desde el botón "➕ Agregar variante" de un destino ya
-  // existente (tours.html), se prellena el destino y se sugiere de una vez
-  // "Individual" — así solo falta elegir el nivel (Flash/Esencial/Confort).
   const destinoDesdeUrl = params.get("nombre");
   if (destinoDesdeUrl) {
     document.getElementById("nombre").value = destinoDesdeUrl;
     document.getElementById("tipoSalida").value = "Individual";
     actualizarVisibilidadNivel();
     cargarOpcionalesDelDestino(destinoDesdeUrl);
+    cargarFondoPortadaDelDestino(destinoDesdeUrl);
   }
 }
 
 // NUEVO: si se está creando un tour totalmente nuevo (sin destino
-// prellenado), en cuanto se escribe el nombre del destino se recarga la
-// lista de actividades del catálogo que ya existan para ese destino.
+// prellenado), en cuanto se escribe el nombre del destino se recarga el
+// catálogo y el fondo de portada que ya existan para ese destino.
 document.getElementById("nombre").addEventListener("blur", function () {
-  if (!tourId) cargarOpcionalesDelDestino(this.value.trim());
+  if (!tourId) {
+    cargarOpcionalesDelDestino(this.value.trim());
+    cargarFondoPortadaDelDestino(this.value.trim());
+  }
 });
 
-  // NUEVO: el catálogo de actividades vive en su propia colección compartida
-  // ("tours_opcionales"), etiquetado por destino — así "Globos en
-  // Teotihuacán" se carga UNA sola vez para "CDMX" y aparece automáticamente
-  // en Flash, Esencial y Confort de ese destino, sin duplicar nada. Cuáles
-  // vienen incluidas es lo único que cambia por variante (ver checklist).
   let destinoActualOpcionales = "";
-  let catalogoActividadesActual = []; // [{id, ...datos}] del destino actual
+  let catalogoActividadesActual = [];
 
   function cargarOpcionalesDelDestino(destino) {
     destinoActualOpcionales = destino || "";
@@ -639,8 +737,6 @@ document.getElementById("nombre").addEventListener("blur", function () {
   function agregarTourOpcional(id, datos) {
     const fila = document.createElement("tr");
     fila.dataset.id = id || "";
-    // NUEVO: se guarda el objeto completo directo en la fila para poder
-    // recuperarlo al editar, sin tener que re-consultar Firestore.
     fila._datos = datos;
 
     const fotos = Array.isArray(datos.fotos) ? datos.fotos : [];
@@ -667,8 +763,6 @@ document.getElementById("nombre").addEventListener("blur", function () {
     document.getElementById("opcionalesContainer").appendChild(fila);
   }
 
-  // NUEVO: pinta el checklist "Actividades Incluidas en este Paquete" a
-  // partir del catálogo cargado para el destino actual.
   function renderizarChecklistIncluidas() {
     const tabla = document.getElementById("incluidasContainer");
     if (catalogoActividadesActual.length === 0) {
@@ -690,9 +784,7 @@ document.getElementById("nombre").addEventListener("blur", function () {
   }
 
   let filaActualOpcional = null;
-  // Fotos sueltas (respaldo de collage) del tour opcional en edición.
   let fotosActuales = [];
-  // NUEVO: diapositiva ya diseñada (imagen única) del tour opcional en edición.
   let imagenSlideActual = "";
 
   function abrirModalOpcional() {
@@ -748,8 +840,6 @@ document.getElementById("nombre").addEventListener("blur", function () {
     }
   }
 
-  // NUEVO: pinta las miniaturas de las fotos sueltas ya subidas (respaldo
-  // de collage), cada una con su botón "✕" para quitarla antes de guardar.
   function renderizarFotosPreview() {
     const contenedor = document.getElementById("opcionalFotosPreview");
     contenedor.innerHTML = fotosActuales.map((url, i) => `
@@ -765,7 +855,6 @@ document.getElementById("nombre").addEventListener("blur", function () {
     renderizarFotosPreview();
   }
 
-  // NUEVO: pinta la previsualización de la diapositiva ya diseñada.
   function renderizarSlidePreview() {
     const contenedor = document.getElementById("opcionalSlidePreview");
     if (!imagenSlideActual) {
@@ -783,7 +872,6 @@ document.getElementById("nombre").addEventListener("blur", function () {
     renderizarSlidePreview();
   }
 
-  // Sube cada foto suelta seleccionada directo a Firebase Storage.
   document.getElementById("opcionalFotoInput").addEventListener("change", async function (e) {
     const archivos = Array.from(e.target.files || []);
     if (archivos.length === 0) return;
@@ -815,7 +903,6 @@ document.getElementById("nombre").addEventListener("blur", function () {
     e.target.value = "";
   });
 
-  // NUEVO: sube la diapositiva ya diseñada (una sola imagen) a Storage.
   document.getElementById("opcionalSlideInput").addEventListener("change", async function (e) {
     const archivo = e.target.files?.[0];
     if (!archivo) return;
