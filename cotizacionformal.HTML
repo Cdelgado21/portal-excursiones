@@ -988,11 +988,9 @@ async function generarPDF() {
       doc.setLineWidth(2);
       doc.line(60, y + 16, 60 + doc.getTextWidth(texto), y + 16);
     }
-    // FIX: antes esta función siempre le agregaba el pie de página genérico
-    // ("EXCURSIONES DELGADO" + código) encima de la imagen — pero estas
-    // diapositivas son diseños completos que YA traen su propio logo y
-    // branding, así que duplicaba el texto. Ahora solo se pega la imagen,
-    // sin nada superpuesto.
+    // Diapositiva de imagen completa ya diseñada (Agradecer, Cierre,
+    // actividad, hotel) — no se le pega pie de página encima porque ya
+    // trae su propio logo y branding en el diseño.
     async function agregarSlideImagenCompleta(urlImagen) {
       nuevaSlide(fondoContenidoData);
       try {
@@ -1032,13 +1030,8 @@ async function generarPDF() {
     // ---- Slide 1: Portada ----
     nuevaSlide(fondoPortadaData);
     if (fondoPortadaData) {
-      // FIX: si hay un fondo de portada configurado, se asume que YA trae
-      // "COTIZACIÓN" y el destino diseñados en la imagen (como el machote
-      // original) — el sistema solo agrega el código, que sí cambia por
-      // cliente y no se puede "hornear" en un fondo reutilizable. Antes se
-      // dibujaba el destino/COTIZACIÓN igual, amontonándose con el diseño,
-      // y encima el código salía duplicado (una vez centrado, otra en la
-      // esquina).
+      // El fondo ya trae "COTIZACIÓN" y el destino diseñados en la imagen
+      // — el sistema solo agrega el código, que sí cambia por cliente.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
       doc.setTextColor(...BLANCO);
@@ -1098,12 +1091,16 @@ async function generarPDF() {
       estado.textContent = "⏳ Cargando itinerario de vuelo...";
       try {
         const { dataUrl, width, height } = await cargarImagenComoDataURL(data.imagen_vuelo);
-        const areaW = 1160, areaH = 520;
+        // FIX: antes ocupaba un recuadro grande centrado (1160x520) que
+        // tapaba el logo, los sellos y los puntitos del fondo. Ahora va en
+        // un recuadro más chico, fijo en la esquina superior derecha, lejos
+        // del título (arriba-izquierda) y del branding (abajo).
+        const areaX = 620, areaY = 150, areaW = 600, areaH = 380;
         const ratio = Math.min(areaW / width, areaH / height);
         const dw = width * ratio;
         const dh = height * ratio;
-        const dx = (W - dw) / 2;
-        const dy = 140 + (areaH - dh) / 2;
+        const dx = areaX + (areaW - dw) / 2;
+        const dy = areaY + (areaH - dh) / 2;
         doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
       } catch (err) {
         console.warn("No se pudo cargar la imagen del itinerario de vuelo:", err);
