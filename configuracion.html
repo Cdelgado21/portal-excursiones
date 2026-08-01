@@ -182,6 +182,18 @@
       display: block;
     }
 
+    .subseccion-titulo {
+      font-size: 15px;
+      font-weight: bold;
+      color: #5f9296;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin: 28px 0 12px 0;
+    }
+    .subseccion-titulo:first-child {
+      margin-top: 0;
+    }
+
     .tarjeta {
       background: white;
       padding: 25px 30px;
@@ -289,6 +301,26 @@
       <!-- SECCIÓN: Cotizaciones Individuales -->
       <div class="config-panel activo" id="panel-cotizaciones-individuales">
 
+        <div class="subseccion-titulo">Fondos (imagen 1280×720)</div>
+
+        <div class="tarjeta">
+          <h3>Fondo de Portada</h3>
+          <div class="descripcion">Fondo de la primera slide de la Cotización Visual (ej. mapa oscuro con logo y sellos). El sistema escribe el destino y el código de la cotización encima, centrados. Se reutiliza en TODAS las cotizaciones.</div>
+          <input type="file" id="inputFondoPortada" accept="image/*">
+          <div class="estado-subida" id="estadoFondoPortada"></div>
+          <div class="preview" id="previewFondoPortada"></div>
+        </div>
+
+        <div class="tarjeta">
+          <h3>Fondo de Contenido</h3>
+          <div class="descripcion">Fondo para el resto de las diapositivas "de información" (Detalle del Viaje, Itinerario, Incluye, Inversión, Tours Opcionales, Condiciones). Si no se sube ninguno, esas diapositivas usan un fondo oscuro liso por defecto.</div>
+          <input type="file" id="inputFondoContenido" accept="image/*">
+          <div class="estado-subida" id="estadoFondoContenido"></div>
+          <div class="preview" id="previewFondoContenido"></div>
+        </div>
+
+        <div class="subseccion-titulo">Diapositivas fijas (imagen completa 1280×720)</div>
+
         <div class="tarjeta">
           <h3>Diapositiva de Agradecimiento</h3>
           <div class="descripcion">Es la segunda slide de la Cotización Visual, justo después de la portada — el mensaje de bienvenida/agradecimiento al cliente. Se sube una sola vez y se reutiliza en TODAS las cotizaciones.</div>
@@ -334,10 +366,11 @@
       document.querySelector(`.config-nav button[data-seccion="${id}"]`).classList.add("activo");
     }
 
-    // Las imágenes fijas de la Cotización Visual se guardan en un único
-    // documento — "configuracion/cotizacion_visual" — con los campos
-    // imagenAgradecer e imagenCierre. cotizacionformal.html lee este mismo
-    // documento al generar el PDF.
+    // Todo lo de la Cotización Visual (fondos + diapositivas fijas) se
+    // guarda en un único documento — "configuracion/cotizacion_visual" —
+    // con los campos fondoPortada, fondoContenido, imagenAgradecer e
+    // imagenCierre. cotizacionformal.html lee este mismo documento al
+    // generar el PDF.
     const REF_CONFIG_COTIZACION_VISUAL = db.collection("configuracion").doc("cotizacion_visual");
 
     function renderizarPreview(idContenedor, url, campo) {
@@ -356,10 +389,12 @@
       try {
         const doc = await REF_CONFIG_COTIZACION_VISUAL.get();
         const data = doc.exists ? doc.data() : {};
+        renderizarPreview("previewFondoPortada", data.fondoPortada || "", "fondoPortada");
+        renderizarPreview("previewFondoContenido", data.fondoContenido || "", "fondoContenido");
         renderizarPreview("previewAgradecer", data.imagenAgradecer || "", "imagenAgradecer");
         renderizarPreview("previewCierre", data.imagenCierre || "", "imagenCierre");
       } catch (err) {
-        console.error("Error al cargar las imágenes fijas:", err);
+        console.error("Error al cargar las imágenes de configuración:", err);
       }
     }
 
@@ -382,7 +417,7 @@
     }
 
     async function quitarImagenCotizacionVisual(campo, idPreview) {
-      if (!confirm("¿Quitar esta imagen? Las próximas cotizaciones visuales se generarán sin esta slide hasta que subas una nueva.")) return;
+      if (!confirm("¿Quitar esta imagen? Las próximas cotizaciones visuales se generarán sin ella hasta que subas una nueva.")) return;
       try {
         await REF_CONFIG_COTIZACION_VISUAL.set({ [campo]: "" }, { merge: true });
         renderizarPreview(idPreview, "", campo);
@@ -392,17 +427,17 @@
       }
     }
 
-    document.getElementById("inputAgradecer").addEventListener("change", (e) => {
-      const archivo = e.target.files?.[0];
-      if (archivo) subirImagenCotizacionVisual(archivo, "imagenAgradecer", "estadoAgradecer", "previewAgradecer");
-      e.target.value = "";
-    });
-
-    document.getElementById("inputCierre").addEventListener("change", (e) => {
-      const archivo = e.target.files?.[0];
-      if (archivo) subirImagenCotizacionVisual(archivo, "imagenCierre", "estadoCierre", "previewCierre");
-      e.target.value = "";
-    });
+    function conectarInput(idInput, campo, idEstado, idPreview) {
+      document.getElementById(idInput).addEventListener("change", (e) => {
+        const archivo = e.target.files?.[0];
+        if (archivo) subirImagenCotizacionVisual(archivo, campo, idEstado, idPreview);
+        e.target.value = "";
+      });
+    }
+    conectarInput("inputFondoPortada", "fondoPortada", "estadoFondoPortada", "previewFondoPortada");
+    conectarInput("inputFondoContenido", "fondoContenido", "estadoFondoContenido", "previewFondoContenido");
+    conectarInput("inputAgradecer", "imagenAgradecer", "estadoAgradecer", "previewAgradecer");
+    conectarInput("inputCierre", "imagenCierre", "estadoCierre", "previewCierre");
 
     // Menú lateral de navegación (igual que el resto del sistema)
     function inicializarMenuLateral() {
