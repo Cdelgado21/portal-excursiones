@@ -331,7 +331,7 @@ body, input, textarea, select, button {
     <label>No incluye</label>
     <textarea id="no_incluye" ></textarea>
 
-    <label>Itinerario <span style="font-weight:normal; font-size:12px; color:#777;">(un día por línea — ej. "Llegada a Medellín, noche libre" — así la Cotización Visual arma la tabla Día 1 / Día 2 / Día 3 automáticamente)</span></label>
+    <label>Itinerario <span style="font-weight:normal; font-size:12px; color:#777;">(un día por bloque — funciona tanto si escribís "Día 1" en su propia línea y la actividad debajo, como si ponés todo en una sola línea por día)</span></label>
     <textarea id="itinerario" ></textarea>
 
     <div id="avisoActividadesIncluidas"></div>
@@ -492,6 +492,39 @@ let hotelGuardado = null;
   // encontrar el fondo de portada guardado por destino en "destinos_config".
   function slugDestino(nombre) {
     return (nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, "_");
+  }
+
+  // FIX: el itinerario se venía escribiendo con "Día N" en su propia línea
+  // y la actividad en la línea de abajo (formato de dos líneas por día) —
+  // el parseo anterior asumía "una línea = un día", así que un itinerario
+  // de 6 días (12 líneas) se contaba como 12 días, todos desfasados.
+  // Ahora detecta ese patrón y agrupa cada "Día N" suelto con el texto que
+  // le sigue; si no hay ningún "Día N" en su propia línea, sigue
+  // funcionando como antes (una línea = un día).
+  function parsearItinerarioPorDia(texto) {
+    const lineas = (texto || "").split("\n").map(l => l.trim()).filter(Boolean);
+    const marcadorSuelto = /^d[ií]a\s*\d+\s*$/i;
+    const prefijoInline = /^d[ií]a\s*\d+\s*[:\-–]?\s*/i;
+
+    const hayMarcadoresSueltos = lineas.some(l => marcadorSuelto.test(l));
+
+    if (hayMarcadoresSueltos) {
+      const dias = [];
+      let actual = null;
+      lineas.forEach(linea => {
+        if (marcadorSuelto.test(linea)) {
+          if (actual !== null) dias.push(actual.trim());
+          actual = "";
+        } else if (actual !== null) {
+          actual += (actual ? " " : "") + linea;
+        }
+      });
+      if (actual !== null) dias.push(actual.trim());
+      if (dias.length > 0) return dias;
+    }
+
+    // Respaldo: una línea por día (con o sin "Día N:" al inicio de la línea).
+    return lineas.map(l => l.replace(prefijoInline, "").trim());
   }
 
   function renderizarImagenVueloPreview() {
@@ -1342,9 +1375,6 @@ async function generarPDF() {
       estado.textContent = "⏳ Cargando itinerario de vuelo...";
       try {
         const { dataUrl, width, height } = await cargarImagenComoDataURL(data.imagen_vuelo);
-        // NUEVO: usa la posición/tamaño elegidos en el editor visual
-        // (arrastrar/redimensionar); si no se ajustó nada, usa la posición
-        // por defecto en la esquina superior derecha.
         const posV = imagenVueloPos || posicionVueloPorDefecto();
         const ratio = Math.min(posV.w / width, posV.h / height);
         const dw = width * ratio;
@@ -1366,19 +1396,20 @@ async function generarPDF() {
     if (data.itinerario && data.itinerario.trim()) {
       nuevaSlide();
       tituloSlide("Itinerario del Viaje");
-      const lineas = data.itinerario.split("\n").map(l => l.trim()).filter(Boolean);
-      if (lineas.length > 0) {
-        const limpiarPrefijo = (linea) => linea.replace(/^d[ií]a\s*\d+\s*[:\-–]?\s*/i, "").trim();
-        const encabezados = lineas.map((_, i) => `Día ${i + 1}`);
-        const contenido = lineas.map(limpiarPrefijo);
+      // FIX: usa el parseo nuevo que agrupa "Día N" (línea propia) + su
+      // actividad (línea siguiente) como un solo día — antes contaba cada
+      // línea como un día distinto y salían el doble de columnas.
+      const contenidoDias = parsearItinerarioPorDia(data.itinerario);
+      if (contenidoDias.length > 0) {
+        const encabezados = contenidoDias.map((_, i) => `Día ${i + 1}`);
         doc.autoTable({
-          startY: 140,
+          startY: 150,
           head: [encabezados],
-          body: [contenido],
+          body: [contenidoDias],
           theme: "grid",
-          styles: { fontSize: 11, textColor: [20, 20, 20], cellPadding: 8, valign: "top" },
-          headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", halign: "center" },
-          margin: { left: 40, right: 40 }
+          styles: { fontSize: 14, textColor: [20, 20, 20], cellPadding: 12, valign: "middle", halign: "center" },
+          headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 15 },
+          margin: { left: 60, right: 60 }
         });
       }
       piePagina(codigo);
