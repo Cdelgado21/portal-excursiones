@@ -400,16 +400,14 @@ let hotelGuardado = null;
 
   document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
 
-  // NUEVO: id exacto de la variante de tour (Flash/Esencial/Confort/Grupal)
-  // que corresponde a esta cotización. Viene de solicitud_cotizaciones.tourId
-  // (guardado desde que se armó la solicitud) o, si ya se había guardado
-  // antes, de cotizacionformal.tourId. Se usa para saber exactamente cuáles
-  // actividades vienen incluidas en ESTA variante puntual — ya no se adivina
-  // por nombre de destino.
   let tourIdActual = "";
-
-  // NUEVO: URL de la captura de itinerario de vuelo ya subida (si existe).
   let imagenVueloUrl = "";
+
+  // NUEVO: mismo criterio de normalización que en detalle_tours.html, para
+  // encontrar el fondo de portada guardado por destino en "destinos_config".
+  function slugDestino(nombre) {
+    return (nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, "_");
+  }
 
   function renderizarImagenVueloPreview() {
     const contenedor = document.getElementById("imagenVueloPreview");
@@ -463,9 +461,6 @@ let hotelGuardado = null;
   cargadoDesdeFormal = true;
   const dataFormal = docFormal.data();
   console.log("✅ Cargando desde cotizacionformal", dataFormal);
-  // NUEVO: recupera el tourId guardado (o, si es una cotización vieja sin
-  // ese campo, el de la solicitud original) para saber qué actividades
-  // están incluidas en esta variante al momento de generar el PDF.
   tourIdActual = dataFormal.tourId || docSolicitud.data().tourId || "";
   rellenarCampos(dataFormal); // ya incluye hotel, política, etc.
   actualizarAvisoActividadesIncluidas();
@@ -477,8 +472,6 @@ let hotelGuardado = null;
   if (tourIdActual) {
     await cargarDatosDelTourPorId(tourIdActual);
   } else {
-    // Solicitud vieja sin tourId (de antes de que existiera Experiencia) —
-    // recae en buscar por nombre de destino, como se hacía antes.
     cargarDatosDelTour();
   }
 }
@@ -496,14 +489,9 @@ async function cargarOpcionesDeDestino() {
   });
   }
 
-  // NUEVO: carga los datos de la variante EXACTA de tour por su id — ya no
-  // adivina por nombre de destino (que podía traer cualquiera de las
-  // variantes Flash/Esencial/Confort si compartían el mismo nombre).
   async function cargarDatosDelTourPorId(tourId) {
     const doc = await db.collection("tours").doc(tourId).get();
     if (!doc.exists) {
-      // El tourId guardado ya no existe (se borró el tour) — recae en el
-      // método viejo por nombre, mejor que dejar el formulario vacío.
       cargarDatosDelTour();
       return;
     }
@@ -522,9 +510,6 @@ async function cargarOpcionesDeDestino() {
     actualizarAvisoActividadesIncluidas();
   }
 
-  // Método viejo (por nombre de destino) — se mantiene como respaldo para
-  // solicitudes de antes de que existiera "Experiencia"/tourId, y para
-  // cuando el usuario cambia el Destino a mano desde este formulario.
   async function cargarDatosDelTour() {
     const destino = document.getElementById("destino").value;
     if (!destino) return;
@@ -545,10 +530,6 @@ async function cargarOpcionesDeDestino() {
     actualizarAvisoActividadesIncluidas();
   }
 
-  // NUEVO: arma la tabla de Tours Opcionales en pantalla = catálogo del
-  // destino MENOS las actividades marcadas como incluidas en esta variante
-  // puntual de tour (tours.actividadesIncluidas). Ya no depende del viejo
-  // campo "tipo" en tours_opcionales.
   async function refrescarTablaOpcionalesSegunTour(destino, tourId) {
     if (!destino) return;
     const catalogoSnap = await db.collection("tours_opcionales").where("destino", "==", destino).get();
@@ -561,9 +542,6 @@ async function cargarOpcionesDeDestino() {
     renderizarTablaOpcionales(opcionales);
   }
 
-  // NUEVO: pequeño aviso en pantalla de cuántas actividades vienen
-  // incluidas en esta variante, para que quede claro de un vistazo qué se
-  // va a usar al generar el PDF.
   async function actualizarAvisoActividadesIncluidas() {
     const aviso = document.getElementById("avisoActividadesIncluidas");
     if (!tourIdActual) {
@@ -579,10 +557,6 @@ async function cargarOpcionesDeDestino() {
     }
   }
 
-  // Hotel: consulta proveedores (categoría Hospedaje) del destino + los
-  // marcados "Todos los destinos". La imagen (imagenSlide) de cada hotel se
-  // vuelve a consultar fresca al momento de generar el PDF, no se cachea
-  // aquí, para evitar mostrar una versión vieja si se actualizó después.
   async function cargarHotelesDelDestino(destino, hotelGuardadoNombre) {
     const hotelSelect = document.getElementById("hotel");
     hotelSelect.innerHTML = "<option value=''>-- Seleccione un hotel --</option>";
@@ -608,7 +582,6 @@ async function cargarOpcionesDeDestino() {
     }
   }
 
-// NUEVO: función compartida para pintar la tabla de Tours Opcionales.
 function renderizarTablaOpcionales(lista) {
   const contenedor = document.getElementById("contenedor_tours_opcionales");
   if (Array.isArray(lista) && lista.length > 0) {
@@ -825,9 +798,6 @@ async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
   }
 }
 
-// Carga una imagen (URL de Firebase Storage) y la convierte a dataURL vía
-// canvas — así jsPDF puede insertarla sin importar el formato original, y
-// evitamos problemas de CORS con addImage directo sobre una URL externa.
 function cargarImagenComoDataURL(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -853,10 +823,6 @@ function cargarImagenComoDataURL(url) {
   });
 }
 
-// Calcula la distribución de hasta 4 fotos dentro de un área rectangular
-// (collage de respaldo, cuando una actividad no tiene diapositiva ya
-// diseñada) — 1 foto ocupa todo, 2 van lado a lado, 3 son una grande arriba
-// y dos abajo, 4 son una grilla 2x2.
 function distribuirCollage(cantidad, areaW, areaH) {
   const gap = 12;
   if (cantidad <= 1) {
@@ -928,53 +894,6 @@ async function generarPDF() {
     const BLANCO = [255, 255, 255];
     const GRIS_CLARO = [210, 210, 210];
 
-    let primeraSlide = true;
-    function nuevaSlide() {
-      if (!primeraSlide) doc.addPage([W, H], "landscape");
-      primeraSlide = false;
-      doc.setFillColor(...FONDO);
-      doc.rect(0, 0, W, H, "F");
-      doc.setFillColor(...ACENTO);
-      doc.rect(0, H - 6, W, 6, "F");
-    }
-    function piePagina(codigoTexto) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
-      doc.setTextColor(...BLANCO);
-      doc.text("EXCURSIONES DELGADO", 40, H - 22);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      doc.setTextColor(...GRIS_CLARO);
-      doc.text(codigoTexto, W - 40, H - 22, { align: "right" });
-    }
-    function tituloSlide(texto, y = 90) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(30);
-      doc.setTextColor(...BLANCO);
-      doc.text(texto, 60, y);
-      doc.setDrawColor(...ACENTO);
-      doc.setLineWidth(2);
-      doc.line(60, y + 16, 60 + doc.getTextWidth(texto), y + 16);
-    }
-    // NUEVO: slide de imagen ya diseñada a pantalla completa (Agradecer,
-    // Cierre, actividad o hotel con su propia diapositiva) — no se le pone
-    // título encima porque la imagen ya trae su propio diseño terminado.
-    async function agregarSlideImagenCompleta(urlImagen) {
-      nuevaSlide();
-      try {
-        const { dataUrl, width, height } = await cargarImagenComoDataURL(urlImagen);
-        const ratio = Math.min(W / width, H / height);
-        const dw = width * ratio;
-        const dh = height * ratio;
-        const dx = (W - dw) / 2;
-        const dy = (H - dh) / 2;
-        doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
-      } catch (err) {
-        console.warn("No se pudo cargar una imagen de slide completa:", err);
-      }
-      piePagina(codigo);
-    }
-
     const destino = document.getElementById("destino")?.value || "Tour no definido";
 
     const data = {
@@ -1000,6 +919,91 @@ async function generarPDF() {
     };
 
     // ---- Datos que hay que traer frescos antes de armar las slides ----
+    estado.textContent = "⏳ Cargando configuración visual...";
+    const configDoc = await db.collection("configuracion").doc("cotizacion_visual").get();
+    const configVisual = configDoc.exists ? configDoc.data() : {};
+
+    // NUEVO: el fondo de portada es primero por DESTINO (destinos_config,
+    // ej. Medellín distinto de CDMX) y, si ese destino todavía no tiene uno
+    // propio, cae al Fondo de Portada genérico de Configuración.
+    let urlFondoPortada = configVisual.fondoPortada || "";
+    try {
+      const destinoConfigDoc = await db.collection("destinos_config").doc(slugDestino(destino)).get();
+      if (destinoConfigDoc.exists && destinoConfigDoc.data().fondoPortada) {
+        urlFondoPortada = destinoConfigDoc.data().fondoPortada;
+      }
+    } catch (e) {
+      console.warn("No se pudo consultar el fondo de portada del destino:", e);
+    }
+
+    let fondoPortadaData = null;
+    let fondoContenidoData = null;
+    if (urlFondoPortada) {
+      try { fondoPortadaData = await cargarImagenComoDataURL(urlFondoPortada); }
+      catch (e) { console.warn("No se pudo cargar el fondo de portada:", e); }
+    }
+    if (configVisual.fondoContenido) {
+      try { fondoContenidoData = await cargarImagenComoDataURL(configVisual.fondoContenido); }
+      catch (e) { console.warn("No se pudo cargar el fondo de contenido:", e); }
+    }
+
+    function dibujarFondo(imgData) {
+      if (imgData) {
+        const ratio = Math.max(W / imgData.width, H / imgData.height);
+        const dw = imgData.width * ratio;
+        const dh = imgData.height * ratio;
+        const dx = (W - dw) / 2;
+        const dy = (H - dh) / 2;
+        doc.addImage(imgData.dataUrl, "JPEG", dx, dy, dw, dh);
+      } else {
+        doc.setFillColor(...FONDO);
+        doc.rect(0, 0, W, H, "F");
+      }
+    }
+
+    let primeraSlide = true;
+    function nuevaSlide(fondoEspecial) {
+      if (!primeraSlide) doc.addPage([W, H], "landscape");
+      primeraSlide = false;
+      dibujarFondo(fondoEspecial !== undefined ? fondoEspecial : fondoContenidoData);
+      doc.setFillColor(...ACENTO);
+      doc.rect(0, H - 6, W, 6, "F");
+    }
+    function piePagina(codigoTexto) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(...BLANCO);
+      doc.text("EXCURSIONES DELGADO", 40, H - 22);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(...GRIS_CLARO);
+      doc.text(codigoTexto, W - 40, H - 22, { align: "right" });
+    }
+    function tituloSlide(texto, y = 90) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(30);
+      doc.setTextColor(...BLANCO);
+      doc.text(texto, 60, y);
+      doc.setDrawColor(...ACENTO);
+      doc.setLineWidth(2);
+      doc.line(60, y + 16, 60 + doc.getTextWidth(texto), y + 16);
+    }
+    async function agregarSlideImagenCompleta(urlImagen) {
+      nuevaSlide(fondoContenidoData);
+      try {
+        const { dataUrl, width, height } = await cargarImagenComoDataURL(urlImagen);
+        const ratio = Math.min(W / width, H / height);
+        const dw = width * ratio;
+        const dh = height * ratio;
+        const dx = (W - dw) / 2;
+        const dy = (H - dh) / 2;
+        doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
+      } catch (err) {
+        console.warn("No se pudo cargar una imagen de slide completa:", err);
+      }
+      piePagina(codigo);
+    }
+
     estado.textContent = "⏳ Cargando actividades del tour...";
     const catalogoSnap = await db.collection("tours_opcionales").where("destino", "==", destino).get();
     const catalogo = catalogoSnap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1013,12 +1017,6 @@ async function generarPDF() {
     const incluidos = catalogo.filter(a => actividadesIncluidasIds.includes(a.id));
     const opcionales = catalogo.filter(a => !actividadesIncluidasIds.includes(a.id));
 
-    // Imágenes fijas de la empresa (Agradecer / Cierre) — configuracion.html
-    const configDoc = await db.collection("configuracion").doc("cotizacion_visual").get();
-    const configVisual = configDoc.exists ? configDoc.data() : {};
-
-    // Diapositiva del hotel elegido (si tiene una diseñada) — se busca
-    // fresca en vez de cachearla, por si se actualizó después.
     let hotelImagenSlide = "";
     if (data.hotel) {
       const hotelSnap = await db.collection("proveedores")
@@ -1027,8 +1025,8 @@ async function generarPDF() {
       if (!hotelSnap.empty) hotelImagenSlide = hotelSnap.docs[0].data().imagenSlide || "";
     }
 
-    // ---- Slide 1: Portada ----
-    nuevaSlide();
+    // ---- Slide 1: Portada (usa el fondo del destino, o el genérico) ----
+    nuevaSlide(fondoPortadaData);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(58);
     doc.setTextColor(...BLANCO);
@@ -1040,7 +1038,14 @@ async function generarPDF() {
     doc.setFontSize(16);
     doc.setTextColor(...GRIS_CLARO);
     doc.text(codigo, W / 2, H / 2 + 25, { align: "center" });
-    piePagina(codigo);
+    if (fondoPortadaData) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.setTextColor(...GRIS_CLARO);
+      doc.text(codigo, W - 40, H - 22, { align: "right" });
+    } else {
+      piePagina(codigo);
+    }
 
     // ---- Slide: Agradecimiento (imagen fija) ----
     if (configVisual.imagenAgradecer) {
