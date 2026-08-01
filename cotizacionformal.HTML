@@ -403,7 +403,7 @@ let hotelGuardado = null;
   let tourIdActual = "";
   let imagenVueloUrl = "";
 
-  // NUEVO: mismo criterio de normalización que en detalle_tours.html, para
+  // Mismo criterio de normalización que en detalle_tours.html, para
   // encontrar el fondo de portada guardado por destino en "destinos_config".
   function slugDestino(nombre) {
     return (nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, "_");
@@ -923,8 +923,8 @@ async function generarPDF() {
     const configDoc = await db.collection("configuracion").doc("cotizacion_visual").get();
     const configVisual = configDoc.exists ? configDoc.data() : {};
 
-    // NUEVO: el fondo de portada es primero por DESTINO (destinos_config,
-    // ej. Medellín distinto de CDMX) y, si ese destino todavía no tiene uno
+    // El fondo de portada es primero por DESTINO (destinos_config, ej.
+    // Medellín distinto de CDMX) y, si ese destino todavía no tiene uno
     // propio, cae al Fondo de Portada genérico de Configuración.
     let urlFondoPortada = configVisual.fondoPortada || "";
     try {
@@ -988,6 +988,11 @@ async function generarPDF() {
       doc.setLineWidth(2);
       doc.line(60, y + 16, 60 + doc.getTextWidth(texto), y + 16);
     }
+    // FIX: antes esta función siempre le agregaba el pie de página genérico
+    // ("EXCURSIONES DELGADO" + código) encima de la imagen — pero estas
+    // diapositivas son diseños completos que YA traen su propio logo y
+    // branding, así que duplicaba el texto. Ahora solo se pega la imagen,
+    // sin nada superpuesto.
     async function agregarSlideImagenCompleta(urlImagen) {
       nuevaSlide(fondoContenidoData);
       try {
@@ -1001,7 +1006,6 @@ async function generarPDF() {
       } catch (err) {
         console.warn("No se pudo cargar una imagen de slide completa:", err);
       }
-      piePagina(codigo);
     }
 
     estado.textContent = "⏳ Cargando actividades del tour...";
@@ -1025,25 +1029,32 @@ async function generarPDF() {
       if (!hotelSnap.empty) hotelImagenSlide = hotelSnap.docs[0].data().imagenSlide || "";
     }
 
-    // ---- Slide 1: Portada (usa el fondo del destino, o el genérico) ----
+    // ---- Slide 1: Portada ----
     nuevaSlide(fondoPortadaData);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(58);
-    doc.setTextColor(...BLANCO);
-    doc.text("COTIZACIÓN", W / 2, H / 2 - 70, { align: "center" });
-    doc.setFontSize(30);
-    doc.setTextColor(...ACENTO);
-    doc.text(destino, W / 2, H / 2 - 15, { align: "center" });
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(16);
-    doc.setTextColor(...GRIS_CLARO);
-    doc.text(codigo, W / 2, H / 2 + 25, { align: "center" });
     if (fondoPortadaData) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(11);
-      doc.setTextColor(...GRIS_CLARO);
+      // FIX: si hay un fondo de portada configurado, se asume que YA trae
+      // "COTIZACIÓN" y el destino diseñados en la imagen (como el machote
+      // original) — el sistema solo agrega el código, que sí cambia por
+      // cliente y no se puede "hornear" en un fondo reutilizable. Antes se
+      // dibujaba el destino/COTIZACIÓN igual, amontonándose con el diseño,
+      // y encima el código salía duplicado (una vez centrado, otra en la
+      // esquina).
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.setTextColor(...BLANCO);
       doc.text(codigo, W - 40, H - 22, { align: "right" });
     } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(58);
+      doc.setTextColor(...BLANCO);
+      doc.text("COTIZACIÓN", W / 2, H / 2 - 70, { align: "center" });
+      doc.setFontSize(30);
+      doc.setTextColor(...ACENTO);
+      doc.text(destino, W / 2, H / 2 - 15, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(16);
+      doc.setTextColor(...GRIS_CLARO);
+      doc.text(codigo, W / 2, H / 2 + 25, { align: "center" });
       piePagina(codigo);
     }
 
