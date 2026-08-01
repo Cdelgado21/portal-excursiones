@@ -207,6 +207,65 @@ body, input, textarea, select, button {
   padding: 10px 12px;
   margin-top: 8px;
 }
+/* NUEVO: editor de posición/tamaño de la imagen del itinerario de vuelo */
+#btnAjustarPosicionVuelo {
+  display: none;
+  margin-top: 8px;
+  background-color: #02535a;
+  color: white;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+}
+#modalPosicionVuelo {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 3000;
+  align-items: center;
+  justify-content: center;
+}
+#modalPosicionVuelo .contenido-modal {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 700px;
+  width: 90%;
+}
+#modalPosicionVuelo h3 {
+  color: #02535a;
+  margin-top: 0;
+}
+#modalPosicionVuelo .descripcion-editor {
+  font-size: 13px;
+  color: #777;
+  margin-top: -8px;
+  margin-bottom: 14px;
+}
+#canvasPosicionVuelo {
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  display: block;
+  margin: 0 auto;
+  cursor: move;
+  max-width: 100%;
+}
+#modalPosicionVuelo .botones-editor {
+  text-align: right;
+  margin-top: 15px;
+}
+#modalPosicionVuelo .botones-editor button {
+  border: none;
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 8px;
+}
   </style>
 </head>
 <body>
@@ -301,6 +360,8 @@ body, input, textarea, select, button {
   <div style="font-size:12px; color:#777; margin-top:-4px; margin-bottom:6px;">Sube una captura de pantalla (ej. de la página de la aerolínea o un buscador de vuelos) — se guarda con la cotización y sale como imagen en la Cotización Visual.</div>
   <input type="file" id="imagenVueloInput" accept="image/*" />
   <div id="imagenVueloPreview"></div>
+  <!-- NUEVO: editor visual de posición/tamaño para la imagen del vuelo. -->
+  <button type="button" id="btnAjustarPosicionVuelo" onclick="abrirEditorPosicionVuelo()">🖼️ Ajustar posición en la diapositiva</button>
 
   <label>Equipaje</label>
   <label>Tipo de Equipaje</label>
@@ -377,6 +438,22 @@ body, input, textarea, select, button {
 
   </main>
 
+  <!-- NUEVO: editor visual de posición/tamaño de la imagen de itinerario de
+       vuelo — mismo espíritu que el editor de "tapar precio del boleto" de
+       detalle_reserva.html (clic y arrastra sobre un lienzo), adaptado para
+       mover/redimensionar una sola imagen en vez de dibujar recuadros. -->
+  <div id="modalPosicionVuelo">
+    <div class="contenido-modal">
+      <h3>Ubicar y ajustar la imagen del itinerario de vuelo</h3>
+      <p class="descripcion-editor">Arrastrá la imagen para moverla. Arrastrá desde el punto naranja de la esquina inferior derecha para cambiar el tamaño. Así se verá en la Cotización Visual.</p>
+      <canvas id="canvasPosicionVuelo" width="640" height="360"></canvas>
+      <div class="botones-editor">
+        <button onclick="cerrarEditorPosicionVuelo()" style="background:#ccc; color:#333;">Cancelar</button>
+        <button onclick="guardarPosicionVuelo()" style="background:#02535a; color:white;">💾 Guardar posición</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 
   // FIX: apiKey tenía el mismo typo que ya encontramos en otros archivos
@@ -403,6 +480,14 @@ let hotelGuardado = null;
   let tourIdActual = "";
   let imagenVueloUrl = "";
 
+  // NUEVO: posición/tamaño elegidos para la imagen del itinerario de vuelo,
+  // en coordenadas reales de la diapositiva (1280x720). null = usa la
+  // posición por defecto (esquina superior derecha).
+  let imagenVueloPos = null;
+  function posicionVueloPorDefecto() {
+    return { x: 620, y: 150, w: 600, h: 380 };
+  }
+
   // Mismo criterio de normalización que en detalle_tours.html, para
   // encontrar el fondo de portada guardado por destino en "destinos_config".
   function slugDestino(nombre) {
@@ -411,18 +496,22 @@ let hotelGuardado = null;
 
   function renderizarImagenVueloPreview() {
     const contenedor = document.getElementById("imagenVueloPreview");
+    const btnAjustar = document.getElementById("btnAjustarPosicionVuelo");
     if (!imagenVueloUrl) {
       contenedor.innerHTML = "";
+      btnAjustar.style.display = "none";
       return;
     }
     contenedor.innerHTML = `
       <img src="${imagenVueloUrl}" alt="Itinerario de vuelo">
       <button type="button" onclick="quitarImagenVuelo()">🗑️ Quitar</button>
     `;
+    btnAjustar.style.display = "inline-block";
   }
 
   function quitarImagenVuelo() {
     imagenVueloUrl = "";
+    imagenVueloPos = null;
     renderizarImagenVueloPreview();
   }
 
@@ -438,6 +527,7 @@ let hotelGuardado = null;
       const ref = storage.ref().child(`cotizaciones_vuelos/${codigo}/${nombreArchivo}`);
       await ref.put(archivo);
       imagenVueloUrl = await ref.getDownloadURL();
+      imagenVueloPos = null; // imagen nueva → vuelve a la posición por defecto
       renderizarImagenVueloPreview();
     } catch (err) {
       console.error("Error al subir la imagen de vuelo:", err);
@@ -446,6 +536,165 @@ let hotelGuardado = null;
     }
     e.target.value = "";
   });
+
+  // ---- Editor de posición/tamaño (arrastrar y redimensionar) ----
+  const ESCALA_EDITOR_VUELO = 640 / 1280; // el lienzo del editor es media escala
+  let editorVueloImg = null;
+  let editorVueloFondoImg = null;
+  let editorVueloArrastrando = false;
+  let editorVueloRedimensionando = false;
+  let editorVueloOffsetX = 0;
+  let editorVueloOffsetY = 0;
+
+  function dibujarImagenContenida(ctx, img, bx, by, bw, bh) {
+    const ratio = Math.min(bw / img.width, bh / img.height);
+    const dw = img.width * ratio;
+    const dh = img.height * ratio;
+    const dx = bx + (bw - dw) / 2;
+    const dy = by + (bh - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
+  async function abrirEditorPosicionVuelo() {
+    if (!imagenVueloUrl) return;
+    if (!imagenVueloPos) imagenVueloPos = posicionVueloPorDefecto();
+
+    document.getElementById("modalPosicionVuelo").style.display = "flex";
+
+    editorVueloImg = new Image();
+    editorVueloImg.crossOrigin = "anonymous";
+    editorVueloImg.src = imagenVueloUrl;
+    await new Promise(res => { editorVueloImg.onload = res; editorVueloImg.onerror = res; });
+
+    editorVueloFondoImg = null;
+    try {
+      const configDoc = await db.collection("configuracion").doc("cotizacion_visual").get();
+      const url = configDoc.exists ? configDoc.data().fondoContenido : "";
+      if (url) {
+        editorVueloFondoImg = new Image();
+        editorVueloFondoImg.crossOrigin = "anonymous";
+        editorVueloFondoImg.src = url;
+        await new Promise(res => { editorVueloFondoImg.onload = res; editorVueloFondoImg.onerror = res; });
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar el fondo de contenido para el editor:", e);
+    }
+
+    dibujarEditorVuelo();
+    configurarEventosEditorVuelo();
+  }
+
+  function dibujarEditorVuelo() {
+    const canvas = document.getElementById("canvasPosicionVuelo");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Fondo — el mismo Fondo de Contenido configurado, para ver el
+    // resultado real; si no hay ninguno, un fondo oscuro liso de respaldo.
+    if (editorVueloFondoImg) {
+      ctx.drawImage(editorVueloFondoImg, 0, 0, canvas.width, canvas.height);
+    } else {
+      ctx.fillStyle = "#08262a";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Título simulado, para orientarse igual que en el PDF real.
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 15px Arial";
+    ctx.fillText("Itinerario de Vuelo", 30, 45);
+    const anchoTitulo = ctx.measureText("Itinerario de Vuelo").width;
+    ctx.strokeStyle = "#f49859";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(30, 52);
+    ctx.lineTo(30 + anchoTitulo, 52);
+    ctx.stroke();
+
+    // Imagen del vuelo, en su posición/tamaño actual (escalada al lienzo).
+    const p = imagenVueloPos;
+    const ex = p.x * ESCALA_EDITOR_VUELO;
+    const ey = p.y * ESCALA_EDITOR_VUELO;
+    const ew = p.w * ESCALA_EDITOR_VUELO;
+    const eh = p.h * ESCALA_EDITOR_VUELO;
+    dibujarImagenContenida(ctx, editorVueloImg, ex, ey, ew, eh);
+
+    ctx.strokeStyle = "#f49859";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(ex, ey, ew, eh);
+
+    // Punto de redimensionar, en la esquina inferior derecha del recuadro.
+    ctx.fillStyle = "#f49859";
+    ctx.beginPath();
+    ctx.arc(ex + ew, ey + eh, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function configurarEventosEditorVuelo() {
+    const canvas = document.getElementById("canvasPosicionVuelo");
+
+    canvas.onmousedown = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const p = imagenVueloPos;
+      const ex = p.x * ESCALA_EDITOR_VUELO;
+      const ey = p.y * ESCALA_EDITOR_VUELO;
+      const ew = p.w * ESCALA_EDITOR_VUELO;
+      const eh = p.h * ESCALA_EDITOR_VUELO;
+
+      const distanciaEsquina = Math.hypot(mx - (ex + ew), my - (ey + eh));
+      if (distanciaEsquina < 12) {
+        editorVueloRedimensionando = true;
+      } else if (mx >= ex && mx <= ex + ew && my >= ey && my <= ey + eh) {
+        editorVueloArrastrando = true;
+        editorVueloOffsetX = mx - ex;
+        editorVueloOffsetY = my - ey;
+      }
+    };
+
+    canvas.onmousemove = (e) => {
+      if (!editorVueloArrastrando && !editorVueloRedimensionando) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      const p = imagenVueloPos;
+
+      if (editorVueloArrastrando) {
+        let nuevaX = (mx - editorVueloOffsetX) / ESCALA_EDITOR_VUELO;
+        let nuevaY = (my - editorVueloOffsetY) / ESCALA_EDITOR_VUELO;
+        nuevaX = Math.max(0, Math.min(1280 - p.w, nuevaX));
+        nuevaY = Math.max(0, Math.min(720 - p.h, nuevaY));
+        p.x = nuevaX;
+        p.y = nuevaY;
+      } else if (editorVueloRedimensionando) {
+        let nuevoAncho = (mx / ESCALA_EDITOR_VUELO) - p.x;
+        let nuevoAlto = (my / ESCALA_EDITOR_VUELO) - p.y;
+        p.w = Math.max(120, Math.min(1280 - p.x, nuevoAncho));
+        p.h = Math.max(80, Math.min(720 - p.y, nuevoAlto));
+      }
+      dibujarEditorVuelo();
+    };
+
+    canvas.onmouseup = () => {
+      editorVueloArrastrando = false;
+      editorVueloRedimensionando = false;
+    };
+    canvas.onmouseleave = () => {
+      editorVueloArrastrando = false;
+      editorVueloRedimensionando = false;
+    };
+  }
+
+  function cerrarEditorPosicionVuelo() {
+    document.getElementById("modalPosicionVuelo").style.display = "none";
+  }
+
+  function guardarPosicionVuelo() {
+    // La posición ya se va actualizando en vivo mientras se arrastra —
+    // acá solo se cierra el editor. Se guarda de verdad en Firestore al
+    // presionar "💾 Guardar Cotización" más abajo, junto con todo lo demás.
+    cerrarEditorPosicionVuelo();
+  }
 
   async function cargarDatosIniciales() {
   await cargarOpcionesDeDestino();
@@ -647,6 +896,7 @@ function mostrarToursOpcionalesGuardados(data) {
 
   if (data.imagen_vuelo) {
     imagenVueloUrl = data.imagen_vuelo;
+    imagenVueloPos = data.imagen_vuelo_pos || null;
     renderizarImagenVueloPreview();
   }
 
@@ -684,6 +934,7 @@ tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
     vuelo_ida: document.getElementById("vuelo_ida").value,
     vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
     imagen_vuelo: imagenVueloUrl,
+    imagen_vuelo_pos: imagenVueloPos || null,
     equipaje: document.getElementById("equipaje").value,
     hotel: document.getElementById("hotel").value,
     info_hotel: document.getElementById("info_hotel").value,
@@ -1091,16 +1342,15 @@ async function generarPDF() {
       estado.textContent = "⏳ Cargando itinerario de vuelo...";
       try {
         const { dataUrl, width, height } = await cargarImagenComoDataURL(data.imagen_vuelo);
-        // FIX: antes ocupaba un recuadro grande centrado (1160x520) que
-        // tapaba el logo, los sellos y los puntitos del fondo. Ahora va en
-        // un recuadro más chico, fijo en la esquina superior derecha, lejos
-        // del título (arriba-izquierda) y del branding (abajo).
-        const areaX = 620, areaY = 150, areaW = 600, areaH = 380;
-        const ratio = Math.min(areaW / width, areaH / height);
+        // NUEVO: usa la posición/tamaño elegidos en el editor visual
+        // (arrastrar/redimensionar); si no se ajustó nada, usa la posición
+        // por defecto en la esquina superior derecha.
+        const posV = imagenVueloPos || posicionVueloPorDefecto();
+        const ratio = Math.min(posV.w / width, posV.h / height);
         const dw = width * ratio;
         const dh = height * ratio;
-        const dx = areaX + (areaW - dw) / 2;
-        const dy = areaY + (areaH - dh) / 2;
+        const dx = posV.x + (posV.w - dw) / 2;
+        const dy = posV.y + (posV.h - dh) / 2;
         doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
       } catch (err) {
         console.warn("No se pudo cargar la imagen del itinerario de vuelo:", err);
