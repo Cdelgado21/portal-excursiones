@@ -2143,6 +2143,26 @@ async function guardarReserva() {
         pasaporteURL = await refPasajero.getDownloadURL();
       }
 
+      // NUEVO: boleto/itinerario de vuelo propio de este pasajero — se
+      // agrega a la MISMA lista tiquetesVuelo[] que ya arma el comprobante
+      // (fusionarComprobanteConBoletos), asi el PDF los incluye a todos sin
+      // tocar esa parte. pasajeroIndice solo sirve para poder mostrar de
+      // vuelta cual boleto es de cual pasajero al reabrir la reserva.
+      const inputTiquetePasajero = p.querySelector(".tiqueteVueloPasajeroFile");
+      const archivoTiquetePasajero = inputTiquetePasajero?.files[0];
+      if (archivoTiquetePasajero) {
+        const nombrePasajeroActual = p.querySelector(".nombrePasajero")?.value || `Pasajero ${i + 1}`;
+        const refTiquetePasajero = storage.ref().child(`tiquetes/${codigo}/pasajero_${i}_${Date.now()}_${archivoTiquetePasajero.name}`);
+        await refTiquetePasajero.put(archivoTiquetePasajero);
+        const urlTiquetePasajero = await refTiquetePasajero.getDownloadURL();
+        tiquetesVuelo.push({
+          nombre: `Boleto - ${nombrePasajeroActual}`,
+          url: urlTiquetePasajero,
+          fecha: new Date().toISOString(),
+          pasajeroIndice: i
+        });
+      }
+
       datos.pasajeros.push({
         nombre: p.querySelector(".nombrePasajero")?.value || "",
         documento: p.querySelector(".documentoPasajero")?.value || "",
@@ -2373,6 +2393,12 @@ function agregarPasajero() {
         <label>Foto/Escaneo del Pasaporte (opcional)</label>
         <input type="file" class="pasaportePasajeroFile" accept="image/*,application/pdf">
         <div class="pasaportePasajeroActual" style="margin-top:6px; font-size: 0.85rem;"></div>
+      </div>
+
+      <div style="flex: 1; min-width: 250px;">
+        <label>Boleto/Itinerario de Vuelo (opcional)</label>
+        <input type="file" class="tiqueteVueloPasajeroFile" accept="image/*,application/pdf">
+        <div class="tiqueteVueloPasajeroActual" style="margin-top:6px; font-size: 0.85rem;"></div>
       </div>
     </div>
   `;
@@ -3290,7 +3316,7 @@ async function cargarReservaExistente(codigo) {
     cargarHistorialPagos();
 
     if (Array.isArray(data.pasajeros)) {
-      data.pasajeros.forEach(p => {
+      data.pasajeros.forEach((p, indicePasajero) => {
         agregarPasajero();
         const cont = document.querySelectorAll(".tarjeta-pasajero");
         const ult = cont[cont.length - 1];
@@ -3320,6 +3346,19 @@ async function cargarReservaExistente(codigo) {
             const contPasaportePasajero = ult.querySelector(".pasaportePasajeroActual");
             if (contPasaportePasajero) {
               contPasaportePasajero.innerHTML = `<a href="${p.pasaporteURL}" target="_blank">📎 Ver pasaporte actual</a>`;
+            }
+          }
+
+          // NUEVO: muestra el/los boleto(s) de vuelo ya subidos para ESTE
+          // pasajero especifico (guardados con el mismo pasajeroIndice al
+          // momento de subirlos).
+          const contTiquetePasajero = ult.querySelector(".tiqueteVueloPasajeroActual");
+          if (contTiquetePasajero && Array.isArray(data.tiquetesVuelo)) {
+            const propios = data.tiquetesVuelo.filter(t => t.pasajeroIndice === indicePasajero);
+            if (propios.length > 0) {
+              contTiquetePasajero.innerHTML = propios
+                .map(t => `<a href="${t.url}" target="_blank">📎 ${t.nombre}</a>`)
+                .join("<br>");
             }
           }
         }
