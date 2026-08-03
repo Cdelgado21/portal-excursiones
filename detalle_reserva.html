@@ -724,6 +724,7 @@
           <th style="padding: 10px;">Método</th>
           <th style="padding: 10px;">Monto</th>
           <th style="padding: 10px;">Nota</th>
+          <th style="padding: 10px;">Acción</th>
         </tr>
       </thead>
       <tbody id="tablaHistorialPagos"></tbody>
@@ -1566,8 +1567,9 @@ window.editorTiqueteState = {
   bytesOriginales: null
 };
 
-async function abrirEditorTiquete() {
-  const input = document.getElementById("tiqueteVueloFile");
+async function abrirEditorTiquete(inputParam, mensajeParam) {
+  const input = inputParam || document.getElementById("tiqueteVueloFile");
+  const mensajeDestino = mensajeParam || document.getElementById("tiqueteVueloMensaje");
   const archivo = input.files[0];
   if (!archivo) {
     alert("⚠️ Primero selecciona un archivo de boleto.");
@@ -1575,6 +1577,8 @@ async function abrirEditorTiquete() {
   }
 
   const estado = window.editorTiqueteState;
+  estado.inputDestino = input;
+  estado.mensajeDestino = mensajeDestino;
   estado.archivoOriginal = archivo;
   estado.recuadrosPorPagina = {};
   estado.paginaActual = 1;
@@ -1789,9 +1793,9 @@ async function cerrarEditorTiquete(guardar) {
 
     const dt = new DataTransfer();
     dt.items.add(archivoFinal);
-    document.getElementById("tiqueteVueloFile").files = dt.files;
+    estado.inputDestino.files = dt.files;
 
-    document.getElementById("tiqueteVueloMensaje").innerHTML =
+    estado.mensajeDestino.innerHTML =
       `<span style="color:#0a7a2f;">✅ Precio tapado manualmente en ${totalRecuadros} zona(s) — esta es la versión que se va a guardar al darle "Guardar Reserva".</span>`;
 
     modal.style.display = "none";
@@ -2398,6 +2402,8 @@ function agregarPasajero() {
       <div style="flex: 1; min-width: 250px;">
         <label>Boleto/Itinerario de Vuelo (opcional)</label>
         <input type="file" class="tiqueteVueloPasajeroFile" accept="image/*,application/pdf">
+        <button type="button" class="btnAbrirEditorTiquetePasajero" style="display:none; margin-top:8px; font-size: 13px; padding: 6px 12px;">Tapar precio antes de guardar</button>
+        <div class="tiqueteVueloPasajeroMensaje" style="margin-top:6px; font-size: 0.85rem;"></div>
         <div class="tiqueteVueloPasajeroActual" style="margin-top:6px; font-size: 0.85rem;"></div>
       </div>
     </div>
@@ -2421,6 +2427,21 @@ function agregarPasajero() {
       nacionalidad: pasajeroDiv.querySelector(".nacionalidadPasajero"),
       genero: pasajeroDiv.querySelector(".generoPasajero")
     }, pasajeroDiv.querySelector(".pasaportePasajeroActual"));
+  });
+
+  const inputTiquetePasajero = pasajeroDiv.querySelector(".tiqueteVueloPasajeroFile");
+  const botonTiquetePasajero = pasajeroDiv.querySelector(".btnAbrirEditorTiquetePasajero");
+  const mensajeTiquetePasajero = pasajeroDiv.querySelector(".tiqueteVueloPasajeroMensaje");
+  inputTiquetePasajero.addEventListener("change", function () {
+    if (!this.files[0]) {
+      botonTiquetePasajero.style.display = "none";
+      return;
+    }
+    botonTiquetePasajero.style.display = "inline-block";
+    abrirEditorTiquete(inputTiquetePasajero, mensajeTiquetePasajero);
+  });
+  botonTiquetePasajero.addEventListener("click", function () {
+    abrirEditorTiquete(inputTiquetePasajero, mensajeTiquetePasajero);
   });
 }
 
@@ -3442,25 +3463,53 @@ function cargarHistorialPagos() {
   const pagos = window.listaPagos || [];
 
   if (pagos.length === 0) {
-    contenedor.innerHTML = `<tr><td colspan="4" style="text-align:center; color: #888;">No hay pagos registrados</td></tr>`;
+    contenedor.innerHTML = `<tr><td colspan="5" style="text-align:center; color: #888;">No hay pagos registrados</td></tr>`;
     const btn = document.getElementById("btnFacturar");
     if (btn) btn.style.display = "none";
     return;
   }
 
-  pagos.forEach(p => {
+  pagos.forEach((p, indice) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td style="padding: 8px;">${formatearFechaComprobante(p.fecha)}</td>
       <td style="padding: 8px;">${p.metodo}</td>
       <td style="padding: 8px;">$${parseFloat(p.monto).toFixed(2)}</td>
       <td style="padding: 8px;">${p.nota || "—"}</td>
+      <td style="padding: 8px;">
+        <button type="button" onclick="eliminarPago(${indice})" style="background:transparent; color:#b00020; border:none; cursor:pointer; font-size:0.85rem; text-decoration:underline; padding:0;">🗑️ Eliminar</button>
+      </td>
     `;
     contenedor.appendChild(tr);
   });
 
   const btn = document.getElementById("btnFacturar");
   if (btn) btn.style.display = "inline-block";
+}
+
+// NUEVO: elimina un pago ya registrado — mismo espiritu que "eliminarTiqueteVuelo()"
+// (confirma, quita de la lista en memoria, refresca pantalla y persiste el
+// cambio de inmediato en Firestore, sin esperar a que se guarde toda la reserva).
+async function eliminarPago(indice) {
+  const pago = window.listaPagos?.[indice];
+  if (!pago) return;
+
+  const confirmar = confirm(`¿Eliminar el pago de $${parseFloat(pago.monto || 0).toFixed(2)} del ${formatearFechaComprobante(pago.fecha)}?\n\nEsta accion no se puede deshacer.`);
+  if (!confirmar) return;
+
+  window.listaPagos.splice(indice, 1);
+  cargarHistorialPagos();
+  actualizarTotales();
+
+  const codigo = window.codigoActualReserva || codigoReservaExistente;
+  if (!codigo) return; // reserva todavia no guardada -- no hay nada que persistir aun
+
+  try {
+    await db.collection("reservas").doc(codigo).update({ pagos: window.listaPagos });
+  } catch (e) {
+    console.error("No se pudo eliminar el pago en la base de datos:", e);
+    alert("⚠️ El pago se quito de la pantalla, pero no se pudo actualizar en la base de datos. Vuelve a intentarlo o guarda la reserva para que quede consistente.");
+  }
 }
 
 // ==========================================
@@ -3728,7 +3777,14 @@ async function generarPaginasComprobante(datos) {
   // ===== RESUMEN DE TARIFAS =====
   titulo("Resumen de Tarifas");
   const nombrePaquete = (datos.nombreDestino || "Paquete").split(" (")[0];
-  const precioMostrar = datos.precioAdulto ? `$${Number(datos.precioAdulto).toFixed(2)} Adultos` : "";
+  // FIX: antes solo mostraba el precio de Adultos, aunque el paquete
+  // tuviera precio de Nino y/o Bebe cargado -- ahora arma el texto con
+  // todas las tarifas que apliquen (segun haya precio > 0).
+  const partesTarifa = [];
+  if (datos.precioAdulto) partesTarifa.push(`$${Number(datos.precioAdulto).toFixed(2)} Adultos`);
+  if (datos.precioNino) partesTarifa.push(`$${Number(datos.precioNino).toFixed(2)} Niños`);
+  if (datos.precioBebe) partesTarifa.push(`$${Number(datos.precioBebe).toFixed(2)} Bebés`);
+  const precioMostrar = partesTarifa.join(" / ");
   const filasTarifas = [
     [
       nombrePaquete,
