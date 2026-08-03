@@ -850,14 +850,22 @@ function parsearMRZPasaporte(textoCompleto) {
   const codigoNacionalidad = linea2.substring(10, 13).replace(/</g, "");
   const sexoMRZ = linea2.substring(20, 21);
 
-  // FIX: en los pasaportes costarricenses viejos, el campo principal del MRZ
+  // FIX: en los pasaportes costarricenses VIEJOS, el campo principal del MRZ
   // (posiciones 1-9) guarda el "Número de Secuencia" del pasaporte (ej.
   // G225387), NO el número real de pasaporte que aparece impreso como
   // "Número de pasaporte/ID No." — ese número real vive en el campo
-  // "Número Personal" del MRZ (posiciones 29-42). Si existe ese campo y la
-  // nacionalidad es costarricense, se usa ese en vez del principal.
+  // "Número Personal" del MRZ (posiciones 29-42).
+  //
+  // FIX 2: Costa Rica renovó el formato de pasaportes — los NUEVOS ya
+  // traen el número real de pasaporte directo en el campo principal, con
+  // una letra al inicio (ej. B00605301), y ESE valor hay que respetarlo tal
+  // cual. La regla de arriba solo debe aplicar cuando el campo principal
+  // parece un número de cédula vieja (puros dígitos, sin ninguna letra) —
+  // si no, se estaba pisando el número de pasaporte real y dejando la
+  // cédula en su lugar.
   const numeroPersonalMRZ = linea2.substring(28, 42).replace(/</g, "").trim();
-  const numeroDocumento = (codigoNacionalidad === "CRI" && numeroPersonalMRZ)
+  const pareceCedulaViejaEnCampoPrincipal = /^[0-9]+$/.test(numeroDocumentoPrincipal);
+  const numeroDocumento = (codigoNacionalidad === "CRI" && numeroPersonalMRZ && pareceCedulaViejaEnCampoPrincipal)
     ? numeroPersonalMRZ
     : numeroDocumentoPrincipal;
 
