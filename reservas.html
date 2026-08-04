@@ -277,6 +277,7 @@
       <thead>
         <tr>
           <th>Código</th>
+          <th>Fecha de Creación</th>
           <th>Cliente</th>
           <th>Teléfono</th>
           <th>Correo</th>
@@ -343,6 +344,21 @@
       return `${dia}/${mes}/${año}`;
     }
 
+    // NUEVO: "creado_el" se guarda como fecha real de Firestore (no un
+    // string como fechaReserva), asi que al leerla llega como Timestamp
+    // (con .toDate()) -- esta funcion la muestra igual de DD/MM/AAAA. Las
+    // reservas de antes de que existiera este campo no lo tienen, por eso
+    // se cubre el caso vacio con "-".
+    function formatearFechaCreacion(valor) {
+      if (!valor) return '-';
+      const fecha = typeof valor.toDate === 'function' ? valor.toDate() : new Date(valor);
+      if (isNaN(fecha.getTime())) return '-';
+      const dia = String(fecha.getDate()).padStart(2, '0');
+      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+      const año = fecha.getFullYear();
+      return `${dia}/${mes}/${año}`;
+    }
+
     // Calcula la cantidad de personas cubriendo los 3 esquemas distintos que
     // ha tenido el sistema a lo largo del tiempo:
     // 1) campo "numero" directo (el más nuevo)
@@ -384,6 +400,7 @@
           const fila = document.createElement("tr");
           fila.innerHTML = `
             <td>${doc.id}</td>
+            <td>${formatearFechaCreacion(data.creado_el)}</td>
             <td>${data.nombreTitular || '-'}</td>
             <td>${data.telefono || '-'}</td>
             <td>${data.correo || '-'}</td>
