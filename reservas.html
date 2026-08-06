@@ -159,15 +159,51 @@
     .btn-historicas { background-color: #5f9296; }
     .btn-historicas:hover { background-color: #4d7d80; }
 
-    #buscadorReservas {
-      width: 100%;
-      max-width: 500px;
+    /* NUEVO: fila de filtros (buscador + mes) — mismo lenguaje visual que
+       el buscador de proveedores.html / solicitud_cotizaciones.html:
+       bordes redondeados, borde teal claro en reposo, foco con halo suave. */
+    .fila-filtros {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .fila-filtros input[type="text"],
+    .fila-filtros select {
       padding: 10px 14px;
       border-radius: 8px;
       border: 1px solid #cfe3e4;
-      box-sizing: border-box;
       font-size: 14px;
-      margin-bottom: 15px;
+      box-sizing: border-box;
+      font-family: inherit;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .fila-filtros input[type="text"] {
+      flex: 1;
+      min-width: 240px;
+    }
+    .fila-filtros select {
+      min-width: 190px;
+      color: #02535a;
+      font-weight: bold;
+      background-color: white;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2302535a' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      padding-right: 34px;
+    }
+    .fila-filtros input[type="text"]:focus,
+    .fila-filtros select:focus {
+      outline: none;
+      border-color: #02535a;
+      box-shadow: 0 0 0 3px rgba(2, 83, 90, 0.1);
+    }
+    .fila-filtros select:hover {
+      border-color: #5f9296;
     }
 
     .contador {
@@ -269,12 +305,12 @@
 
     <!-- NUEVO: buscador — filtra la tabla mientras se escribe, sin volver a
          consultar Firebase (los datos ya están cargados en la página). -->
-    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-      <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()" style="flex:1; min-width:220px;">
+    <div class="fila-filtros">
+      <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()">
       <!-- NUEVO: filtro por mes de viaje — se arma solo con los meses que
            realmente tienen reservas activas, no una lista fija de 12. -->
-      <select id="filtroMesReservas" onchange="filtrarTablaReservas()" style="min-width:180px;">
-        <option value="">Todos los meses</option>
+      <select id="filtroMesReservas" onchange="filtrarTablaReservas()">
+        <option value="">📅 Todos los meses</option>
       </select>
     </div>
 
