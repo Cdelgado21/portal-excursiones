@@ -269,7 +269,14 @@
 
     <!-- NUEVO: buscador — filtra la tabla mientras se escribe, sin volver a
          consultar Firebase (los datos ya están cargados en la página). -->
-    <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()">
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()" style="flex:1; min-width:220px;">
+      <!-- NUEVO: filtro por mes de viaje — se arma solo con los meses que
+           realmente tienen reservas activas, no una lista fija de 12. -->
+      <select id="filtroMesReservas" onchange="filtrarTablaReservas()" style="min-width:180px;">
+        <option value="">Todos los meses</option>
+      </select>
+    </div>
 
     <p class="contador" id="contador"></p>
 
@@ -378,6 +385,8 @@
       return null;
     }
 
+    const NOMBRES_MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+
     function cargarReservas() {
       db.collection("reservas").get().then(snapshot => {
         const hoy = new Date();
@@ -385,6 +394,7 @@
 
         let contadorActivas = 0;
         let contadorSinFecha = 0;
+        const mesesConReservas = new Set();
 
         snapshot.forEach(doc => {
           const data = doc.data();
@@ -398,6 +408,13 @@
           window.datosReservasPorCodigo[doc.id] = data;
 
           const fila = document.createElement("tr");
+          // NUEVO: guarda a qué mes-año pertenece esta reserva (según fecha
+          // de viaje) para poder filtrarla desde el desplegable de mes.
+          if (fecha) {
+            const claveMes = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+            fila.dataset.mesAnio = claveMes;
+            mesesConReservas.add(claveMes);
+          }
           fila.innerHTML = `
             <td>${doc.id}</td>
             <td>${formatearFechaCreacion(data.creado_el)}</td>
@@ -430,6 +447,18 @@
         }
         contadorEl.textContent = texto;
         window.textoContadorOriginal = texto; // para restaurar al borrar el buscador
+
+        // NUEVO: arma las opciones del filtro de mes, ordenadas
+        // cronológicamente, solo con los meses que realmente tienen alguna
+        // reserva activa.
+        const selectMes = document.getElementById("filtroMesReservas");
+        Array.from(mesesConReservas).sort().forEach(claveMes => {
+          const [anio, mes] = claveMes.split('-');
+          const opt = document.createElement("option");
+          opt.value = claveMes;
+          opt.textContent = `${NOMBRES_MESES[parseInt(mes, 10) - 1]} ${anio}`;
+          selectMes.appendChild(opt);
+        });
       });
     }
 
@@ -443,18 +472,21 @@
 
     function filtrarTablaReservas() {
       const termino = normalizarTexto(document.getElementById("buscadorReservas").value);
+      const mesSeleccionado = document.getElementById("filtroMesReservas").value;
       const filas = document.querySelectorAll("#tablaReservas tbody tr");
       let visibles = 0;
 
       filas.forEach(fila => {
-        const coincide = normalizarTexto(fila.textContent).includes(termino);
+        const coincideTexto = normalizarTexto(fila.textContent).includes(termino);
+        const coincideMes = !mesSeleccionado || fila.dataset.mesAnio === mesSeleccionado;
+        const coincide = coincideTexto && coincideMes;
         fila.style.display = coincide ? "" : "none";
         if (coincide) visibles++;
       });
 
       const contador = document.getElementById("contador");
-      if (termino && contador) {
-        contador.textContent = `${visibles} resultado(s) para "${document.getElementById("buscadorReservas").value}"`;
+      if ((termino || mesSeleccionado) && contador) {
+        contador.textContent = `${visibles} resultado(s)`;
       } else if (contador) {
         contador.textContent = window.textoContadorOriginal || "";
       }
