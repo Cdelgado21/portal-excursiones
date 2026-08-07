@@ -1279,16 +1279,33 @@ async function generarPDF() {
     // la parte de arriba ya la ocupa una imagen (Itinerario de Vuelo,
     // Itinerario del Viaje). Queda justo arriba del pie de pagina, sin
     // pisarlo. "tamano" en px, default 20.
+    //
+    // FIX: se corrio el centro hacia la derecha para no pegar con el logo
+    // de Canatur/PYME del fondo (que vive en la franja izquierda de abajo).
+    // Ademas, si el texto pedido (ej. 72px) no entra en el espacio libre
+    // entre el logo y los puntitos de la derecha, se achica automaticamente
+    // lo minimo necesario para que quepa completo, en vez de salirse o
+    // superponerse.
     function tituloSlideAbajo(texto, tamano = 20) {
       const textoMayus = texto.toUpperCase();
+      const centro = W / 2 + 140;
+      const anchoMaximo = 780;
+
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(tamano);
+      let tamanoFinal = tamano;
+      doc.setFontSize(tamanoFinal);
+      let anchoTexto = doc.getTextWidth(textoMayus);
+      while (anchoTexto > anchoMaximo && tamanoFinal > 14) {
+        tamanoFinal -= 2;
+        doc.setFontSize(tamanoFinal);
+        anchoTexto = doc.getTextWidth(textoMayus);
+      }
+
       doc.setTextColor(...BLANCO);
-      doc.text(textoMayus, W / 2, H - 46, { align: "center" });
-      const anchoTexto = doc.getTextWidth(textoMayus);
+      doc.text(textoMayus, centro, H - 46, { align: "center" });
       doc.setDrawColor(...ACENTO);
       doc.setLineWidth(2);
-      doc.line(W / 2 - anchoTexto / 2, H - 34, W / 2 + anchoTexto / 2, H - 34);
+      doc.line(centro - anchoTexto / 2, H - 34, centro + anchoTexto / 2, H - 34);
     }
     // Diapositiva de imagen completa ya diseñada (Agradecer, Cierre,
     // actividad, hotel) — no se le pega pie de página encima porque ya
@@ -1381,7 +1398,7 @@ async function generarPDF() {
       }
       // NUEVO: el titulo ya no va arriba (quedaba tapado por la imagen) --
       // ahora va abajo, centrado, en mayusculas.
-      tituloSlideAbajo("Itinerario de Vuelo", 26);
+      tituloSlideAbajo("Itinerario de Vuelo", 72);
       piePagina(codigo);
     }
 
@@ -1418,7 +1435,7 @@ async function generarPDF() {
       // NUEVO: el titulo ya no va arriba -- ahora va abajo, centrado, en
       // mayusculas y mas grande que el de Itinerario de Vuelo (pedido
       // explicito: "letras mas grandes que abarque mas la pagina").
-      tituloSlideAbajo("Itinerario del Viaje", 32);
+      tituloSlideAbajo("Itinerario del Viaje", 72);
       piePagina(codigo);
     }
 
