@@ -1513,10 +1513,10 @@ async function generarPDF() {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(48);
       doc.setTextColor(...BLANCO);
-      doc.text("Incluye en el paquete", 95, 108);
+      doc.text("INCLUYE EN EL PAQUETE", 95, 108);
       doc.setDrawColor(...ACENTO);
       doc.setLineWidth(2);
-      doc.line(95, 126, 95 + doc.getTextWidth("Incluye en el paquete"), 126);
+      doc.line(95, 126, 95 + doc.getTextWidth("INCLUYE EN EL PAQUETE"), 126);
 
       doc.setDrawColor(...ACENTO);
       doc.setLineWidth(1.5);
@@ -1591,43 +1591,45 @@ async function generarPDF() {
 
       let yIzq = 160;
       if (itemsIncluye.length > 0) {
-        yIzq = dibujarBloque("Incluye:", itemsIncluye, BLANCO, xIzq, yIzq) + 8;
+        yIzq = dibujarBloque("INCLUYE:", itemsIncluye, BLANCO, xIzq, yIzq) + 8;
       }
       if (itemsNoIncluye.length > 0) {
-        dibujarBloque("No incluye:", itemsNoIncluye, ACENTO, xIzq, yIzq);
+        dibujarBloque("NO INCLUYE:", itemsNoIncluye, ACENTO, xIzq, yIzq);
       }
 
       // ---- Columna derecha: detalles de la cotización ----
       const xCentroDer = 930;
       let yDer = 170;
 
+      // NUEVO: toda la columna derecha subida +10px de letra (pedido
+      // explicito), y con mas espaciado vertical acorde.
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(30);
+      doc.setFontSize(40);
       doc.setTextColor(...BLANCO);
       doc.text("COTIZACIÓN", xCentroDer, yDer, { align: "center" });
-      yDer += 40;
+      yDer += 48;
 
-      // NUEVO: destino + experiencia (Flash/Esencial/Confort/Grupal) debajo
-      // del titulo "COTIZACIÓN".
+      // Destino + experiencia (Flash/Esencial/Confort/Grupal) debajo del
+      // titulo "COTIZACIÓN".
       const destinoConExperiencia = experienciaTour ? `${destino} — ${experienciaTour}` : destino;
       doc.setFont("helvetica", "normal");
-      doc.setFontSize(18);
+      doc.setFontSize(28);
       doc.setTextColor(...GRIS_CLARO);
       doc.text(destinoConExperiencia, xCentroDer, yDer, { align: "center" });
-      yDer += 42;
+      yDer += 50;
 
       function filaDetalle(etiqueta, valor) {
         if (!valor) return;
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(18);
+        doc.setFontSize(28);
         doc.setTextColor(...ACENTO);
         doc.text(etiqueta, xCentroDer, yDer, { align: "center" });
-        yDer += 26;
+        yDer += 34;
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(20);
+        doc.setFontSize(30);
         doc.setTextColor(...BLANCO);
         doc.text(String(valor), xCentroDer, yDer, { align: "center" });
-        yDer += 48;
+        yDer += 56;
       }
 
       filaDetalle("FECHA", data.fechas);
@@ -1660,15 +1662,24 @@ async function generarPDF() {
         yDer += 20;
         const textoTotal = `TOTAL: $${data.total_general}`;
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(34);
-        const anchoTexto = doc.getTextWidth(textoTotal) + 80;
+        doc.setFontSize(44);
+        const anchoTexto = doc.getTextWidth(textoTotal) + 90;
         doc.setDrawColor(...ACENTO);
         doc.setLineWidth(2);
         doc.setLineDashPattern([6, 5], 0);
-        doc.rect(xCentroDer - anchoTexto / 2, yDer - 40, anchoTexto, 64, "S");
+        doc.rect(xCentroDer - anchoTexto / 2, yDer - 46, anchoTexto, 76, "S");
         doc.setLineDashPattern([], 0);
         doc.setTextColor(...BLANCO);
         doc.text(textoTotal, xCentroDer, yDer, { align: "center" });
+        yDer += 50;
+
+        // NUEVO: monto de reserva por persona, debajo del cuadro de TOTAL.
+        if (data.monto_reserva) {
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(20);
+          doc.setTextColor(...GRIS_CLARO);
+          doc.text(`Monto de reserva por persona: $${data.monto_reserva}`, xCentroDer, yDer, { align: "center" });
+        }
       }
 
       piePagina(codigo);
