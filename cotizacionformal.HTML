@@ -1266,14 +1266,14 @@ async function generarPDF() {
       doc.setTextColor(...GRIS_CLARO);
       doc.text(codigoTexto, W - 40, H - 22, { align: "right" });
     }
-    function tituloSlide(texto, y = 90) {
+    function tituloSlide(texto, y = 90, x = 60) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(30);
       doc.setTextColor(...BLANCO);
-      doc.text(texto, 60, y);
+      doc.text(texto, x, y);
       doc.setDrawColor(...ACENTO);
       doc.setLineWidth(2);
-      doc.line(60, y + 16, 60 + doc.getTextWidth(texto), y + 16);
+      doc.line(x, y + 16, x + doc.getTextWidth(texto), y + 16);
     }
     // NUEVO: titulo abajo, centrado, en MAYUSCULAS -- para las slides donde
     // la parte de arriba ya la ocupa una imagen (Itinerario de Vuelo,
@@ -1397,6 +1397,13 @@ async function generarPDF() {
         const dx = posV.x + (posV.w - dw) / 2;
         const dy = posV.y + (posV.h - dh) / 2;
         doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
+        // NUEVO: borde alrededor de la imagen, mismo estilo (color y grosor)
+        // que el cuadro de Itinerario del Viaje, para que se sientan parte
+        // de la misma linea grafica.
+        doc.setDrawColor(...ACENTO);
+        doc.setLineWidth(1.5);
+        doc.setLineDashPattern([], 0);
+        doc.rect(posV.x, posV.y, posV.w, posV.h, "S");
       } catch (err) {
         console.warn("No se pudo cargar la imagen del itinerario de vuelo:", err);
         doc.setFont("helvetica", "normal");
@@ -1732,51 +1739,62 @@ async function generarPDF() {
     }
 
     // ---- Slide de Inversión ----
-    nuevaSlide();
-    tituloSlide("Inversión por Viajero");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(19);
-    doc.setTextColor(...BLANCO);
-    let yInversion = 180;
-    const filasInversion = [
-      ["Precio Adulto", data.precio_adulto ? `$${data.precio_adulto}` : null],
-      ["Precio Niño", data.precio_nino && data.precio_nino !== "0" ? `$${data.precio_nino}` : null],
-      ["Precio Bebé", data.precio_bebe && data.precio_bebe !== "0" ? `$${data.precio_bebe}` : null]
-    ];
-    filasInversion.forEach(([label, valor]) => {
-      if (!valor) return;
-      doc.setFont("helvetica", "normal");
-      doc.text(`${label}:`, 60, yInversion);
-      doc.text(valor, 340, yInversion);
-      yInversion += 36;
-    });
-    yInversion += 20;
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(26);
-    doc.setTextColor(...ACENTO);
-    doc.text(`Total General: $${data.total_general || "0"}`, 60, yInversion);
-    if (data.monto_reserva) {
-      yInversion += 40;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(16);
-      doc.setTextColor(...GRIS_CLARO);
-      doc.text(`Monto de reserva por persona: $${data.monto_reserva}`, 60, yInversion);
-    }
-    piePagina(codigo);
+    // QUITADA: el precio/total/monto de reserva ya se muestra en la
+    // columna derecha de "Incluye en el paquete" -- quedaba repetido.
 
     // ---- Slide de Tours Opcionales ----
     if (opcionales.length > 0) {
       nuevaSlide();
-      tituloSlide("Tours Opcionales");
-      doc.autoTable({
-        startY: 130,
-        head: [["Tour Opcional", "Descripción", "Precio ($)"]],
-        body: opcionales.map(o => [o.nombre || "", o.descripcion || "", `$${o.precio ?? 0}`]),
-        theme: "grid",
-        styles: { fontSize: 13, textColor: [20, 20, 20], cellPadding: 8 },
-        headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold" },
-        margin: { left: 60, right: 60 }
+      // Titulo corrido a la derecha (el avion tapaba la "T").
+      tituloSlide("Tours Opcionales", 90, 95);
+
+      // NUEVO: mismo estilo visual que el cuadro de Itinerario del Viaje
+      // (fondo teal, borde y divisores en naranja punteado) -- en filas en
+      // vez de columnas, porque cada tour trae nombre+descripcion+precio,
+      // que no encaja igual de bien como columna por dia.
+      const margenX = 50;
+      const anchoCaja = W - margenX * 2;
+      const yTop = 150;
+      const anchoTexto = anchoCaja - 40;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(15);
+      const descripcionesPorTour = opcionales.map(o => doc.splitTextToSize(o.descripcion || "", anchoTexto));
+      function altoFila(desc) { return 26 + desc.length * 20 + 20; }
+      const altoCaja = descripcionesPorTour.reduce((suma, desc) => suma + altoFila(desc), 0) + 10;
+
+      doc.setFillColor(...TEAL);
+      doc.rect(margenX, yTop, anchoCaja, altoCaja, "F");
+      doc.setDrawColor(...ACENTO);
+      doc.setLineWidth(1.5);
+      doc.setLineDashPattern([], 0);
+      doc.rect(margenX, yTop, anchoCaja, altoCaja, "S");
+
+      let y = yTop + 26;
+      opcionales.forEach((o, i) => {
+        const desc = descripcionesPorTour[i];
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(...BLANCO);
+        doc.text(`${o.nombre || ""}  —  $${o.precio ?? 0}`, margenX + 20, y);
+        y += 26;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(15);
+        doc.setTextColor(...GRIS_CLARO);
+        doc.text(desc, margenX + 20, y);
+        y += desc.length * 20;
+
+        if (i < opcionales.length - 1) {
+          doc.setDrawColor(...ACENTO);
+          doc.setLineWidth(1);
+          doc.setLineDashPattern([5, 4], 0);
+          doc.line(margenX + 20, y + 10, margenX + anchoCaja - 20, y + 10);
+          doc.setLineDashPattern([], 0);
+        }
+        y += 20;
       });
+
       piePagina(codigo);
     }
 
