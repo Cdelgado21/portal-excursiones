@@ -1421,8 +1421,12 @@ async function generarPDF() {
         const yTop = 110;
         const altoTabla = 420;
         const yDivisor = yTop + 78;
-        const COLOR_CAJA = [110, 190, 196];
-        const COLOR_BORDE_CAJA = [255, 255, 255];
+        // FIX: el celeste no era congruente con la paleta del sistema --
+        // ahora la caja usa el mismo teal de marca (el de los encabezados
+        // de tabla) y los separadores van en el mismo naranja de acento
+        // que se usa en subrayados y pie de pagina.
+        const COLOR_CAJA = TEAL;
+        const COLOR_BORDE_CAJA = ACENTO;
 
         doc.setFillColor(...COLOR_CAJA);
         doc.rect(margenX, yTop, anchoTotal, altoTabla, "F");
@@ -1436,9 +1440,9 @@ async function generarPDF() {
           const x = margenX + i * anchoColumna;
 
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(26);
+          doc.setFontSize(32);
           doc.setTextColor(...BLANCO);
-          doc.text(`Día ${i + 1}`, x + anchoColumna / 2, yTop + 48, { align: "center" });
+          doc.text(`Día ${i + 1}`, x + anchoColumna / 2, yTop + 52, { align: "center" });
 
           doc.setDrawColor(...COLOR_BORDE_CAJA);
           doc.setLineWidth(1);
@@ -1450,10 +1454,10 @@ async function generarPDF() {
           doc.setLineDashPattern([], 0);
 
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(20);
+          doc.setFontSize(24);
           doc.setTextColor(...BLANCO);
           const lineasTexto = doc.splitTextToSize(texto, anchoColumna - 30);
-          doc.text(lineasTexto, x + anchoColumna / 2, yDivisor + 34, { align: "center" });
+          doc.text(lineasTexto, x + anchoColumna / 2, yDivisor + 38, { align: "center" });
         });
       }
       // NUEVO: el titulo ya no va arriba -- ahora va abajo, centrado, en
