@@ -1214,10 +1214,17 @@ async function generarPDF() {
     // Medellín distinto de CDMX) y, si ese destino todavía no tiene uno
     // propio, cae al Fondo de Portada genérico de Configuración.
     let urlFondoPortada = configVisual.fondoPortada || "";
+    // NUEVO: diapositiva de Condiciones Generales propia del destino (si se
+    // subió una en detalle_tours.html) -- si no hay, la slide de
+    // Condiciones Generales cae al texto de "Políticas y Condiciones".
+    let urlCondicionesDestino = "";
     try {
       const destinoConfigDoc = await db.collection("destinos_config").doc(slugDestino(destino)).get();
       if (destinoConfigDoc.exists && destinoConfigDoc.data().fondoPortada) {
         urlFondoPortada = destinoConfigDoc.data().fondoPortada;
+      }
+      if (destinoConfigDoc.exists && destinoConfigDoc.data().condicionesImagen) {
+        urlCondicionesDestino = destinoConfigDoc.data().condicionesImagen;
       }
     } catch (e) {
       console.warn("No se pudo consultar el fondo de portada del destino:", e);
@@ -1787,7 +1794,11 @@ async function generarPDF() {
     }
 
     // ---- Slide de Condiciones Generales ----
-    if (data.politicas && data.politicas.trim()) {
+    if (urlCondicionesDestino) {
+      // Diapositiva ya diseñada, propia de este destino.
+      estado.textContent = "⏳ Cargando condiciones generales...";
+      await agregarSlideImagenCompleta(urlCondicionesDestino);
+    } else if (data.politicas && data.politicas.trim()) {
       nuevaSlide();
       tituloSlide("Condiciones Generales", 70);
       doc.setFont("helvetica", "normal");
