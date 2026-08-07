@@ -318,6 +318,26 @@
       font-size: 13px;
       margin-top: 6px;
     }
+    /* NUEVO: preview de la diapositiva de Condiciones Generales del destino */
+    #condicionesDestinoPreview img {
+      max-width: 320px;
+      max-height: 180px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      object-fit: cover;
+      display: block;
+      margin-top: 8px;
+    }
+    #condicionesDestinoPreview button {
+      background-color: #c0392b;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 6px;
+    }
     /* NUEVO: checklist de actividades incluidas por variante de tour */
     .tabla-incluidas th:first-child, .tabla-incluidas td:first-child {
       text-align: center;
@@ -383,6 +403,14 @@
     <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Imagen de fondo (1280x720) para la primera slide de la Cotización Visual — es propia de este destino (ej. Medellín se ve distinto a CDMX), se sube UNA vez y aplica a todas las variantes (Flash/Esencial/Confort/Grupal) de este mismo destino. Si no se sube, se usa el Fondo de Portada genérico de Configuración.</div>
     <input type="file" id="fondoPortadaDestinoInput" accept="image/*" />
     <div id="fondoPortadaDestinoPreview"></div>
+
+    <!-- NUEVO: diapositiva de Condiciones Generales — igual que el fondo de
+         portada, es del DESTINO (varían de un lugar a otro), se sube UNA
+         vez y aplica a todas las variantes de ese mismo destino. -->
+    <label>Diapositiva de Condiciones Generales de este Destino</label>
+    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Imagen ya diseñada (1280x720) para la slide de Condiciones Generales de la Cotización Visual — propia de este destino, se sube UNA vez y aplica a todas las variantes. Si no se sube ninguna, se usa el texto que escribas abajo en "Políticas y Condiciones".</div>
+    <input type="file" id="condicionesDestinoInput" accept="image/*" />
+    <div id="condicionesDestinoPreview"></div>
 
     <!-- NUEVO: distinción entre salida grupal (fecha fija, catálogo compartido)
          y salida individual (personalizada, con 3 niveles de experiencia:
@@ -587,6 +615,78 @@
     e.target.value = "";
   });
 
+  // NUEVO: mismo patrón que el fondo de portada, para la diapositiva de
+  // Condiciones Generales por destino.
+  let condicionesDestinoUrl = "";
+
+  function renderizarCondicionesDestinoPreview() {
+    const contenedor = document.getElementById("condicionesDestinoPreview");
+    if (!condicionesDestinoUrl) {
+      contenedor.innerHTML = "";
+      return;
+    }
+    contenedor.innerHTML = `
+      <img src="${condicionesDestinoUrl}" alt="Condiciones Generales">
+      <button type="button" onclick="quitarCondicionesDestino()">🗑️ Quitar diapositiva</button>
+    `;
+  }
+
+  async function quitarCondicionesDestino() {
+    const destino = document.getElementById("nombre").value.trim();
+    if (!destino) { condicionesDestinoUrl = ""; renderizarCondicionesDestinoPreview(); return; }
+    if (!confirm("¿Quitar la diapositiva de Condiciones Generales de este destino? Las próximas cotizaciones de este destino volverán a usar el texto de \"Políticas y Condiciones\" hasta que subas una nueva.")) return;
+    try {
+      await db.collection("destinos_config").doc(slugDestino(destino)).set({ condicionesImagen: "" }, { merge: true });
+      condicionesDestinoUrl = "";
+      renderizarCondicionesDestinoPreview();
+    } catch (e) {
+      console.error("Error al quitar la diapositiva de condiciones del destino:", e);
+      alert("❌ No se pudo quitar la diapositiva.");
+    }
+  }
+
+  async function cargarCondicionesDelDestino(destino) {
+    condicionesDestinoUrl = "";
+    document.getElementById("condicionesDestinoInput").value = "";
+    if (!destino) { renderizarCondicionesDestinoPreview(); return; }
+    try {
+      const doc = await db.collection("destinos_config").doc(slugDestino(destino)).get();
+      condicionesDestinoUrl = doc.exists ? (doc.data().condicionesImagen || "") : "";
+    } catch (e) {
+      console.error("Error al cargar la diapositiva de condiciones del destino:", e);
+    }
+    renderizarCondicionesDestinoPreview();
+  }
+
+  document.getElementById("condicionesDestinoInput").addEventListener("change", async function (e) {
+    const archivo = e.target.files?.[0];
+    const destino = document.getElementById("nombre").value.trim();
+    if (!archivo) return;
+    if (!destino) {
+      alert("Primero escribe el nombre del destino arriba.");
+      e.target.value = "";
+      return;
+    }
+
+    const contenedor = document.getElementById("condicionesDestinoPreview");
+    contenedor.innerHTML = `<span style="font-size:13px; color:#777;">⏳ Subiendo diapositiva...</span>`;
+
+    try {
+      const nombreArchivo = `${Date.now()}_${archivo.name}`;
+      const ref = storage.ref().child(`destinos_condiciones/${slugDestino(destino)}/${nombreArchivo}`);
+      await ref.put(archivo);
+      const url = await ref.getDownloadURL();
+      await db.collection("destinos_config").doc(slugDestino(destino)).set({ destino, condicionesImagen: url }, { merge: true });
+      condicionesDestinoUrl = url;
+      renderizarCondicionesDestinoPreview();
+    } catch (err) {
+      console.error("Error al subir la diapositiva de condiciones del destino:", err);
+      alert("❌ No se pudo subir la diapositiva.");
+      contenedor.innerHTML = "";
+    }
+    e.target.value = "";
+  });
+
   // NUEVO: muestra/oculta el campo de Nivel según el Tipo de Salida elegido.
   function actualizarVisibilidadNivel() {
     const tipo = document.getElementById("tipoSalida").value;
@@ -681,6 +781,7 @@ if (tourId) {
       // por destino, no por variante — se cargan directo desde el destino.
       cargarOpcionalesDelDestino(t.nombre);
       cargarFondoPortadaDelDestino(t.nombre);
+      cargarCondicionesDelDestino(t.nombre);
   } else {
         alert("El tour no existe.");
       }
@@ -697,6 +798,7 @@ if (tourId) {
     actualizarVisibilidadNivel();
     cargarOpcionalesDelDestino(destinoDesdeUrl);
     cargarFondoPortadaDelDestino(destinoDesdeUrl);
+    cargarCondicionesDelDestino(destinoDesdeUrl);
   }
 }
 
@@ -707,6 +809,7 @@ document.getElementById("nombre").addEventListener("blur", function () {
   if (!tourId) {
     cargarOpcionalesDelDestino(this.value.trim());
     cargarFondoPortadaDelDestino(this.value.trim());
+    cargarCondicionesDelDestino(this.value.trim());
   }
 });
 
