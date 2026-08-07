@@ -1275,6 +1275,21 @@ async function generarPDF() {
       doc.setLineWidth(2);
       doc.line(60, y + 16, 60 + doc.getTextWidth(texto), y + 16);
     }
+    // NUEVO: titulo abajo, centrado, en MAYUSCULAS -- para las slides donde
+    // la parte de arriba ya la ocupa una imagen (Itinerario de Vuelo,
+    // Itinerario del Viaje). Queda justo arriba del pie de pagina, sin
+    // pisarlo. "tamano" en px, default 20.
+    function tituloSlideAbajo(texto, tamano = 20) {
+      const textoMayus = texto.toUpperCase();
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(tamano);
+      doc.setTextColor(...BLANCO);
+      doc.text(textoMayus, W / 2, H - 46, { align: "center" });
+      const anchoTexto = doc.getTextWidth(textoMayus);
+      doc.setDrawColor(...ACENTO);
+      doc.setLineWidth(2);
+      doc.line(W / 2 - anchoTexto / 2, H - 34, W / 2 + anchoTexto / 2, H - 34);
+    }
     // Diapositiva de imagen completa ya diseñada (Agradecer, Cierre,
     // actividad, hotel) — no se le pega pie de página encima porque ya
     // trae su propio logo y branding en el diseño.
@@ -1347,7 +1362,6 @@ async function generarPDF() {
     // ---- Slide: Itinerario de Vuelo (imagen subida) ----
     if (data.imagen_vuelo) {
       nuevaSlide();
-      tituloSlide("Itinerario de Vuelo");
       estado.textContent = "⏳ Cargando itinerario de vuelo...";
       try {
         const { dataUrl, width, height } = await cargarImagenComoDataURL(data.imagen_vuelo);
@@ -1365,13 +1379,15 @@ async function generarPDF() {
         doc.setTextColor(...GRIS_CLARO);
         doc.text("No se pudo cargar la imagen del itinerario.", 60, 200);
       }
+      // NUEVO: el titulo ya no va arriba (quedaba tapado por la imagen) --
+      // ahora va abajo, centrado, en mayusculas.
+      tituloSlideAbajo("Itinerario de Vuelo", 20);
       piePagina(codigo);
     }
 
     // ---- Slide: Itinerario de Viaje (tabla por día) ----
     if (data.itinerario && data.itinerario.trim()) {
       nuevaSlide();
-      tituloSlide("Itinerario del Viaje");
       // FIX: usa el parseo nuevo que agrupa "Día N" (línea propia) + su
       // actividad (línea siguiente) como un solo día — antes contaba cada
       // línea como un día distinto y salían el doble de columnas.
@@ -1399,6 +1415,10 @@ async function generarPDF() {
           margin: { left: 50, right: 50 }
         });
       }
+      // NUEVO: el titulo ya no va arriba -- ahora va abajo, centrado, en
+      // mayusculas y mas grande que el de Itinerario de Vuelo (pedido
+      // explicito: "letras mas grandes que abarque mas la pagina").
+      tituloSlideAbajo("Itinerario del Viaje", 26);
       piePagina(codigo);
     }
 
