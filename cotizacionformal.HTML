@@ -325,10 +325,10 @@ body, input, textarea, select, button {
     <label>Duración</label>
     <input id="duracion">
 
-    <label>Incluye</label>
+    <label>Incluye <span style="font-weight:normal; font-size:12px; color:#777;">(un ítem por línea — si algún ítem tiene una coma adentro, ej. "alojamiento en Medellín, Colombia", escribirlo en su propia línea así no se corta en dos)</span></label>
     <textarea id="incluye" ></textarea>
 
-    <label>No incluye</label>
+    <label>No incluye <span style="font-weight:normal; font-size:12px; color:#777;">(un ítem por línea, igual que Incluye)</span></label>
     <textarea id="no_incluye" ></textarea>
 
     <label>Itinerario <span style="font-weight:normal; font-size:12px; color:#777;">(un día por bloque — funciona tanto si escribís "Día 1" en su propia línea y la actividad debajo, como si ponés todo en una sola línea por día)</span></label>
@@ -1330,10 +1330,18 @@ async function generarPDF() {
     const catalogo = catalogoSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
     let actividadesIncluidasIds = [];
+    let experienciaTour = "";
     if (tourIdActual) {
       const tourDoc = await db.collection("tours").doc(tourIdActual).get();
       actividadesIncluidasIds = tourDoc.exists && Array.isArray(tourDoc.data().actividadesIncluidas)
         ? tourDoc.data().actividadesIncluidas : [];
+      // NUEVO: nombre de la experiencia (Flash/Esencial/Confort, o "Grupal"
+      // si no aplica nivel) para mostrar junto al destino en la slide de
+      // Incluye.
+      if (tourDoc.exists) {
+        const dTour = tourDoc.data();
+        experienciaTour = dTour.nivel || dTour.tipoSalida || "";
+      }
     }
     const incluidos = catalogo.filter(a => actividadesIncluidasIds.includes(a.id));
     const opcionales = catalogo.filter(a => !actividadesIncluidasIds.includes(a.id));
@@ -1505,26 +1513,37 @@ async function generarPDF() {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(48);
       doc.setTextColor(...BLANCO);
-      doc.text("Incluye en el paquete", 60, 100);
+      doc.text("Incluye en el paquete", 95, 108);
       doc.setDrawColor(...ACENTO);
       doc.setLineWidth(2);
-      doc.line(60, 118, 60 + doc.getTextWidth("Incluye en el paquete"), 118);
+      doc.line(95, 126, 95 + doc.getTextWidth("Incluye en el paquete"), 126);
 
       doc.setDrawColor(...ACENTO);
       doc.setLineWidth(1.5);
       doc.line(640, 150, 640, 660);
 
       // ---- Columna izquierda: Incluye, y debajo No incluye ----
-      const xIzq = 60;
-      const anchoIzq = 540;
+      const xIzq = 95;
+      const anchoIzq = 505;
       const altoDisponible = 660 - 160; // desde donde arranca el texto hasta el pie
 
       // Tamaños pedidos por el usuario -- con resguardo: si el contenido no
       // entra completo en el espacio disponible, se achican los dos juntos
       // (encabezado 40 y contenido 36) en pasos chicos hasta que quepan,
       // en vez de desbordarse fuera de la diapositiva.
+      // FIX: separar por coma partia frases que tienen una coma adentro
+      // (ej. "alojamiento en Medellín, Colombia" se cortaba en dos items).
+      // Ahora separa por SALTO DE LINEA si el texto tiene alguno (un item
+      // por linea, igual que el itinerario) -- solo cae a separar por coma
+      // si el texto viene todo en una sola linea (formato viejo). Ademas
+      // limpia cualquier vineta que ya viniera escrita en el texto, para no
+      // terminar con "• •" duplicado.
       function itemsDesdeTexto(texto) {
-        return texto.split(",").map(t => t.trim()).filter(Boolean);
+        const limpiarVineta = t => t.replace(/^[•\-\*]+\s*/, "").trim();
+        if (texto.includes("\n")) {
+          return texto.split("\n").map(limpiarVineta).filter(Boolean);
+        }
+        return texto.split(",").map(limpiarVineta).filter(Boolean);
       }
       function medirAltoBloque(titulo, items, tamTitulo, tamItem, ancho) {
         doc.setFont("helvetica", "normal");
@@ -1572,7 +1591,7 @@ async function generarPDF() {
 
       let yIzq = 160;
       if (itemsIncluye.length > 0) {
-        yIzq = dibujarBloque("Incluye:", itemsIncluye, BLANCO, xIzq, yIzq) + 20;
+        yIzq = dibujarBloque("Incluye:", itemsIncluye, BLANCO, xIzq, yIzq) + 8;
       }
       if (itemsNoIncluye.length > 0) {
         dibujarBloque("No incluye:", itemsNoIncluye, ACENTO, xIzq, yIzq);
@@ -1586,7 +1605,16 @@ async function generarPDF() {
       doc.setFontSize(30);
       doc.setTextColor(...BLANCO);
       doc.text("COTIZACIÓN", xCentroDer, yDer, { align: "center" });
-      yDer += 60;
+      yDer += 40;
+
+      // NUEVO: destino + experiencia (Flash/Esencial/Confort/Grupal) debajo
+      // del titulo "COTIZACIÓN".
+      const destinoConExperiencia = experienciaTour ? `${destino} — ${experienciaTour}` : destino;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(18);
+      doc.setTextColor(...GRIS_CLARO);
+      doc.text(destinoConExperiencia, xCentroDer, yDer, { align: "center" });
+      yDer += 42;
 
       function filaDetalle(etiqueta, valor) {
         if (!valor) return;
@@ -1605,13 +1633,18 @@ async function generarPDF() {
       filaDetalle("FECHA", data.fechas);
 
       const totalPersonas = (parseInt(data.adultos) || 0) + (parseInt(data.ninos) || 0) + (parseInt(data.bebes) || 0);
-      const desglosePersonas = [
+      const categoriasPersonas = [
         data.adultos && data.adultos !== "0" ? `${data.adultos} Adulto(s)` : null,
         data.ninos && data.ninos !== "0" ? `${data.ninos} Niño(s)` : null,
         data.bebes && data.bebes !== "0" ? `${data.bebes} Bebé(s)` : null
-      ].filter(Boolean).join(" · ");
-      if (totalPersonas > 0) {
-        filaDetalle("CANTIDAD DE PERSONAS", `${totalPersonas} — ${desglosePersonas}`);
+      ].filter(Boolean);
+      // FIX: si solo hay una categoria (ej. solo adultos), mostrar el total
+      // repetia el mismo numero dos veces ("2 — 2 Adulto(s)") -- ahora solo
+      // se antepone el total cuando hay MAS de una categoria mezclada.
+      if (categoriasPersonas.length === 1) {
+        filaDetalle("CANTIDAD DE PERSONAS", categoriasPersonas[0]);
+      } else if (categoriasPersonas.length > 1) {
+        filaDetalle("CANTIDAD DE PERSONAS", `${totalPersonas} — ${categoriasPersonas.join(" · ")}`);
       }
 
       const preciosPersona = [
@@ -1624,15 +1657,15 @@ async function generarPDF() {
       }
 
       if (data.total_general) {
-        yDer += 10;
+        yDer += 20;
         const textoTotal = `TOTAL: $${data.total_general}`;
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(24);
-        const anchoTexto = doc.getTextWidth(textoTotal) + 60;
+        doc.setFontSize(34);
+        const anchoTexto = doc.getTextWidth(textoTotal) + 80;
         doc.setDrawColor(...ACENTO);
-        doc.setLineWidth(1.5);
-        doc.setLineDashPattern([5, 4], 0);
-        doc.rect(xCentroDer - anchoTexto / 2, yDer - 30, anchoTexto, 46, "S");
+        doc.setLineWidth(2);
+        doc.setLineDashPattern([6, 5], 0);
+        doc.rect(xCentroDer - anchoTexto / 2, yDer - 40, anchoTexto, 64, "S");
         doc.setLineDashPattern([], 0);
         doc.setTextColor(...BLANCO);
         doc.text(textoTotal, xCentroDer, yDer, { align: "center" });
