@@ -696,7 +696,10 @@ let hotelGuardado = null;
         let nuevaX = (mx - editorVueloOffsetX) / ESCALA_EDITOR_VUELO;
         let nuevaY = (my - editorVueloOffsetY) / ESCALA_EDITOR_VUELO;
         nuevaX = Math.max(0, Math.min(1280 - p.w, nuevaX));
-        nuevaY = Math.max(0, Math.min(720 - p.h, nuevaY));
+        // FIX: antes se podia arrastrar la imagen hasta arriba de todo
+        // (y=0), tapando el titulo "Itinerario de Vuelo" -- ahora no deja
+        // bajar de y=140, que es justo donde termina la zona del titulo.
+        nuevaY = Math.max(140, Math.min(720 - p.h, nuevaY));
         p.x = nuevaX;
         p.y = nuevaY;
       } else if (editorVueloRedimensionando) {
@@ -1341,33 +1344,6 @@ async function generarPDF() {
       await agregarSlideImagenCompleta(configVisual.imagenAgradecer);
     }
 
-    // ---- Slide: Detalle del Viaje ----
-    nuevaSlide();
-    tituloSlide("Detalle del Viaje");
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(18);
-    doc.setTextColor(...BLANCO);
-    let yDetalle = 160;
-    const filasDetalle = [
-      ["Teléfono", data.telefono],
-      ["Fechas", data.fechas],
-      ["Adultos", data.adultos],
-      ["Niños", data.ninos !== "0" ? data.ninos : null],
-      ["Bebés", data.bebes !== "0" ? data.bebes : null],
-      ["Duración", data.duracion]
-    ];
-    filasDetalle.forEach(([label, valor]) => {
-      if (!valor) return;
-      doc.setFont("helvetica", "bold");
-      doc.text(`${label}:`, 60, yDetalle);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...GRIS_CLARO);
-      doc.text(String(valor), 260, yDetalle);
-      doc.setTextColor(...BLANCO);
-      yDetalle += 40;
-    });
-    piePagina(codigo);
-
     // ---- Slide: Itinerario de Vuelo (imagen subida) ----
     if (data.imagen_vuelo) {
       nuevaSlide();
@@ -1402,14 +1378,25 @@ async function generarPDF() {
       const contenidoDias = parsearItinerarioPorDia(data.itinerario);
       if (contenidoDias.length > 0) {
         const encabezados = contenidoDias.map((_, i) => `Día ${i + 1}`);
+        // NUEVO: tabla mas grande y con divisiones mas marcadas, parecida
+        // al "cuadro" que se usaba en las cotizaciones manuales -- celdas
+        // mas altas, letra mas grande, bordes mas visibles.
         doc.autoTable({
-          startY: 150,
+          startY: 180,
           head: [encabezados],
           body: [contenidoDias],
           theme: "grid",
-          styles: { fontSize: 14, textColor: [20, 20, 20], cellPadding: 12, valign: "middle", halign: "center" },
-          headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 15 },
-          margin: { left: 60, right: 60 }
+          styles: {
+            fontSize: 17,
+            textColor: [20, 20, 20],
+            cellPadding: { top: 22, right: 14, bottom: 22, left: 14 },
+            valign: "middle",
+            halign: "center",
+            lineWidth: 1,
+            lineColor: [2, 83, 90]
+          },
+          headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 18, cellPadding: { top: 16, right: 14, bottom: 16, left: 14 } },
+          margin: { left: 50, right: 50 }
         });
       }
       piePagina(codigo);
@@ -1419,31 +1406,49 @@ async function generarPDF() {
     if ((data.incluye && data.incluye.trim()) || (data.no_incluye && data.no_incluye.trim())) {
       nuevaSlide();
       tituloSlide("¿Qué Incluye?");
-      let yIncluye = 150;
-      if (data.incluye && data.incluye.trim()) {
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(18);
-        doc.setTextColor(...BLANCO);
-        doc.text("Incluye:", 60, yIncluye);
-        yIncluye += 32;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(15);
-        doc.setTextColor(...GRIS_CLARO);
-        const lineasIncluye = doc.splitTextToSize(data.incluye, 1160);
-        doc.text(lineasIncluye, 60, yIncluye);
-        yIncluye += lineasIncluye.length * 20 + 30;
+
+      // NUEVO: letra mas grande, y cuando hay incluye Y no incluye a la
+      // vez, se dividen en dos columnas con una linea vertical entre
+      // ambas -- si solo hay una de las dos, esa usa el ancho completo.
+      const tieneIncluye = !!(data.incluye && data.incluye.trim());
+      const tieneNoIncluye = !!(data.no_incluye && data.no_incluye.trim());
+      const dosColumnas = tieneIncluye && tieneNoIncluye;
+      const anchoColumna = dosColumnas ? 530 : 1160;
+      const xIncluye = 60;
+      const xNoIncluye = dosColumnas ? 700 : 60;
+
+      if (dosColumnas) {
+        doc.setDrawColor(...ACENTO);
+        doc.setLineWidth(1.5);
+        doc.line(640, 150, 640, 600);
       }
-      if (data.no_incluye && data.no_incluye.trim()) {
+
+      if (tieneIncluye) {
+        let y = 160;
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(18);
-        doc.setTextColor(...ACENTO);
-        doc.text("No incluye:", 60, yIncluye);
-        yIncluye += 32;
+        doc.setFontSize(22);
+        doc.setTextColor(...BLANCO);
+        doc.text("Incluye:", xIncluye, y);
+        y += 38;
         doc.setFont("helvetica", "normal");
-        doc.setFontSize(15);
+        doc.setFontSize(17);
         doc.setTextColor(...GRIS_CLARO);
-        const lineasNoIncluye = doc.splitTextToSize(data.no_incluye, 1160);
-        doc.text(lineasNoIncluye, 60, yIncluye);
+        const lineasIncluye = doc.splitTextToSize(data.incluye, anchoColumna);
+        doc.text(lineasIncluye, xIncluye, y);
+      }
+
+      if (tieneNoIncluye) {
+        let y = 160;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.setTextColor(...ACENTO);
+        doc.text("No incluye:", xNoIncluye, y);
+        y += 38;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(17);
+        doc.setTextColor(...GRIS_CLARO);
+        const lineasNoIncluye = doc.splitTextToSize(data.no_incluye, anchoColumna);
+        doc.text(lineasNoIncluye, xNoIncluye, y);
       }
       piePagina(codigo);
     }
