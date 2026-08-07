@@ -1772,6 +1772,11 @@ async function generarPDF() {
         return items.map(item => `•  ${item}`).join("\n");
       }
 
+      // NUEVO: encabezados centrados, cuerpo transparente (se ve el fondo
+      // oscuro de la diapositiva), y líneas punteadas en naranja, mismo
+      // lenguaje visual que el cuadro de Itinerario del Viaje.
+      doc.setDrawColor(...ACENTO);
+      doc.setLineDashPattern([4, 3], 0);
       doc.autoTable({
         startY: 130,
         head: [["Tour opcional", "Precio p.p", "Incluye"]],
@@ -1781,8 +1786,9 @@ async function generarPDF() {
           vinetasDesdeTexto(o.descripcion || "")
         ]),
         theme: "grid",
-        styles: { fontSize: 30, textColor: [20, 20, 20], cellPadding: 16, valign: "middle" },
-        headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 31 },
+        styles: { fontSize: 30, cellPadding: 16, valign: "middle", lineColor: ACENTO, lineWidth: 1 },
+        headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 31, halign: "center" },
+        bodyStyles: { fillColor: false, textColor: BLANCO },
         columnStyles: {
           0: { cellWidth: 260, fontStyle: "bold" },
           1: { cellWidth: 170, halign: "center", fontStyle: "bold" },
@@ -1790,6 +1796,7 @@ async function generarPDF() {
         },
         margin: { left: 220, right: 220 }
       });
+      doc.setLineDashPattern([], 0);
       piePagina(codigo);
     }
 
