@@ -1410,26 +1410,50 @@ async function generarPDF() {
       // línea como un día distinto y salían el doble de columnas.
       const contenidoDias = parsearItinerarioPorDia(data.itinerario);
       if (contenidoDias.length > 0) {
-        const encabezados = contenidoDias.map((_, i) => `Día ${i + 1}`);
-        // NUEVO: tabla mas grande y con divisiones mas marcadas, parecida
-        // al "cuadro" que se usaba en las cotizaciones manuales -- celdas
-        // mas altas, letra mas grande, bordes mas visibles.
-        doc.autoTable({
-          startY: 180,
-          head: [encabezados],
-          body: [contenidoDias],
-          theme: "grid",
-          styles: {
-            fontSize: 17,
-            textColor: [20, 20, 20],
-            cellPadding: { top: 22, right: 14, bottom: 22, left: 14 },
-            valign: "middle",
-            halign: "center",
-            lineWidth: 1,
-            lineColor: [2, 83, 90]
-          },
-          headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 18, cellPadding: { top: 16, right: 14, bottom: 16, left: 14 } },
-          margin: { left: 50, right: 50 }
+        // NUEVO: ya no es la tabla automatica de antes -- se dibuja a mano
+        // como el cuadro de las cotizaciones manuales: fondo en color,
+        // "Día N" arriba de cada columna, una linea punteada abajo del
+        // numero, el texto del dia debajo, y separadores punteados entre
+        // columnas.
+        const margenX = 50;
+        const anchoTotal = W - margenX * 2;
+        const anchoColumna = anchoTotal / contenidoDias.length;
+        const yTop = 110;
+        const altoTabla = 420;
+        const yDivisor = yTop + 78;
+        const COLOR_CAJA = [110, 190, 196];
+        const COLOR_BORDE_CAJA = [255, 255, 255];
+
+        doc.setFillColor(...COLOR_CAJA);
+        doc.rect(margenX, yTop, anchoTotal, altoTabla, "F");
+
+        doc.setDrawColor(...COLOR_BORDE_CAJA);
+        doc.setLineWidth(1.5);
+        doc.setLineDashPattern([], 0);
+        doc.rect(margenX, yTop, anchoTotal, altoTabla, "S");
+
+        contenidoDias.forEach((texto, i) => {
+          const x = margenX + i * anchoColumna;
+
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(26);
+          doc.setTextColor(...BLANCO);
+          doc.text(`Día ${i + 1}`, x + anchoColumna / 2, yTop + 48, { align: "center" });
+
+          doc.setDrawColor(...COLOR_BORDE_CAJA);
+          doc.setLineWidth(1);
+          doc.setLineDashPattern([5, 4], 0);
+          doc.line(x + 16, yDivisor, x + anchoColumna - 16, yDivisor);
+          if (i > 0) {
+            doc.line(x, yTop + 12, x, yTop + altoTabla - 12);
+          }
+          doc.setLineDashPattern([], 0);
+
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(20);
+          doc.setTextColor(...BLANCO);
+          const lineasTexto = doc.splitTextToSize(texto, anchoColumna - 30);
+          doc.text(lineasTexto, x + anchoColumna / 2, yDivisor + 34, { align: "center" });
         });
       }
       // NUEVO: el titulo ya no va arriba -- ahora va abajo, centrado, en
