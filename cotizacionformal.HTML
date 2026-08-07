@@ -1774,14 +1774,14 @@ async function generarPDF() {
           vinetasDesdeTexto(o.descripcion || "")
         ]),
         theme: "grid",
-        styles: { fontSize: 18, textColor: [20, 20, 20], cellPadding: 12, valign: "middle" },
-        headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 19 },
+        styles: { fontSize: 30, textColor: [20, 20, 20], cellPadding: 16, valign: "middle" },
+        headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 31 },
         columnStyles: {
-          0: { cellWidth: 220, fontStyle: "bold" },
-          1: { cellWidth: 130, halign: "center", fontStyle: "bold" },
+          0: { cellWidth: 260, fontStyle: "bold" },
+          1: { cellWidth: 170, halign: "center", fontStyle: "bold" },
           2: { cellWidth: "auto" }
         },
-        margin: { left: 100, right: 420 }
+        margin: { left: 220, right: 220 }
       });
       piePagina(codigo);
     }
