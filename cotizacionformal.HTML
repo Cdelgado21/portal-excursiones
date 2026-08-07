@@ -1487,54 +1487,157 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Slide: Incluye / No incluye ----
-    if ((data.incluye && data.incluye.trim()) || (data.no_incluye && data.no_incluye.trim())) {
+    // ---- Slide: Incluye en el paquete + detalles de la cotización ----
+    // NUEVO: esta slide ahora hace doble función -- a la izquierda van
+    // Incluye y No incluye apilados (uno debajo del otro), a la derecha un
+    // resumen de la cotización (fecha, personas, precio, total) que antes
+    // vivía en slides separadas ("Detalle del Viaje", que se quitó, e
+    // "Inversión por Viajero"). Por eso ahora se genera aunque no haya
+    // incluye/no_incluye, mientras haya algún dato de precio/fecha que
+    // mostrar a la derecha.
+    const tieneIncluye = !!(data.incluye && data.incluye.trim());
+    const tieneNoIncluye = !!(data.no_incluye && data.no_incluye.trim());
+    if (tieneIncluye || tieneNoIncluye || data.total_general) {
       nuevaSlide();
-      tituloSlide("¿Qué Incluye?");
 
-      // NUEVO: letra mas grande, y cuando hay incluye Y no incluye a la
-      // vez, se dividen en dos columnas con una linea vertical entre
-      // ambas -- si solo hay una de las dos, esa usa el ancho completo.
-      const tieneIncluye = !!(data.incluye && data.incluye.trim());
-      const tieneNoIncluye = !!(data.no_incluye && data.no_incluye.trim());
-      const dosColumnas = tieneIncluye && tieneNoIncluye;
-      const anchoColumna = dosColumnas ? 530 : 1160;
-      const xIncluye = 60;
-      const xNoIncluye = dosColumnas ? 700 : 60;
+      // Título pedido: "Incluye en el paquete", en 48px (el resto de los
+      // títulos usa tituloSlide con 30px por defecto -- este va más grande).
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(48);
+      doc.setTextColor(...BLANCO);
+      doc.text("Incluye en el paquete", 60, 100);
+      doc.setDrawColor(...ACENTO);
+      doc.setLineWidth(2);
+      doc.line(60, 118, 60 + doc.getTextWidth("Incluye en el paquete"), 118);
 
-      if (dosColumnas) {
+      doc.setDrawColor(...ACENTO);
+      doc.setLineWidth(1.5);
+      doc.line(640, 150, 640, 660);
+
+      // ---- Columna izquierda: Incluye, y debajo No incluye ----
+      const xIzq = 60;
+      const anchoIzq = 540;
+      const altoDisponible = 660 - 160; // desde donde arranca el texto hasta el pie
+
+      // Tamaños pedidos por el usuario -- con resguardo: si el contenido no
+      // entra completo en el espacio disponible, se achican los dos juntos
+      // (encabezado 40 y contenido 36) en pasos chicos hasta que quepan,
+      // en vez de desbordarse fuera de la diapositiva.
+      function itemsDesdeTexto(texto) {
+        return texto.split(",").map(t => t.trim()).filter(Boolean);
+      }
+      function medirAltoBloque(titulo, items, tamTitulo, tamItem, ancho) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(tamItem);
+        let alto = tamTitulo * 1.3;
+        items.forEach(item => {
+          const lineas = doc.splitTextToSize(`•  ${item}`, ancho);
+          alto += lineas.length * (tamItem * 1.15) + 8;
+        });
+        return alto;
+      }
+
+      const itemsIncluye = tieneIncluye ? itemsDesdeTexto(data.incluye) : [];
+      const itemsNoIncluye = tieneNoIncluye ? itemsDesdeTexto(data.no_incluye) : [];
+
+      let tamTitulo = 40;
+      let tamItem = 36;
+      while (tamTitulo > 15) {
+        const altoTotal =
+          (itemsIncluye.length > 0 ? medirAltoBloque("Incluye:", itemsIncluye, tamTitulo, tamItem, anchoIzq) + 20 : 0) +
+          (itemsNoIncluye.length > 0 ? medirAltoBloque("No incluye:", itemsNoIncluye, tamTitulo, tamItem, anchoIzq) : 0);
+        if (altoTotal <= altoDisponible) break;
+        tamTitulo -= 2;
+        tamItem -= 2;
+      }
+
+      function dibujarBloque(titulo, items, colorTitulo, x, yInicio) {
+        let y = yInicio;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(tamTitulo);
+        doc.setTextColor(...colorTitulo);
+        doc.text(titulo, x, y);
+        y += tamTitulo * 1.3;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(tamItem);
+        doc.setTextColor(...GRIS_CLARO);
+        items.forEach(item => {
+          const lineas = doc.splitTextToSize(`•  ${item}`, anchoIzq);
+          doc.text(lineas, x, y);
+          y += lineas.length * (tamItem * 1.15) + 8;
+        });
+        return y;
+      }
+
+      let yIzq = 160;
+      if (itemsIncluye.length > 0) {
+        yIzq = dibujarBloque("Incluye:", itemsIncluye, BLANCO, xIzq, yIzq) + 20;
+      }
+      if (itemsNoIncluye.length > 0) {
+        dibujarBloque("No incluye:", itemsNoIncluye, ACENTO, xIzq, yIzq);
+      }
+
+      // ---- Columna derecha: detalles de la cotización ----
+      const xCentroDer = 930;
+      let yDer = 170;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(30);
+      doc.setTextColor(...BLANCO);
+      doc.text("COTIZACIÓN", xCentroDer, yDer, { align: "center" });
+      yDer += 60;
+
+      function filaDetalle(etiqueta, valor) {
+        if (!valor) return;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(...ACENTO);
+        doc.text(etiqueta, xCentroDer, yDer, { align: "center" });
+        yDer += 26;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(20);
+        doc.setTextColor(...BLANCO);
+        doc.text(String(valor), xCentroDer, yDer, { align: "center" });
+        yDer += 48;
+      }
+
+      filaDetalle("FECHA", data.fechas);
+
+      const totalPersonas = (parseInt(data.adultos) || 0) + (parseInt(data.ninos) || 0) + (parseInt(data.bebes) || 0);
+      const desglosePersonas = [
+        data.adultos && data.adultos !== "0" ? `${data.adultos} Adulto(s)` : null,
+        data.ninos && data.ninos !== "0" ? `${data.ninos} Niño(s)` : null,
+        data.bebes && data.bebes !== "0" ? `${data.bebes} Bebé(s)` : null
+      ].filter(Boolean).join(" · ");
+      if (totalPersonas > 0) {
+        filaDetalle("CANTIDAD DE PERSONAS", `${totalPersonas} — ${desglosePersonas}`);
+      }
+
+      const preciosPersona = [
+        data.precio_adulto ? `$${data.precio_adulto} Adulto` : null,
+        data.precio_nino && data.precio_nino !== "0" ? `$${data.precio_nino} Niño` : null,
+        data.precio_bebe && data.precio_bebe !== "0" ? `$${data.precio_bebe} Bebé` : null
+      ].filter(Boolean).join(" · ");
+      if (preciosPersona) {
+        filaDetalle("PRECIO POR PERSONA", preciosPersona);
+      }
+
+      if (data.total_general) {
+        yDer += 10;
+        const textoTotal = `TOTAL: $${data.total_general}`;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(24);
+        const anchoTexto = doc.getTextWidth(textoTotal) + 60;
         doc.setDrawColor(...ACENTO);
         doc.setLineWidth(1.5);
-        doc.line(640, 150, 640, 600);
-      }
-
-      if (tieneIncluye) {
-        let y = 160;
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(22);
+        doc.setLineDashPattern([5, 4], 0);
+        doc.rect(xCentroDer - anchoTexto / 2, yDer - 30, anchoTexto, 46, "S");
+        doc.setLineDashPattern([], 0);
         doc.setTextColor(...BLANCO);
-        doc.text("Incluye:", xIncluye, y);
-        y += 38;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(17);
-        doc.setTextColor(...GRIS_CLARO);
-        const lineasIncluye = doc.splitTextToSize(data.incluye, anchoColumna);
-        doc.text(lineasIncluye, xIncluye, y);
+        doc.text(textoTotal, xCentroDer, yDer, { align: "center" });
       }
 
-      if (tieneNoIncluye) {
-        let y = 160;
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(22);
-        doc.setTextColor(...ACENTO);
-        doc.text("No incluye:", xNoIncluye, y);
-        y += 38;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(17);
-        doc.setTextColor(...GRIS_CLARO);
-        const lineasNoIncluye = doc.splitTextToSize(data.no_incluye, anchoColumna);
-        doc.text(lineasNoIncluye, xNoIncluye, y);
-      }
       piePagina(codigo);
     }
 
