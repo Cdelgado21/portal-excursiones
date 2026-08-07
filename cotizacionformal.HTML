@@ -1397,13 +1397,15 @@ async function generarPDF() {
         const dx = posV.x + (posV.w - dw) / 2;
         const dy = posV.y + (posV.h - dh) / 2;
         doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
-        // NUEVO: borde alrededor de la imagen, mismo estilo (color y grosor)
-        // que el cuadro de Itinerario del Viaje, para que se sientan parte
-        // de la misma linea grafica.
+        // FIX: el borde se dibujaba sobre el recuadro completo del editor
+        // de posición (posV), no sobre el tamaño real de la imagen dentro
+        // de él -- si la imagen no llenaba el recuadro completo (por su
+        // proporción), quedaba espacio vacío adentro del marco. Ahora se
+        // dibuja pegado al tamaño real ya calculado (dx,dy,dw,dh).
         doc.setDrawColor(...ACENTO);
         doc.setLineWidth(1.5);
         doc.setLineDashPattern([], 0);
-        doc.rect(posV.x, posV.y, posV.w, posV.h, "S");
+        doc.rect(dx, dy, dw, dh, "S");
       } catch (err) {
         console.warn("No se pudo cargar la imagen del itinerario de vuelo:", err);
         doc.setFont("helvetica", "normal");
@@ -1745,56 +1747,23 @@ async function generarPDF() {
     // ---- Slide de Tours Opcionales ----
     if (opcionales.length > 0) {
       nuevaSlide();
-      // Titulo corrido a la derecha (el avion tapaba la "T").
+      // Titulo corrido a la derecha (el avion tapaba la "T") -- esto se
+      // queda, fue un pedido aparte del diseño de filas que se revirtio.
       tituloSlide("Tours Opcionales", 90, 95);
 
-      // NUEVO: mismo estilo visual que el cuadro de Itinerario del Viaje
-      // (fondo teal, borde y divisores en naranja punteado) -- en filas en
-      // vez de columnas, porque cada tour trae nombre+descripcion+precio,
-      // que no encaja igual de bien como columna por dia.
-      const margenX = 50;
-      const anchoCaja = W - margenX * 2;
-      const yTop = 150;
-      const anchoTexto = anchoCaja - 40;
-
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(15);
-      const descripcionesPorTour = opcionales.map(o => doc.splitTextToSize(o.descripcion || "", anchoTexto));
-      function altoFila(desc) { return 26 + desc.length * 20 + 20; }
-      const altoCaja = descripcionesPorTour.reduce((suma, desc) => suma + altoFila(desc), 0) + 10;
-
-      doc.setFillColor(...TEAL);
-      doc.rect(margenX, yTop, anchoCaja, altoCaja, "F");
-      doc.setDrawColor(...ACENTO);
-      doc.setLineWidth(1.5);
-      doc.setLineDashPattern([], 0);
-      doc.rect(margenX, yTop, anchoCaja, altoCaja, "S");
-
-      let y = yTop + 26;
-      opcionales.forEach((o, i) => {
-        const desc = descripcionesPorTour[i];
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(18);
-        doc.setTextColor(...BLANCO);
-        doc.text(`${o.nombre || ""}  —  $${o.precio ?? 0}`, margenX + 20, y);
-        y += 26;
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(15);
-        doc.setTextColor(...GRIS_CLARO);
-        doc.text(desc, margenX + 20, y);
-        y += desc.length * 20;
-
-        if (i < opcionales.length - 1) {
-          doc.setDrawColor(...ACENTO);
-          doc.setLineWidth(1);
-          doc.setLineDashPattern([5, 4], 0);
-          doc.line(margenX + 20, y + 10, margenX + anchoCaja - 20, y + 10);
-          doc.setLineDashPattern([], 0);
-        }
-        y += 20;
+      // REVERTIDO: la version en filas (fondo teal, nombre+precio en una
+      // linea con la descripcion debajo) no funcionaba tan bien para leer
+      // la informacion -- se vuelve a la tabla de columnas (Tour Opcional /
+      // Descripción / Precio), que es como estaba antes y comunicaba mejor.
+      doc.autoTable({
+        startY: 130,
+        head: [["Tour Opcional", "Descripción", "Precio ($)"]],
+        body: opcionales.map(o => [o.nombre || "", o.descripcion || "", `$${o.precio ?? 0}`]),
+        theme: "grid",
+        styles: { fontSize: 13, textColor: [20, 20, 20], cellPadding: 8 },
+        headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold" },
+        margin: { left: 60, right: 60 }
       });
-
       piePagina(codigo);
     }
 
