@@ -1440,7 +1440,7 @@ async function generarPDF() {
           const x = margenX + i * anchoColumna;
 
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(32);
+          doc.setFontSize(48);
           doc.setTextColor(...BLANCO);
           doc.text(`Día ${i + 1}`, x + anchoColumna / 2, yTop + 52, { align: "center" });
 
@@ -1454,7 +1454,7 @@ async function generarPDF() {
           doc.setLineDashPattern([], 0);
 
           doc.setFont("helvetica", "normal");
-          doc.setFontSize(24);
+          doc.setFontSize(48);
           doc.setTextColor(...BLANCO);
           const lineasTexto = doc.splitTextToSize(texto, anchoColumna - 30);
           doc.text(lineasTexto, x + anchoColumna / 2, yDivisor + 38, { align: "center" });
