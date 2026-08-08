@@ -393,7 +393,6 @@
           <th>Encargado</th>
           <th>Asignación</th>
           <th>Acción</th>
-          <th>Editar</th>
           <th>Eliminar</th>
         </tr>
       </thead>
@@ -432,7 +431,6 @@
           <th>Encargado</th>
           <th>Asignación</th>
           <th>Acción</th>
-          <th>Editar</th>
           <th>Eliminar</th>
         </tr>
       </thead>
@@ -474,7 +472,6 @@
           <th>Encargado</th>
           <th>Asignación</th>
           <th>Acción</th>
-          <th>Editar</th>
           <th>Eliminar</th>
         </tr>
       </thead>
@@ -657,14 +654,12 @@
       if (d.estado === "Pendiente") {
         fila.innerHTML = celdasComunes + `
           <td><button class="btn-cotizar" onclick="mostrarVentanaCotizador('${doc.id}', '${d.numero}')">Tomar</button></td>
-          <td><button class="btn-icono" onclick="editarCotizacion('${doc.id}')">✏️</button></td>
           <td><button class="btn-icono" onclick="eliminarCotizacion('${doc.id}')">🗑️</button></td>
         `;
         tablaPendientes.appendChild(fila);
       } else if (d.estado === "En Proceso") {
         fila.innerHTML = celdasComunes + `
           <td><button class="btn-cotizar" onclick="verCotizacion('${d.numero}')">Ver</button></td>
-          <td><button class="btn-icono" onclick="editarCotizacion('${doc.id}')">✏️</button></td>
           <td><button class="btn-icono" onclick="eliminarCotizacion('${doc.id}')">🗑️</button></td>
         `;
         tablaEnProceso.appendChild(fila);
@@ -672,7 +667,6 @@
         // "Enviada" (o cualquier otro estado que no sea Pendiente/En Proceso)
         fila.innerHTML = celdasComunes + `
           <td><button class="btn-cotizar" onclick="verCotizacion('${d.numero}')">Ver</button></td>
-          <td><button class="btn-icono" onclick="editarCotizacion('${doc.id}')">✏️</button></td>
           <td><button class="btn-icono" onclick="eliminarCotizacion('${doc.id}')">🗑️</button></td>
         `;
         tablaEnviadas.appendChild(fila);
@@ -680,31 +674,9 @@
     });
   }
 
-  async function editarCotizacion(id) {
-    const doc = await db.collection("solicitud_cotizaciones").doc(id).get();
-    if (!doc.exists) return alert("Cotización no encontrada");
-
-    const data = doc.data();
-    document.getElementById("telefono").value = data.telefono;
-    destinoSelect.value = data.destino;
-    actualizarExperienciaParaDestino(data.destino);
-    // Espera a que se pinten las opciones de Experiencia antes de fijar el valor guardado.
-    setTimeout(() => {
-      if (data.tourId) {
-        experienciaSelect.value = data.tourId;
-        seleccionarExperiencia(data.tourId);
-      }
-    }, 0);
-    document.getElementById("fechas").value = data.fechas;
-    document.getElementById("adultos").value = data.adultos;
-    document.getElementById("ninos").value = data.ninos;
-    document.getElementById("bebes").value = data.bebes;
-    document.getElementById("observaciones").value = data.observaciones;
-    document.getElementById("embajador").value = data.embajador;
-
-    cotizacionEditandoId = id;
-    form.querySelector("button[type='submit']").textContent = "Actualizar solicitud";
-  }
+  // QUITADA: editarCotizacion() -- el botón "Editar" no funcionaba bien y
+  // se retiró. Para "En Proceso"/"Enviadas" el botón "Ver" ya lleva a
+  // cotizacionformal.html, que es donde se edita la cotización completa.
 
   // MEJORADO: antes solo borraba el documento de la solicitud, dejando
   // huérfanos el documento de cotizacionformal (si ya se había armado) y
