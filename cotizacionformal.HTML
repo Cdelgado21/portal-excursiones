@@ -945,7 +945,26 @@ ajustarAlturaTextareas();
     document.getElementById("total_general").value = (a * ca + n * cn + b * cb).toFixed(2);
   }
 
+  // NUEVO: valida que los datos más importantes de la cotización estén
+  // completos antes de guardar o generar el PDF. Devuelve la lista de lo
+  // que falta (vacío = todo OK).
+  function validarCamposCotizacion() {
+    const faltantes = [];
+    if (!document.getElementById("telefono").value.trim()) faltantes.push("Teléfono");
+    if (!document.getElementById("destino").value) faltantes.push("Destino");
+    if (!document.getElementById("fechas").value.trim()) faltantes.push("Fechas del viaje");
+    if (!(parseInt(document.getElementById("adultos").value) > 0)) faltantes.push("Adultos (debe ser al menos 1)");
+    if (!document.getElementById("hotel").value) faltantes.push("Hotel");
+    if (!(parseFloat(document.getElementById("precio_adulto").value) > 0)) faltantes.push("Precio por Adulto");
+    return faltantes;
+  }
+
  async function guardarCotizacion() {
+  const faltantes = validarCamposCotizacion();
+  if (faltantes.length > 0) {
+    alert("⚠️ Antes de guardar, completá estos datos:\n\n• " + faltantes.join("\n• "));
+    return;
+  }
   const data = {
 tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
     telefono: document.getElementById("telefono").value,
@@ -1143,6 +1162,12 @@ async function dibujarCollageFotos(doc, urls, x, y, areaW, areaH) {
 }
 
 async function generarPDF() {
+  const faltantes = validarCamposCotizacion();
+  if (faltantes.length > 0) {
+    alert("⚠️ Antes de generar el PDF, completá estos datos:\n\n• " + faltantes.join("\n• "));
+    return;
+  }
+
   const btn = document.getElementById("btn-generar-pdf");
   const estado = document.getElementById("estado-generacion-pdf");
   btn.disabled = true;
@@ -1675,19 +1700,16 @@ async function generarPDF() {
 
       filaDetalle("FECHA", data.fechas);
 
-      const totalPersonas = (parseInt(data.adultos) || 0) + (parseInt(data.ninos) || 0) + (parseInt(data.bebes) || 0);
+      // NUEVO: se quita el total de personas por completo (pedido
+      // explícito) -- solo se maneja por categoría (Adultos/Niños/Bebés),
+      // nunca un número combinado que pueda confundir al cliente.
       const categoriasPersonas = [
         data.adultos && data.adultos !== "0" ? `${data.adultos} Adulto(s)` : null,
         data.ninos && data.ninos !== "0" ? `${data.ninos} Niño(s)` : null,
         data.bebes && data.bebes !== "0" ? `${data.bebes} Bebé(s)` : null
       ].filter(Boolean);
-      // FIX: si solo hay una categoria (ej. solo adultos), mostrar el total
-      // repetia el mismo numero dos veces ("2 — 2 Adulto(s)") -- ahora solo
-      // se antepone el total cuando hay MAS de una categoria mezclada.
-      if (categoriasPersonas.length === 1) {
-        filaDetalle("CANTIDAD DE PERSONAS", categoriasPersonas[0]);
-      } else if (categoriasPersonas.length > 1) {
-        filaDetalle("CANTIDAD DE PERSONAS", `${totalPersonas} — ${categoriasPersonas.join(" · ")}`);
+      if (categoriasPersonas.length > 0) {
+        filaDetalle("CANTIDAD DE PERSONAS", categoriasPersonas.join(" · "));
       }
 
       const preciosPersona = [
