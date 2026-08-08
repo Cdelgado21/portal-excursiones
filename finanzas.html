@@ -560,6 +560,67 @@
     <div id="avisoSinDestinos" class="vacio" style="display:none;">No hay reservas con costos registrados en ese rango.</div>
   </div>
 
+  <div class="seccion" id="seccionGastosFijos">
+    <h3>💼 Gastos Fijos</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Gastos operativos que no dependen de una reserva puntual (nómina, publicidad, alquiler, etc.) — se restan de la ganancia en "Balance por Período" de abajo, prorrateados según los días del rango que elijas.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div style="flex:2; min-width:200px;">
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Descripción</label>
+        <input type="text" id="gastoDescripcion" placeholder="Ej. Pago quincenal a Tatiana" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
+      </div>
+      <div style="min-width:110px;">
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Monto</label>
+        <input type="number" id="gastoMonto" step="0.01" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
+      </div>
+      <div style="min-width:130px;">
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Frecuencia</label>
+        <select id="gastoFrecuencia" onchange="actualizarVisibilidadFechaGasto()" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
+          <option value="Mensual">Mensual</option>
+          <option value="Quincenal">Quincenal</option>
+          <option value="Semanal">Semanal</option>
+          <option value="Único">Único</option>
+        </select>
+      </div>
+      <div style="min-width:130px;">
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Categoría</label>
+        <select id="gastoCategoria" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
+          <option value="Nómina">Nómina</option>
+          <option value="Publicidad">Publicidad</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div id="contenedorFechaGasto" style="min-width:140px; display:none;">
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Fecha</label>
+        <input type="date" id="gastoFecha" style="width:100%; padding:8px; border-radius:6px; border:1px solid #ccc; box-sizing:border-box;">
+      </div>
+      <button type="button" onclick="agregarGastoFijo()" class="btn-panel-costos">➕ Agregar</button>
+    </div>
+
+    <div class="tarjetas" style="margin-bottom:15px;">
+      <div class="tarjeta pagar">
+        <div class="etiqueta">Total Mensual Comprometido</div>
+        <div class="monto" id="totalMensualGastos">$0.00</div>
+        <div class="detalle">Gastos activos recurrentes (Mensual/Quincenal/Semanal) llevados a equivalente mensual — no incluye los "Único"</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th>Monto</th>
+          <th>Frecuencia</th>
+          <th>Categoría</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tablaGastosFijos"></tbody>
+    </table>
+    <div id="avisoSinGastos" class="vacio" style="display:none;">No hay gastos fijos registrados todavía.</div>
+  </div>
+
   <div class="seccion">
     <h3>📑 Balance por Período</h3>
     <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE — así ves la ganancia real de los viajes que salieron (o van a salir) en ese rango, con el desglose de en qué se fue el costo.</p>
@@ -600,7 +661,13 @@
         <div class="monto" id="balanceGanancia">$0.00</div>
         <div class="detalle" id="balanceMargen">margen: 0%</div>
       </div>
+      <div class="tarjeta" style="border-left-color:#5f9296;">
+        <div class="etiqueta">Ganancia Real (con gastos fijos)</div>
+        <div class="monto" id="balanceGananciaReal">$0.00</div>
+        <div class="detalle" id="balanceMargenReal">margen real: 0%</div>
+      </div>
     </div>
+    <p style="font-size:0.8rem; color:#888; margin-top:-12px; margin-bottom:15px;">"Ganancia Real" resta los <span id="balanceGastosFijosResta">$0.00</span> de gastos fijos (nómina, publicidad, etc.) que le corresponden a este rango de fechas — ver sección "Gastos Fijos" arriba.</p>
 
     <h4 style="color:#02535a; margin-bottom:8px;">Desglose de Costos</h4>
     <table>
@@ -794,6 +861,9 @@
   // cada reserva, para poder armar la Proyección de Pago por Proveedor —
   // datosCostosPorCodigo solo tiene el total agregado, no el detalle.
   let datosCategoriasPorCodigo = {};
+  // NUEVO: gastos fijos operativos (nómina, publicidad, etc.), cargados una
+  // vez y reusados tanto por la sección propia como por Balance por Período.
+  let listaGastosFijos = [];
 
   async function cargarPanelFinanciero() {
     const hoy = new Date();
@@ -889,6 +959,9 @@
     aplicarRangoProveedores(30);
     // Ranking de Destinos por Margen — arranca mostrando todas las activas.
     aplicarRangoDestinosTodas();
+    // Gastos Fijos — se cargan antes de Balance, que ya los necesita para
+    // calcular la "Ganancia Real" desde el primer render.
+    await cargarGastosFijos();
     // Balance por Período arranca mostrando el mes en curso.
     aplicarRangoBalance("mes-actual");
     // Alerta de Cobro Urgente — no depende de un rango de fechas, siempre
@@ -1592,6 +1665,165 @@
   }
 
   // ==========================================
+  // NUEVO: Gastos Fijos — gastos operativos que no dependen de una reserva
+  // puntual (nómina, publicidad, alquiler, etc.). Se cargan una vez y se
+  // usan tanto en su propia sección como para restarlos de la ganancia en
+  // "Balance por Período".
+  // ==========================================
+
+  async function cargarGastosFijos() {
+    const snap = await db.collection("gastos_fijos").get();
+    listaGastosFijos = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    listaGastosFijos.sort((a, b) => (a.descripcion || "").localeCompare(b.descripcion || ""));
+    renderizarTablaGastosFijos();
+  }
+
+  function actualizarVisibilidadFechaGasto() {
+    const esUnico = document.getElementById("gastoFrecuencia").value === "Único";
+    document.getElementById("contenedorFechaGasto").style.display = esUnico ? "block" : "none";
+  }
+
+  // Convierte cualquier gasto recurrente a su equivalente MENSUAL, para
+  // poder sumarlos todos con la misma unidad en "Total Mensual Comprometido".
+  // Los "Único" no tienen un equivalente mensual (no se repiten), así que no
+  // entran en esta cuenta.
+  function montoMensualEquivalente(gasto) {
+    switch (gasto.frecuencia) {
+      case "Mensual": return gasto.monto;
+      case "Quincenal": return gasto.monto * 2;
+      case "Semanal": return gasto.monto * 4.345; // promedio de semanas por mes
+      default: return 0;
+    }
+  }
+
+  // Convierte un gasto recurrente a su equivalente DIARIO, para poder
+  // prorratearlo sobre cualquier rango de fechas elegido en Balance por
+  // Período (ej. un gasto Mensual de $500 son ~$16.43 por día).
+  function montoDiarioGasto(gasto) {
+    switch (gasto.frecuencia) {
+      case "Mensual": return gasto.monto / 30.44;
+      case "Quincenal": return gasto.monto / 15.22;
+      case "Semanal": return gasto.monto / 7;
+      default: return 0; // "Único" no se prorratea por día, se cuenta aparte
+    }
+  }
+
+  function calcularTotalMensualGastos() {
+    const total = listaGastosFijos
+      .filter(g => g.activo !== false)
+      .reduce((suma, g) => suma + montoMensualEquivalente(g), 0);
+    document.getElementById("totalMensualGastos").textContent = formatoMoneda(total);
+  }
+
+  // Gastos fijos que le corresponden a un rango de fechas específico (el
+  // que esté elegido en Balance por Período) — los recurrentes se
+  // prorratean por día, los "Único" se cuentan completos si su fecha cae
+  // dentro del rango.
+  function calcularGastosFijosEnRango(desde, hasta) {
+    if (!desde || !hasta) return 0;
+    const dias = Math.max(1, Math.round((hasta - desde) / 86400000) + 1);
+
+    let total = 0;
+    listaGastosFijos.forEach(g => {
+      if (g.activo === false) return;
+      if (g.frecuencia === "Único") {
+        if (!g.fecha) return;
+        const fechaGasto = new Date(g.fecha + "T12:00:00");
+        if (fechaGasto >= desde && fechaGasto <= hasta) total += Number(g.monto || 0);
+      } else {
+        total += montoDiarioGasto(g) * dias;
+      }
+    });
+    return total;
+  }
+
+  function renderizarTablaGastosFijos() {
+    const tabla = document.getElementById("tablaGastosFijos");
+    tabla.innerHTML = "";
+
+    if (listaGastosFijos.length === 0) {
+      document.getElementById("avisoSinGastos").style.display = "block";
+    } else {
+      document.getElementById("avisoSinGastos").style.display = "none";
+      listaGastosFijos.forEach(g => {
+        const activo = g.activo !== false;
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${g.descripcion || ""}${g.frecuencia === "Único" && g.fecha ? ` <span style="color:#888; font-size:0.8rem;">(${g.fecha})</span>` : ''}</td>
+          <td>${formatoMoneda(g.monto)}</td>
+          <td>${g.frecuencia || ""}</td>
+          <td>${g.categoria || ""}</td>
+          <td>
+            <button type="button" onclick="alternarActivoGasto('${g.id}', ${activo})" class="btn-rango" style="padding:4px 10px; font-size:0.8rem; ${activo ? '' : 'opacity:0.5;'}">${activo ? '✅ Activo' : '⏸️ Pausado'}</button>
+          </td>
+          <td><button type="button" onclick="eliminarGastoFijo('${g.id}')" style="background:#fbe2e0; color:#b23327; border:none; border-radius:6px; padding:6px 10px; cursor:pointer;">🗑️</button></td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+
+    calcularTotalMensualGastos();
+    // El total mensual y la lista de gastos activos pueden haber cambiado —
+    // si Balance por Período ya está renderizado, se vuelve a calcular con
+    // los datos frescos.
+    if (typeof renderizarBalance === "function" && document.getElementById("balanceDesde").value) {
+      renderizarBalance();
+    }
+  }
+
+  async function agregarGastoFijo() {
+    const descripcion = document.getElementById("gastoDescripcion").value.trim();
+    const monto = parseFloat(document.getElementById("gastoMonto").value) || 0;
+    const frecuencia = document.getElementById("gastoFrecuencia").value;
+    const categoria = document.getElementById("gastoCategoria").value;
+    const fecha = frecuencia === "Único" ? document.getElementById("gastoFecha").value : "";
+
+    if (!descripcion || monto <= 0) {
+      alert("Completá al menos la descripción y un monto mayor a $0.");
+      return;
+    }
+    if (frecuencia === "Único" && !fecha) {
+      alert("Los gastos \"Único\" necesitan una fecha, para saber en qué período contarlos.");
+      return;
+    }
+
+    try {
+      await db.collection("gastos_fijos").add({
+        descripcion, monto, frecuencia, categoria, fecha: fecha || null,
+        activo: true, creado_el: new Date()
+      });
+      document.getElementById("gastoDescripcion").value = "";
+      document.getElementById("gastoMonto").value = "";
+      document.getElementById("gastoFecha").value = "";
+      await cargarGastosFijos();
+    } catch (e) {
+      console.error("Error al guardar el gasto fijo:", e);
+      alert("❌ No se pudo guardar el gasto fijo.");
+    }
+  }
+
+  async function alternarActivoGasto(id, activoActual) {
+    try {
+      await db.collection("gastos_fijos").doc(id).update({ activo: !activoActual });
+      await cargarGastosFijos();
+    } catch (e) {
+      console.error("Error al cambiar el estado del gasto fijo:", e);
+      alert("❌ No se pudo actualizar.");
+    }
+  }
+
+  async function eliminarGastoFijo(id) {
+    if (!confirm("¿Eliminar este gasto fijo? No se puede deshacer.")) return;
+    try {
+      await db.collection("gastos_fijos").doc(id).delete();
+      await cargarGastosFijos();
+    } catch (e) {
+      console.error("Error al eliminar el gasto fijo:", e);
+      alert("❌ No se pudo eliminar.");
+    }
+  }
+
+  // ==========================================
   // NUEVO: Balance por Período — ingreso, costo desglosado por categoría y
   // ganancia de los viajes (fecha de VIAJE) dentro del rango elegido. Se
   // puede elegir un mes específico directo (ej. "Junio 2026") en vez de
@@ -1666,6 +1898,14 @@
     const ganancia = ingreso - costo;
     const margen = ingreso > 0 ? (ganancia / ingreso * 100) : 0;
 
+    // NUEVO: gastos fijos que le corresponden a este mismo rango de fechas
+    // (prorrateados por día para los recurrentes, completos para los
+    // "Único" cuya fecha caiga adentro) — se restan para mostrar la
+    // ganancia real del negocio, no solo la de las reservas.
+    const gastosFijosPeriodo = calcularGastosFijosEnRango(desde, hasta);
+    const gananciaReal = ganancia - gastosFijosPeriodo;
+    const margenReal = ingreso > 0 ? (gananciaReal / ingreso * 100) : 0;
+
     document.getElementById("balanceIngreso").textContent = formatoMoneda(ingreso);
     document.getElementById("balanceCantidad").textContent =
       `${conCostos.length} reserva${conCostos.length === 1 ? '' : 's'} con costos` +
@@ -1673,6 +1913,9 @@
     document.getElementById("balanceCosto").textContent = formatoMoneda(costo);
     document.getElementById("balanceGanancia").textContent = formatoMoneda(ganancia);
     document.getElementById("balanceMargen").textContent = `margen: ${margen.toFixed(1)}%`;
+    document.getElementById("balanceGananciaReal").textContent = formatoMoneda(gananciaReal);
+    document.getElementById("balanceMargenReal").textContent = `margen real: ${margenReal.toFixed(1)}%`;
+    document.getElementById("balanceGastosFijosResta").textContent = formatoMoneda(gastosFijosPeriodo);
 
     const tabla = document.getElementById("tablaDesgloseBalance");
     tabla.innerHTML = "";
@@ -1692,6 +1935,7 @@
     // volver a calcular ni leer los valores desde el DOM.
     ultimoBalanceCalculado = {
       desdeStr, hastaStr, ingreso, costo, ganancia, margen,
+      gastosFijosPeriodo, gananciaReal, margenReal,
       cantidad: conCostos.length, sinCostos, desglose
     };
   }
@@ -1729,7 +1973,10 @@
         ["Ingreso", formatoMoneda(b.ingreso)],
         ["Costo total", formatoMoneda(b.costo)],
         ["Ganancia", formatoMoneda(b.ganancia)],
-        ["Margen", `${b.margen.toFixed(1)}%`]
+        ["Margen", `${b.margen.toFixed(1)}%`],
+        ["Gastos fijos del período", formatoMoneda(b.gastosFijosPeriodo)],
+        ["Ganancia Real", formatoMoneda(b.gananciaReal)],
+        ["Margen Real", `${b.margenReal.toFixed(1)}%`]
       ],
       theme: "plain",
       headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
