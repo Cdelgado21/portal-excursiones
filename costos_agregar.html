@@ -324,7 +324,7 @@
     <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('comision'); return false;">➕ Otra embajadora</a>
   </div>
 
-  <div class="resultado">Ganancia Estimada: $<span id="gananciaProyectada">0.00</span></div>
+  <div class="resultado">Ganancia Estimada: $<span id="gananciaProyectada">0.00</span> <span id="porcentajeGanancia" style="font-weight:normal; font-size:15px; color:#5f9296;"></span></div>
 
   <button class="btn" onclick="guardarCostos()">Guardar Costos</button>
 
@@ -806,6 +806,15 @@
 
     const ganancia = venta - (boletos + totalCategorias);
     document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
+
+    // NUEVO: % de ganancia sobre la venta total, junto al monto.
+    const spanPorcentaje = document.getElementById("porcentajeGanancia");
+    if (venta > 0) {
+      const porcentaje = (ganancia / venta) * 100;
+      spanPorcentaje.textContent = `(${porcentaje.toFixed(1)}%)`;
+    } else {
+      spanPorcentaje.textContent = "";
+    }
   }
 
   async function guardarCostos() {
