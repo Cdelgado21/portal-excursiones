@@ -172,30 +172,44 @@ body, input, textarea, select, button {
   font-size: 15px;
 }
 
-/* NUEVO: previsualización de la captura de itinerario de vuelo */
-#imagenVueloPreview {
+/* NUEVO: lista de capturas de itinerario de vuelo (una o varias) */
+#listaCapturasVuelo {
   margin-top: 10px;
+}
+.captura-vuelo-item {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-#imagenVueloPreview img {
-  max-width: 260px;
-  max-height: 220px;
-  border-radius: 8px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding: 8px;
   border: 1px solid #ccc;
-  object-fit: contain;
+  border-radius: 8px;
 }
-#imagenVueloPreview button {
-  background-color: #c0392b;
-  color: white;
+.captura-vuelo-item img {
+  width: 80px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+.captura-vuelo-item .nombre-captura {
+  font-size: 13px;
+  color: #555;
+  flex: 1;
+}
+.captura-vuelo-item button {
   border: none;
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
   font-size: 13px;
-  align-self: center;
+  color: white;
+}
+.captura-vuelo-item .btn-ajustar-captura {
+  background-color: #02535a;
+}
+.captura-vuelo-item .btn-quitar-captura {
+  background-color: #c0392b;
 }
 /* NUEVO: aviso de qué actividades vienen incluidas según la variante de tour */
 #avisoActividadesIncluidas {
@@ -208,17 +222,6 @@ body, input, textarea, select, button {
   margin-top: 8px;
 }
 /* NUEVO: editor de posición/tamaño de la imagen del itinerario de vuelo */
-#btnAjustarPosicionVuelo {
-  display: none;
-  margin-top: 8px;
-  background-color: #02535a;
-  color: white;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 13px;
-}
 #modalPosicionVuelo {
   display: none;
   position: fixed;
@@ -352,15 +355,13 @@ body, input, textarea, select, button {
        transcribirla a mano cuando casi nunca se puede copiar y pegar
        directo de la página de la aerolínea. -->
 
-  <!-- Captura de pantalla del itinerario (ej. de la aerolínea o buscador de
-       vuelos) — se sube directo a Storage, se guarda con la cotización, y
-       aparece como su propio slide en la Cotización Visual. -->
-  <label>Captura de Itinerario de Vuelo (opcional)</label>
-  <div style="font-size:12px; color:#777; margin-top:-4px; margin-bottom:6px;">Sube una captura de pantalla (ej. de la página de la aerolínea o un buscador de vuelos) — se guarda con la cotización y sale como imagen en la Cotización Visual.</div>
+  <!-- NUEVO: ahora soporta VARIAS capturas (una por cada tramo/destino, si
+       la cotización cubre varios) — cada una se agrega a una lista y sale
+       como su propia diapositiva en la Cotización Visual. -->
+  <label>Capturas de Itinerario de Vuelo (opcional)</label>
+  <div style="font-size:12px; color:#777; margin-top:-4px; margin-bottom:6px;">Si la cotización tiene varios tramos o destinos (ej. San José→Medellín→Cartagena), subí una captura por cada uno — cada una sale como su propia diapositiva, en el orden en que las agregues. Podés elegir el archivo o pegarlas directo con <strong>Ctrl+V</strong> (una detrás de otra), sin necesidad de guardarlas primero. Después de cargada cada una, usá "Ajustar posición" si hace falta acomodarla.</div>
   <input type="file" id="imagenVueloInput" accept="image/*" />
-  <div id="imagenVueloPreview"></div>
-  <!-- NUEVO: editor visual de posición/tamaño para la imagen del vuelo. -->
-  <button type="button" id="btnAjustarPosicionVuelo" onclick="abrirEditorPosicionVuelo()">🖼️ Ajustar posición en la diapositiva</button>
+  <div id="listaCapturasVuelo"></div>
 
   <label>Equipaje</label>
   <label>Tipo de Equipaje</label>
@@ -476,12 +477,12 @@ let hotelGuardado = null;
   document.getElementById("titulo-cotizacion").textContent = `Detalle de Cotización ${codigo}`;
 
   let tourIdActual = "";
-  let imagenVueloUrl = "";
 
-  // NUEVO: posición/tamaño elegidos para la imagen del itinerario de vuelo,
-  // en coordenadas reales de la diapositiva (1280x720). null = usa la
-  // posición por defecto (esquina superior derecha).
-  let imagenVueloPos = null;
+  // NUEVO: ahora es un arreglo -- cada elemento es {url, pos} -- para
+  // soportar varias capturas cuando la cotización cubre varios tramos o
+  // destinos (ej. San José→Medellín→Cartagena). "pos" en coordenadas
+  // reales de la diapositiva (1280x720); null = posición por defecto.
+  let capturasVuelo = [];
   function posicionVueloPorDefecto() {
     return { x: 620, y: 150, w: 600, h: 380 };
   }
@@ -525,47 +526,74 @@ let hotelGuardado = null;
     return lineas.map(l => l.replace(prefijoInline, "").trim());
   }
 
-  function renderizarImagenVueloPreview() {
-    const contenedor = document.getElementById("imagenVueloPreview");
-    const btnAjustar = document.getElementById("btnAjustarPosicionVuelo");
-    if (!imagenVueloUrl) {
-      contenedor.innerHTML = "";
-      btnAjustar.style.display = "none";
-      return;
-    }
-    contenedor.innerHTML = `
-      <img src="${imagenVueloUrl}" alt="Itinerario de vuelo">
-      <button type="button" onclick="quitarImagenVuelo()">🗑️ Quitar</button>
-    `;
-    btnAjustar.style.display = "inline-block";
+  // NUEVO: pinta la lista completa de capturas ya agregadas, cada una con
+  // su propio botón de ajustar posición y de quitar.
+  function renderizarListaCapturasVuelo() {
+    const contenedor = document.getElementById("listaCapturasVuelo");
+    contenedor.innerHTML = capturasVuelo.map((c, i) => `
+      <div class="captura-vuelo-item">
+        <img src="${c.url}" alt="Captura ${i + 1}">
+        <span class="nombre-captura">Captura ${i + 1}${capturasVuelo.length > 1 ? ' (tramo ' + (i + 1) + ')' : ''}</span>
+        <button type="button" class="btn-ajustar-captura" onclick="abrirEditorPosicionVuelo(${i})">🖼️ Ajustar posición</button>
+        <button type="button" class="btn-quitar-captura" onclick="quitarCapturaVuelo(${i})">🗑️ Quitar</button>
+      </div>
+    `).join("");
   }
 
-  function quitarImagenVuelo() {
-    imagenVueloUrl = "";
-    imagenVueloPos = null;
-    renderizarImagenVueloPreview();
+  function quitarCapturaVuelo(indice) {
+    capturasVuelo.splice(indice, 1);
+    renderizarListaCapturasVuelo();
+  }
+
+  // Subida de una captura de vuelo -- se AGREGA a la lista (no reemplaza),
+  // así se pueden ir sumando una por cada tramo/destino. Se llama tanto
+  // desde el input de archivo como desde pegar (Ctrl+V) una imagen del
+  // portapapeles.
+  async function procesarArchivoVuelo(archivo) {
+    if (!archivo) return;
+
+    const contenedor = document.getElementById("listaCapturasVuelo");
+    const marcador = document.createElement("div");
+    marcador.className = "captura-vuelo-item";
+    marcador.innerHTML = `<span style="font-size:13px; color:#777;">⏳ Subiendo imagen...</span>`;
+    contenedor.appendChild(marcador);
+
+    try {
+      const nombreArchivo = `${Date.now()}_${archivo.name || "captura.png"}`;
+      const ref = storage.ref().child(`cotizaciones_vuelos/${codigo}/${nombreArchivo}`);
+      await ref.put(archivo);
+      const url = await ref.getDownloadURL();
+      capturasVuelo.push({ url, pos: null });
+    } catch (err) {
+      console.error("Error al subir la imagen de vuelo:", err);
+      alert("❌ No se pudo subir la imagen.");
+    }
+    renderizarListaCapturasVuelo();
   }
 
   document.getElementById("imagenVueloInput").addEventListener("change", async function (e) {
     const archivo = e.target.files?.[0];
-    if (!archivo) return;
-
-    const contenedor = document.getElementById("imagenVueloPreview");
-    contenedor.innerHTML = `<span style="font-size:13px; color:#777;">⏳ Subiendo imagen...</span>`;
-
-    try {
-      const nombreArchivo = `${Date.now()}_${archivo.name}`;
-      const ref = storage.ref().child(`cotizaciones_vuelos/${codigo}/${nombreArchivo}`);
-      await ref.put(archivo);
-      imagenVueloUrl = await ref.getDownloadURL();
-      imagenVueloPos = null; // imagen nueva → vuelve a la posición por defecto
-      renderizarImagenVueloPreview();
-    } catch (err) {
-      console.error("Error al subir la imagen de vuelo:", err);
-      alert("❌ No se pudo subir la imagen.");
-      contenedor.innerHTML = "";
-    }
+    await procesarArchivoVuelo(archivo);
     e.target.value = "";
+  });
+
+  // NUEVO: pegar (Ctrl+V) una captura directo del portapapeles -- así no
+  // hace falta guardarla como .jpg/.png en el disco primero. Funciona en
+  // cualquier parte de la página (no interfiere con pegar texto en otros
+  // campos, porque solo actúa si el portapapeles trae una imagen).
+  document.addEventListener("paste", async function (e) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const archivo = item.getAsFile();
+        if (archivo) {
+          e.preventDefault();
+          await procesarArchivoVuelo(archivo);
+        }
+        break;
+      }
+    }
   });
 
   // ---- Editor de posición/tamaño (arrastrar y redimensionar) ----
@@ -586,15 +614,20 @@ let hotelGuardado = null;
     ctx.drawImage(img, dx, dy, dw, dh);
   }
 
-  async function abrirEditorPosicionVuelo() {
-    if (!imagenVueloUrl) return;
-    if (!imagenVueloPos) imagenVueloPos = posicionVueloPorDefecto();
+  // NUEVO: recuerda cual captura del arreglo se esta editando ahora mismo.
+  let indiceEdicionVuelo = null;
+
+  async function abrirEditorPosicionVuelo(indice) {
+    const captura = capturasVuelo[indice];
+    if (!captura) return;
+    indiceEdicionVuelo = indice;
+    if (!captura.pos) captura.pos = posicionVueloPorDefecto();
 
     document.getElementById("modalPosicionVuelo").style.display = "flex";
 
     editorVueloImg = new Image();
     editorVueloImg.crossOrigin = "anonymous";
-    editorVueloImg.src = imagenVueloUrl;
+    editorVueloImg.src = captura.url;
     await new Promise(res => { editorVueloImg.onload = res; editorVueloImg.onerror = res; });
 
     editorVueloFondoImg = null;
@@ -629,20 +662,28 @@ let hotelGuardado = null;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Título simulado, para orientarse igual que en el PDF real.
+    // FIX: el título simulado estaba arriba a la izquierda, como quedaba
+    // ANTES de mover el título real a abajo (tituloSlideAbajo) -- ahora se
+    // dibuja donde realmente va a salir, centrado y en mayúsculas, arriba
+    // del pie de página, para que el editor represente bien la diapositiva.
+    const tituloSimulado = "ITINERARIO DE VUELO";
+    const centroTitulo = (1280 / 2 + 200) * ESCALA_EDITOR_VUELO;
+    const yTitulo = (720 - 46) * ESCALA_EDITOR_VUELO;
     ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 15px Arial";
-    ctx.fillText("Itinerario de Vuelo", 30, 45);
-    const anchoTitulo = ctx.measureText("Itinerario de Vuelo").width;
+    ctx.font = "bold 16px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText(tituloSimulado, centroTitulo, yTitulo);
+    const anchoTitulo = ctx.measureText(tituloSimulado).width;
     ctx.strokeStyle = "#f49859";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(30, 52);
-    ctx.lineTo(30 + anchoTitulo, 52);
+    ctx.moveTo(centroTitulo - anchoTitulo / 2, yTitulo + 6);
+    ctx.lineTo(centroTitulo + anchoTitulo / 2, yTitulo + 6);
     ctx.stroke();
+    ctx.textAlign = "left";
 
     // Imagen del vuelo, en su posición/tamaño actual (escalada al lienzo).
-    const p = imagenVueloPos;
+    const p = capturasVuelo[indiceEdicionVuelo].pos;
     const ex = p.x * ESCALA_EDITOR_VUELO;
     const ey = p.y * ESCALA_EDITOR_VUELO;
     const ew = p.w * ESCALA_EDITOR_VUELO;
@@ -667,7 +708,7 @@ let hotelGuardado = null;
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
-      const p = imagenVueloPos;
+      const p = capturasVuelo[indiceEdicionVuelo].pos;
       const ex = p.x * ESCALA_EDITOR_VUELO;
       const ey = p.y * ESCALA_EDITOR_VUELO;
       const ew = p.w * ESCALA_EDITOR_VUELO;
@@ -688,15 +729,15 @@ let hotelGuardado = null;
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
       const my = e.clientY - rect.top;
-      const p = imagenVueloPos;
+      const p = capturasVuelo[indiceEdicionVuelo].pos;
 
       if (editorVueloArrastrando) {
         let nuevaX = (mx - editorVueloOffsetX) / ESCALA_EDITOR_VUELO;
         let nuevaY = (my - editorVueloOffsetY) / ESCALA_EDITOR_VUELO;
         nuevaX = Math.max(0, Math.min(1280 - p.w, nuevaX));
-        // FIX: antes se podia arrastrar la imagen hasta arriba de todo
-        // (y=0), tapando el titulo "Itinerario de Vuelo" -- ahora no deja
-        // bajar de y=140, que es justo donde termina la zona del titulo.
+        // El título ya no va arriba (se movió abajo), pero se mantiene un
+        // piso en y=140 para no tapar el ícono decorativo del avión del
+        // fondo, que sigue estando ahí arriba.
         nuevaY = Math.max(140, Math.min(720 - p.h, nuevaY));
         p.x = nuevaX;
         p.y = nuevaY;
@@ -926,10 +967,15 @@ function mostrarToursOpcionalesGuardados(data) {
     document.getElementById("info_hotel").value = hotelGuardado.info;
   }
 
-  if (data.imagen_vuelo) {
-    imagenVueloUrl = data.imagen_vuelo;
-    imagenVueloPos = data.imagen_vuelo_pos || null;
-    renderizarImagenVueloPreview();
+  // NUEVO: si ya existe el arreglo de varias capturas, se usa tal cual;
+  // si es una cotización vieja (de antes de este cambio) con una sola
+  // captura en campos sueltos, se convierte a un arreglo de 1 elemento.
+  if (Array.isArray(data.capturasVuelo) && data.capturasVuelo.length > 0) {
+    capturasVuelo = data.capturasVuelo.map(c => ({ url: c.url, pos: c.pos || null }));
+    renderizarListaCapturasVuelo();
+  } else if (data.imagen_vuelo) {
+    capturasVuelo = [{ url: data.imagen_vuelo, pos: data.imagen_vuelo_pos || null }];
+    renderizarListaCapturasVuelo();
   }
 
 ajustarAlturaTextareas();
@@ -982,8 +1028,7 @@ tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
     itinerario: document.getElementById("itinerario").value,
 
     aerolinea: document.getElementById("aerolinea").value,
-    imagen_vuelo: imagenVueloUrl,
-    imagen_vuelo_pos: imagenVueloPos || null,
+    capturasVuelo: capturasVuelo,
     equipaje: document.getElementById("equipaje").value,
     hotel: document.getElementById("hotel").value,
     info_hotel: document.getElementById("info_hotel").value,
@@ -1198,7 +1243,6 @@ async function generarPDF() {
       itinerario: document.getElementById("itinerario").value,
       incluye: document.getElementById("incluye").value,
       no_incluye: document.getElementById("no_incluye").value,
-      imagen_vuelo: imagenVueloUrl,
       hotel: document.getElementById("hotel").value,
       info_hotel: document.getElementById("info_hotel").value,
       precio_adulto: document.getElementById("precio_adulto").value,
@@ -1395,37 +1439,31 @@ async function generarPDF() {
       await agregarSlideImagenCompleta(configVisual.imagenAgradecer);
     }
 
-    // ---- Slide: Itinerario de Vuelo (imagen subida) ----
-    if (data.imagen_vuelo) {
+    // ---- Slide(s): Itinerario de Vuelo (una por cada captura agregada) ----
+    for (const captura of capturasVuelo) {
+      if (!captura.url) continue;
       nuevaSlide();
       estado.textContent = "⏳ Cargando itinerario de vuelo...";
       try {
-        const { dataUrl, width, height } = await cargarImagenComoDataURL(data.imagen_vuelo);
-        const posV = imagenVueloPos || posicionVueloPorDefecto();
+        const { dataUrl, width, height } = await cargarImagenComoDataURL(captura.url);
+        const posV = captura.pos || posicionVueloPorDefecto();
         const ratio = Math.min(posV.w / width, posV.h / height);
         const dw = width * ratio;
         const dh = height * ratio;
         const dx = posV.x + (posV.w - dw) / 2;
         const dy = posV.y + (posV.h - dh) / 2;
         doc.addImage(dataUrl, "JPEG", dx, dy, dw, dh);
-        // FIX: el borde se dibujaba sobre el recuadro completo del editor
-        // de posición (posV), no sobre el tamaño real de la imagen dentro
-        // de él -- si la imagen no llenaba el recuadro completo (por su
-        // proporción), quedaba espacio vacío adentro del marco. Ahora se
-        // dibuja pegado al tamaño real ya calculado (dx,dy,dw,dh).
         doc.setDrawColor(...ACENTO);
         doc.setLineWidth(1.5);
         doc.setLineDashPattern([], 0);
         doc.rect(dx, dy, dw, dh, "S");
       } catch (err) {
-        console.warn("No se pudo cargar la imagen del itinerario de vuelo:", err);
+        console.warn("No se pudo cargar una imagen del itinerario de vuelo:", err);
         doc.setFont("helvetica", "normal");
         doc.setFontSize(16);
         doc.setTextColor(...GRIS_CLARO);
         doc.text("No se pudo cargar la imagen del itinerario.", 60, 200);
       }
-      // NUEVO: el titulo ya no va arriba (quedaba tapado por la imagen) --
-      // ahora va abajo, centrado, en mayusculas.
       tituloSlideAbajo("Itinerario de Vuelo", 72);
       piePagina(codigo);
     }
