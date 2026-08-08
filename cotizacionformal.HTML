@@ -731,21 +731,15 @@ let hotelGuardado = null;
       const my = e.clientY - rect.top;
       const p = capturasVuelo[indiceEdicionVuelo].pos;
 
+      // FIX: se quitaron los límites de posición y tamaño (piso en y=140,
+      // topes de ancho/alto según el espacio restante) — pedido explícito,
+      // para tener libertad total al mover y agrandar la imagen.
       if (editorVueloArrastrando) {
-        let nuevaX = (mx - editorVueloOffsetX) / ESCALA_EDITOR_VUELO;
-        let nuevaY = (my - editorVueloOffsetY) / ESCALA_EDITOR_VUELO;
-        nuevaX = Math.max(0, Math.min(1280 - p.w, nuevaX));
-        // El título ya no va arriba (se movió abajo), pero se mantiene un
-        // piso en y=140 para no tapar el ícono decorativo del avión del
-        // fondo, que sigue estando ahí arriba.
-        nuevaY = Math.max(140, Math.min(720 - p.h, nuevaY));
-        p.x = nuevaX;
-        p.y = nuevaY;
+        p.x = (mx - editorVueloOffsetX) / ESCALA_EDITOR_VUELO;
+        p.y = (my - editorVueloOffsetY) / ESCALA_EDITOR_VUELO;
       } else if (editorVueloRedimensionando) {
-        let nuevoAncho = (mx / ESCALA_EDITOR_VUELO) - p.x;
-        let nuevoAlto = (my / ESCALA_EDITOR_VUELO) - p.y;
-        p.w = Math.max(120, Math.min(1280 - p.x, nuevoAncho));
-        p.h = Math.max(80, Math.min(720 - p.y, nuevoAlto));
+        p.w = Math.max(20, (mx / ESCALA_EDITOR_VUELO) - p.x);
+        p.h = Math.max(20, (my / ESCALA_EDITOR_VUELO) - p.y);
       }
       dibujarEditorVuelo();
     };
