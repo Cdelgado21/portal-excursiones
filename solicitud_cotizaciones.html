@@ -7,6 +7,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
     /* NUEVO: menú lateral de navegación (mismo estilo que el resto del sistema) */
@@ -431,6 +432,8 @@
           <th>Encargado</th>
           <th>Asignación</th>
           <th>Acción</th>
+          <th>Editar</th>
+          <th>Eliminar</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -471,6 +474,8 @@
           <th>Encargado</th>
           <th>Asignación</th>
           <th>Acción</th>
+          <th>Editar</th>
+          <th>Eliminar</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -491,6 +496,7 @@
   };
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
+  const storage = firebase.storage();
 
   const form = document.getElementById("cotizacionForm");
   const destinoSelect = document.getElementById("destino");
@@ -658,12 +664,16 @@
       } else if (d.estado === "En Proceso") {
         fila.innerHTML = celdasComunes + `
           <td><button class="btn-cotizar" onclick="verCotizacion('${d.numero}')">Ver</button></td>
+          <td><button class="btn-icono" onclick="editarCotizacion('${doc.id}')">✏️</button></td>
+          <td><button class="btn-icono" onclick="eliminarCotizacion('${doc.id}')">🗑️</button></td>
         `;
         tablaEnProceso.appendChild(fila);
       } else {
         // "Enviada" (o cualquier otro estado que no sea Pendiente/En Proceso)
         fila.innerHTML = celdasComunes + `
           <td><button class="btn-cotizar" onclick="verCotizacion('${d.numero}')">Ver</button></td>
+          <td><button class="btn-icono" onclick="editarCotizacion('${doc.id}')">✏️</button></td>
+          <td><button class="btn-icono" onclick="eliminarCotizacion('${doc.id}')">🗑️</button></td>
         `;
         tablaEnviadas.appendChild(fila);
       }
@@ -696,11 +706,34 @@
     form.querySelector("button[type='submit']").textContent = "Actualizar solicitud";
   }
 
+  // MEJORADO: antes solo borraba el documento de la solicitud, dejando
+  // huérfanos el documento de cotizacionformal (si ya se había armado) y
+  // las capturas de itinerario de vuelo guardadas en Storage. Ahora borra
+  // los tres, para no acumular basura.
   async function eliminarCotizacion(id) {
-    if (confirm("¿Deseas eliminar esta cotización?")) {
-      await db.collection("solicitud_cotizaciones").doc(id).delete();
-      cargarCotizaciones();
+    if (!confirm("¿Deseas eliminar esta cotización? Esto también borra la cotización formal y las capturas de vuelo guardadas — no se puede deshacer.")) return;
+
+    // Borra todos los archivos de Storage guardados para este código
+    // (capturas de itinerario de vuelo), listando la carpeta completa en
+    // vez de intentar reconstruir cada URL a partir de lo guardado.
+    try {
+      const carpetaRef = storage.ref().child(`cotizaciones_vuelos/${id}`);
+      const listado = await carpetaRef.listAll();
+      await Promise.all(
+        listado.items.map(item => item.delete().catch(e => console.warn("No se pudo borrar un archivo de Storage:", e)))
+      );
+    } catch (e) {
+      console.warn("No se pudo listar/borrar los archivos de Storage de esta cotización:", e);
     }
+
+    try {
+      await db.collection("cotizacionformal").doc(id).delete();
+    } catch (e) {
+      console.warn("No se pudo borrar el documento de cotizacionformal (puede que no existiera):", e);
+    }
+
+    await db.collection("solicitud_cotizaciones").doc(id).delete();
+    cargarCotizaciones();
   }
 
   function mostrarVentanaCotizador(id, numero) {
