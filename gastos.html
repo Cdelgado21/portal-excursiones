@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gastos - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
+  <style>
+    /* Menú lateral — mismo estilo que el resto del sistema. */
+    .toggle-btn {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      font-size: 24px;
+      background: white;
+      color: #02535a;
+      border: none;
+      border-radius: 50%;
+      padding: 8px 12px;
+      z-index: 1100;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 250px;
+      height: 100%;
+      background-color: #02535a;
+      color: white;
+      padding: 20px;
+      transform: translateX(-250px);
+      transition: transform 0.3s ease;
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    .sidebar.active {
+      transform: translateX(0);
+    }
+    .sidebar .user-info {
+      text-align: center;
+      margin-bottom: 20px;
+      margin-top: 40px;
+    }
+    .sidebar .user-info .avatar {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      margin-bottom: 10px;
+    }
+    .sidebar .user-info h3 {
+      font-size: 1rem;
+      margin: 0;
+      color: white;
+    }
+    .sidebar .user-info small {
+      font-size: 0.8rem;
+      color: #f4f7f8;
+    }
+    .nav-links {
+      list-style: none;
+      padding: 0;
+    }
+    .nav-links li a {
+      background-color: #f4f7f8;
+      color: #02535a;
+      padding: 8px 12px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    .nav-links li a:hover {
+      background-color: #e0e0e0;
+    }
+    .nav-links li a.activo {
+      background-color: #ffb703;
+      color: #02535a;
+    }
+    .nav-links .icon {
+      margin-right: 10px;
+      font-size: 1.2rem;
+    }
+    main#contenidoPrincipal {
+      margin-left: 0;
+      padding: 20px 20px 20px 70px;
+      transition: margin-left 0.3s ease;
+      box-sizing: border-box;
+    }
+    main#contenidoPrincipal.sidebar-visible {
+      margin-left: 250px;
+      padding-left: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      main#contenidoPrincipal.sidebar-visible {
+        margin-left: 0;
+        padding-left: 70px;
+      }
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      margin: 0;
+      padding: 0;
+      color: #02535a;
+    }
+    h2 {
+      color: #02535a;
+      margin-bottom: 5px;
+    }
+    .subtitulo {
+      color: #5f9296;
+      margin-top: 0;
+      margin-bottom: 25px;
+      font-size: 0.95rem;
+    }
+
+    .tarjetas {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    .tarjeta {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 6px solid #02535a;
+    }
+    .tarjeta.pagar { border-left-color: #e07d3c; }
+    .tarjeta.operativo { border-left-color: #5f9296; }
+    .tarjeta.proveedor { border-left-color: #c0392b; }
+    .tarjeta.comision { border-left-color: #8e44ad; }
+    .tarjeta .etiqueta {
+      font-size: 0.85rem;
+      color: #5f9296;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .tarjeta .monto {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-top: 6px;
+      color: #02535a;
+    }
+    .tarjeta .detalle {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .seccion {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 30px;
+    }
+    .seccion h3 {
+      margin-top: 0;
+      color: #02535a;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      font-size: 0.9rem;
+    }
+    th {
+      background-color: #02535a;
+      color: white;
+    }
+    tr:hover { background-color: #f7fbfb; }
+    .vacio {
+      text-align: center;
+      color: #999;
+      padding: 20px;
+      font-size: 0.9rem;
+    }
+    .enlace-fila {
+      color: #02535a;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .enlace-fila:hover { text-decoration: underline; }
+    .btn-rango {
+      background: #eef6f6;
+      color: #02535a;
+      border: 1px solid #cfe3e4;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .btn-rango:hover { background: #dcecec; }
+    .btn-rango.activo {
+      background: #02535a;
+      color: white;
+      border-color: #02535a;
+    }
+    .btn-panel-costos {
+      display: inline-block;
+      margin-top: 4px;
+      background-color: #02535a;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9rem;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-panel-costos:hover { background-color: #036a6d; }
+    .campo-form {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #5f9296;
+      margin-bottom: 4px;
+    }
+    input[type="text"], input[type="number"], input[type="date"], select {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+    .pastilla-tipo {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .pastilla-operativo { background: #eaf0f0; color: #5f9296; }
+    .pastilla-proveedor { background: #fbe2e0; color: #c0392b; }
+    .pastilla-comision { background: #f1e6f7; color: #8e44ad; }
+    .pastilla-estado {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .pastilla-activo { background: #eafaf0; color: #1b9e3c; }
+    .pastilla-pausado { background: #f0f0f0; color: #888; }
+  </style>
+</head>
+<body>
+  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+  <div class="sidebar" id="sidebar">
+    <div class="user-info">
+      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
+      <h3 id="nombreUsuario">Cargando...</h3>
+      <small id="rolUsuario">-</small>
+    </div>
+    <ul class="nav-links">
+      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
+      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
+      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
+      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
+      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
+      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
+      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
+      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
+      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
+      <li><a href="gastos.html" class="activo"><span class="icon">💼</span>Gastos</a></li>
+      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
+    </ul>
+  </div>
+
+  <main id="contenidoPrincipal">
+
+  <h2>💼 Gastos</h2>
+  <p class="subtitulo">Diario de todo lo que sale de la agencia — gastos operativos (nómina, publicidad, etc.) junto con los pagos a proveedores y comisiones que ya marcás como pagados en Costos y Comisiones.</p>
+
+  <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+    <div>
+      <label class="campo-form">Desde</label>
+      <input type="date" id="diarioDesde">
+    </div>
+    <div>
+      <label class="campo-form">Hasta</label>
+      <input type="date" id="diarioHasta">
+    </div>
+    <div style="display:flex; gap:6px; flex-wrap:wrap;">
+      <button type="button" onclick="aplicarRangoDiario('mes-actual')" class="btn-rango btn-rango-diario activo">Este mes</button>
+      <button type="button" onclick="aplicarRangoDiario('mes-anterior')" class="btn-rango btn-rango-diario">Mes anterior</button>
+      <button type="button" onclick="aplicarRangoDiario('ano-actual')" class="btn-rango btn-rango-diario">Este año</button>
+      <button type="button" onclick="aplicarRangoDiarioTodo()" class="btn-rango btn-rango-diario">Todo</button>
+    </div>
+  </div>
+
+  <div class="tarjetas">
+    <div class="tarjeta pagar">
+      <div class="etiqueta">Total del Período</div>
+      <div class="monto" id="totalPeriodoDiario">$0.00</div>
+      <div class="detalle" id="cantidadPeriodoDiario">0 movimientos</div>
+    </div>
+    <div class="tarjeta operativo">
+      <div class="etiqueta">Operativos</div>
+      <div class="monto" id="totalOperativoDiario">$0.00</div>
+      <div class="detalle">Nómina, publicidad, apps, etc.</div>
+    </div>
+    <div class="tarjeta proveedor">
+      <div class="etiqueta">Proveedores</div>
+      <div class="monto" id="totalProveedorDiario">$0.00</div>
+      <div class="detalle">Hospedaje, traslados, tours</div>
+    </div>
+    <div class="tarjeta comision">
+      <div class="etiqueta">Comisiones</div>
+      <div class="monto" id="totalComisionDiario">$0.00</div>
+      <div class="detalle">Pagadas a embajadoras/vendedores</div>
+    </div>
+  </div>
+
+  <div class="seccion" id="seccionPlantillas">
+    <h3>📋 Plantillas de Gastos Fijos</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Atajos para los gastos que se repiten (ej. pago quincenal a Tatiana, publicidad mensual) — "Registrar pago" prellena el formulario de abajo, solo confirmás la fecha.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div style="flex:2; min-width:200px;">
+        <label class="campo-form">Descripción</label>
+        <input type="text" id="plantillaDescripcion" placeholder="Ej. Pago quincenal a Tatiana" style="width:100%;">
+      </div>
+      <div style="min-width:110px;">
+        <label class="campo-form">Monto sugerido</label>
+        <input type="number" id="plantillaMonto" step="0.01" style="width:100%;">
+      </div>
+      <div style="min-width:130px;">
+        <label class="campo-form">Frecuencia</label>
+        <select id="plantillaFrecuencia" style="width:100%;">
+          <option value="Mensual">Mensual</option>
+          <option value="Quincenal">Quincenal</option>
+          <option value="Semanal">Semanal</option>
+        </select>
+      </div>
+      <div style="min-width:130px;">
+        <label class="campo-form">Categoría</label>
+        <select id="plantillaCategoria" style="width:100%;">
+          <option value="Nómina">Nómina</option>
+          <option value="Publicidad">Publicidad</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <button type="button" onclick="agregarPlantillaGasto()" class="btn-panel-costos">➕ Agregar plantilla</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Descripción</th>
+          <th>Monto sugerido</th>
+          <th>Frecuencia</th>
+          <th>Categoría</th>
+          <th>Estado</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tablaPlantillas"></tbody>
+    </table>
+    <div id="avisoSinPlantillas" class="vacio" style="display:none;">No hay plantillas todavía — no son obligatorias, podés registrar pagos sueltos abajo igual.</div>
+  </div>
+
+  <div class="seccion" id="seccionRegistrar">
+    <h3>➕ Registrar Pago</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Para gastos operativos puntuales, o para confirmar el pago de una plantilla de arriba.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
+      <div style="flex:2; min-width:200px;">
+        <label class="campo-form">Descripción</label>
+        <input type="text" id="movDescripcion" placeholder="Ej. Pago quincenal a Tatiana" style="width:100%;">
+      </div>
+      <div style="min-width:110px;">
+        <label class="campo-form">Monto</label>
+        <input type="number" id="movMonto" step="0.01" style="width:100%;">
+      </div>
+      <div style="min-width:130px;">
+        <label class="campo-form">Categoría</label>
+        <select id="movCategoria" style="width:100%;">
+          <option value="Nómina">Nómina</option>
+          <option value="Publicidad">Publicidad</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div style="min-width:140px;">
+        <label class="campo-form">Fecha del pago</label>
+        <input type="date" id="movFecha" style="width:100%;">
+      </div>
+      <button type="button" onclick="agregarMovimientoGasto()" class="btn-panel-costos">💾 Guardar pago</button>
+    </div>
+  </div>
+
+  <div class="seccion">
+    <h3>📖 Diario de Pagos</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Todo lo pagado en el rango elegido arriba, más reciente primero. Los pagos a proveedores/comisiones se editan desde Costos o Comisiones — acá solo se muestran.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Descripción</th>
+          <th>Categoría</th>
+          <th>Monto</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tablaDiario"></tbody>
+    </table>
+    <div id="avisoSinDiario" class="vacio" style="display:none;">No hay pagos registrados en este rango.</div>
+  </div>
+
+  </main>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.firebasestorage.app",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function formatoMoneda(valor) {
+    return `$${(valor || 0).toFixed(2)}`;
+  }
+
+  function formatearFechaVisible(fecha) {
+    if (!fecha) return '-';
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const año = fecha.getFullYear();
+    return `${dia}/${mes}/${año}`;
+  }
+
+  function formatearFechaInput(fecha) {
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    return `${fecha.getFullYear()}-${mes}-${dia}`;
+  }
+
+  // ==========================================
+  // Plantillas de Gastos Fijos — colección "gastos_fijos", igual esquema
+  // que se había armado antes en finanzas.html, ahora acá.
+  // ==========================================
+
+  let listaPlantillas = [];
+
+  async function cargarPlantillas() {
+    const snap = await db.collection("gastos_fijos").get();
+    listaPlantillas = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    listaPlantillas.sort((a, b) => (a.descripcion || "").localeCompare(b.descripcion || ""));
+    renderizarTablaPlantillas();
+  }
+
+  function renderizarTablaPlantillas() {
+    const tabla = document.getElementById("tablaPlantillas");
+    tabla.innerHTML = "";
+
+    if (listaPlantillas.length === 0) {
+      document.getElementById("avisoSinPlantillas").style.display = "block";
+    } else {
+      document.getElementById("avisoSinPlantillas").style.display = "none";
+      listaPlantillas.forEach(p => {
+        const activo = p.activo !== false;
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${p.descripcion || ""}</td>
+          <td>${formatoMoneda(p.monto)}</td>
+          <td>${p.frecuencia || ""}</td>
+          <td>${p.categoria || ""}</td>
+          <td><span class="pastilla-estado ${activo ? 'pastilla-activo' : 'pastilla-pausado'}">${activo ? 'Activo' : 'Pausado'}</span></td>
+          <td style="white-space:nowrap;">
+            <button type="button" onclick="registrarPagoDesdePlantilla('${p.id}')" class="btn-rango" style="padding:4px 10px; font-size:0.78rem;">💰 Registrar pago</button>
+            <button type="button" onclick="alternarActivoPlantilla('${p.id}', ${activo})" class="btn-rango" style="padding:4px 10px; font-size:0.78rem;">${activo ? '⏸️' : '▶️'}</button>
+            <button type="button" onclick="eliminarPlantilla('${p.id}')" style="background:#fbe2e0; color:#b23327; border:none; border-radius:6px; padding:5px 9px; cursor:pointer;">🗑️</button>
+          </td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  async function agregarPlantillaGasto() {
+    const descripcion = document.getElementById("plantillaDescripcion").value.trim();
+    const monto = parseFloat(document.getElementById("plantillaMonto").value) || 0;
+    const frecuencia = document.getElementById("plantillaFrecuencia").value;
+    const categoria = document.getElementById("plantillaCategoria").value;
+
+    if (!descripcion || monto <= 0) {
+      alert("Completá al menos la descripción y un monto mayor a $0.");
+      return;
+    }
+
+    try {
+      await db.collection("gastos_fijos").add({
+        descripcion, monto, frecuencia, categoria, activo: true, creado_el: new Date()
+      });
+      document.getElementById("plantillaDescripcion").value = "";
+      document.getElementById("plantillaMonto").value = "";
+      await cargarPlantillas();
+    } catch (e) {
+      console.error("Error al guardar la plantilla:", e);
+      alert("❌ No se pudo guardar la plantilla.");
+    }
+  }
+
+  async function alternarActivoPlantilla(id, activoActual) {
+    try {
+      await db.collection("gastos_fijos").doc(id).update({ activo: !activoActual });
+      await cargarPlantillas();
+    } catch (e) {
+      console.error("Error al cambiar el estado de la plantilla:", e);
+      alert("❌ No se pudo actualizar.");
+    }
+  }
+
+  async function eliminarPlantilla(id) {
+    if (!confirm("¿Eliminar esta plantilla? No borra los pagos ya registrados con ella, solo el atajo.")) return;
+    try {
+      await db.collection("gastos_fijos").doc(id).delete();
+      await cargarPlantillas();
+    } catch (e) {
+      console.error("Error al eliminar la plantilla:", e);
+      alert("❌ No se pudo eliminar.");
+    }
+  }
+
+  // Prellena el formulario de "Registrar Pago" con los datos de la
+  // plantilla — solo falta confirmar la fecha y guardar.
+  function registrarPagoDesdePlantilla(id) {
+    const p = listaPlantillas.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById("movDescripcion").value = p.descripcion || "";
+    document.getElementById("movMonto").value = p.monto || "";
+    document.getElementById("movCategoria").value = p.categoria || "Otro";
+    document.getElementById("movFecha").value = formatearFechaInput(new Date());
+    document.getElementById("seccionRegistrar").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  // ==========================================
+  // Registro de pagos operativos — colección "movimientos_gastos". Esto es
+  // lo único que finanzas.html lee (solo lectura allá) para restar de la
+  // ganancia en "Balance por Período".
+  // ==========================================
+
+  async function agregarMovimientoGasto() {
+    const descripcion = document.getElementById("movDescripcion").value.trim();
+    const monto = parseFloat(document.getElementById("movMonto").value) || 0;
+    const categoria = document.getElementById("movCategoria").value;
+    const fecha = document.getElementById("movFecha").value;
+
+    if (!descripcion || monto <= 0 || !fecha) {
+      alert("Completá descripción, monto y fecha antes de guardar.");
+      return;
+    }
+
+    try {
+      await db.collection("movimientos_gastos").add({
+        descripcion, monto, categoria, fecha, creado_el: new Date()
+      });
+      document.getElementById("movDescripcion").value = "";
+      document.getElementById("movMonto").value = "";
+      document.getElementById("movFecha").value = "";
+      alert("✅ Pago registrado.");
+      await cargarDiario();
+    } catch (e) {
+      console.error("Error al guardar el pago:", e);
+      alert("❌ No se pudo guardar el pago.");
+    }
+  }
+
+  async function eliminarMovimientoGasto(id) {
+    if (!confirm("¿Eliminar este pago? No se puede deshacer.")) return;
+    try {
+      await db.collection("movimientos_gastos").doc(id).delete();
+      await cargarDiario();
+    } catch (e) {
+      console.error("Error al eliminar el pago:", e);
+      alert("❌ No se pudo eliminar.");
+    }
+  }
+
+  // ==========================================
+  // Diario de Pagos — combina los movimientos operativos propios de esta
+  // página con los pagos a proveedores/comisiones que ya se marcan como
+  // "real" (pagado) en costos_agregar.html / comisiones.html, sin duplicar
+  // ese dato: se lee directo de costos_reservas, no se vuelve a escribir
+  // acá. Los boletos aéreos (boletos_real) se dejan afuera del diario por
+  // ahora -- esa reserva no guarda una fecha de pago propia para el
+  // boleto, así que no hay una fecha confiable para ubicarlo en el tiempo.
+  // ==========================================
+
+  let datosReservasResumen = {};
+  let datosMovimientosOperativos = [];
+  let datosPagosProveedoresComisiones = [];
+
+  async function cargarDatosBase() {
+    const reservasSnap = await db.collection("reservas").get();
+    reservasSnap.forEach(doc => {
+      const d = doc.data();
+      datosReservasResumen[doc.id] = { titular: d.nombreTitular || '-', destino: d.nombreDestino || '' };
+    });
+
+    const costosSnap = await db.collection("costos_reservas").get();
+    const pagos = [];
+    costosSnap.forEach(doc => {
+      const data = doc.data();
+      const codigo = data.codigo;
+      const resumenReserva = datosReservasResumen[codigo] || {};
+
+      ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+        let items = data.categorias?.[clave];
+        if (!items) items = [];
+        else if (!Array.isArray(items)) items = [items];
+
+        items.forEach(item => {
+          if (typeof item.real !== "number") return;
+          const fechaPago = item.fecha_pago_real?.toDate ? item.fecha_pago_real.toDate() : (item.fecha_pago_real ? new Date(item.fecha_pago_real) : null);
+          if (!fechaPago) return;
+
+          pagos.push({
+            tipo: clave === "comision" ? "Comisión" : "Proveedor",
+            fecha: fechaPago,
+            descripcion: `${item.proveedor || 'Sin nombre'} — ${resumenReserva.titular || codigo}`,
+            categoria: clave === "comision" ? "Comisión" : (clave === "hospedaje" ? "Hospedaje" : clave === "traslados" ? "Traslados" : "Tours"),
+            monto: item.real,
+            codigo
+          });
+        });
+      });
+    });
+    datosPagosProveedoresComisiones = pagos;
+  }
+
+  async function cargarDiario() {
+    const movSnap = await db.collection("movimientos_gastos").get();
+    datosMovimientosOperativos = movSnap.docs.map(doc => {
+      const d = doc.data();
+      return {
+        id: doc.id,
+        tipo: "Operativo",
+        fecha: d.fecha ? new Date(d.fecha + "T12:00:00") : null,
+        descripcion: d.descripcion || "",
+        categoria: d.categoria || "Otro",
+        monto: Number(d.monto || 0)
+      };
+    });
+    renderizarDiario();
+  }
+
+  function renderizarDiario() {
+    const desdeStr = document.getElementById("diarioDesde").value;
+    const hastaStr = document.getElementById("diarioHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const todos = [...datosMovimientosOperativos, ...datosPagosProveedoresComisiones].filter(m => {
+      if (!m.fecha) return false;
+      if (desde && m.fecha < desde) return false;
+      if (hasta && m.fecha > hasta) return false;
+      return true;
+    });
+    todos.sort((a, b) => b.fecha - a.fecha);
+
+    let totalOperativo = 0, totalProveedor = 0, totalComision = 0;
+    todos.forEach(m => {
+      if (m.tipo === "Operativo") totalOperativo += m.monto;
+      else if (m.tipo === "Comisión") totalComision += m.monto;
+      else totalProveedor += m.monto;
+    });
+    const totalGeneral = totalOperativo + totalProveedor + totalComision;
+
+    document.getElementById("totalPeriodoDiario").textContent = formatoMoneda(totalGeneral);
+    document.getElementById("cantidadPeriodoDiario").textContent = `${todos.length} movimiento${todos.length === 1 ? '' : 's'}`;
+    document.getElementById("totalOperativoDiario").textContent = formatoMoneda(totalOperativo);
+    document.getElementById("totalProveedorDiario").textContent = formatoMoneda(totalProveedor);
+    document.getElementById("totalComisionDiario").textContent = formatoMoneda(totalComision);
+
+    const tabla = document.getElementById("tablaDiario");
+    tabla.innerHTML = "";
+    if (todos.length === 0) {
+      document.getElementById("avisoSinDiario").style.display = "block";
+    } else {
+      document.getElementById("avisoSinDiario").style.display = "none";
+      const claseTipo = { "Operativo": "pastilla-operativo", "Proveedor": "pastilla-proveedor", "Comisión": "pastilla-comision" };
+      todos.forEach(m => {
+        const fila = document.createElement("tr");
+        const accion = m.tipo === "Operativo"
+          ? `<button type="button" onclick="eliminarMovimientoGasto('${m.id}')" style="background:#fbe2e0; color:#b23327; border:none; border-radius:6px; padding:5px 9px; cursor:pointer;">🗑️</button>`
+          : `<a href="costos_agregar.html?reserva=${m.codigo}" class="enlace-fila">Ver reserva</a>`;
+        fila.innerHTML = `
+          <td>${formatearFechaVisible(m.fecha)}</td>
+          <td><span class="pastilla-tipo ${claseTipo[m.tipo]}">${m.tipo}</span></td>
+          <td>${m.descripcion}</td>
+          <td>${m.categoria}</td>
+          <td>${formatoMoneda(m.monto)}</td>
+          <td>${accion}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  function aplicarRangoDiario(tipo) {
+    const hoy = new Date();
+    let desde, hasta;
+    if (tipo === "mes-actual") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    } else if (tipo === "mes-anterior") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    } else if (tipo === "ano-actual") {
+      desde = new Date(hoy.getFullYear(), 0, 1);
+      hasta = new Date(hoy.getFullYear(), 11, 31);
+    }
+    document.getElementById("diarioDesde").value = formatearFechaInput(desde);
+    document.getElementById("diarioHasta").value = formatearFechaInput(hasta);
+    document.querySelectorAll(".btn-rango-diario").forEach(btn => btn.classList.remove("activo"));
+    const indice = { "mes-actual": 0, "mes-anterior": 1, "ano-actual": 2 }[tipo];
+    document.querySelectorAll(".btn-rango-diario")[indice]?.classList.add("activo");
+    renderizarDiario();
+  }
+
+  function aplicarRangoDiarioTodo() {
+    document.getElementById("diarioDesde").value = "";
+    document.getElementById("diarioHasta").value = "";
+    document.querySelectorAll(".btn-rango-diario").forEach(btn => btn.classList.remove("activo"));
+    document.querySelectorAll(".btn-rango-diario")[3]?.classList.add("activo");
+    renderizarDiario();
+  }
+
+  // Menú lateral de navegación (igual que el resto del sistema)
+  function inicializarMenuLateral() {
+    const usuario = JSON.parse(localStorage.getItem("usuario"));
+    const sidebar = document.getElementById("sidebar");
+    const contenido = document.getElementById("contenidoPrincipal");
+    const toggleBtn = document.querySelector('.toggle-btn');
+
+    if (usuario) {
+      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
+      document.getElementById("rolUsuario").innerText = usuario.rol || "";
+    } else {
+      document.getElementById("nombreUsuario").innerText = "Invitado";
+    }
+
+    window.toggleSidebar = function () {
+      sidebar.classList.toggle('active');
+      contenido.classList.toggle('sidebar-visible');
+    };
+
+    window.cerrarSesionYRedirigir = function () {
+      localStorage.removeItem("usuario");
+      window.location.href = "login.html";
+    };
+
+    function checkScreenSize() {
+      if (window.innerWidth <= 768) {
+        sidebar.classList.remove('active');
+        contenido.classList.remove('sidebar-visible');
+      } else {
+        sidebar.classList.add('active');
+        contenido.classList.add('sidebar-visible');
+      }
+      toggleBtn.style.display = "block";
+    }
+
+    window.addEventListener('resize', checkScreenSize);
+    checkScreenSize();
+  }
+
+  window.addEventListener("DOMContentLoaded", async () => {
+    inicializarMenuLateral();
+    await cargarPlantillas();
+    await cargarDatosBase();
+    await cargarDiario();
+    aplicarRangoDiario("mes-actual");
+
+    document.getElementById("diarioDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-diario").forEach(btn => btn.classList.remove("activo"));
+      renderizarDiario();
+    });
+    document.getElementById("diarioHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-diario").forEach(btn => btn.classList.remove("activo"));
+      renderizarDiario();
+    });
+  });
+</script>
+  <script src="topbar.js"></script>
+  <script src="auth-guard.js"></script>
+</body>
+</html>
