@@ -347,11 +347,10 @@ body, input, textarea, select, button {
     <option value="Wingo">Wingo</option>
   </select>
 
-  <label>Vuelo de Ida</label>
-  <textarea id="vuelo_ida"></textarea>
-
-  <label>Vuelo de Regreso</label>
-  <textarea id="vuelo_vuelta"></textarea>
+  <!-- QUITADO: Vuelo de Ida / Vuelo de Regreso -- la captura de itinerario
+       de vuelo de abajo ya cubre esta información, y era doble trabajo
+       transcribirla a mano cuando casi nunca se puede copiar y pegar
+       directo de la página de la aerolínea. -->
 
   <!-- Captura de pantalla del itinerario (ej. de la aerolínea o buscador de
        vuelos) — se sube directo a Storage, se guarda con la cotización, y
@@ -419,10 +418,9 @@ body, input, textarea, select, button {
   <div id="contenedor_tours_opcionales"></div>
 </section>
 
-<section>
-  <h2>Políticas y Condiciones Generales</h2>
-  <textarea id="politicas"></textarea>
-</section>
+<!-- QUITADA: sección "Políticas y Condiciones Generales" -- ahora esa slide
+     usa la diapositiva ya diseñada por destino (detalle_tours.html), no
+     texto escrito acá. -->
 
 <!-- Agrega botón de guardar si aún no lo tienes -->
 <div id="mensaje-restablecer" style="display:none; padding:10px; margin-top:10px; border-radius:5px; background:#d4edda; color:#155724; font-weight:bold;">
@@ -787,7 +785,6 @@ async function cargarOpcionesDeDestino() {
     document.getElementById("incluye").value = data.incluye || "";
     document.getElementById("no_incluye").value = data.no_incluye || "";
     document.getElementById("itinerario").value = data.itinerario_tours || "";
-    document.getElementById("politicas").value = data.politicas || "";
 
     const destino = document.getElementById("destino").value;
     await refrescarTablaOpcionalesSegunTour(destino, tourId);
@@ -808,7 +805,6 @@ async function cargarOpcionesDeDestino() {
     document.getElementById("incluye").value = data.incluye || "";
     document.getElementById("no_incluye").value = data.no_incluye || "";
     document.getElementById("itinerario").value = data.itinerario_tours || "";
-    document.getElementById("politicas").value = data.politicas || "";
 
     await refrescarTablaOpcionalesSegunTour(destino, tourIdActual);
     await cargarHotelesDelDestino(destino, data.hotel);
@@ -967,8 +963,6 @@ tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
     itinerario: document.getElementById("itinerario").value,
 
     aerolinea: document.getElementById("aerolinea").value,
-    vuelo_ida: document.getElementById("vuelo_ida").value,
-    vuelo_vuelta: document.getElementById("vuelo_vuelta").value,
     imagen_vuelo: imagenVueloUrl,
     imagen_vuelo_pos: imagenVueloPos || null,
     equipaje: document.getElementById("equipaje").value,
@@ -980,7 +974,6 @@ tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
     precio_bebe: parseFloat(document.getElementById("precio_bebe").value) || 0,
     total_general: parseFloat(document.getElementById("total_general").value) || 0,
     monto_reserva: parseFloat(document.getElementById("monto_reserva").value) || 0,
-    politicas: document.getElementById("politicas").value,
     timestamp: new Date()
   };
 function obtenerToursOpcionalesDesdeDOM() {
@@ -1047,8 +1040,6 @@ function restablecerDatosDelTour() {
   }
 
   document.getElementById("aerolinea").value = "";
-  document.getElementById("vuelo_ida").value = "";
-  document.getElementById("vuelo_vuelta").value = "";
   document.getElementById("tipo_equipaje").value = "";
   document.getElementById("cantidad_equipaje").value = "";
   document.getElementById("uso_equipaje").value = "";
@@ -1070,20 +1061,8 @@ function restablecerDatosDelTour() {
 
   alert("✅ Información del tour restablecida correctamente.");
 }
-async function subirPDFyGuardarEnFirestore(pdfBlob, codigo) {
-  try {
-    const storageRef = firebase.storage().ref();
-    const archivoRef = storageRef.child(`cotizaciones/${codigo}.pdf`);
-    await archivoRef.put(pdfBlob);
-    const urlDescarga = await archivoRef.getDownloadURL();
-    await firebase.firestore().collection("cotizacionformal").doc(codigo).update({
-      link_pdf: urlDescarga
-    });
-  } catch (error) {
-    console.error("❌ Error al subir PDF a Firebase:", error);
-    throw error;
-  }
-}
+// QUITADA: subirPDFyGuardarEnFirestore() -- ya no se sube el PDF a Storage
+// ni se guarda link_pdf, solo se genera y se descarga.
 
 function cargarImagenComoDataURL(url) {
   return new Promise((resolve, reject) => {
@@ -1202,7 +1181,7 @@ async function generarPDF() {
       precio_bebe: document.getElementById("precio_bebe").value,
       total_general: document.getElementById("total_general").value,
       monto_reserva: document.getElementById("monto_reserva").value,
-      politicas: document.getElementById("politicas").value
+      politicas: ""
     };
 
     // ---- Datos que hay que traer frescos antes de armar las slides ----
@@ -1426,6 +1405,23 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
+    // ---- Slide de Hotel ----
+    if (data.hotel) {
+      if (hotelImagenSlide) {
+        estado.textContent = "⏳ Cargando diapositiva del hotel...";
+        await agregarSlideImagenCompleta(hotelImagenSlide);
+      } else {
+        nuevaSlide();
+        tituloSlide(`Nuestro Hotel: ${data.hotel}`);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(17);
+        doc.setTextColor(...GRIS_CLARO);
+        const lineasHotel = doc.splitTextToSize(data.info_hotel || "", 1160);
+        doc.text(lineasHotel, 60, 160);
+        piePagina(codigo);
+      }
+    }
+
     // ---- Slide: Itinerario de Viaje (tabla por día) ----
     if (data.itinerario && data.itinerario.trim()) {
       nuevaSlide();
@@ -1509,6 +1505,35 @@ async function generarPDF() {
       // explicito: "letras mas grandes que abarque mas la pagina").
       tituloSlideAbajo("Itinerario del Viaje", 72);
       piePagina(codigo);
+    }
+
+    // ---- Un slide por cada actividad incluida en esta variante ----
+    for (const actividad of incluidos) {
+      if (actividad.imagenSlide) {
+        estado.textContent = `⏳ Cargando diapositiva de "${actividad.nombre}"...`;
+        await agregarSlideImagenCompleta(actividad.imagenSlide);
+      } else {
+        nuevaSlide();
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(28);
+        doc.setTextColor(...BLANCO);
+        doc.text(actividad.nombre || "Actividad incluida", 60, 90);
+
+        const tieneFotos = Array.isArray(actividad.fotos) && actividad.fotos.length > 0;
+        const anchoTexto = tieneFotos ? 520 : 1160;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(16);
+        doc.setTextColor(...GRIS_CLARO);
+        const lineasDescripcion = doc.splitTextToSize(actividad.descripcion || "", anchoTexto);
+        doc.text(lineasDescripcion, 60, 150);
+
+        if (tieneFotos) {
+          estado.textContent = `⏳ Cargando fotos de "${actividad.nombre}"...`;
+          await dibujarCollageFotos(doc, actividad.fotos, 660, 110, 560, 500);
+        }
+        piePagina(codigo);
+      }
     }
 
     // ---- Slide: Incluye en el paquete + detalles de la cotización ----
@@ -1701,52 +1726,6 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Un slide por cada actividad incluida en esta variante ----
-    for (const actividad of incluidos) {
-      if (actividad.imagenSlide) {
-        estado.textContent = `⏳ Cargando diapositiva de "${actividad.nombre}"...`;
-        await agregarSlideImagenCompleta(actividad.imagenSlide);
-      } else {
-        nuevaSlide();
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(28);
-        doc.setTextColor(...BLANCO);
-        doc.text(actividad.nombre || "Actividad incluida", 60, 90);
-
-        const tieneFotos = Array.isArray(actividad.fotos) && actividad.fotos.length > 0;
-        const anchoTexto = tieneFotos ? 520 : 1160;
-
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(16);
-        doc.setTextColor(...GRIS_CLARO);
-        const lineasDescripcion = doc.splitTextToSize(actividad.descripcion || "", anchoTexto);
-        doc.text(lineasDescripcion, 60, 150);
-
-        if (tieneFotos) {
-          estado.textContent = `⏳ Cargando fotos de "${actividad.nombre}"...`;
-          await dibujarCollageFotos(doc, actividad.fotos, 660, 110, 560, 500);
-        }
-        piePagina(codigo);
-      }
-    }
-
-    // ---- Slide de Hotel ----
-    if (data.hotel) {
-      if (hotelImagenSlide) {
-        estado.textContent = "⏳ Cargando diapositiva del hotel...";
-        await agregarSlideImagenCompleta(hotelImagenSlide);
-      } else {
-        nuevaSlide();
-        tituloSlide(`Nuestro Hotel: ${data.hotel}`);
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(17);
-        doc.setTextColor(...GRIS_CLARO);
-        const lineasHotel = doc.splitTextToSize(data.info_hotel || "", 1160);
-        doc.text(lineasHotel, 60, 160);
-        piePagina(codigo);
-      }
-    }
-
     // ---- Slide de Inversión ----
     // QUITADA: el precio/total/monto de reserva ya se muestra en la
     // columna derecha de "Incluye en el paquete" -- quedaba repetido.
@@ -1842,13 +1821,13 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Guardar y subir ----
-    estado.textContent = "⏳ Guardando PDF en el sistema...";
-    const pdfBlob = doc.output("blob");
-    await subirPDFyGuardarEnFirestore(pdfBlob, codigo);
+    // ---- Descargar ----
+    // QUITADO: ya no se sube el PDF a Storage ni se guarda link_pdf en
+    // Firestore -- con generarlo y descargarlo alcanza.
+    estado.textContent = "⏳ Generando descarga...";
     doc.save(`Cotización ${codigo}.pdf`);
 
-    estado.textContent = "✅ Cotización visual generada y guardada correctamente.";
+    estado.textContent = "✅ Cotización visual generada correctamente.";
     setTimeout(() => { estado.style.display = "none"; }, 4000);
   } catch (err) {
     console.error("❌ Error al generar la cotización visual:", err);
