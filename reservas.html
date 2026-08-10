@@ -968,13 +968,15 @@
       const hotel = Array.isArray(data.hoteles) && data.hoteles[0]?.nombre ? data.hoteles[0].nombre : "";
 
       let bloqueDetalle = "";
-      if (destino) bloqueDetalle += `📍 Destino: ${destino}\n`;
-      if (rangoFechas) bloqueDetalle += `📅 Fechas: ${rangoFechas}\n`;
-      if (vueloResumen) bloqueDetalle += `✈️ Vuelo: ${vueloResumen}\n`;
-      if (hotel) bloqueDetalle += `🏨 Hospedaje: ${hotel}\n`;
+      if (destino) bloqueDetalle += `• Destino: ${destino}\n`;
+      if (rangoFechas) bloqueDetalle += `• Fechas: ${rangoFechas}\n`;
+      if (vueloResumen) bloqueDetalle += `• Vuelo: ${vueloResumen}\n`;
+      if (hotel) bloqueDetalle += `• Hospedaje: ${hotel}\n`;
 
-      return `¡Hola ${primerNombre || data.nombreTitular || ''}!\n\n` +
-        `Faltan pocas horas para que arranque tu viaje, y queremos que llegues tranquilo/a sabiendo que ya tenemos todo preparado de nuestro lado.\n\n` +
+      // FIX: la función de correo ya le pone su propio "¡Hola [nombre
+      // completo]!" arriba (usa el campo "nombreTitular" que se le manda
+      // aparte) -- este mensaje NO debe repetirlo, si no sale duplicado.
+      return `Faltan pocas horas para que arranque tu viaje, y queremos que llegues tranquilo/a sabiendo que ya tenemos todo preparado de nuestro lado.\n\n` +
         (bloqueDetalle ? bloqueDetalle + "\n" : "") +
         `En las próximas horas te vamos a enviar tu documentación oficial por WhatsApp.\n\n` +
         `Antes de salir, unas recomendaciones rápidas:\n` +
@@ -1032,6 +1034,7 @@
             mensaje: document.getElementById("buenviaje_mensaje").value.trim(),
             nombreTitular: data?.nombreTitular || "",
             codigo,
+            tipoDocumento: "Buen_Viaje",
             pdfBase64: base64Final
           })
         });
