@@ -311,13 +311,13 @@
     const usuario = obtenerUsuarioSesion();
     const modal = document.getElementById("modalNuevoComunicado");
     modal.innerHTML = `<div class="modal-contenido"><p>Cargando compañeros...</p></div>`;
-    modal.style.display = "flex";
+    modal.classList.add("abierto");
 
     const usuarios = await cargarUsuariosParaComunicado();
     modal.innerHTML = construirModalNuevoComunicadoHTML(usuarios, usuario);
 
     document.getElementById("btnCancelarComunicado").addEventListener("click", () => {
-      modal.style.display = "none";
+      modal.classList.remove("abierto");
     });
 
     document.getElementById("btnEnviarComunicado").addEventListener("click", async () => {
@@ -362,7 +362,7 @@
 
       await firebase.firestore().collection("notificaciones").add(datosNotificacion);
 
-      document.getElementById("modalNuevoComunicado").style.display = "none";
+      document.getElementById("modalNuevoComunicado").classList.remove("abierto");
     } catch (e) {
       console.error("No se pudo enviar el comunicado:", e);
       aviso.style.display = "block";
@@ -409,9 +409,40 @@
         border-radius: 999px;
         margin-right: 6px;
       }
+      /* FIX: el modal salía sin ningún estilo (se insertaba en medio de la
+         página, en vez de flotar como ventana centrada) — acá se define
+         TODO lo que necesita para verse bien, sin depender de nada de
+         topbar.css que no está a la vista en este archivo. Usa el mismo
+         id como selector para tener prioridad sobre cualquier regla
+         genérica que pudiera existir en otro lado. */
+      #modalNuevoComunicado {
+        display: none !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background-color: rgba(0, 0, 0, 0.5) !important;
+        z-index: 99999 !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      #modalNuevoComunicado.abierto {
+        display: flex !important;
+      }
       #modalNuevoComunicado .modal-contenido {
+        background: white;
+        border-radius: 12px;
+        padding: 24px;
         max-width: 420px;
         width: 90%;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        box-sizing: border-box;
+      }
+      #modalNuevoComunicado h3 {
+        margin: 0 0 4px 0;
+        color: #02535a;
       }
       #modalNuevoComunicado label {
         display: block;
@@ -437,6 +468,28 @@
         font-size: 13px;
         color: #a35b00;
       }
+      #modalNuevoComunicado .acciones-modal {
+        margin-top: 18px;
+        text-align: right;
+      }
+      #modalNuevoComunicado .acciones-modal button {
+        border: none;
+        padding: 9px 18px;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+        font-size: 14px;
+        margin-left: 8px;
+      }
+      #modalNuevoComunicado .btn-cancelar {
+        background: #ccc;
+        color: #333;
+      }
+      #modalNuevoComunicado .btn-guardar {
+        background: #02535a;
+        color: white;
+      }
+      #modalNuevoComunicado .btn-guardar:hover { background: #036a6d; }
     `;
     document.head.appendChild(estilo);
   }
@@ -462,13 +515,12 @@
     modalPerfil.id = "modalEditarPerfil";
     document.body.appendChild(modalPerfil);
 
-    // NUEVO: contenedor del modal de "Nuevo comunicado / tarea". El
-    // posicionamiento (overlay oscuro, centrado) va por inline style en vez
-    // de depender de una clase de topbar.css que no está a la vista en este
-    // archivo — así funciona seguro, se vea como se vea el resto del CSS.
+    // NUEVO: contenedor del modal de "Nuevo comunicado / tarea" — el
+    // posicionamiento (overlay oscuro, centrado) vive en el CSS inyectado
+    // por inyectarEstilosComunicacionInterna() (con !important, por si
+    // topbar.css tiene alguna regla genérica que lo pise), no acá.
     const modalComunicado = document.createElement("div");
     modalComunicado.id = "modalNuevoComunicado";
-    modalComunicado.style.cssText = "display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;";
     document.body.appendChild(modalComunicado);
 
     document.getElementById("botonUsuarioTopbar").addEventListener("click", (e) => {
