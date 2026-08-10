@@ -557,6 +557,38 @@
     iniciarControlInactividad();
   }
 
+  // ---------- NUEVO: helper global para avisos AUTOMÁTICOS del sistema ----------
+  // Distinto del modal de "Nuevo comunicado/tarea" (ese es para mensajes
+  // manuales entre compañeros) — este es para que el propio sistema le
+  // avise a quien tenga rol "Administrador" cuando pasa algo importante
+  // (nueva solicitud de cotización, nueva reserva, pago registrado, etc.),
+  // sin que nadie tenga que escribirlo a mano. Se expone en "window" para
+  // que cualquier página pueda llamarlo después de guardar algo, sin
+  // duplicar esta lógica en cada archivo.
+  async function crearNotificacionParaAdmins(mensaje) {
+    try {
+      const snap = await firebase.firestore().collection("usuarios")
+        .where("rol", "==", "Administrador")
+        .get();
+      const escrituras = snap.docs
+        .filter(d => d.data().estado !== "Inactivo")
+        .map(d => firebase.firestore().collection("notificaciones").add({
+          destinatarioId: d.id,
+          destinatarioNombre: d.data().nombre || "",
+          remitenteId: "sistema",
+          remitenteNombre: "Sistema",
+          tipo: "comunicado",
+          mensaje,
+          leido: false,
+          fecha: new Date()
+        }));
+      await Promise.all(escrituras);
+    } catch (e) {
+      console.error("No se pudo crear la notificación automática:", e);
+    }
+  }
+  window.crearNotificacionParaAdmins = crearNotificacionParaAdmins;
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", inicializarTopbar);
   } else {
