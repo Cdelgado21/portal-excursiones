@@ -238,6 +238,14 @@
     tbody tr:hover { background-color: #f7fbfb; }
     tbody tr:last-child td { border-bottom: none; }
 
+    .link-codigo-reserva {
+      color: #02535a;
+      font-weight: bold;
+      text-decoration: none;
+    }
+    .link-codigo-reserva:hover {
+      text-decoration: underline;
+    }
     .celda-acciones {
       display: flex;
       gap: 6px;
@@ -327,6 +335,8 @@
           <th>Destino</th>
           <th>Personas</th>
           <th>Fecha de viaje</th>
+          <th>Aerolínea</th>
+          <th>Cód. Vuelo</th>
           <th style="text-align:center;">Reunión</th>
           <th style="text-align:center;">Acciones</th>
         </tr>
@@ -457,7 +467,7 @@
             mesesConReservas.add(claveMes);
           }
           fila.innerHTML = `
-            <td>${doc.id}</td>
+            <td><a href="detalle_reserva.html?codigo=${doc.id}" class="link-codigo-reserva">${doc.id}</a></td>
             <td>${formatearFechaCreacion(data.creado_el)}</td>
             <td>${data.nombreTitular || '-'}</td>
             <td>${data.telefono || '-'}</td>
@@ -465,6 +475,8 @@
             <td>${data.nombreDestino || data.destino || '-'}</td>
             <td>${calcularPersonas(data) ?? '-'}</td>
             <td>${formatearFechaVisible(data.fechaReserva)}</td>
+            <td>${data.vueloIda?.aerolinea || '-'}</td>
+            <td>${data.vueloIda?.codigo || '-'}</td>
             <td style="text-align:center;">
               <input type="checkbox" class="check-reunion" ${data.reunionRealizada ? 'checked' : ''} onchange="marcarReunionRealizada('${doc.id}', this.checked)" title="¿Ya se hizo la reunión de guía de viaje?">
             </td>
