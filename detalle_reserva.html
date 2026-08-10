@@ -2027,6 +2027,10 @@ async function guardarReserva() {
     let codigo = codigoReservaExistente;
     let numero = null;
     let año = new Date().getFullYear();
+    // NUEVO: se guarda ANTES de que "codigo" se reasigne abajo — usado más
+    // adelante para avisarle a los admins solo cuando es una reserva
+    // recién creada, no en cada edición de una que ya existía.
+    const esReservaNueva = !codigoReservaExistente;
 
     if (!codigo) {
       const generado = await generarCodigoReserva();
@@ -2198,6 +2202,12 @@ async function guardarReserva() {
 
     await db.collection("reservas").doc(codigo).set(datos);
     alert("✅ Reserva guardada correctamente como " + codigo);
+
+    // NUEVO: aviso en la campanita para quien tenga rol "Administrador" —
+    // solo la primera vez que se guarda esta reserva, no en cada edición.
+    if (esReservaNueva && window.crearNotificacionParaAdmins) {
+      window.crearNotificacionParaAdmins(`🧳 Nueva reserva: ${codigo} — ${nombreTitular || 'sin nombre'} (${nombreDestino || destino || 'destino no especificado'})`);
+    }
 
     // NUEVO: el titular de la reserva se guarda (o se actualiza) también en
     // Clientes — para poder usarlo después en campañas, felicitaciones de
