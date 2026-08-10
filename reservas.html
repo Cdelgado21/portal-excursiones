@@ -948,6 +948,10 @@
     function construirMensajeBuenViaje(data, primerNombre) {
       const destino = (data.nombreDestino || data.destino || "").split(" (")[0];
 
+      // NOTA: a propósito, Fecha y Vuelo solo muestran DD/MM/AAAA (nunca
+      // hora) — formatearFechaVisible() no incluye horario, así que aunque
+      // el vuelo tenga una hora guardada en otro lado, no se muestra acá,
+      // por si hay una variación de último momento.
       const fechaIda = data.vueloIda?.fecha ? formatearFechaVisible(parseFechaReserva(data.vueloIda.fecha)) : "";
       const fechaRegreso = data.vueloRegreso?.fecha ? formatearFechaVisible(parseFechaReserva(data.vueloRegreso.fecha)) : "";
       let rangoFechas = "";
@@ -972,6 +976,7 @@
       return `¡Hola ${primerNombre || data.nombreTitular || ''}!\n\n` +
         `Faltan pocas horas para que arranque tu viaje, y queremos que llegues tranquilo/a sabiendo que ya tenemos todo preparado de nuestro lado.\n\n` +
         (bloqueDetalle ? bloqueDetalle + "\n" : "") +
+        `En las próximas horas te vamos a enviar tu documentación oficial por WhatsApp.\n\n` +
         `Antes de salir, unas recomendaciones rápidas:\n` +
         `• Revisá que tu pasaporte tenga al menos 6 meses de vigencia a partir de la fecha de regreso.\n` +
         `• Guardá una copia (foto o PDF) de tu itinerario y reservas en el celular, por si se corta el internet.\n` +
