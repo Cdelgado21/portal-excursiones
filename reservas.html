@@ -987,7 +987,49 @@
         `• Llegá al aeropuerto con al menos 3 horas de anticipación para vuelos internacionales.\n\n` +
         `Cualquier cosa que necesités antes de viajar, estamos a un mensaje de WhatsApp: 6132-8183.\n\n` +
         `¡Que disfrutes cada momento de este viaje!\n\n` +
-        `Equipo Excursiones Delgado 🌎`;
+        `Equipo Excursiones Delgado ✈️`;
+    }
+
+    // NUEVO: convierte el mensaje de texto plano del textarea a HTML con
+    // vida real (negrita en las etiquetas de cada viñeta, subtítulos
+    // resaltados en el color de marca) — en vez de agregar más emoticonos,
+    // que es justo lo que estaba fallando (📍📅🏨🌎 salían como cuadro
+    // negro en el correo real, solo ✈️ funcionaba). Se arma a partir de lo
+    // que Cristopher ve y edita en el textarea, así lo que escribe ahí
+    // sigue siendo la fuente real del contenido.
+    function formatearMensajeComoHtml(textoPlano) {
+      const escapar = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const bloques = textoPlano.split("\n\n").filter(b => b.trim());
+      let html = "";
+
+      bloques.forEach(bloque => {
+        const lineas = bloque.split("\n").filter(l => l.trim());
+        const esListaDeVinetas = lineas.length > 0 && lineas.every(l => l.trim().startsWith("•"));
+
+        if (esListaDeVinetas) {
+          html += `<ul style="margin:0 0 16px 0; padding-left:20px;">`;
+          lineas.forEach(linea => {
+            let contenido = escapar(linea.replace(/^•\s*/, ""));
+            // Negrita en la "Etiqueta:" al inicio de la viñeta (ej. "Destino: X").
+            contenido = contenido.replace(/^([^:]{2,20}:)/, '<strong style="color:#02535a;">$1</strong>');
+            html += `<li style="margin-bottom:6px; line-height:1.5;">${contenido}</li>`;
+          });
+          html += `</ul>`;
+        } else {
+          lineas.forEach(linea => {
+            const contenido = escapar(linea);
+            // Una línea corta que termina en ":" es un subtítulo -- negrita
+            // y color de marca, para que no se vea todo plano.
+            if (/:\s*$/.test(linea.trim()) && linea.trim().length < 60) {
+              html += `<p style="margin:0 0 8px 0;"><strong style="color:#02535a; font-size:16px;">${contenido}</strong></p>`;
+            } else {
+              html += `<p style="margin:0 0 16px 0; line-height:1.6;">${contenido}</p>`;
+            }
+          });
+        }
+      });
+
+      return html;
     }
 
     function cerrarModalBuenViaje() {
@@ -1032,6 +1074,7 @@
             cco: document.getElementById("buenviaje_cco").value.trim(),
             asunto: document.getElementById("buenviaje_asunto").value.trim(),
             mensaje: document.getElementById("buenviaje_mensaje").value.trim(),
+            mensajeHtml: formatearMensajeComoHtml(document.getElementById("buenviaje_mensaje").value.trim()),
             nombreTitular: data?.nombreTitular || "",
             codigo,
             tipoDocumento: "Buen_Viaje",
