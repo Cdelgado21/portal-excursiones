@@ -931,14 +931,51 @@
       document.getElementById("buenviaje_para").value = data.correo || "";
       document.getElementById("buenviaje_cc").value = "";
       document.getElementById("buenviaje_cco").value = "";
-      document.getElementById("buenviaje_asunto").value = `¡Buen viaje, ${primerNombre || data.nombreTitular || ''}! ✈️`;
-      document.getElementById("buenviaje_mensaje").value =
-        `¡Hola ${primerNombre || data.nombreTitular || ''}!\n\n` +
-        `Ya casi es la hora de tu viaje, y te queremos dejar este mensaje con mucho cariño de parte de todo el equipo de Excursiones Delgado.\n\n` +
-        `¡Te deseamos un excelente viaje — sabemos que te va a encantar!\n\n` +
-        `Cualquier cosa que necesités, escribinos por WhatsApp al 6132-8183.`;
+      document.getElementById("buenviaje_asunto").value = `✈️ Todo listo para tu viaje a ${(data.nombreDestino || data.destino || '').split(' (')[0]}, ${primerNombre || data.nombreTitular || ''}`;
+      document.getElementById("buenviaje_mensaje").value = construirMensajeBuenViaje(data, primerNombre);
       document.getElementById("buenviajeMensajeModal").innerHTML = "";
       document.getElementById("modalBuenViaje").style.display = "flex";
+    }
+
+    // NUEVO: arma el cuerpo del correo con el detalle real del viaje (no
+    // placeholders) — es la opción "Con detalle del viaje" que se eligió,
+    // más unas recomendaciones generales antes de viajar.
+    function construirMensajeBuenViaje(data, primerNombre) {
+      const destino = (data.nombreDestino || data.destino || "").split(" (")[0];
+
+      const fechaIda = data.vueloIda?.fecha ? formatearFechaVisible(parseFechaReserva(data.vueloIda.fecha)) : "";
+      const fechaRegreso = data.vueloRegreso?.fecha ? formatearFechaVisible(parseFechaReserva(data.vueloRegreso.fecha)) : "";
+      let rangoFechas = "";
+      if (fechaIda && fechaRegreso) rangoFechas = `Del ${fechaIda} al ${fechaRegreso}`;
+      else if (fechaIda) rangoFechas = fechaIda;
+
+      let vueloResumen = "";
+      if (data.vueloIda?.aerolinea) {
+        vueloResumen = data.vueloIda.aerolinea;
+        if (data.vueloIda.vuelo) vueloResumen += ` — Vuelo ${data.vueloIda.vuelo}`;
+        if (fechaIda) vueloResumen += `, ${fechaIda}`;
+      }
+
+      const hotel = Array.isArray(data.hoteles) && data.hoteles[0]?.nombre ? data.hoteles[0].nombre : "";
+
+      let bloqueDetalle = "";
+      if (destino) bloqueDetalle += `📍 Destino: ${destino}\n`;
+      if (rangoFechas) bloqueDetalle += `📅 Fechas: ${rangoFechas}\n`;
+      if (vueloResumen) bloqueDetalle += `✈️ Vuelo: ${vueloResumen}\n`;
+      if (hotel) bloqueDetalle += `🏨 Hospedaje: ${hotel}\n`;
+
+      return `¡Hola ${primerNombre || data.nombreTitular || ''}!\n\n` +
+        `Faltan pocas horas para que arranque tu viaje, y queremos que llegues tranquilo/a sabiendo que ya tenemos todo preparado de nuestro lado.\n\n` +
+        (bloqueDetalle ? bloqueDetalle + "\n" : "") +
+        `Antes de salir, unas recomendaciones rápidas:\n` +
+        `• Revisá que tu pasaporte tenga al menos 6 meses de vigencia a partir de la fecha de regreso.\n` +
+        `• Guardá una copia (foto o PDF) de tu itinerario y reservas en el celular, por si se corta el internet.\n` +
+        `• Llevá un cargador portátil — el celular es tu mapa, cámara y boleto todo en uno.\n` +
+        `• Consultá el clima de ${destino || 'tu destino'} unos días antes para saber qué empacar.\n` +
+        `• Llegá al aeropuerto con al menos 3 horas de anticipación para vuelos internacionales.\n\n` +
+        `Cualquier cosa que necesités antes de viajar, estamos a un mensaje de WhatsApp: 6132-8183.\n\n` +
+        `¡Que disfrutes cada momento de este viaje!\n\n` +
+        `Equipo Excursiones Delgado 🌎`;
     }
 
     function cerrarModalBuenViaje() {
