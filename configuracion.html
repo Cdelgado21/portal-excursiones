@@ -293,6 +293,7 @@
          un <div class="config-panel"> abajo con el mismo data-seccion. -->
     <div class="config-nav">
       <button class="activo" data-seccion="cotizaciones-individuales" onclick="mostrarSeccion('cotizaciones-individuales')">📄 Cotizaciones Individuales</button>
+      <button data-seccion="comunicacion-cliente" onclick="mostrarSeccion('comunicacion-cliente')">✈️ Comunicación con Cliente</button>
       <div class="proxima-seccion">Más secciones próximamente...</div>
     </div>
 
@@ -335,6 +336,21 @@
           <input type="file" id="inputCierre" accept="image/*">
           <div class="estado-subida" id="estadoCierre"></div>
           <div class="preview" id="previewCierre"></div>
+        </div>
+
+      </div>
+
+      <!-- SECCIÓN: Comunicación con Cliente -->
+      <div class="config-panel" id="panel-comunicacion-cliente">
+
+        <div class="subseccion-titulo">Imágenes para correos automáticos</div>
+
+        <div class="tarjeta">
+          <h3>Imagen de "Buen Viaje"</h3>
+          <div class="descripcion">La misma imagen que ya se envía por WhatsApp cuando el cliente está por viajar — se sube una sola vez acá y el botón "🌴 Buen Viaje" de Reservas la manda como adjunto por correo, sin tener que subirla cada vez.</div>
+          <input type="file" id="inputBuenViaje" accept="image/*">
+          <div class="estado-subida" id="estadoBuenViaje"></div>
+          <div class="preview" id="previewBuenViaje"></div>
         </div>
 
       </div>
@@ -393,6 +409,7 @@
         renderizarPreview("previewFondoContenido", data.fondoContenido || "", "fondoContenido");
         renderizarPreview("previewAgradecer", data.imagenAgradecer || "", "imagenAgradecer");
         renderizarPreview("previewCierre", data.imagenCierre || "", "imagenCierre");
+        renderizarPreview("previewBuenViaje", data.imagenBuenViaje || "", "imagenBuenViaje");
       } catch (err) {
         console.error("Error al cargar las imágenes de configuración:", err);
       }
@@ -438,6 +455,7 @@
     conectarInput("inputFondoContenido", "fondoContenido", "estadoFondoContenido", "previewFondoContenido");
     conectarInput("inputAgradecer", "imagenAgradecer", "estadoAgradecer", "previewAgradecer");
     conectarInput("inputCierre", "imagenCierre", "estadoCierre", "previewCierre");
+    conectarInput("inputBuenViaje", "imagenBuenViaje", "estadoBuenViaje", "previewBuenViaje");
 
     // Menú lateral de navegación (igual que el resto del sistema)
     function inicializarMenuLateral() {
