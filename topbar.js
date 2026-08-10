@@ -16,6 +16,16 @@
 //
 // Si la página no tiene sesión guardada en localStorage("usuario"), esta
 // barra simplemente no aparece (ej. login.html).
+//
+// NUEVO: Comunicación interna — la campanita ahora también permite CREAR
+// una notificación (comunicado o tarea) para otro usuario, no solo leer
+// las que le llegan a uno. Mismo esquema "notificaciones" de siempre, con
+// dos campos nuevos:
+//   tipo: "comunicado" | "tarea"
+//   estado: "Pendiente" | "Hecha"   (solo aplica a tipo "tarea")
+//   fechaLimite: "AAAA-MM-DD"       (opcional, solo tareas)
+// Las tareas pendientes de uno se muestran también en la tarjeta
+// "Tareas asignadas" del dashboard — ver dashboard.html.
 // ==========================================
 
 (function () {
@@ -168,17 +178,34 @@
     badge.textContent = noLeidas;
     badge.style.display = noLeidas > 0 ? "inline-block" : "none";
 
+    // NUEVO: el botón de "Nuevo comunicado / tarea" siempre va arriba del
+    // panel, sin importar si hay notificaciones o no.
+    const encabezado = `
+      <div class="notificacion-encabezado">
+        <button type="button" id="btnNuevoComunicado">➕ Nuevo comunicado / tarea</button>
+      </div>
+    `;
+
     if (notificaciones.length === 0) {
-      panel.innerHTML = `<div class="notificacion-vacia">No tienes notificaciones.</div>`;
-      return;
+      panel.innerHTML = encabezado + `<div class="notificacion-vacia">No tienes notificaciones.</div>`;
+    } else {
+      const lista = notificaciones.map(n => {
+        const etiquetaTipo = n.tipo === "tarea" ? `<span class="notificacion-tipo-tarea">📋 Tarea</span>` : "";
+        return `
+        <div class="notificacion-item ${n.leido ? "" : "no-leida"}" data-id="${n.id}">
+          ${etiquetaTipo}
+          ${n.mensaje || ""}
+          <span class="notificacion-fecha">${formatearFechaNotificacion(n.fecha)}</span>
+        </div>
+      `;
+      }).join("");
+      panel.innerHTML = encabezado + lista;
     }
 
-    panel.innerHTML = notificaciones.map(n => `
-      <div class="notificacion-item ${n.leido ? "" : "no-leida"}" data-id="${n.id}">
-        ${n.mensaje || ""}
-        <span class="notificacion-fecha">${formatearFechaNotificacion(n.fecha)}</span>
-      </div>
-    `).join("");
+    document.getElementById("btnNuevoComunicado").addEventListener("click", (e) => {
+      e.stopPropagation();
+      abrirModalNuevoComunicado();
+    });
 
     panel.querySelectorAll(".notificacion-item").forEach(el => {
       el.addEventListener("click", async () => {
@@ -212,7 +239,206 @@
       renderizarNotificaciones(notificaciones);
     } catch (e) {
       console.error("No se pudieron cargar las notificaciones:", e);
+      // Igual se muestra el botón de "Nuevo comunicado" aunque falle la
+      // carga de la lista (ej. falta el índice todavía).
+      renderizarNotificaciones([]);
     }
+  }
+
+  // ---------- NUEVO: Comunicación interna (crear notificación/tarea) ----------
+
+  let listaUsuariosParaComunicado = null; // cache — se carga una sola vez por sesión de página
+
+  async function cargarUsuariosParaComunicado() {
+    if (listaUsuariosParaComunicado) return listaUsuariosParaComunicado;
+    try {
+      const snap = await firebase.firestore().collection("usuarios").get();
+      listaUsuariosParaComunicado = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(u => u.estado !== "Inactivo")
+        .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
+    } catch (e) {
+      console.error("No se pudo cargar la lista de usuarios:", e);
+      listaUsuariosParaComunicado = [];
+    }
+    return listaUsuariosParaComunicado;
+  }
+
+  function construirModalNuevoComunicadoHTML(listaUsuarios, usuarioActual) {
+    const opciones = listaUsuarios
+      .filter(u => u.id !== usuarioActual.id) // no tiene sentido mandarse uno a sí mismo
+      .map(u => `<option value="${u.id}" data-nombre="${u.nombre || ''}">${u.nombre || u.id}</option>`)
+      .join("");
+
+    return `
+      <div class="modal-contenido">
+        <h3>Nuevo comunicado / tarea</h3>
+
+        <label>Para</label>
+        <select id="comunicadoPara">
+          <option value="">-- Seleccione un compañero --</option>
+          ${opciones}
+        </select>
+
+        <label>Tipo</label>
+        <select id="comunicadoTipo" onchange="document.getElementById('comunicadoFechaLimiteWrap').style.display = this.value === 'tarea' ? 'block' : 'none';">
+          <option value="comunicado">📢 Comunicado (solo avisar)</option>
+          <option value="tarea">📋 Tarea (con seguimiento)</option>
+        </select>
+
+        <label>Mensaje</label>
+        <textarea id="comunicadoMensaje" rows="4" placeholder="Ej. Revisar pasaportes del grupo Panamá antes del viernes"></textarea>
+
+        <div id="comunicadoFechaLimiteWrap" style="display:none;">
+          <label>Fecha límite (opcional)</label>
+          <input type="date" id="comunicadoFechaLimite">
+        </div>
+
+        <div class="aviso-modal" id="comunicadoAviso" style="display:none;"></div>
+
+        <div class="acciones-modal">
+          <button type="button" class="btn-cancelar" id="btnCancelarComunicado">Cancelar</button>
+          <button type="button" class="btn-guardar" id="btnEnviarComunicado">Enviar</button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function abrirModalNuevoComunicado() {
+    document.getElementById("menuUsuarioDesplegable").style.display = "none";
+    document.getElementById("panelNotificaciones").style.display = "none";
+
+    const usuario = obtenerUsuarioSesion();
+    const modal = document.getElementById("modalNuevoComunicado");
+    modal.innerHTML = `<div class="modal-contenido"><p>Cargando compañeros...</p></div>`;
+    modal.style.display = "flex";
+
+    const usuarios = await cargarUsuariosParaComunicado();
+    modal.innerHTML = construirModalNuevoComunicadoHTML(usuarios, usuario);
+
+    document.getElementById("btnCancelarComunicado").addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+
+    document.getElementById("btnEnviarComunicado").addEventListener("click", async () => {
+      await enviarNuevoComunicado(usuario);
+    });
+  }
+
+  async function enviarNuevoComunicado(usuarioActual) {
+    const selectPara = document.getElementById("comunicadoPara");
+    const destinatarioId = selectPara.value;
+    const destinatarioNombre = selectPara.selectedOptions[0]?.dataset.nombre || "";
+    const tipo = document.getElementById("comunicadoTipo").value;
+    const mensaje = document.getElementById("comunicadoMensaje").value.trim();
+    const fechaLimite = document.getElementById("comunicadoFechaLimite")?.value || "";
+    const aviso = document.getElementById("comunicadoAviso");
+
+    if (!destinatarioId || !mensaje) {
+      aviso.style.display = "block";
+      aviso.textContent = "⚠️ Elegí a quién va dirigido y escribí un mensaje.";
+      return;
+    }
+
+    const boton = document.getElementById("btnEnviarComunicado");
+    boton.disabled = true;
+    boton.textContent = "Enviando...";
+
+    try {
+      const datosNotificacion = {
+        destinatarioId,
+        destinatarioNombre,
+        remitenteId: usuarioActual.id || "",
+        remitenteNombre: usuarioActual.nombre || "Alguien del equipo",
+        tipo,
+        mensaje: tipo === "tarea" ? `📋 Tarea de ${usuarioActual.nombre || 'un compañero'}: ${mensaje}` : `${usuarioActual.nombre || 'Un compañero'}: ${mensaje}`,
+        leido: false,
+        fecha: new Date()
+      };
+      if (tipo === "tarea") {
+        datosNotificacion.estado = "Pendiente";
+        if (fechaLimite) datosNotificacion.fechaLimite = fechaLimite;
+      }
+
+      await firebase.firestore().collection("notificaciones").add(datosNotificacion);
+
+      document.getElementById("modalNuevoComunicado").style.display = "none";
+    } catch (e) {
+      console.error("No se pudo enviar el comunicado:", e);
+      aviso.style.display = "block";
+      aviso.textContent = "❌ No se pudo enviar. Intenta de nuevo.";
+      boton.disabled = false;
+      boton.textContent = "Enviar";
+    }
+  }
+
+  // NUEVO: estilos mínimos para las piezas nuevas (botón de "Nuevo
+  // comunicado", etiqueta de tarea, y los campos del formulario del modal)
+  // — inyectados acá para no depender de reglas de topbar.css que no están
+  // a la vista en este archivo. Los campos genéricos (label/select/
+  // textarea/input) quedan acotados a #modalNuevoComunicado, para no
+  // pisarle el estilo a inputs de otras partes de la página.
+  function inyectarEstilosComunicacionInterna() {
+    if (document.getElementById("estilosComunicacionInterna")) return;
+    const estilo = document.createElement("style");
+    estilo.id = "estilosComunicacionInterna";
+    estilo.textContent = `
+      .notificacion-encabezado {
+        padding: 8px 12px;
+        border-bottom: 1px solid #eee;
+      }
+      #btnNuevoComunicado {
+        width: 100%;
+        background-color: #02535a;
+        color: white;
+        border: none;
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: bold;
+      }
+      #btnNuevoComunicado:hover { background-color: #036a6d; }
+      .notificacion-tipo-tarea {
+        display: inline-block;
+        background: #ffb703;
+        color: #02535a;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 2px 8px;
+        border-radius: 999px;
+        margin-right: 6px;
+      }
+      #modalNuevoComunicado .modal-contenido {
+        max-width: 420px;
+        width: 90%;
+      }
+      #modalNuevoComunicado label {
+        display: block;
+        margin-top: 12px;
+        margin-bottom: 4px;
+        font-weight: bold;
+        font-size: 13px;
+        color: #02535a;
+      }
+      #modalNuevoComunicado select,
+      #modalNuevoComunicado textarea,
+      #modalNuevoComunicado input[type="date"] {
+        width: 100%;
+        padding: 8px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+        font-family: inherit;
+        font-size: 14px;
+      }
+      #modalNuevoComunicado .aviso-modal {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #a35b00;
+      }
+    `;
+    document.head.appendChild(estilo);
   }
 
   // ---------- Inicialización ----------
@@ -225,6 +451,8 @@
       return;
     }
 
+    inyectarEstilosComunicacionInterna();
+
     const contenedor = document.createElement("div");
     contenedor.id = "barraSuperiorSIED";
     contenedor.innerHTML = construirTopbarHTML(usuario);
@@ -233,6 +461,15 @@
     const modalPerfil = document.createElement("div");
     modalPerfil.id = "modalEditarPerfil";
     document.body.appendChild(modalPerfil);
+
+    // NUEVO: contenedor del modal de "Nuevo comunicado / tarea". El
+    // posicionamiento (overlay oscuro, centrado) va por inline style en vez
+    // de depender de una clase de topbar.css que no está a la vista en este
+    // archivo — así funciona seguro, se vea como se vea el resto del CSS.
+    const modalComunicado = document.createElement("div");
+    modalComunicado.id = "modalNuevoComunicado";
+    modalComunicado.style.cssText = "display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;";
+    document.body.appendChild(modalComunicado);
 
     document.getElementById("botonUsuarioTopbar").addEventListener("click", (e) => {
       e.stopPropagation();
