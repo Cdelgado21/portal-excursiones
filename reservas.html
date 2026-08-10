@@ -360,7 +360,12 @@
     // Convierte los dos formatos de fecha que existen en la base de datos
     // ("2025-06-08" y "21/6/2025") a un objeto Date comparable.
     function parseFechaReserva(str) {
-      if (!str) return null;
+      // FIX: si "str" no es un texto plano (puede pasar en reservas viejas
+      // donde el campo de fecha quedó guardado distinto — un Timestamp de
+      // Firestore, un objeto, etc.), esta función reventaba con
+      // "str.split is not a function". Ahora se blinda: si no es string,
+      // devuelve null en vez de crashear.
+      if (!str || typeof str !== "string") return null;
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
         return new Date(str + "T00:00:00");
       }
