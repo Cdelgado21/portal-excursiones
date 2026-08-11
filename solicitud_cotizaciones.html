@@ -793,9 +793,13 @@
       });
 
       // NUEVO: aviso en la campanita (además del correo que ya se manda
-      // abajo) para quien tenga rol "Administrador".
+      // abajo) para quien tenga rol "Administrador". Segundo parámetro
+      // (11/8/2026): url a donde navega si le hacen clic en la campanita.
       if (window.crearNotificacionParaAdmins) {
-        window.crearNotificacionParaAdmins(`📨 Nueva solicitud de cotización: ${numero} — ${destino || 'destino no especificado'}`);
+        window.crearNotificacionParaAdmins(
+          `📨 Nueva solicitud de cotización: ${numero} — ${destino || 'destino no especificado'}`,
+          "solicitud_cotizaciones.html"
+        );
       }
 
       // ÚNICO camino de correo ahora (11/8/2026): se quitó el correo fijo
