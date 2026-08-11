@@ -17,13 +17,27 @@
 // Si la página no tiene sesión guardada en localStorage("usuario"), esta
 // barra simplemente no aparece (ej. login.html).
 //
-// NUEVO: Comunicación interna — la campanita ahora también permite CREAR
-// una notificación (comunicado o tarea) para otro usuario, no solo leer
-// las que le llegan a uno. Mismo esquema "notificaciones" de siempre, con
-// dos campos nuevos:
+// NUEVO (11/8/2026): las notificaciones ya leídas DESAPARECEN de la
+// campanita para siempre (la consulta filtra leido == false — quedan
+// guardadas en Firestore como historial, solo dejan de mostrarse). Al
+// hacer clic en una notificación que tenga "url" guardada, navega ahí
+// mismo (misma pestaña) además de marcarla como leída.
+//
+// IMPORTANTE: este filtro nuevo (leido == false) junto con el
+// orderBy("fecha") que ya existía muy probablemente va a pedir un ÍNDICE
+// COMPUESTO NUEVO en Firestore la primera vez que corra — mismo patrón que
+// el índice (destinatarioId + fecha) que ya tuvimos que crear antes. El
+// error de consola trae el link para crearlo con un clic.
+//
+// Comunicación interna — la campanita también permite CREAR una
+// notificación (comunicado o tarea) para otro usuario, no solo leer las
+// que le llegan a uno. Mismo esquema "notificaciones" de siempre, con
+// estos campos:
 //   tipo: "comunicado" | "tarea"
 //   estado: "Pendiente" | "Hecha"   (solo aplica a tipo "tarea")
 //   fechaLimite: "AAAA-MM-DD"       (opcional, solo tareas)
+//   url: "detalle_reserva.html?..." (opcional, solo avisos automáticos del
+//                                     sistema — a dónde navega al hacer clic)
 // Las tareas pendientes de uno se muestran también en la tarjeta
 // "Tareas asignadas" del dashboard — ver dashboard.html.
 // ==========================================
@@ -170,16 +184,22 @@
     return f.toLocaleString("es-CR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   }
 
+  function actualizarBadge(cantidad) {
+    const badge = document.getElementById("badgeNotificaciones");
+    badge.textContent = cantidad;
+    badge.style.display = cantidad > 0 ? "inline-block" : "none";
+  }
+
   function renderizarNotificaciones(notificaciones) {
     const panel = document.getElementById("panelNotificaciones");
-    const badge = document.getElementById("badgeNotificaciones");
-    const noLeidas = notificaciones.filter(n => !n.leido).length;
 
-    badge.textContent = noLeidas;
-    badge.style.display = noLeidas > 0 ? "inline-block" : "none";
+    // NUEVO: la consulta ya trae solo leido == false, así que TODAS las
+    // que llegan acá están sin leer por definición — no hace falta
+    // distinguir visualmente cuáles sí/no.
+    actualizarBadge(notificaciones.length);
 
-    // NUEVO: el botón de "Nuevo comunicado / tarea" siempre va arriba del
-    // panel, sin importar si hay notificaciones o no.
+    // El botón de "Nuevo comunicado / tarea" siempre va arriba del panel,
+    // sin importar si hay notificaciones o no.
     const encabezado = `
       <div class="notificacion-encabezado">
         <button type="button" id="btnNuevoComunicado">➕ Nuevo comunicado / tarea</button>
@@ -191,8 +211,10 @@
     } else {
       const lista = notificaciones.map(n => {
         const etiquetaTipo = n.tipo === "tarea" ? `<span class="notificacion-tipo-tarea">📋 Tarea</span>` : "";
+        // NUEVO: si tiene link guardado, se ve como clicable (cursor
+        // pointer ya lo pone la clase notificacion-item existente).
         return `
-        <div class="notificacion-item ${n.leido ? "" : "no-leida"}" data-id="${n.id}">
+        <div class="notificacion-item" data-id="${n.id}" data-url="${n.url ? n.url.replace(/"/g, '&quot;') : ''}">
           ${etiquetaTipo}
           ${n.mensaje || ""}
           <span class="notificacion-fecha">${formatearFechaNotificacion(n.fecha)}</span>
@@ -207,18 +229,33 @@
       abrirModalNuevoComunicado();
     });
 
+    // NUEVO: al hacer clic, se marca como leída en Firestore (para que no
+    // vuelva a aparecer), desaparece de la lista al toque, y si tenía un
+    // link guardado navega ahí mismo.
     panel.querySelectorAll(".notificacion-item").forEach(el => {
       el.addEventListener("click", async () => {
         const id = el.dataset.id;
-        if (!el.classList.contains("no-leida")) return;
+        const url = el.dataset.url;
+
         try {
           await firebase.firestore().collection("notificaciones").doc(id).update({ leido: true });
-          el.classList.remove("no-leida");
-          const restantes = Math.max(parseInt(badge.textContent || "0") - 1, 0);
-          badge.textContent = restantes;
-          badge.style.display = restantes > 0 ? "inline-block" : "none";
         } catch (e) {
           console.error("No se pudo marcar la notificación como leída:", e);
+          return; // si no se pudo marcar, mejor no la quitamos ni navegamos
+        }
+
+        el.remove();
+        const restantes = panel.querySelectorAll(".notificacion-item").length;
+        actualizarBadge(restantes);
+        if (restantes === 0) {
+          const vacia = document.createElement("div");
+          vacia.className = "notificacion-vacia";
+          vacia.textContent = "No tienes notificaciones.";
+          panel.appendChild(vacia);
+        }
+
+        if (url) {
+          window.location.href = url;
         }
       });
     });
@@ -227,11 +264,16 @@
   async function cargarNotificaciones(usuario) {
     if (!usuario.id) return;
     try {
-      // NOTA: la primera vez que corra esta consulta, Firestore puede pedir
-      // crear un índice compuesto (destinatarioId + fecha) — el error de la
-      // consola trae un enlace directo para crearlo con un clic.
+      // NUEVO: se agregó el filtro leido == false, para que las leídas
+      // dejen de traerse (desaparecen de la campanita, quedan como
+      // historial en Firestore). Junto con el orderBy("fecha"), esto
+      // probablemente pide un índice compuesto NUEVO la primera vez que
+      // corra — el error de consola trae el link para crearlo con un
+      // clic, mismo patrón que el índice (destinatarioId + fecha) que ya
+      // se creó antes.
       const snapshot = await firebase.firestore().collection("notificaciones")
         .where("destinatarioId", "==", usuario.id)
+        .where("leido", "==", false)
         .orderBy("fecha", "desc")
         .limit(20)
         .get();
@@ -245,7 +287,7 @@
     }
   }
 
-  // ---------- NUEVO: Comunicación interna (crear notificación/tarea) ----------
+  // ---------- Comunicación interna (crear notificación/tarea) ----------
 
   let listaUsuariosParaComunicado = null; // cache — se carga una sola vez por sesión de página
 
@@ -372,12 +414,12 @@
     }
   }
 
-  // NUEVO: estilos mínimos para las piezas nuevas (botón de "Nuevo
-  // comunicado", etiqueta de tarea, y los campos del formulario del modal)
-  // — inyectados acá para no depender de reglas de topbar.css que no están
-  // a la vista en este archivo. Los campos genéricos (label/select/
-  // textarea/input) quedan acotados a #modalNuevoComunicado, para no
-  // pisarle el estilo a inputs de otras partes de la página.
+  // Estilos mínimos para las piezas nuevas (botón de "Nuevo comunicado",
+  // etiqueta de tarea, y los campos del formulario del modal) — inyectados
+  // acá para no depender de reglas de topbar.css que no están a la vista
+  // en este archivo. Los campos genéricos (label/select/textarea/input)
+  // quedan acotados a #modalNuevoComunicado, para no pisarle el estilo a
+  // inputs de otras partes de la página.
   function inyectarEstilosComunicacionInterna() {
     if (document.getElementById("estilosComunicacionInterna")) return;
     const estilo = document.createElement("style");
@@ -515,7 +557,7 @@
     modalPerfil.id = "modalEditarPerfil";
     document.body.appendChild(modalPerfil);
 
-    // NUEVO: contenedor del modal de "Nuevo comunicado / tarea" — el
+    // Contenedor del modal de "Nuevo comunicado / tarea" — el
     // posicionamiento (overlay oscuro, centrado) vive en el CSS inyectado
     // por inyectarEstilosComunicacionInterna() (con !important, por si
     // topbar.css tiene alguna regla genérica que lo pise), no acá.
@@ -557,7 +599,7 @@
     iniciarControlInactividad();
   }
 
-  // ---------- NUEVO: helper global para avisos AUTOMÁTICOS del sistema ----------
+  // ---------- Helper global para avisos AUTOMÁTICOS del sistema ----------
   // Distinto del modal de "Nuevo comunicado/tarea" (ese es para mensajes
   // manuales entre compañeros) — este es para que el propio sistema le
   // avise a quien tenga rol "Administrador" cuando pasa algo importante
@@ -565,23 +607,32 @@
   // sin que nadie tenga que escribirlo a mano. Se expone en "window" para
   // que cualquier página pueda llamarlo después de guardar algo, sin
   // duplicar esta lógica en cada archivo.
-  async function crearNotificacionParaAdmins(mensaje) {
+  //
+  // NUEVO (11/8/2026): segundo parámetro opcional "url" — a dónde navega
+  // el usuario si hace clic en esa notificación en la campanita. Si no se
+  // pasa, la notificación funciona como antes (solo se marca leída y
+  // desaparece, sin navegar a ningún lado).
+  async function crearNotificacionParaAdmins(mensaje, url) {
     try {
       const snap = await firebase.firestore().collection("usuarios")
         .where("rol", "==", "Administrador")
         .get();
       const escrituras = snap.docs
         .filter(d => d.data().estado !== "Inactivo")
-        .map(d => firebase.firestore().collection("notificaciones").add({
-          destinatarioId: d.id,
-          destinatarioNombre: d.data().nombre || "",
-          remitenteId: "sistema",
-          remitenteNombre: "Sistema",
-          tipo: "comunicado",
-          mensaje,
-          leido: false,
-          fecha: new Date()
-        }));
+        .map(d => {
+          const datos = {
+            destinatarioId: d.id,
+            destinatarioNombre: d.data().nombre || "",
+            remitenteId: "sistema",
+            remitenteNombre: "Sistema",
+            tipo: "comunicado",
+            mensaje,
+            leido: false,
+            fecha: new Date()
+          };
+          if (url) datos.url = url;
+          return firebase.firestore().collection("notificaciones").add(datos);
+        });
       await Promise.all(escrituras);
     } catch (e) {
       console.error("No se pudo crear la notificación automática:", e);
@@ -589,7 +640,7 @@
   }
   window.crearNotificacionParaAdmins = crearNotificacionParaAdmins;
 
-  // NUEVO: aviso automático por CORREO — a propósito, NO usa el rol
+  // Aviso automático por CORREO — a propósito, NO usa el rol
   // "Administrador" (eso es sobre permisos de acceso al sistema, no sobre
   // quién debe recibir estos avisos operativos). Usa un campo aparte,
   // "recibeAvisosOperativos" (true/false), para que el Dueño/Gerente pueda
@@ -599,10 +650,9 @@
   // MIGRADO (11/8/2026): antes le pegaba directo al Worker de Cloudflare
   // correo-cotizaciones.cris-delgado21.workers.dev — se descubrió que ese
   // dominio (*.workers.dev) queda bloqueado en redes/computadoras con
-  // ciertos antivirus o firewalls corporativos (filtro genérico contra
-  // dominios usados en phishing). Ahora usa una Netlify Function que vive
-  // en el MISMO dominio del sistema — mismo patrón que ya usaba el
-  // comprobante de reserva (netlify/functions/comprobante-correo.js).
+  // ciertos antivirus o firewalls corporativos. Ahora usa una Netlify
+  // Function que vive en el MISMO dominio del sistema — mismo patrón que
+  // ya usaba el comprobante de reserva (comprobante-correo.js).
   const URL_CORREO_AVISOS = "/.netlify/functions/correo-cotizaciones";
 
   async function enviarCorreoAdmins(asunto, html) {
@@ -625,10 +675,6 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: correos, subject: asunto, html })
       });
-      // NUEVO: antes el Worker siempre devolvía 200 "OK" sin importar si
-      // el correo realmente salió o no — ahora la Netlify Function reenvía
-      // la respuesta REAL del Apps Script, así que sí se puede detectar un
-      // fallo de verdad (cuota excedida, error del script, etc.).
       if (!respuesta.ok) {
         const texto = await respuesta.text().catch(() => "");
         console.error("El envío del correo automático respondió con error:", respuesta.status, texto);
