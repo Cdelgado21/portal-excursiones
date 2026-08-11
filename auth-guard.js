@@ -43,17 +43,17 @@
         <span class="nube nube2"></span>
         <span class="nube nube3"></span>
         <span class="nube nube4"></span>
-        <svg class="loader-avion-svg" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#02535a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 3 3 10.5l6.5 2 2 6.5L21 3Z"/>
-          <path d="M11.5 12.5 21 3"/>
+        <span class="nube nube5"></span>
+        <svg class="loader-avion-svg" viewBox="0 0 24 24" width="46" height="46">
+          <path fill="#02535a" d="M2 21l21-9L2 3v7l15 2-15 2z"/>
         </svg>
       </div>
       <div style="font-weight:bold; letter-spacing:0.2px;">Verificando sesión...</div>
       <style>
         .loader-cielo {
           position: relative;
-          width: 260px;
-          height: 170px;
+          width: 280px;
+          height: 190px;
         }
         .nube {
           position: absolute;
@@ -73,25 +73,27 @@
         }
         .nube::before { width: 20px; height: 20px; top: -11px; left: 5px; }
         .nube::after  { width: 15px; height: 15px; top: -8px;  left: 24px; }
-        .nube1 { top: 14%;  left: 6%;  animation-delay: 0s; }
-        .nube2 { top: 6%;   left: 46%; transform: scale(0.85); animation-delay: 0.6s; }
-        .nube3 { top: 62%;  left: 12%; transform: scale(0.75); animation-delay: 1.1s; }
-        .nube4 { top: 70%;  left: 55%; animation-delay: 0.3s; }
+        .nube1 { top: 10%;  left: 8%;  animation-delay: 0s; }
+        .nube2 { top: 4%;   left: 50%; transform: scale(0.8); animation-delay: 0.6s; }
+        .nube3 { top: 66%;  left: 6%;  transform: scale(0.7); animation-delay: 1.1s; }
+        .nube4 { top: 74%;  left: 58%; animation-delay: 0.3s; }
+        .nube5 { top: 40%;  left: 78%; transform: scale(0.6); animation-delay: 0.9s; }
         @keyframes flotarNube {
           0%, 100% { transform: translateY(0); }
           50%      { transform: translateY(-6px); }
         }
         .loader-avion-svg {
           position: absolute;
-          left: 4%;
-          top: 78%;
-          animation: volarDiagonal 2.4s ease-in-out infinite;
+          left: 6%;
+          top: 74%;
+          transform: rotate(-28deg);
+          animation: volarDiagonal 2.6s ease-in-out infinite;
         }
         @keyframes volarDiagonal {
-          0%   { left: 4%;  top: 78%; opacity: 0; transform: rotate(0deg); }
+          0%   { left: 6%;  top: 74%; opacity: 0; transform: rotate(-28deg); }
           12%  { opacity: 1; }
           88%  { opacity: 1; }
-          100% { left: 78%; top: 6%;  opacity: 0; transform: rotate(0deg); }
+          100% { left: 74%; top: 4%;  opacity: 0; transform: rotate(-28deg); }
         }
       </style>
     `;
