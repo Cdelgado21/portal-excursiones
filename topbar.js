@@ -211,10 +211,12 @@
     } else {
       const lista = notificaciones.map(n => {
         const etiquetaTipo = n.tipo === "tarea" ? `<span class="notificacion-tipo-tarea">📋 Tarea</span>` : "";
-        // NUEVO: si tiene link guardado, se ve como clicable (cursor
-        // pointer ya lo pone la clase notificacion-item existente).
+        // NUEVO: botón "✕" aparte para descartar SIN navegar — el resto de
+        // la notificación (texto/fecha) sigue marcando como leída y
+        // navegando al detalle si tiene link guardado.
         return `
         <div class="notificacion-item" data-id="${n.id}" data-url="${n.url ? n.url.replace(/"/g, '&quot;') : ''}">
+          <button type="button" class="notificacion-descartar" title="Quitar, sin ir al detalle">✕</button>
           ${etiquetaTipo}
           ${n.mensaje || ""}
           <span class="notificacion-fecha">${formatearFechaNotificacion(n.fecha)}</span>
@@ -229,34 +231,46 @@
       abrirModalNuevoComunicado();
     });
 
-    // NUEVO: al hacer clic, se marca como leída en Firestore (para que no
-    // vuelva a aparecer), desaparece de la lista al toque, y si tenía un
-    // link guardado navega ahí mismo.
+    // NUEVO: se marca como leída en Firestore (para que no vuelva a
+    // aparecer) y desaparece de la lista al toque en ambos casos — la
+    // única diferencia es si además navega al detalle (clic en el cuerpo
+    // de la notificación) o no (clic en el botón "✕" de descartar).
+    async function marcarLeidaYQuitar(el, navegar) {
+      const id = el.dataset.id;
+      const url = el.dataset.url;
+
+      try {
+        await firebase.firestore().collection("notificaciones").doc(id).update({ leido: true });
+      } catch (e) {
+        console.error("No se pudo marcar la notificación como leída:", e);
+        return; // si no se pudo marcar, mejor no la quitamos ni navegamos
+      }
+
+      el.remove();
+      const restantes = panel.querySelectorAll(".notificacion-item").length;
+      actualizarBadge(restantes);
+      if (restantes === 0) {
+        const vacia = document.createElement("div");
+        vacia.className = "notificacion-vacia";
+        vacia.textContent = "No tienes notificaciones.";
+        panel.appendChild(vacia);
+      }
+
+      if (navegar && url) {
+        window.location.href = url;
+      }
+    }
+
+    panel.querySelectorAll(".notificacion-descartar").forEach(boton => {
+      boton.addEventListener("click", (e) => {
+        e.stopPropagation(); // no dispara también el clic del contenedor
+        marcarLeidaYQuitar(boton.closest(".notificacion-item"), false);
+      });
+    });
+
     panel.querySelectorAll(".notificacion-item").forEach(el => {
-      el.addEventListener("click", async () => {
-        const id = el.dataset.id;
-        const url = el.dataset.url;
-
-        try {
-          await firebase.firestore().collection("notificaciones").doc(id).update({ leido: true });
-        } catch (e) {
-          console.error("No se pudo marcar la notificación como leída:", e);
-          return; // si no se pudo marcar, mejor no la quitamos ni navegamos
-        }
-
-        el.remove();
-        const restantes = panel.querySelectorAll(".notificacion-item").length;
-        actualizarBadge(restantes);
-        if (restantes === 0) {
-          const vacia = document.createElement("div");
-          vacia.className = "notificacion-vacia";
-          vacia.textContent = "No tienes notificaciones.";
-          panel.appendChild(vacia);
-        }
-
-        if (url) {
-          window.location.href = url;
-        }
+      el.addEventListener("click", () => {
+        marcarLeidaYQuitar(el, true);
       });
     });
   }
@@ -450,6 +464,29 @@
         padding: 2px 8px;
         border-radius: 999px;
         margin-right: 6px;
+      }
+      /* NUEVO: botón "✕" para descartar una notificación sin navegar al
+         detalle — flota a la derecha, discreto hasta que se pasa el mouse
+         por encima de la notificación. */
+      .notificacion-item {
+        position: relative;
+      }
+      .notificacion-descartar {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        background: transparent;
+        border: none;
+        color: #aaa;
+        font-size: 13px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 4px;
+      }
+      .notificacion-descartar:hover {
+        color: #b00020;
+        background: rgba(176, 0, 32, 0.08);
       }
       /* FIX: el modal salía sin ningún estilo (se insertaba en medio de la
          página, en vez de flotar como ventana centrada) — acá se define
