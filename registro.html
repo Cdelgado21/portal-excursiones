@@ -261,6 +261,17 @@
             <option value="Finanzas">Finanzas</option>
             <option value="Administrador">Administrador</option>
           </select>
+
+          <!-- NUEVO: aparte del rol de acceso al sistema, esto marca si la
+               persona debe recibir los avisos operativos por correo
+               (solicitud nueva, reserva nueva, pago registrado, check-in) —
+               pensado para el Dueño/Gerente, no necesariamente todos los
+               que tengan rol Administrador. -->
+          <label style="display:flex; align-items:center; gap:8px; font-weight:normal; margin-top:-6px; margin-bottom:15px; cursor:pointer;">
+            <input type="checkbox" id="recibeAvisosOperativos" style="width:auto; margin:0;">
+            <span>📧 Recibe los avisos operativos por correo (Dueño/Gerente)</span>
+          </label>
+
           <div style="text-align: right;">
             <button type="button" onclick="toggleModal()" class="btn">Cancelar</button>
             <button type="submit" class="btn" style="background-color:#02535a;color:white;">Guardar Usuario</button>
@@ -281,6 +292,7 @@
             <th>Correo</th>
             <th>Pasaporte</th>
             <th>Rol</th>
+            <th>Avisos</th>
             <th>Estado</th>
             <th>Fecha Registro</th>
             <th>Acciones</th>
@@ -400,6 +412,9 @@
           correo: form.correo.value,
           pasaporte: form.pasaporte.value,
           rol: form.rol.value,
+          // NUEVO: recibeAvisosOperativos — quién recibe los avisos por
+          // correo (solicitud/reserva/pago/check-in), independiente del rol.
+          recibeAvisosOperativos: document.getElementById('recibeAvisosOperativos').checked,
           estado: 'Activo',
           fechaRegistro: new Date().toLocaleDateString("es-CR", { day: '2-digit', month: '2-digit', year: 'numeric' })
         };
@@ -451,7 +466,7 @@
       }
 
       try {
-        await llamarAdministrarUsuario({
+        const resultadoCreacion = await llamarAdministrarUsuario({
           accion: 'crear',
           correo: form.correo.value.trim(),
           contrasena,
@@ -460,8 +475,25 @@
           fechaNacimiento: form.fechaNacimiento.value,
           telefono: form.telefono.value,
           pasaporte: form.pasaporte.value,
-          rol: form.rol.value
+          rol: form.rol.value,
+          // NOTA: se manda por si la Cloud Function ya reenvía cualquier
+          // campo extra al documento de Firestore que crea — pero no hay
+          // garantía de que lo use, esa función vive aparte y no se tocó
+          // acá. Por eso, abajo se hace un intento adicional directo a
+          // Firestore para que quede seteado sí o sí, si se marcó el check.
+          recibeAvisosOperativos: document.getElementById('recibeAvisosOperativos').checked
         });
+
+        // NUEVO: respaldo — si la Cloud Function no reenvía el campo de
+        // arriba, esto lo asegura escribiéndolo directo, siempre que el
+        // resultado traiga el uid del usuario recién creado.
+        if (document.getElementById('recibeAvisosOperativos').checked && resultadoCreacion?.uid) {
+          try {
+            await db.collection('usuarios').doc(resultadoCreacion.uid).update({ recibeAvisosOperativos: true });
+          } catch (e) {
+            console.warn("No se pudo confirmar recibeAvisosOperativos tras crear el usuario — revisalo manual en Editar.", e);
+          }
+        }
 
         alert("✅ Usuario creado correctamente, con su acceso real ya configurado.");
         form.reset();
@@ -479,6 +511,7 @@
     function abrirModalNuevoUsuario() {
       form.reset();
       form.usuarioId.value = '';
+      document.getElementById('recibeAvisosOperativos').checked = false;
       document.getElementById('tituloModalUsuario').textContent = 'Nuevo Usuario';
       document.getElementById('contrasenaNueva').style.display = 'block';
       document.getElementById('avisoContrasenaEdicion').style.display = 'none';
@@ -526,6 +559,7 @@
           <td>${u.correo}</td>
           <td>${u.pasaporte || ''}</td>
           <td>${u.rol}</td>
+          <td style="text-align:center;" title="${u.recibeAvisosOperativos ? 'Recibe avisos operativos por correo' : 'No recibe avisos operativos'}">${u.recibeAvisosOperativos ? '📧' : '—'}</td>
           <td class="acciones">
             <button onclick="toggleEstado('${doc.id}', '${u.estado}')" class="btn-estado" style="background-color:${u.estado === 'Activo' ? '#1b9e3c' : '#c0392b'}">${u.estado}</button>
           </td>
@@ -551,6 +585,7 @@
         form.correo.value = u.correo;
         form.pasaporte.value = u.pasaporte || '';
         form.rol.value = u.rol;
+        document.getElementById('recibeAvisosOperativos').checked = !!u.recibeAvisosOperativos;
         document.getElementById('tituloModalUsuario').textContent = 'Editar Usuario';
         document.getElementById('contrasenaNueva').style.display = 'none';
         document.getElementById('avisoContrasenaEdicion').style.display = 'block';
