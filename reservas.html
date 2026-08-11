@@ -335,6 +335,7 @@
           <th>Destino</th>
           <th>Personas</th>
           <th>Fecha de viaje</th>
+          <th>Fecha de regreso</th>
           <th>Aerolínea</th>
           <th>Cód. Vuelo</th>
           <th style="text-align:center;">Reunión</th>
@@ -475,6 +476,7 @@
             <td>${data.nombreDestino || data.destino || '-'}</td>
             <td>${calcularPersonas(data) ?? '-'}</td>
             <td>${formatearFechaVisible(data.fechaReserva)}</td>
+            <td>${data.vueloRegreso?.fecha ? formatearFechaVisible(data.vueloRegreso.fecha) : '-'}</td>
             <td>${data.vueloIda?.aerolinea || '-'}</td>
             <td>${data.vueloIda?.codigo || '-'}</td>
             <td style="text-align:center;">
