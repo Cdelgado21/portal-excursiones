@@ -2209,6 +2209,20 @@ async function guardarReserva() {
       window.crearNotificacionParaAdmins(`🧳 Nueva reserva: ${codigo} — ${nombreTitular || 'sin nombre'} (${nombreDestino || destino || 'destino no especificado'})`);
     }
 
+    // NUEVO: mismo aviso, pero por correo — solo al crearla, no en cada edición.
+    if (esReservaNueva && window.enviarCorreoAdmins && window.construirHtmlCorreoAviso) {
+      window.enviarCorreoAdmins(
+        `Excursiones Delgado | Nueva reserva: ${codigo}`,
+        window.construirHtmlCorreoAviso("¡Nueva reserva creada!", [
+          ["Código", codigo],
+          ["Titular", nombreTitular],
+          ["Teléfono", telefono],
+          ["Destino", nombreDestino || destino],
+          ["Fecha de viaje", fechaReserva]
+        ], `${window.location.origin}/detalle_reserva.html?codigo=${codigo}`)
+      );
+    }
+
     // NUEVO: el titular de la reserva se guarda (o se actualiza) también en
     // Clientes — para poder usarlo después en campañas, felicitaciones de
     // cumpleaños, avisos de vencimiento de pasaporte, etc. No bloquea el
