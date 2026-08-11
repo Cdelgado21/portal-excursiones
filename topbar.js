@@ -589,6 +589,60 @@
   }
   window.crearNotificacionParaAdmins = crearNotificacionParaAdmins;
 
+  // NUEVO: aviso automático por CORREO — a propósito, NO usa el rol
+  // "Administrador" (eso es sobre permisos de acceso al sistema, no sobre
+  // quién debe recibir estos avisos operativos). Usa un campo aparte,
+  // "recibeAvisosOperativos" (true/false), para que el Dueño/Gerente pueda
+  // marcar exactamente a quién le llegan, sin importar cuántas cuentas con
+  // rol Administrador existan. Reusa el mismo Worker de Cloudflare que ya
+  // mandaba el correo de "nueva solicitud de cotización" (acepta
+  // {to, subject, html} genérico).
+  const URL_CORREO_AVISOS = "https://correo-cotizaciones.cris-delgado21.workers.dev";
+
+  async function enviarCorreoAdmins(asunto, html) {
+    try {
+      const snap = await firebase.firestore().collection("usuarios")
+        .where("recibeAvisosOperativos", "==", true)
+        .get();
+      const correos = snap.docs
+        .filter(d => d.data().estado !== "Inactivo")
+        .map(d => d.data().correo)
+        .filter(Boolean);
+
+      if (correos.length === 0) {
+        console.warn('No hay ningún usuario con "recibeAvisosOperativos: true" y correo cargado — no se envió el aviso automático.');
+        return;
+      }
+
+      await fetch(URL_CORREO_AVISOS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to: correos, subject: asunto, html })
+      });
+    } catch (e) {
+      console.error("No se pudo enviar el correo automático:", e);
+    }
+  }
+  window.enviarCorreoAdmins = enviarCorreoAdmins;
+
+  // Arma el HTML del correo con el mismo estilo que ya usaba el aviso de
+  // "nueva solicitud de cotización" — título en el color de marca, una
+  // fila por dato, y un botón naranja "Ver en el sistema" que lleva
+  // directo al detalle de lo que sea que disparó el aviso.
+  function construirHtmlCorreoAviso(titulo, filas, urlDetalle, textoBoton) {
+    const filasHtml = filas
+      .filter(([, valor]) => valor)
+      .map(([etiqueta, valor]) => `<p><strong>${etiqueta}:</strong> ${valor}</p>`)
+      .join("");
+    return `
+      <h2 style="color:#02535a;">${titulo}</h2>
+      ${filasHtml}
+      <a href="${urlDetalle}" target="_blank" style="display:inline-block; padding:12px 20px; margin-top:15px; background-color:#f49859; color:white; text-decoration:none; border-radius:8px; font-weight:bold;">${textoBoton || 'Ver en el sistema'}</a>
+      <p style="margin-top:20px; font-size:12px; color:#888;">Equipo Excursiones Delgado</p>
+    `;
+  }
+  window.construirHtmlCorreoAviso = construirHtmlCorreoAviso;
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", inicializarTopbar);
   } else {
