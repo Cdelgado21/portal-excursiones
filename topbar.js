@@ -83,6 +83,7 @@
   function construirTopbarHTML(usuario) {
     const fotoURL = usuario.fotoURL || "https://cdn-icons-png.flaticon.com/512/219/219986.png";
     return `
+      <button type="button" id="botonMenuLateral" aria-label="Abrir menú">☰</button>
       <span class="titulo-sistema">Excursiones Delgado — Sistema Integral</span>
       <div style="display:flex; align-items:center;">
         <div class="campana-container" id="botonCampanaTopbar">
@@ -464,6 +465,23 @@
         padding: 2px 8px;
         border-radius: 999px;
         margin-right: 6px;
+      }
+      /* NUEVO: botón de menú lateral (☰), ahora vive DENTRO de la barra
+         superior en vez de flotar aparte como un círculo — sidebar.js lo
+         usa en vez de crear su propio botón. */
+      #botonMenuLateral {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 22px;
+        cursor: pointer;
+        padding: 4px 10px;
+        margin-right: 12px;
+        border-radius: 6px;
+        line-height: 1;
+      }
+      #botonMenuLateral:hover {
+        background: rgba(255, 255, 255, 0.12);
       }
       /* NUEVO: botón "✕" para descartar una notificación sin navegar al
          detalle — flota a la derecha, discreto hasta que se pasa el mouse
