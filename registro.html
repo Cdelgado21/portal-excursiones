@@ -250,6 +250,12 @@
           <input type="date" id="fechaNacimiento" placeholder="dd/mm/aaaa">
           <input type="text" id="telefono" placeholder="Teléfono">
           <input type="email" id="correo" placeholder="Correo electrónico">
+          <!-- NUEVO: aviso de que este campo, al editar un usuario existente,
+               ahora TAMBIÉN sincroniza el correo de acceso real (antes solo
+               se guardaba en Firestore, sin tocar el login real). -->
+          <div id="avisoCorreoEdicion" style="display:none; background:#eef6f6; border:1px solid #cfe3e4; border-radius:8px; padding:10px 12px; margin-top:-10px; margin-bottom:15px; font-size:13px; color:#02535a;">
+            ℹ️ Si cambiás este correo, también se actualiza el correo con el que esta persona inicia sesión en el sistema — la próxima vez va a tener que usar el correo nuevo.
+          </div>
           <input type="text" id="pasaporte" placeholder="N° Pasaporte">
           <input type="password" id="contrasenaNueva" placeholder="Contraseña (solo para usuario nuevo)" autocomplete="new-password">
           <div id="avisoContrasenaEdicion" style="display:none; background:#eef6f6; border:1px solid #cfe3e4; border-radius:8px; padding:10px 12px; margin-top:-10px; margin-bottom:15px; font-size:13px; color:#02535a;">
@@ -402,7 +408,15 @@
       // ---------- Editar un usuario existente ----------
       // Sigue escribiendo directo en Firestore — ya está protegido por las
       // reglas de seguridad (solo un Administrador puede hacerlo). No toca
-      // la contraseña ni la cuenta de acceso para nada.
+      // la contraseña para nada.
+      //
+      // NUEVO (11/8/2026): si el correo cambió respecto al que ya tenía
+      // guardado, ANTES de tocar Firestore se llama a la Cloud Function
+      // (acción "actualizarCorreo") para sincronizar también el correo de
+      // ACCESO real en Firebase Authentication — antes este campo solo se
+      // guardaba en Firestore (para mostrarlo y para los avisos operativos),
+      // sin tocar el correo real con el que esa persona inicia sesión, así
+      // que quedaba desincronizado y confundía a quien lo editaba.
       if (id) {
         const datos = {
           nombre: form.nombre.value,
@@ -420,13 +434,26 @@
         };
 
         try {
-          // NUEVO: antes de guardar, se compara el rol que tenía guardado el
-          // usuario contra el rol nuevo que se está por guardar. Si cambió,
-          // se deja una notificación para que esa persona la vea la próxima
-          // vez que entre (la barra superior — topbar.js — la muestra en la
-          // campana).
           const docActual = await db.collection('usuarios').doc(id).get();
           const rolAnterior = docActual.exists ? docActual.data().rol : null;
+          const correoAnterior = docActual.exists ? docActual.data().correo : null;
+
+          // NUEVO: sincroniza el correo de acceso real ANTES de guardar en
+          // Firestore — si esto falla (ej. el correo nuevo ya está en uso
+          // por otra cuenta), se detiene todo el guardado, para no dejar
+          // Firestore diciendo un correo que en realidad no es el de acceso.
+          if (correoAnterior && datos.correo && datos.correo !== correoAnterior) {
+            try {
+              await llamarAdministrarUsuario({
+                accion: 'actualizarCorreo',
+                uid: id,
+                correoNuevo: datos.correo
+              });
+            } catch (errorCorreo) {
+              alert("❌ No se pudo actualizar el correo de acceso: " + (errorCorreo.message || errorCorreo) + "\n\nNo se guardó ningún cambio — corrige el correo e intenta de nuevo.");
+              return;
+            }
+          }
 
           await db.collection('usuarios').doc(id).update(datos);
 
@@ -443,6 +470,14 @@
           form.usuarioId.value = '';
           toggleModal();
           cargarUsuarios();
+
+          // NUEVO: aviso explícito cuando se editó el correo de la PROPIA
+          // cuenta con sesión activa — el token actual sigue funcionando
+          // por ahora, pero la próxima vez que inicie sesión debe usar el
+          // correo nuevo, no el viejo.
+          if (correoAnterior && datos.correo !== correoAnterior && id === auth.currentUser?.uid) {
+            alert(`✅ Correo de acceso actualizado. La PRÓXIMA VEZ que inicies sesión, usa: ${datos.correo}`);
+          }
         } catch (error) {
           console.error("Error al guardar el usuario:", error);
           alert("Error: " + error.message);
@@ -515,6 +550,7 @@
       document.getElementById('tituloModalUsuario').textContent = 'Nuevo Usuario';
       document.getElementById('contrasenaNueva').style.display = 'block';
       document.getElementById('avisoContrasenaEdicion').style.display = 'none';
+      document.getElementById('avisoCorreoEdicion').style.display = 'none';
       toggleModal();
     }
 
@@ -589,6 +625,7 @@
         document.getElementById('tituloModalUsuario').textContent = 'Editar Usuario';
         document.getElementById('contrasenaNueva').style.display = 'none';
         document.getElementById('avisoContrasenaEdicion').style.display = 'block';
+        document.getElementById('avisoCorreoEdicion').style.display = 'block';
         toggleModal();
       }
     }
