@@ -552,6 +552,25 @@
           });
         }
 
+        // ---------- 4) Check-in pendiente (vuelo sale mañana) ----------
+        // NOTA: el sistema solo guarda la FECHA del vuelo, no la hora
+        // exacta (a propósito, por las variaciones de horario) — así que
+        // este aviso es una aproximación de "24 horas antes": aparece
+        // cuando falta exactamente 1 día para la fecha del vuelo de ida,
+        // no a una hora precisa. El check-in de la mayoría de aerolíneas
+        // abre 24h antes de la salida.
+        enRango.forEach(({ codigo, data }) => {
+          const fechaVuelo = parseFechaReserva(data.vueloIda?.fecha);
+          if (!fechaVuelo) return;
+          const diasFaltan = Math.round((fechaVuelo - hoy) / 86400000);
+          if (diasFaltan === 1) {
+            avisos.push({
+              texto: `✈️ ${codigo} — ${data.nombreTitular || 'Titular'}: el vuelo sale mañana, hacer el check-in`,
+              url: `detalle_reserva.html?codigo=${codigo}`
+            });
+          }
+        });
+
         if (avisos.length === 0) {
           contenedor.innerHTML = `<li style="background:#e0f5e0; color:#1b6e1b; font-weight:bold;">✅ Sin alertas pendientes en los próximos ${DIAS_AVISO_PENDIENTE} días.</li>`;
         } else {
