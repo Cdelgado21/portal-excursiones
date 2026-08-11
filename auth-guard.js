@@ -21,9 +21,11 @@
 // ==========================================
 
 (function () {
-  // NUEVO (11/8/2026): la pantalla de "Verificando sesión..." ahora muestra
-  // un avión orbitando un círculo punteado, en vez del spinner genérico —
-  // congruente con el resto de los íconos de viaje del sistema.
+  // NUEVO (11/8/2026): la pantalla de "Verificando sesión..." muestra un
+  // avión volando en una trayectoria curva sobre una línea punteada — mismo
+  // estilo que usan apps de aerolíneas, con los colores de marca del
+  // sistema (reemplaza un primer intento de "avión orbitando" que quedó
+  // menos elegante).
   function mostrarPantallaVerificando() {
     const overlay = document.createElement("div");
     overlay.id = "overlayVerificandoSesion";
@@ -31,39 +33,43 @@
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: #f0f7f7; z-index: 999999;
       display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 14px;
+      flex-direction: column; gap: 18px;
       font-family: Arial, sans-serif; color: #02535a;
     `;
     overlay.innerHTML = `
-      <div class="loader-avion-wrap">
-        <span class="loader-avion-icono">✈️</span>
+      <div class="loader-vuelo">
+        <div class="loader-vuelo-linea"></div>
+        <span class="loader-vuelo-avion">✈️</span>
       </div>
       <div>Verificando sesión...</div>
       <style>
-        .loader-avion-wrap {
+        .loader-vuelo {
           position: relative;
-          width: 52px;
-          height: 52px;
-          animation: orbitarAvion 1.6s linear infinite;
+          width: 220px;
+          height: 46px;
         }
-        .loader-avion-wrap::before {
-          content: "";
+        .loader-vuelo-linea {
           position: absolute;
-          inset: 0;
-          border: 2px dashed #cfe3e4;
-          border-radius: 50%;
+          top: 50%;
+          left: 6px;
+          right: 6px;
+          height: 0;
+          border-top: 2px dashed #cfe3e4;
         }
-        .loader-avion-icono {
+        .loader-vuelo-avion {
           position: absolute;
-          top: -6px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 20px;
+          top: 50%;
+          left: 0;
+          font-size: 22px;
           line-height: 1;
+          animation: volarVerificando 2.2s ease-in-out infinite;
         }
-        @keyframes orbitarAvion {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+        @keyframes volarVerificando {
+          0%   { left: 0%;   transform: translateY(0)    rotate(-4deg); opacity: 0; }
+          12%  { opacity: 1; }
+          50%  { transform: translateY(-10px) rotate(2deg); }
+          88%  { opacity: 1; }
+          100% { left: 100%; transform: translateY(0)    rotate(-4deg); opacity: 0; }
         }
       </style>
     `;
