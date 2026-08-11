@@ -22,10 +22,11 @@
 
 (function () {
   // NUEVO (11/8/2026): la pantalla de "Verificando sesión..." muestra un
-  // avión volando en una trayectoria curva sobre una línea punteada — mismo
-  // estilo que usan apps de aerolíneas, con los colores de marca del
-  // sistema (reemplaza un primer intento de "avión orbitando" que quedó
-  // menos elegante).
+  // avión volando en diagonal entre nubes — estilo inspirado en las
+  // pantallas de carga de aerolíneas (Copa Airlines, por ejemplo), pero con
+  // los colores de marca del sistema (#02535a) en vez del celeste de Copa.
+  // Reemplaza dos intentos anteriores (avión orbitando, avión en línea
+  // recta) que quedaron menos elegantes.
   function mostrarPantallaVerificando() {
     const overlay = document.createElement("div");
     overlay.id = "overlayVerificandoSesion";
@@ -33,43 +34,64 @@
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: #f0f7f7; z-index: 999999;
       display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 18px;
+      flex-direction: column; gap: 22px;
       font-family: Arial, sans-serif; color: #02535a;
     `;
     overlay.innerHTML = `
-      <div class="loader-vuelo">
-        <div class="loader-vuelo-linea"></div>
-        <span class="loader-vuelo-avion">✈️</span>
+      <div class="loader-cielo">
+        <span class="nube nube1"></span>
+        <span class="nube nube2"></span>
+        <span class="nube nube3"></span>
+        <span class="nube nube4"></span>
+        <svg class="loader-avion-svg" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#02535a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 3 3 10.5l6.5 2 2 6.5L21 3Z"/>
+          <path d="M11.5 12.5 21 3"/>
+        </svg>
       </div>
-      <div>Verificando sesión...</div>
+      <div style="font-weight:bold; letter-spacing:0.2px;">Verificando sesión...</div>
       <style>
-        .loader-vuelo {
+        .loader-cielo {
           position: relative;
-          width: 220px;
-          height: 46px;
+          width: 260px;
+          height: 170px;
         }
-        .loader-vuelo-linea {
+        .nube {
           position: absolute;
-          top: 50%;
-          left: 6px;
-          right: 6px;
-          height: 0;
-          border-top: 2px dashed #cfe3e4;
+          width: 44px;
+          height: 18px;
+          border: 2px solid #cfe3e4;
+          border-radius: 20px;
+          background: transparent;
+          animation: flotarNube 3.2s ease-in-out infinite;
         }
-        .loader-vuelo-avion {
+        .nube::before, .nube::after {
+          content: "";
           position: absolute;
-          top: 50%;
-          left: 0;
-          font-size: 22px;
-          line-height: 1;
-          animation: volarVerificando 2.2s ease-in-out infinite;
+          border: 2px solid #cfe3e4;
+          border-radius: 50%;
+          background: #f0f7f7;
         }
-        @keyframes volarVerificando {
-          0%   { left: 0%;   transform: translateY(0)    rotate(-4deg); opacity: 0; }
+        .nube::before { width: 20px; height: 20px; top: -11px; left: 5px; }
+        .nube::after  { width: 15px; height: 15px; top: -8px;  left: 24px; }
+        .nube1 { top: 14%;  left: 6%;  animation-delay: 0s; }
+        .nube2 { top: 6%;   left: 46%; transform: scale(0.85); animation-delay: 0.6s; }
+        .nube3 { top: 62%;  left: 12%; transform: scale(0.75); animation-delay: 1.1s; }
+        .nube4 { top: 70%;  left: 55%; animation-delay: 0.3s; }
+        @keyframes flotarNube {
+          0%, 100% { transform: translateY(0); }
+          50%      { transform: translateY(-6px); }
+        }
+        .loader-avion-svg {
+          position: absolute;
+          left: 4%;
+          top: 78%;
+          animation: volarDiagonal 2.4s ease-in-out infinite;
+        }
+        @keyframes volarDiagonal {
+          0%   { left: 4%;  top: 78%; opacity: 0; transform: rotate(0deg); }
           12%  { opacity: 1; }
-          50%  { transform: translateY(-10px) rotate(2deg); }
           88%  { opacity: 1; }
-          100% { left: 100%; transform: translateY(0)    rotate(-4deg); opacity: 0; }
+          100% { left: 78%; top: 6%;  opacity: 0; transform: rotate(0deg); }
         }
       </style>
     `;
