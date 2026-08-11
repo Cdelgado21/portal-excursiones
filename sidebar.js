@@ -195,17 +195,25 @@
 
     const usuario = obtenerUsuarioSesion();
 
-    const toggleBtn = document.createElement("button");
-    toggleBtn.className = "toggle-btn";
-    toggleBtn.id = "botonToggleSidebar";
-    toggleBtn.textContent = "☰";
-    document.body.insertBefore(toggleBtn, document.body.firstChild);
+    // NUEVO: el botón de menú (☰) ahora vive DENTRO de la barra superior
+    // (topbar.js lo crea con id="botonMenuLateral") en vez de flotar aparte
+    // como un círculo. Si por algún motivo esta página no tiene topbar.js
+    // cargado, se cae a un botón flotante de respaldo, para que sidebar.js
+    // siga funcionando solo.
+    let toggleBtn = document.getElementById("botonMenuLateral");
+    if (!toggleBtn) {
+      toggleBtn = document.createElement("button");
+      toggleBtn.className = "toggle-btn";
+      toggleBtn.id = "botonMenuLateralRespaldo";
+      toggleBtn.textContent = "☰";
+      document.body.insertBefore(toggleBtn, document.body.firstChild);
+    }
 
     const sidebar = document.createElement("div");
     sidebar.className = "sidebar";
     sidebar.id = "sidebar";
     sidebar.innerHTML = construirSidebarHTML(usuario);
-    document.body.insertBefore(sidebar, document.body.firstChild.nextSibling);
+    document.body.insertBefore(sidebar, document.body.firstChild);
 
     const contenido = document.getElementById("contenidoPrincipal");
 
