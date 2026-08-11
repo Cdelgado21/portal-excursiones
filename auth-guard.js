@@ -21,6 +21,9 @@
 // ==========================================
 
 (function () {
+  // NUEVO (11/8/2026): la pantalla de "Verificando sesión..." ahora muestra
+  // un avión orbitando un círculo punteado, en vez del spinner genérico —
+  // congruente con el resto de los íconos de viaje del sistema.
   function mostrarPantallaVerificando() {
     const overlay = document.createElement("div");
     overlay.id = "overlayVerificandoSesion";
@@ -28,13 +31,41 @@
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: #f0f7f7; z-index: 999999;
       display: flex; align-items: center; justify-content: center;
-      flex-direction: column; gap: 12px;
+      flex-direction: column; gap: 14px;
       font-family: Arial, sans-serif; color: #02535a;
     `;
     overlay.innerHTML = `
-      <div style="width:40px; height:40px; border:4px solid #cfe3e4; border-top-color:#02535a; border-radius:50%; animation: girarVerificando 0.8s linear infinite;"></div>
+      <div class="loader-avion-wrap">
+        <span class="loader-avion-icono">✈️</span>
+      </div>
       <div>Verificando sesión...</div>
-      <style>@keyframes girarVerificando { to { transform: rotate(360deg); } }</style>
+      <style>
+        .loader-avion-wrap {
+          position: relative;
+          width: 52px;
+          height: 52px;
+          animation: orbitarAvion 1.6s linear infinite;
+        }
+        .loader-avion-wrap::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border: 2px dashed #cfe3e4;
+          border-radius: 50%;
+        }
+        .loader-avion-icono {
+          position: absolute;
+          top: -6px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: 20px;
+          line-height: 1;
+        }
+        @keyframes orbitarAvion {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+      </style>
     `;
     document.body.appendChild(overlay);
     return overlay;
