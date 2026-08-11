@@ -798,45 +798,12 @@
         window.crearNotificacionParaAdmins(`📨 Nueva solicitud de cotización: ${numero} — ${destino || 'destino no especificado'}`);
       }
 
-      const asunto = `Excursiones Delgado | Nueva cotización: ${numero}`;
-      const cuerpo = `
-        <h2 style="color:#02535a;">¡Nueva solicitud de cotización!</h2>
-        <p><strong>Número:</strong> ${numero}</p>
-        <p><strong>Teléfono:</strong> ${telefono}</p>
-        <p><strong>Destino:</strong> ${destino}</p>
-        <p><strong>Experiencia:</strong> ${experienciaTexto || '-'}</p>
-        <p><strong>Adultos:</strong> ${adultos}</p>
-        <p><strong>Niños:</strong> ${ninos}</p>
-        <p><strong>Bebés:</strong> ${bebes}</p>
-        <p><strong>Observaciones:</strong> ${observaciones}</p>
-        <p><strong>Embajadora:</strong> ${embajador}</p>
-        <a href="${window.location.origin}/solicitud_cotizaciones.html" target="_blank" style="display:inline-block; padding:12px 20px; margin-top:15px; background-color:#f49859; color:white; text-decoration:none; border-radius:8px; font-weight:bold;">Ver en el sistema</a>
-        <p style="margin-top:20px; font-size:12px; color:#888;">Equipo Excursiones Delgado | Gracias por tu compromiso</p>
-      `;
-
-      // MIGRADO (11/8/2026): antes usaba el Worker de Cloudflare
-      // correo-cotizaciones.cris-delgado21.workers.dev — bloqueado en
-      // redes/computadoras con ciertos antivirus/firewalls por ser un
-      // dominio *.workers.dev. Ahora usa la Netlify Function del mismo
-      // dominio del sistema (netlify/functions/correo-cotizaciones.js).
-      fetch('/.netlify/functions/correo-cotizaciones', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: ["cris.delgado21@gmail.com", "yullianagomez@gmail.com"],
-          subject: asunto,
-          html: cuerpo
-        })
-      })
-      .then(res => res.text())
-      .then(msg => console.log("✅ Correo enviado:", msg))
-      .catch(err => console.error("❌ Error al enviar el correo:", err));
-
-      // NUEVO: además del correo fijo de arriba (que se deja intacto para
-      // no arriesgar el aviso que ya funciona), se manda también por el
-      // camino dinámico — a quien tenga rol "Administrador" según su campo
-      // "correo" en Firestore. Una vez confirmado que ese campo está bien
-      // cargado, se puede quitar el fetch de arriba para no duplicar.
+      // ÚNICO camino de correo ahora (11/8/2026): se quitó el correo fijo
+      // hardcodeado (cris.delgado21@gmail.com + yullianagomez@gmail.com)
+      // que corría en paralelo — ya no tiene sentido mantenerlo ahora que
+      // enviarCorreoAdmins() funciona confirmado end-to-end. El sistema
+      // respeta 100% el campo "recibeAvisosOperativos" de cada usuario:
+      // solo le llega a quien lo tenga marcado, a nadie más.
       if (window.enviarCorreoAdmins && window.construirHtmlCorreoAviso) {
         window.enviarCorreoAdmins(
           `Excursiones Delgado | Nueva cotización: ${numero}`,
