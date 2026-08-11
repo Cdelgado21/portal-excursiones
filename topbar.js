@@ -594,10 +594,16 @@
   // quién debe recibir estos avisos operativos). Usa un campo aparte,
   // "recibeAvisosOperativos" (true/false), para que el Dueño/Gerente pueda
   // marcar exactamente a quién le llegan, sin importar cuántas cuentas con
-  // rol Administrador existan. Reusa el mismo Worker de Cloudflare que ya
-  // mandaba el correo de "nueva solicitud de cotización" (acepta
-  // {to, subject, html} genérico).
-  const URL_CORREO_AVISOS = "https://correo-cotizaciones.cris-delgado21.workers.dev";
+  // rol Administrador existan.
+  //
+  // MIGRADO (11/8/2026): antes le pegaba directo al Worker de Cloudflare
+  // correo-cotizaciones.cris-delgado21.workers.dev — se descubrió que ese
+  // dominio (*.workers.dev) queda bloqueado en redes/computadoras con
+  // ciertos antivirus o firewalls corporativos (filtro genérico contra
+  // dominios usados en phishing). Ahora usa una Netlify Function que vive
+  // en el MISMO dominio del sistema — mismo patrón que ya usaba el
+  // comprobante de reserva (netlify/functions/comprobante-correo.js).
+  const URL_CORREO_AVISOS = "/.netlify/functions/correo-cotizaciones";
 
   async function enviarCorreoAdmins(asunto, html) {
     try {
@@ -614,11 +620,19 @@
         return;
       }
 
-      await fetch(URL_CORREO_AVISOS, {
+      const respuesta = await fetch(URL_CORREO_AVISOS, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to: correos, subject: asunto, html })
       });
+      // NUEVO: antes el Worker siempre devolvía 200 "OK" sin importar si
+      // el correo realmente salió o no — ahora la Netlify Function reenvía
+      // la respuesta REAL del Apps Script, así que sí se puede detectar un
+      // fallo de verdad (cuota excedida, error del script, etc.).
+      if (!respuesta.ok) {
+        const texto = await respuesta.text().catch(() => "");
+        console.error("El envío del correo automático respondió con error:", respuesta.status, texto);
+      }
     } catch (e) {
       console.error("No se pudo enviar el correo automático:", e);
     }
