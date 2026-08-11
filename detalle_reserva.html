@@ -2205,8 +2205,13 @@ async function guardarReserva() {
 
     // NUEVO: aviso en la campanita para quien tenga rol "Administrador" —
     // solo la primera vez que se guarda esta reserva, no en cada edición.
+    // Segundo parámetro (11/8/2026): url a donde navega si le hacen clic en
+    // la campanita — usa el mismo código de reserva de esta URL.
     if (esReservaNueva && window.crearNotificacionParaAdmins) {
-      window.crearNotificacionParaAdmins(`🧳 Nueva reserva: ${codigo} — ${nombreTitular || 'sin nombre'} (${nombreDestino || destino || 'destino no especificado'})`);
+      window.crearNotificacionParaAdmins(
+        `🧳 Nueva reserva: ${codigo} — ${nombreTitular || 'sin nombre'} (${nombreDestino || destino || 'destino no especificado'})`,
+        `detalle_reserva.html?codigo=${codigo}`
+      );
     }
 
     // NUEVO: mismo aviso, pero por correo — solo al crearla, no en cada edición.
