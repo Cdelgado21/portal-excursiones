@@ -7,9 +7,11 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<link rel="stylesheet" href="topbar.css">
 
 <style>
   /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
@@ -976,9 +978,14 @@ function guardarPago() {
   const nuevoPago = { monto, fecha, metodo, nota };
   const reservaId = new URLSearchParams(window.location.search).get("reserva");
   const docRef = db.collection("reservas").doc(reservaId);
+  // NUEVO: se guarda antes de que "indexEditando" se resetee abajo — se usa
+  // después para avisar a los admins solo cuando es un pago NUEVO, no
+  // cuando se está editando uno que ya existía.
+  const esPagoNuevo = indexEditando === null;
 
   docRef.get().then((doc) => {
     let pagos = doc.data().pagos || [];
+    const nombreClienteReserva = doc.data().nombreTitular || "";
 
     if (indexEditando !== null) {
       pagos[indexEditando] = nuevoPago;
@@ -989,6 +996,13 @@ function guardarPago() {
 
     docRef.update({ pagos }).then(() => {
       cerrarModal("modalAgregarPago");
+
+      // NUEVO: aviso en la campanita para quien tenga rol "Administrador"
+      // — solo cuando es un pago nuevo, no al editar uno existente.
+      if (esPagoNuevo && window.crearNotificacionParaAdmins) {
+        window.crearNotificacionParaAdmins(`💵 Nuevo pago registrado: $${monto.toFixed(2)} — ${nombreClienteReserva || 'cliente'} (reserva ${reservaId})`);
+      }
+
       docRef.get().then((doc) => {
         const dataActualizada = doc.data();
         window.reservaActual = dataActualizada;
@@ -1532,6 +1546,11 @@ async function confirmarEnvioCorreo() {
 </script>
 
 </main>
+
+<!-- NUEVO: barra superior compartida (usuario + campanita de notificaciones)
+     — esta página no la tenía, solo su propio menú lateral. Va después del
+     script principal, para que Firebase ya esté inicializado. -->
+<script src="topbar.js"></script>
 
 <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez de
      confiar solo en lo que dijera localStorage. -->
