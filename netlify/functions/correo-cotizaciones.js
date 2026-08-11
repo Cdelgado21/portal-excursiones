@@ -8,11 +8,17 @@
 // así que la petición del navegador es al MISMO dominio — sin depender de
 // *.workers.dev, que algunas redes/antivirus bloquean.
 //
+// APPS_SCRIPT_URL apunta a Code_CorreoCotizaciones.gs, bajo
+// boletosexcursionesdelgado@gmail.com (11/8/2026) — reemplaza al script
+// viejo "Notificación Solitud Cotización" (bajo cris.delgado21@gmail.com),
+// que quedó sin autorizar correctamente y todas sus ejecuciones fallaban
+// desde antes de esta migración.
+//
 // A diferencia del Worker viejo (que siempre devolvía 200 "OK" sin
 // importar el resultado real), esta función reenvía el status y el texto
 // REAL de la respuesta del Apps Script, para poder detectar fallos de
 // verdad del lado del cliente.
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzhl4MboE_QEQySeRSdwaA4ycbdCv1BtV4Z_c0ggXTAVAfPei2ToyYNLjaweUcDkJ6A/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxlnEcMjQgjseBYySGmxPz_lDk6q2CzsIfn-aemG7NzwCYmW7_0ZFDe9c95gxZv3ls8/exec";
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
