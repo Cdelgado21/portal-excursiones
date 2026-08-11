@@ -999,8 +999,13 @@ function guardarPago() {
 
       // NUEVO: aviso en la campanita para quien tenga rol "Administrador"
       // — solo cuando es un pago nuevo, no al editar uno existente.
+      // Segundo parámetro (11/8/2026): url a donde navega si le hacen clic
+      // en la campanita — vuelve a esta misma factura.
       if (esPagoNuevo && window.crearNotificacionParaAdmins) {
-        window.crearNotificacionParaAdmins(`💵 Nuevo pago registrado: $${monto.toFixed(2)} — ${nombreClienteReserva || 'cliente'} (reserva ${reservaId})`);
+        window.crearNotificacionParaAdmins(
+          `💵 Nuevo pago registrado: $${monto.toFixed(2)} — ${nombreClienteReserva || 'cliente'} (reserva ${reservaId})`,
+          `facturacion.html?reserva=${reservaId}`
+        );
       }
 
       // NUEVO: mismo aviso, pero por correo — solo al registrar un pago
