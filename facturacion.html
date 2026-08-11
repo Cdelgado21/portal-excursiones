@@ -1003,6 +1003,22 @@ function guardarPago() {
         window.crearNotificacionParaAdmins(`💵 Nuevo pago registrado: $${monto.toFixed(2)} — ${nombreClienteReserva || 'cliente'} (reserva ${reservaId})`);
       }
 
+      // NUEVO: mismo aviso, pero por correo — solo al registrar un pago
+      // nuevo, no al editar uno existente.
+      if (esPagoNuevo && window.enviarCorreoAdmins && window.construirHtmlCorreoAviso) {
+        window.enviarCorreoAdmins(
+          `Excursiones Delgado | Pago registrado: reserva ${reservaId}`,
+          window.construirHtmlCorreoAviso("¡Nuevo pago registrado!", [
+            ["Reserva", reservaId],
+            ["Cliente", nombreClienteReserva],
+            ["Monto", `$${monto.toFixed(2)}`],
+            ["Fecha", fecha],
+            ["Método", metodo],
+            ["Nota", nota]
+          ], `${window.location.origin}/facturacion.html?reserva=${reservaId}`)
+        );
+      }
+
       docRef.get().then((doc) => {
         const dataActualizada = doc.data();
         window.reservaActual = dataActualizada;
