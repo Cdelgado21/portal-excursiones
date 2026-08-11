@@ -827,6 +827,28 @@
       .then(msg => console.log("✅ Correo enviado:", msg))
       .catch(err => console.error("❌ Error al enviar el correo:", err));
 
+      // NUEVO: además del correo fijo de arriba (que se deja intacto para
+      // no arriesgar el aviso que ya funciona), se manda también por el
+      // camino dinámico — a quien tenga rol "Administrador" según su campo
+      // "correo" en Firestore. Una vez confirmado que ese campo está bien
+      // cargado, se puede quitar el fetch de arriba para no duplicar.
+      if (window.enviarCorreoAdmins && window.construirHtmlCorreoAviso) {
+        window.enviarCorreoAdmins(
+          `Excursiones Delgado | Nueva cotización: ${numero}`,
+          window.construirHtmlCorreoAviso("¡Nueva solicitud de cotización!", [
+            ["Número", numero],
+            ["Teléfono", telefono],
+            ["Destino", destino],
+            ["Experiencia", experienciaTexto],
+            ["Adultos", adultos],
+            ["Niños", ninos],
+            ["Bebés", bebes],
+            ["Observaciones", observaciones],
+            ["Embajadora", embajador]
+          ], `${window.location.origin}/solicitud_cotizaciones.html`)
+        );
+      }
+
       alert("Solicitud registrada correctamente.");
     }
 
