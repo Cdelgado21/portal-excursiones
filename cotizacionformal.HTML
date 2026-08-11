@@ -12,102 +12,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* NUEVO: menú lateral de navegación (mismo estilo que el resto del
-       sistema) — esta página nunca lo había tenido. */
-    .toggle-btn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      font-size: 24px;
-      background: white;
-      color: #02535a;
-      border: none;
-      border-radius: 50%;
-      padding: 8px 12px;
-      z-index: 1100;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 250px;
-      height: 100%;
-      background-color: #02535a;
-      color: white;
-      padding: 20px;
-      transform: translateX(-250px);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    .sidebar.active {
-      transform: translateX(0);
-    }
-    .sidebar .user-info {
-      text-align: center;
-      margin-bottom: 20px;
-      margin-top: 40px;
-    }
-    .sidebar .user-info .avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-    .sidebar .user-info h3 {
-      font-size: 1rem;
-      margin: 0;
-      color: white;
-    }
-    .sidebar .user-info small {
-      font-size: 0.8rem;
-      color: #f4f7f8;
-    }
-    .nav-links {
-      list-style: none;
-      padding: 0;
-    }
-    .nav-links li a {
-      background-color: #f4f7f8;
-      color: #02535a;
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .nav-links li a:hover {
-      background-color: #e0e0e0;
-    }
-    .nav-links li a.activo {
-      background-color: #ffb703;
-      color: #02535a;
-    }
-    .nav-links .icon {
-      margin-right: 10px;
-      font-size: 1.2rem;
-    }
-    main#contenidoPrincipal {
-      margin-left: 0;
-      padding: 20px 20px 20px 70px;
-      transition: margin-left 0.3s ease;
-      box-sizing: border-box;
-    }
-    main#contenidoPrincipal.sidebar-visible {
-      margin-left: 250px;
-      padding-left: 20px;
-    }
-    @media screen and (max-width: 768px) {
-      main#contenidoPrincipal.sidebar-visible {
-        margin-left: 0;
-        padding-left: 70px;
-      }
-    }
-
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f7f7;
@@ -172,7 +76,6 @@ body, input, textarea, select, button {
   font-size: 15px;
 }
 
-/* NUEVO: lista de capturas de itinerario de vuelo (una o varias) */
 #listaCapturasVuelo {
   margin-top: 10px;
 }
@@ -211,7 +114,6 @@ body, input, textarea, select, button {
 .captura-vuelo-item .btn-quitar-captura {
   background-color: #c0392b;
 }
-/* NUEVO: aviso de qué actividades vienen incluidas según la variante de tour */
 #avisoActividadesIncluidas {
   font-size: 13px;
   color: #02535a;
@@ -221,7 +123,6 @@ body, input, textarea, select, button {
   padding: 10px 12px;
   margin-top: 8px;
 }
-/* NUEVO: editor de posición/tamaño de la imagen del itinerario de vuelo */
 #modalPosicionVuelo {
   display: none;
   position: fixed;
@@ -272,28 +173,6 @@ body, input, textarea, select, button {
   </style>
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-
-  <div class="sidebar" id="sidebar">
-    <div class="user-info">
-      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
-      <h3 id="nombreUsuario">Cargando...</h3>
-      <small id="rolUsuario">-</small>
-    </div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html" class="activo"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
-      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
-      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
-      <li><a href="configuracion.html"><span class="icon">⚙️</span>Configuración</a></li>
-      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
-    </ul>
-  </div>
 
   <main id="contenidoPrincipal">
 
@@ -350,14 +229,6 @@ body, input, textarea, select, button {
     <option value="Wingo">Wingo</option>
   </select>
 
-  <!-- QUITADO: Vuelo de Ida / Vuelo de Regreso -- la captura de itinerario
-       de vuelo de abajo ya cubre esta información, y era doble trabajo
-       transcribirla a mano cuando casi nunca se puede copiar y pegar
-       directo de la página de la aerolínea. -->
-
-  <!-- NUEVO: ahora soporta VARIAS capturas (una por cada tramo/destino, si
-       la cotización cubre varios) — cada una se agrega a una lista y sale
-       como su propia diapositiva en la Cotización Visual. -->
   <label>Capturas de Itinerario de Vuelo (opcional)</label>
   <div style="font-size:12px; color:#777; margin-top:-4px; margin-bottom:6px;">Si la cotización tiene varios tramos o destinos (ej. San José→Medellín→Cartagena), subí una captura por cada uno — cada una sale como su propia diapositiva, en el orden en que las agregues. Podés elegir el archivo o pegarlas directo con <strong>Ctrl+V</strong> (una detrás de otra), sin necesidad de guardarlas primero. Después de cargada cada una, usá "Ajustar posición" si hace falta acomodarla.</div>
   <input type="file" id="imagenVueloInput" accept="image/*" />
@@ -419,11 +290,6 @@ body, input, textarea, select, button {
   <div id="contenedor_tours_opcionales"></div>
 </section>
 
-<!-- QUITADA: sección "Políticas y Condiciones Generales" -- ahora esa slide
-     usa la diapositiva ya diseñada por destino (detalle_tours.html), no
-     texto escrito acá. -->
-
-<!-- Agrega botón de guardar si aún no lo tienes -->
 <div id="mensaje-restablecer" style="display:none; padding:10px; margin-top:10px; border-radius:5px; background:#d4edda; color:#155724; font-weight:bold;">
   ✅ Información del tour restablecida correctamente.
 
@@ -437,10 +303,6 @@ body, input, textarea, select, button {
 
   </main>
 
-  <!-- NUEVO: editor visual de posición/tamaño de la imagen de itinerario de
-       vuelo — mismo espíritu que el editor de "tapar precio del boleto" de
-       detalle_reserva.html (clic y arrastra sobre un lienzo), adaptado para
-       mover/redimensionar una sola imagen en vez de dibujar recuadros. -->
   <div id="modalPosicionVuelo">
     <div class="contenido-modal">
       <h3>Ubicar y ajustar la imagen del itinerario de vuelo</h3>
@@ -455,13 +317,11 @@ body, input, textarea, select, button {
 
 <script>
 
-  // FIX: apiKey tenía el mismo typo que ya encontramos en otros archivos
-  // (le faltaba una "r") — corregida para que coincida con la real.
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
     authDomain: "tours-460717.firebaseapp.com",
     projectId: "tours-460717",
-storageBucket: "tours-460717.firebasestorage.app", // ← ¡Esto es importante!
+storageBucket: "tours-460717.firebasestorage.app",
   messagingSenderId: "1000749333444",
   appId: "1:1000749333444:web:73437891b59a96b6a4c291"
 };
@@ -478,28 +338,15 @@ let hotelGuardado = null;
 
   let tourIdActual = "";
 
-  // NUEVO: ahora es un arreglo -- cada elemento es {url, pos} -- para
-  // soportar varias capturas cuando la cotización cubre varios tramos o
-  // destinos (ej. San José→Medellín→Cartagena). "pos" en coordenadas
-  // reales de la diapositiva (1280x720); null = posición por defecto.
   let capturasVuelo = [];
   function posicionVueloPorDefecto() {
     return { x: 620, y: 150, w: 600, h: 380 };
   }
 
-  // Mismo criterio de normalización que en detalle_tours.html, para
-  // encontrar el fondo de portada guardado por destino en "destinos_config".
   function slugDestino(nombre) {
     return (nombre || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().replace(/\s+/g, "_");
   }
 
-  // FIX: el itinerario se venía escribiendo con "Día N" en su propia línea
-  // y la actividad en la línea de abajo (formato de dos líneas por día) —
-  // el parseo anterior asumía "una línea = un día", así que un itinerario
-  // de 6 días (12 líneas) se contaba como 12 días, todos desfasados.
-  // Ahora detecta ese patrón y agrupa cada "Día N" suelto con el texto que
-  // le sigue; si no hay ningún "Día N" en su propia línea, sigue
-  // funcionando como antes (una línea = un día).
   function parsearItinerarioPorDia(texto) {
     const lineas = (texto || "").split("\n").map(l => l.trim()).filter(Boolean);
     const marcadorSuelto = /^d[ií]a\s*\d+\s*$/i;
@@ -522,12 +369,9 @@ let hotelGuardado = null;
       if (dias.length > 0) return dias;
     }
 
-    // Respaldo: una línea por día (con o sin "Día N:" al inicio de la línea).
     return lineas.map(l => l.replace(prefijoInline, "").trim());
   }
 
-  // NUEVO: pinta la lista completa de capturas ya agregadas, cada una con
-  // su propio botón de ajustar posición y de quitar.
   function renderizarListaCapturasVuelo() {
     const contenedor = document.getElementById("listaCapturasVuelo");
     contenedor.innerHTML = capturasVuelo.map((c, i) => `
@@ -545,10 +389,6 @@ let hotelGuardado = null;
     renderizarListaCapturasVuelo();
   }
 
-  // Subida de una captura de vuelo -- se AGREGA a la lista (no reemplaza),
-  // así se pueden ir sumando una por cada tramo/destino. Se llama tanto
-  // desde el input de archivo como desde pegar (Ctrl+V) una imagen del
-  // portapapeles.
   async function procesarArchivoVuelo(archivo) {
     if (!archivo) return;
 
@@ -577,10 +417,6 @@ let hotelGuardado = null;
     e.target.value = "";
   });
 
-  // NUEVO: pegar (Ctrl+V) una captura directo del portapapeles -- así no
-  // hace falta guardarla como .jpg/.png en el disco primero. Funciona en
-  // cualquier parte de la página (no interfiere con pegar texto en otros
-  // campos, porque solo actúa si el portapapeles trae una imagen).
   document.addEventListener("paste", async function (e) {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -596,8 +432,7 @@ let hotelGuardado = null;
     }
   });
 
-  // ---- Editor de posición/tamaño (arrastrar y redimensionar) ----
-  const ESCALA_EDITOR_VUELO = 640 / 1280; // el lienzo del editor es media escala
+  const ESCALA_EDITOR_VUELO = 640 / 1280;
   let editorVueloImg = null;
   let editorVueloFondoImg = null;
   let editorVueloArrastrando = false;
@@ -614,7 +449,6 @@ let hotelGuardado = null;
     ctx.drawImage(img, dx, dy, dw, dh);
   }
 
-  // NUEVO: recuerda cual captura del arreglo se esta editando ahora mismo.
   let indiceEdicionVuelo = null;
 
   async function abrirEditorPosicionVuelo(indice) {
@@ -653,8 +487,6 @@ let hotelGuardado = null;
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Fondo — el mismo Fondo de Contenido configurado, para ver el
-    // resultado real; si no hay ninguno, un fondo oscuro liso de respaldo.
     if (editorVueloFondoImg) {
       ctx.drawImage(editorVueloFondoImg, 0, 0, canvas.width, canvas.height);
     } else {
@@ -662,10 +494,6 @@ let hotelGuardado = null;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    // FIX: el título simulado estaba arriba a la izquierda, como quedaba
-    // ANTES de mover el título real a abajo (tituloSlideAbajo) -- ahora se
-    // dibuja donde realmente va a salir, centrado y en mayúsculas, arriba
-    // del pie de página, para que el editor represente bien la diapositiva.
     const tituloSimulado = "ITINERARIO DE VUELO";
     const centroTitulo = (1280 / 2 + 200) * ESCALA_EDITOR_VUELO;
     const yTitulo = (720 - 46) * ESCALA_EDITOR_VUELO;
@@ -682,7 +510,6 @@ let hotelGuardado = null;
     ctx.stroke();
     ctx.textAlign = "left";
 
-    // Imagen del vuelo, en su posición/tamaño actual (escalada al lienzo).
     const p = capturasVuelo[indiceEdicionVuelo].pos;
     const ex = p.x * ESCALA_EDITOR_VUELO;
     const ey = p.y * ESCALA_EDITOR_VUELO;
@@ -694,7 +521,6 @@ let hotelGuardado = null;
     ctx.lineWidth = 2;
     ctx.strokeRect(ex, ey, ew, eh);
 
-    // Punto de redimensionar, en la esquina inferior derecha del recuadro.
     ctx.fillStyle = "#f49859";
     ctx.beginPath();
     ctx.arc(ex + ew, ey + eh, 6, 0, Math.PI * 2);
@@ -731,9 +557,6 @@ let hotelGuardado = null;
       const my = e.clientY - rect.top;
       const p = capturasVuelo[indiceEdicionVuelo].pos;
 
-      // FIX: se quitaron los límites de posición y tamaño (piso en y=140,
-      // topes de ancho/alto según el espacio restante) — pedido explícito,
-      // para tener libertad total al mover y agrandar la imagen.
       if (editorVueloArrastrando) {
         p.x = (mx - editorVueloOffsetX) / ESCALA_EDITOR_VUELO;
         p.y = (my - editorVueloOffsetY) / ESCALA_EDITOR_VUELO;
@@ -759,9 +582,6 @@ let hotelGuardado = null;
   }
 
   function guardarPosicionVuelo() {
-    // La posición ya se va actualizando en vivo mientras se arrastra —
-    // acá solo se cierra el editor. Se guarda de verdad en Firestore al
-    // presionar "💾 Guardar Cotización" más abajo, junto con todo lo demás.
     cerrarEditorPosicionVuelo();
   }
 
@@ -780,12 +600,12 @@ let hotelGuardado = null;
   const dataFormal = docFormal.data();
   console.log("✅ Cargando desde cotizacionformal", dataFormal);
   tourIdActual = dataFormal.tourId || docSolicitud.data().tourId || "";
-  rellenarCampos(dataFormal); // ya incluye hotel, política, etc.
+  rellenarCampos(dataFormal);
   actualizarAvisoActividadesIncluidas();
   ajustarAlturaTextareas();
 } else {
   const dataSolicitud = docSolicitud.data();
-  rellenarCampos(dataSolicitud); // si no hay cotización formal, se rellena base
+  rellenarCampos(dataSolicitud);
   tourIdActual = dataSolicitud.tourId || "";
   if (tourIdActual) {
     await cargarDatosDelTourPorId(tourIdActual);
@@ -961,9 +781,6 @@ function mostrarToursOpcionalesGuardados(data) {
     document.getElementById("info_hotel").value = hotelGuardado.info;
   }
 
-  // NUEVO: si ya existe el arreglo de varias capturas, se usa tal cual;
-  // si es una cotización vieja (de antes de este cambio) con una sola
-  // captura en campos sueltos, se convierte a un arreglo de 1 elemento.
   if (Array.isArray(data.capturasVuelo) && data.capturasVuelo.length > 0) {
     capturasVuelo = data.capturasVuelo.map(c => ({ url: c.url, pos: c.pos || null }));
     renderizarListaCapturasVuelo();
@@ -985,9 +802,6 @@ ajustarAlturaTextareas();
     document.getElementById("total_general").value = (a * ca + n * cn + b * cb).toFixed(2);
   }
 
-  // NUEVO: valida que los datos más importantes de la cotización estén
-  // completos antes de guardar o generar el PDF. Devuelve la lista de lo
-  // que falta (vacío = todo OK).
   function validarCamposCotizacion() {
     const faltantes = [];
     if (!document.getElementById("telefono").value.trim()) faltantes.push("Teléfono");
@@ -1119,8 +933,6 @@ function restablecerDatosDelTour() {
 
   alert("✅ Información del tour restablecida correctamente.");
 }
-// QUITADA: subirPDFyGuardarEnFirestore() -- ya no se sube el PDF a Storage
-// ni se guarda link_pdf, solo se genera y se descarga.
 
 function cargarImagenComoDataURL(url) {
   return new Promise((resolve, reject) => {
@@ -1247,18 +1059,11 @@ async function generarPDF() {
       politicas: ""
     };
 
-    // ---- Datos que hay que traer frescos antes de armar las slides ----
     estado.textContent = "⏳ Cargando configuración visual...";
     const configDoc = await db.collection("configuracion").doc("cotizacion_visual").get();
     const configVisual = configDoc.exists ? configDoc.data() : {};
 
-    // El fondo de portada es primero por DESTINO (destinos_config, ej.
-    // Medellín distinto de CDMX) y, si ese destino todavía no tiene uno
-    // propio, cae al Fondo de Portada genérico de Configuración.
     let urlFondoPortada = configVisual.fondoPortada || "";
-    // NUEVO: diapositiva de Condiciones Generales propia del destino (si se
-    // subió una en detalle_tours.html) -- si no hay, la slide de
-    // Condiciones Generales cae al texto de "Políticas y Condiciones".
     let urlCondicionesDestino = "";
     try {
       const destinoConfigDoc = await db.collection("destinos_config").doc(slugDestino(destino)).get();
@@ -1324,17 +1129,6 @@ async function generarPDF() {
       doc.setLineWidth(2);
       doc.line(x, y + 16, x + doc.getTextWidth(texto), y + 16);
     }
-    // NUEVO: titulo abajo, centrado, en MAYUSCULAS -- para las slides donde
-    // la parte de arriba ya la ocupa una imagen (Itinerario de Vuelo,
-    // Itinerario del Viaje). Queda justo arriba del pie de pagina, sin
-    // pisarlo. "tamano" en px, default 20.
-    //
-    // FIX: se corrio el centro hacia la derecha para no pegar con el logo
-    // de Canatur/PYME del fondo (que vive en la franja izquierda de abajo).
-    // Ademas, si el texto pedido (ej. 72px) no entra en el espacio libre
-    // entre el logo y los puntitos de la derecha, se achica automaticamente
-    // lo minimo necesario para que quepa completo, en vez de salirse o
-    // superponerse.
     function tituloSlideAbajo(texto, tamano = 20) {
       const textoMayus = texto.toUpperCase();
       const centro = W / 2 + 200;
@@ -1356,9 +1150,6 @@ async function generarPDF() {
       doc.setLineWidth(2);
       doc.line(centro - anchoTexto / 2, H - 34, centro + anchoTexto / 2, H - 34);
     }
-    // Diapositiva de imagen completa ya diseñada (Agradecer, Cierre,
-    // actividad, hotel) — no se le pega pie de página encima porque ya
-    // trae su propio logo y branding en el diseño.
     async function agregarSlideImagenCompleta(urlImagen) {
       nuevaSlide(fondoContenidoData);
       try {
@@ -1384,9 +1175,6 @@ async function generarPDF() {
       const tourDoc = await db.collection("tours").doc(tourIdActual).get();
       actividadesIncluidasIds = tourDoc.exists && Array.isArray(tourDoc.data().actividadesIncluidas)
         ? tourDoc.data().actividadesIncluidas : [];
-      // NUEVO: nombre de la experiencia (Flash/Esencial/Confort, o "Grupal"
-      // si no aplica nivel) para mostrar junto al destino en la slide de
-      // Incluye.
       if (tourDoc.exists) {
         const dTour = tourDoc.data();
         experienciaTour = dTour.nivel || dTour.tipoSalida || "";
@@ -1403,11 +1191,8 @@ async function generarPDF() {
       if (!hotelSnap.empty) hotelImagenSlide = hotelSnap.docs[0].data().imagenSlide || "";
     }
 
-    // ---- Slide 1: Portada ----
     nuevaSlide(fondoPortadaData);
     if (fondoPortadaData) {
-      // El fondo ya trae "COTIZACIÓN" y el destino diseñados en la imagen
-      // — el sistema solo agrega el código, que sí cambia por cliente.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
       doc.setTextColor(...BLANCO);
@@ -1427,13 +1212,11 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Slide: Agradecimiento (imagen fija) ----
     if (configVisual.imagenAgradecer) {
       estado.textContent = "⏳ Cargando slide de agradecimiento...";
       await agregarSlideImagenCompleta(configVisual.imagenAgradecer);
     }
 
-    // ---- Slide(s): Itinerario de Vuelo (una por cada captura agregada) ----
     for (const captura of capturasVuelo) {
       if (!captura.url) continue;
       nuevaSlide();
@@ -1462,7 +1245,6 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Slide de Hotel ----
     if (data.hotel) {
       if (hotelImagenSlide) {
         estado.textContent = "⏳ Cargando diapositiva del hotel...";
@@ -1479,30 +1261,17 @@ async function generarPDF() {
       }
     }
 
-    // ---- Slide: Itinerario de Viaje (tabla por día) ----
     if (data.itinerario && data.itinerario.trim()) {
       nuevaSlide();
-      // FIX: usa el parseo nuevo que agrupa "Día N" (línea propia) + su
-      // actividad (línea siguiente) como un solo día — antes contaba cada
-      // línea como un día distinto y salían el doble de columnas.
       const contenidoDias = parsearItinerarioPorDia(data.itinerario);
       if (contenidoDias.length > 0) {
-        // NUEVO: ya no es la tabla automatica de antes -- se dibuja a mano
-        // como el cuadro de las cotizaciones manuales: fondo en color,
-        // "Día N" arriba de cada columna, una linea punteada abajo del
-        // numero, el texto del dia debajo, y separadores punteados entre
-        // columnas.
         const margenX = 50;
         const anchoTotal = W - margenX * 2;
         const anchoColumna = anchoTotal / contenidoDias.length;
         const yTop = 110;
-        // Tamaños de letra (subidos a 48, como se ajustó directo en GitHub).
         const tamanoDia = 48;
         const tamanoContenido = 48;
 
-        // NUEVO: la altura del cuadro ya no es fija -- se calcula segun
-        // cuantas lineas necesita el dia con MAS texto, para no dejar
-        // espacio vacio de sobra cuando el itinerario es corto.
         doc.setFont("helvetica", "normal");
         doc.setFontSize(tamanoContenido);
         let maxLineas = 1;
@@ -1512,17 +1281,13 @@ async function generarPDF() {
           return lineas;
         });
 
-        const altoEncabezado = 90; // desde yTop hasta la linea punteada
+        const altoEncabezado = 90;
         const espacioSuperiorContenido = 46;
         const espacioInferior = 34;
         const altoLineaContenido = tamanoContenido * 1.15;
         const altoTabla = altoEncabezado + espacioSuperiorContenido + (maxLineas * altoLineaContenido) + espacioInferior;
         const yDivisor = yTop + altoEncabezado;
 
-        // FIX: el celeste no era congruente con la paleta del sistema --
-        // ahora la caja usa el mismo teal de marca (el de los encabezados
-        // de tabla) y los separadores van en el mismo naranja de acento
-        // que se usa en subrayados y pie de pagina.
         const COLOR_CAJA = TEAL;
         const COLOR_BORDE_CAJA = ACENTO;
 
@@ -1557,14 +1322,10 @@ async function generarPDF() {
           doc.text(lineasPorDia[i], x + anchoColumna / 2, yDivisor + espacioSuperiorContenido, { align: "center" });
         });
       }
-      // NUEVO: el titulo ya no va arriba -- ahora va abajo, centrado, en
-      // mayusculas y mas grande que el de Itinerario de Vuelo (pedido
-      // explicito: "letras mas grandes que abarque mas la pagina").
       tituloSlideAbajo("Itinerario del Viaje", 72);
       piePagina(codigo);
     }
 
-    // ---- Un slide por cada actividad incluida en esta variante ----
     for (const actividad of incluidos) {
       if (actividad.imagenSlide) {
         estado.textContent = `⏳ Cargando diapositiva de "${actividad.nombre}"...`;
@@ -1593,21 +1354,11 @@ async function generarPDF() {
       }
     }
 
-    // ---- Slide: Incluye en el paquete + detalles de la cotización ----
-    // NUEVO: esta slide ahora hace doble función -- a la izquierda van
-    // Incluye y No incluye apilados (uno debajo del otro), a la derecha un
-    // resumen de la cotización (fecha, personas, precio, total) que antes
-    // vivía en slides separadas ("Detalle del Viaje", que se quitó, e
-    // "Inversión por Viajero"). Por eso ahora se genera aunque no haya
-    // incluye/no_incluye, mientras haya algún dato de precio/fecha que
-    // mostrar a la derecha.
     const tieneIncluye = !!(data.incluye && data.incluye.trim());
     const tieneNoIncluye = !!(data.no_incluye && data.no_incluye.trim());
     if (tieneIncluye || tieneNoIncluye || data.total_general) {
       nuevaSlide();
 
-      // Título pedido: "Incluye en el paquete", en 48px (el resto de los
-      // títulos usa tituloSlide con 30px por defecto -- este va más grande).
       doc.setFont("helvetica", "bold");
       doc.setFontSize(48);
       doc.setTextColor(...BLANCO);
@@ -1620,22 +1371,10 @@ async function generarPDF() {
       doc.setLineWidth(1.5);
       doc.line(640, 150, 640, 660);
 
-      // ---- Columna izquierda: Incluye, y debajo No incluye ----
       const xIzq = 95;
       const anchoIzq = 505;
-      const altoDisponible = 660 - 160; // desde donde arranca el texto hasta el pie
+      const altoDisponible = 660 - 160;
 
-      // Tamaños pedidos por el usuario -- con resguardo: si el contenido no
-      // entra completo en el espacio disponible, se achican los dos juntos
-      // (encabezado 40 y contenido 36) en pasos chicos hasta que quepan,
-      // en vez de desbordarse fuera de la diapositiva.
-      // FIX: separar por coma partia frases que tienen una coma adentro
-      // (ej. "alojamiento en Medellín, Colombia" se cortaba en dos items).
-      // Ahora separa por SALTO DE LINEA si el texto tiene alguno (un item
-      // por linea, igual que el itinerario) -- solo cae a separar por coma
-      // si el texto viene todo en una sola linea (formato viejo). Ademas
-      // limpia cualquier vineta que ya viniera escrita en el texto, para no
-      // terminar con "• •" duplicado.
       function itemsDesdeTexto(texto) {
         const limpiarVineta = t => t.replace(/^[•\-\*]+\s*/, "").trim();
         if (texto.includes("\n")) {
@@ -1695,20 +1434,15 @@ async function generarPDF() {
         dibujarBloque("NO INCLUYE:", itemsNoIncluye, ACENTO, xIzq, yIzq);
       }
 
-      // ---- Columna derecha: detalles de la cotización ----
       const xCentroDer = 930;
       let yDer = 170;
 
-      // NUEVO: toda la columna derecha subida +10px de letra (pedido
-      // explicito), y con mas espaciado vertical acorde.
       doc.setFont("helvetica", "bold");
       doc.setFontSize(40);
       doc.setTextColor(...BLANCO);
       doc.text("COTIZACIÓN", xCentroDer, yDer, { align: "center" });
       yDer += 48;
 
-      // Destino + experiencia (Flash/Esencial/Confort/Grupal) debajo del
-      // titulo "COTIZACIÓN".
       const destinoConExperiencia = experienciaTour ? `${destino} — ${experienciaTour}` : destino;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(28);
@@ -1732,9 +1466,6 @@ async function generarPDF() {
 
       filaDetalle("FECHA", data.fechas);
 
-      // NUEVO: se quita el total de personas por completo (pedido
-      // explícito) -- solo se maneja por categoría (Adultos/Niños/Bebés),
-      // nunca un número combinado que pueda confundir al cliente.
       const categoriasPersonas = [
         data.adultos && data.adultos !== "0" ? `${data.adultos} Adulto(s)` : null,
         data.ninos && data.ninos !== "0" ? `${data.ninos} Niño(s)` : null,
@@ -1768,7 +1499,6 @@ async function generarPDF() {
         doc.text(textoTotal, xCentroDer, yDer, { align: "center" });
         yDer += 50;
 
-        // NUEVO: monto de reserva por persona, debajo del cuadro de TOTAL.
         if (data.monto_reserva) {
           doc.setFont("helvetica", "normal");
           doc.setFontSize(20);
@@ -1780,23 +1510,10 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Slide de Inversión ----
-    // QUITADA: el precio/total/monto de reserva ya se muestra en la
-    // columna derecha de "Incluye en el paquete" -- quedaba repetido.
-
-    // ---- Slide de Tours Opcionales ----
     if (opcionales.length > 0) {
       nuevaSlide();
-      // Titulo corrido a la derecha (el avion tapaba la "T") -- esto se
-      // queda, fue un pedido aparte del diseño de filas que se revirtio.
       tituloSlide("Tours Opcionales", 90, 95);
 
-      // NUEVO: rediseño según referencia manual -- 3 columnas (Tour
-      // opcional / Precio p.p / Incluye con viñetas), tabla más angosta y
-      // letra más grande. La columna "Incluye" se arma partiendo la
-      // descripción en viñetas (por salto de línea si lo hay, si no por
-      // coma -- mismo criterio seguro que usamos en "Incluye en el
-      // paquete", para no cortar frases como "Medellín, Colombia").
       function vinetasDesdeTexto(texto) {
         const limpiar = t => t.replace(/^[•\-\*]+\s*/, "").trim();
         const items = texto.includes("\n")
@@ -1805,9 +1522,6 @@ async function generarPDF() {
         return items.map(item => `•  ${item}`).join("\n");
       }
 
-      // NUEVO: encabezados centrados, cuerpo transparente (se ve el fondo
-      // oscuro de la diapositiva), y líneas punteadas en naranja, mismo
-      // lenguaje visual que el cuadro de Itinerario del Viaje.
       doc.setDrawColor(...ACENTO);
       doc.setLineDashPattern([4, 3], 0);
       doc.autoTable({
@@ -1833,9 +1547,7 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Slide de Condiciones Generales ----
     if (urlCondicionesDestino) {
-      // Diapositiva ya diseñada, propia de este destino.
       estado.textContent = "⏳ Cargando condiciones generales...";
       await agregarSlideImagenCompleta(urlCondicionesDestino);
     } else if (data.politicas && data.politicas.trim()) {
@@ -1849,7 +1561,6 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Slide de Cierre ----
     if (configVisual.imagenCierre) {
       estado.textContent = "⏳ Cargando slide de cierre...";
       await agregarSlideImagenCompleta(configVisual.imagenCierre);
@@ -1875,9 +1586,6 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    // ---- Descargar ----
-    // QUITADO: ya no se sube el PDF a Storage ni se guarda link_pdf en
-    // Firestore -- con generarlo y descargarlo alcanza.
     estado.textContent = "⏳ Generando descarga...";
     doc.save(`Cotización ${codigo}.pdf`);
 
@@ -1891,51 +1599,11 @@ async function generarPDF() {
   }
 }
 
-// NUEVO: menú lateral de navegación (igual que el resto del sistema)
-function inicializarMenuLateral() {
-  const usuario = JSON.parse(localStorage.getItem("usuario"));
-  const sidebar = document.getElementById("sidebar");
-  const contenido = document.getElementById("contenidoPrincipal");
-  const toggleBtn = document.querySelector('.toggle-btn');
-
-  if (usuario) {
-    document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-    document.getElementById("rolUsuario").innerText = usuario.rol || "";
-  } else {
-    document.getElementById("nombreUsuario").innerText = "Invitado";
-  }
-
-  window.toggleSidebar = function () {
-    sidebar.classList.toggle('active');
-    contenido.classList.toggle('sidebar-visible');
-  };
-
-  window.cerrarSesionYRedirigir = function () {
-    localStorage.removeItem("usuario");
-    window.location.href = "login.html";
-  };
-
-  function checkScreenSize() {
-    if (window.innerWidth <= 768) {
-      sidebar.classList.remove('active');
-      contenido.classList.remove('sidebar-visible');
-    } else {
-      sidebar.classList.add('active');
-      contenido.classList.add('sidebar-visible');
-    }
-    toggleBtn.style.display = "block";
-  }
-
-  window.addEventListener('resize', checkScreenSize);
-  checkScreenSize();
-}
-inicializarMenuLateral();
-
 window.onload = cargarDatosIniciales;
   </script>
   <script src="topbar.js"></script>
-  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
-       de confiar solo en lo que dijera localStorage. -->
+  <script src="sidebar.js"></script>
+  <!-- Verificación real de sesión (Firebase Authentication). -->
   <script src="auth-guard.js"></script>
 
 </body>
