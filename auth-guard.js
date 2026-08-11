@@ -39,13 +39,40 @@
     `;
     overlay.innerHTML = `
       <div class="loader-cielo">
-        <span class="nube nube1"></span>
-        <span class="nube nube2"></span>
-        <span class="nube nube3"></span>
-        <span class="nube nube4"></span>
-        <span class="nube nube5"></span>
-        <svg class="loader-avion-svg" viewBox="0 0 24 24" width="46" height="46">
-          <path fill="#02535a" d="M2 21l21-9L2 3v7l15 2-15 2z"/>
+        <div class="nube-doble nd1">
+          <svg class="nube-atras" viewBox="0 0 24 24" width="46" height="46"><path fill="#a9c6f5" stroke="#02535a" stroke-width="1.2" d="M19.35 10.04A7.49 7.49 0 0012 4a7.49 7.49 0 00-7.35 6.04A5.994 5.994 0 000 16c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+          <svg class="nube-frente" viewBox="0 0 24 24" width="34" height="34"><path fill="#ffffff" stroke="#02535a" stroke-width="1.2" d="M19.35 10.04A7.49 7.49 0 0012 4a7.49 7.49 0 00-7.35 6.04A5.994 5.994 0 000 16c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+        </div>
+        <div class="nube-doble nd2">
+          <svg class="nube-atras" viewBox="0 0 24 24" width="38" height="38"><path fill="#a9c6f5" stroke="#02535a" stroke-width="1.2" d="M19.35 10.04A7.49 7.49 0 0012 4a7.49 7.49 0 00-7.35 6.04A5.994 5.994 0 000 16c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+          <svg class="nube-frente" viewBox="0 0 24 24" width="27" height="27"><path fill="#ffffff" stroke="#02535a" stroke-width="1.2" d="M19.35 10.04A7.49 7.49 0 0012 4a7.49 7.49 0 00-7.35 6.04A5.994 5.994 0 000 16c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+        </div>
+        <div class="nube-doble nd3">
+          <svg class="nube-atras" viewBox="0 0 24 24" width="40" height="40"><path fill="#a9c6f5" stroke="#02535a" stroke-width="1.2" d="M19.35 10.04A7.49 7.49 0 0012 4a7.49 7.49 0 00-7.35 6.04A5.994 5.994 0 000 16c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+          <svg class="nube-frente" viewBox="0 0 24 24" width="29" height="29"><path fill="#ffffff" stroke="#02535a" stroke-width="1.2" d="M19.35 10.04A7.49 7.49 0 0012 4a7.49 7.49 0 00-7.35 6.04A5.994 5.994 0 000 16c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+        </div>
+
+        <svg class="loader-avion-svg" viewBox="0 0 200 90" width="96" height="43">
+          <polygon points="10,40 40,20 55,40" fill="#d9d9d9"/>
+          <polygon points="10,40 30,58 55,45" fill="#bcbcbc"/>
+          <ellipse cx="120" cy="42" rx="80" ry="14" fill="#f2f2f2"/>
+          <ellipse cx="120" cy="42" rx="80" ry="14" fill="none" stroke="#c9c9c9" stroke-width="1"/>
+          <path d="M195,42 L175,29 L175,55 Z" fill="#e2483c"/>
+          <path d="M42,42 L18,29 L18,55 Z" fill="#e2483c"/>
+          <g fill="#333">
+            <circle cx="82" cy="41" r="2"/>
+            <circle cx="92" cy="41" r="2"/>
+            <circle cx="102" cy="41" r="2"/>
+            <circle cx="112" cy="41" r="2"/>
+            <circle cx="122" cy="41" r="2"/>
+            <circle cx="132" cy="41" r="2"/>
+            <circle cx="142" cy="41" r="2"/>
+            <circle cx="152" cy="41" r="2"/>
+          </g>
+          <polygon points="112,40 130,8 152,40" fill="#d9d9d9"/>
+          <polygon points="112,50 130,82 152,50" fill="#bcbcbc"/>
+          <ellipse cx="133" cy="42" rx="11" ry="11" fill="#e2483c"/>
+          <circle cx="133" cy="42" r="5.5" fill="#222"/>
         </svg>
       </div>
       <div style="font-weight:bold; letter-spacing:0.2px;">Verificando sesión...</div>
@@ -55,45 +82,41 @@
           width: 280px;
           height: 190px;
         }
-        .nube {
+        .nube-doble {
           position: absolute;
-          width: 44px;
-          height: 18px;
-          border: 2px solid #cfe3e4;
-          border-radius: 20px;
-          background: transparent;
-          animation: flotarNube 3.2s ease-in-out infinite;
+          animation: flotarNube 3.4s ease-in-out infinite;
         }
-        .nube::before, .nube::after {
-          content: "";
+        .nube-doble .nube-atras {
+          display: block;
           position: absolute;
-          border: 2px solid #cfe3e4;
-          border-radius: 50%;
-          background: #f0f7f7;
+          top: -10px;
+          left: -14px;
         }
-        .nube::before { width: 20px; height: 20px; top: -11px; left: 5px; }
-        .nube::after  { width: 15px; height: 15px; top: -8px;  left: 24px; }
-        .nube1 { top: 10%;  left: 8%;  animation-delay: 0s; }
-        .nube2 { top: 4%;   left: 50%; transform: scale(0.8); animation-delay: 0.6s; }
-        .nube3 { top: 66%;  left: 6%;  transform: scale(0.7); animation-delay: 1.1s; }
-        .nube4 { top: 74%;  left: 58%; animation-delay: 0.3s; }
-        .nube5 { top: 40%;  left: 78%; transform: scale(0.6); animation-delay: 0.9s; }
+        .nube-doble .nube-frente {
+          display: block;
+          position: relative;
+          top: 10px;
+          left: 12px;
+        }
+        .nd1 { top: 8%;  left: 6%;  animation-delay: 0s; }
+        .nd2 { top: 2%;  left: 54%; animation-delay: 0.7s; }
+        .nd3 { top: 62%; left: 70%; animation-delay: 1.2s; }
         @keyframes flotarNube {
           0%, 100% { transform: translateY(0); }
-          50%      { transform: translateY(-6px); }
+          50%      { transform: translateY(-7px); }
         }
         .loader-avion-svg {
           position: absolute;
-          left: 6%;
-          top: 74%;
-          transform: rotate(-28deg);
+          left: 4%;
+          top: 68%;
+          transform: rotate(-24deg);
           animation: volarDiagonal 2.6s ease-in-out infinite;
         }
         @keyframes volarDiagonal {
-          0%   { left: 6%;  top: 74%; opacity: 0; transform: rotate(-28deg); }
+          0%   { left: 4%;  top: 68%; opacity: 0; transform: rotate(-24deg); }
           12%  { opacity: 1; }
           88%  { opacity: 1; }
-          100% { left: 74%; top: 4%;  opacity: 0; transform: rotate(-28deg); }
+          100% { left: 46%; top: 8%;  opacity: 0; transform: rotate(-24deg); }
         }
       </style>
     `;
