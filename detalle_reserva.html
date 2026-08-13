@@ -2063,7 +2063,13 @@ async function guardarReserva() {
     const archivoTiqueteVuelo = document.getElementById("tiqueteVueloFile")?.files[0];
     if (archivoTiqueteVuelo) {
       const refTiquete = storage.ref().child(`tiquetes/${codigo}/${Date.now()}_${archivoTiqueteVuelo.name}`);
-      await refTiquete.put(archivoTiqueteVuelo);
+      // NUEVO: contentDisposition "inline" — sin esto, el navegador trataba
+      // el archivo como una descarga forzada en vez de mostrarlo en una
+      // pestaña nueva al hacer clic en "📎 nombre" de la lista de abajo.
+      await refTiquete.put(archivoTiqueteVuelo, {
+        contentType: archivoTiqueteVuelo.type || "application/octet-stream",
+        contentDisposition: "inline"
+      });
       const urlTiquete = await refTiquete.getDownloadURL();
       tiquetesVuelo = [...tiquetesVuelo, {
         nombre: archivoTiqueteVuelo.name,
@@ -2169,7 +2175,13 @@ async function guardarReserva() {
       if (archivoTiquetePasajero) {
         const nombrePasajeroActual = p.querySelector(".nombrePasajero")?.value || `Pasajero ${i + 1}`;
         const refTiquetePasajero = storage.ref().child(`tiquetes/${codigo}/pasajero_${i}_${Date.now()}_${archivoTiquetePasajero.name}`);
-        await refTiquetePasajero.put(archivoTiquetePasajero);
+        // NUEVO: mismo fix de contentDisposition "inline" que el boleto
+        // general, para que también abra en pestaña nueva en vez de
+        // descargar.
+        await refTiquetePasajero.put(archivoTiquetePasajero, {
+          contentType: archivoTiquetePasajero.type || "application/octet-stream",
+          contentDisposition: "inline"
+        });
         const urlTiquetePasajero = await refTiquetePasajero.getDownloadURL();
         tiquetesVuelo.push({
           nombre: `Boleto - ${nombrePasajeroActual}`,
