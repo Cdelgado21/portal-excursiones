@@ -13,101 +13,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
-    .toggle-btn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      font-size: 24px;
-      background: white;
-      color: #02535a;
-      border: none;
-      border-radius: 50%;
-      padding: 8px 12px;
-      z-index: 1100;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 250px;
-      height: 100%;
-      background-color: #02535a;
-      color: white;
-      padding: 20px;
-      transform: translateX(-250px);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    .sidebar.active {
-      transform: translateX(0);
-    }
-    .sidebar .user-info {
-      text-align: center;
-      margin-bottom: 20px;
-      margin-top: 40px;
-    }
-    .sidebar .user-info .avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-    .sidebar .user-info h3 {
-      font-size: 1rem;
-      margin: 0;
-      color: white;
-    }
-    .sidebar .user-info small {
-      font-size: 0.8rem;
-      color: #f4f7f8;
-    }
-    .nav-links {
-      list-style: none;
-      padding: 0;
-    }
-    .nav-links li a {
-      background-color: #f4f7f8;
-      color: #02535a;
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .nav-links li a:hover {
-      background-color: #e0e0e0;
-    }
-    .nav-links li a.activo {
-      background-color: #ffb703;
-      color: #02535a;
-    }
-    .nav-links .icon {
-      margin-right: 10px;
-      font-size: 1.2rem;
-    }
-    main#contenidoPrincipal {
-      margin-left: 0;
-      padding: 20px 20px 20px 70px;
-      transition: margin-left 0.3s ease;
-      box-sizing: border-box;
-    }
-    main#contenidoPrincipal.sidebar-visible {
-      margin-left: 250px;
-      padding-left: 20px;
-    }
-    @media screen and (max-width: 768px) {
-      main#contenidoPrincipal.sidebar-visible {
-        margin-left: 0;
-        padding-left: 70px;
-      }
-    }
-
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
       background: #f0f7f7;
@@ -159,9 +64,6 @@
     .btn-historicas { background-color: #5f9296; }
     .btn-historicas:hover { background-color: #4d7d80; }
 
-    /* NUEVO: fila de filtros (buscador + mes) — mismo lenguaje visual que
-       el buscador de proveedores.html / solicitud_cotizaciones.html:
-       bordes redondeados, borde teal claro en reposo, foco con halo suave. */
     .fila-filtros {
       display: flex;
       flex-wrap: wrap;
@@ -277,27 +179,6 @@
   </style>
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-
-  <div class="sidebar" id="sidebar">
-    <div class="user-info">
-      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
-      <h3 id="nombreUsuario">Cargando...</h3>
-      <small id="rolUsuario">-</small>
-    </div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
-      <li><a href="reservas.html" class="activo"><span class="icon">🧳</span>Reservas</a></li>
-      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
-      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
-      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
-    </ul>
-  </div>
 
   <main id="contenidoPrincipal">
 
@@ -311,12 +192,8 @@
       <a class="btn-historicas" href="reservas_historicas.html">🕓 Ver reservas históricas</a>
     </div>
 
-    <!-- NUEVO: buscador — filtra la tabla mientras se escribe, sin volver a
-         consultar Firebase (los datos ya están cargados en la página). -->
     <div class="fila-filtros">
       <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()">
-      <!-- NUEVO: filtro por mes de viaje — se arma solo con los meses que
-           realmente tienen reservas activas, no una lista fija de 12. -->
       <select id="filtroMesReservas" onchange="filtrarTablaReservas()">
         <option value="">📅 Todos los meses</option>
       </select>
@@ -343,15 +220,10 @@
         </tr>
       </thead>
       <tbody>
-        <!-- Reservas se cargarán dinámicamente -->
       </tbody>
     </table>
   </div>
   <script>
-    // FIX: firebaseConfig estaba incompleto (le faltaban storageBucket,
-    // messagingSenderId y appId) y tenía la misma apiKey mal escrita que
-    // encontramos antes en login.html/registro.html — se corrige aquí para
-    // que quede igual a la configuración real usada en el resto del sistema.
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
@@ -363,19 +235,9 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const tabla = document.querySelector("#tablaReservas tbody");
-    // NUEVO: guarda el documento completo de cada reserva, indexado por
-    // código — así el botón de Reporte de Operador puede generar el PDF al
-    // instante, sin volver a consultar Firebase.
     window.datosReservasPorCodigo = {};
 
-    // Convierte los dos formatos de fecha que existen en la base de datos
-    // ("2025-06-08" y "21/6/2025") a un objeto Date comparable.
     function parseFechaReserva(str) {
-      // FIX: si "str" no es un texto plano (puede pasar en reservas viejas
-      // donde el campo de fecha quedó guardado distinto — un Timestamp de
-      // Firestore, un objeto, etc.), esta función reventaba con
-      // "str.split is not a function". Ahora se blinda: si no es string,
-      // devuelve null en vez de crashear.
       if (!str || typeof str !== "string") return null;
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
         return new Date(str + "T00:00:00");
@@ -390,10 +252,6 @@
       return null;
     }
 
-    // NUEVO: la fecha se ha guardado con formatos distintos a lo largo del
-    // año (a veces "2025-06-08" con guiones, a veces "16/7/2026" con barras),
-    // según qué versión del código la escribió. Esta función usa el parseo de
-    // arriba y siempre la vuelve a mostrar de la misma forma (DD/MM/AAAA).
     function formatearFechaVisible(str) {
       const fecha = parseFechaReserva(str);
       if (!fecha) return str || '-';
@@ -403,11 +261,6 @@
       return `${dia}/${mes}/${año}`;
     }
 
-    // NUEVO: "creado_el" se guarda como fecha real de Firestore (no un
-    // string como fechaReserva), asi que al leerla llega como Timestamp
-    // (con .toDate()) -- esta funcion la muestra igual de DD/MM/AAAA. Las
-    // reservas de antes de que existiera este campo no lo tienen, por eso
-    // se cubre el caso vacio con "-".
     function formatearFechaCreacion(valor) {
       if (!valor) return '-';
       const fecha = typeof valor.toDate === 'function' ? valor.toDate() : new Date(valor);
@@ -418,15 +271,6 @@
       return `${dia}/${mes}/${año}`;
     }
 
-    // Calcula la cantidad de personas cubriendo los 3 esquemas distintos que
-    // ha tenido el sistema a lo largo del tiempo:
-    // 1) campo "numero" directo (el más nuevo)
-    // 2) desglose cantidadAdultos + cantidadNinos + cantidadBebes
-    // 3) esquema viejo: arreglo "pasajeros" (acompañantes) + 1 por el titular
-    // FIX: se eliminó el uso de "data.numero" — ese campo es el consecutivo de
-    // la reserva (1, 2, 3...), no la cantidad de personas. Usarlo causaba que,
-    // por ejemplo, la reserva #2 del año mostrara "2 personas" sin importar
-    // cuántos viajeros hubiera en realidad.
     function calcularPersonas(data) {
       const adultos = data.cantidadAdultos || 0;
       const ninos = data.cantidadNinos || 0;
@@ -452,7 +296,6 @@
           const data = doc.data();
           const fecha = parseFechaReserva(data.fechaReserva);
 
-          // Si la fecha ya pasó, esta reserva pertenece a reservas_historicas.html, se omite aquí.
           if (fecha && fecha < hoy) return;
 
           if (!fecha) contadorSinFecha++;
@@ -460,8 +303,6 @@
           window.datosReservasPorCodigo[doc.id] = data;
 
           const fila = document.createElement("tr");
-          // NUEVO: guarda a qué mes-año pertenece esta reserva (según fecha
-          // de viaje) para poder filtrarla desde el desplegable de mes.
           if (fecha) {
             const claveMes = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
             fila.dataset.mesAnio = claveMes;
@@ -488,6 +329,7 @@
                 <button class="btn-icono" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
                 <button class="btn-icono" title="Reporte para el tour operador en destino" onclick="generarReporteOperador('${doc.id}')">📄</button>
                 <button class="btn-icono" title="Enviar imagen de Buen Viaje por correo" onclick="abrirModalBuenViaje('${doc.id}')">🌴</button>
+                <button class="btn-icono" title="Enviar encuesta de satisfacción por correo (post-viaje)" onclick="abrirModalEncuesta('${doc.id}')">📝</button>
                 <a class="btn-icono" style="text-decoration:none; display:inline-flex;" href="costos_agregar.html?reserva=${doc.id}" title="Ir a marcar Pagado / Confirmado por cada proveedor">🏷️</a>
                 <button class="btn-icono eliminar" title="Eliminar reserva" onclick="eliminarReserva('${doc.id}')">🗑️</button>
               </div>
@@ -502,11 +344,8 @@
           texto += ` (${contadorSinFecha} sin fecha de viaje registrada — revisar)`;
         }
         contadorEl.textContent = texto;
-        window.textoContadorOriginal = texto; // para restaurar al borrar el buscador
+        window.textoContadorOriginal = texto;
 
-        // NUEVO: arma las opciones del filtro de mes, ordenadas
-        // cronológicamente, solo con los meses que realmente tienen alguna
-        // reserva activa.
         const selectMes = document.getElementById("filtroMesReservas");
         Array.from(mesesConReservas).sort().forEach(claveMes => {
           const [anio, mes] = claveMes.split('-');
@@ -518,10 +357,6 @@
       });
     }
 
-    // NUEVO: filtra las filas ya cargadas en la tabla según lo que se
-    // escriba en el buscador — compara contra todo el texto visible de la
-    // fila (código, nombre, teléfono, correo, destino), sin distinguir
-    // mayúsculas/minúsculas ni acentos.
     function normalizarTexto(str) {
       return (str || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
@@ -548,16 +383,7 @@
       }
     }
 
-    // ==========================================
-    // NUEVO: Reporte de Operador (PDF) — todo lo que un tour operador en
-    // destino necesita para recibir al grupo: vuelos, hospedaje, lista de
-    // pasajeros con datos de pasaporte, itinerario de tours día por día, y
-    // el contacto del cliente titular. Se arma con los datos que ya están
-    // cargados en memoria (window.datosReservasPorCodigo), sin volver a
-    // consultar Firebase.
-    // ==========================================
-
-    const COLOR_MARCA_OPERADOR = [2, 83, 90]; // #02535a
+    const COLOR_MARCA_OPERADOR = [2, 83, 90];
 
     function calcularEdadDesde(fechaStr) {
       if (!fechaStr) return null;
@@ -570,8 +396,6 @@
       return edad;
     }
 
-    // Arma el texto del vuelo (aerolínea + n° de vuelo + fecha + ruta) en
-    // una sola línea legible, para ida/regreso/escalas por igual.
     function textoDeVuelo(vuelo) {
       if (!vuelo) return null;
       const partes = [];
@@ -583,9 +407,6 @@
       return { linea1, descripcion: vuelo.descripcion || "" };
     }
 
-    // Convierte el texto libre de "Itinerario" (una línea por día, ej. "Día 1
-    // Llegada a Medellín") en un arreglo [{numero, texto}, ...] — mismo
-    // parseo que ya usa el comprobante de reserva.
     function parsearItinerarioPorDiasOperador(texto) {
       if (!texto) return [];
       const lineas = texto.split("\n").map(l => l.trim()).filter(Boolean);
@@ -601,8 +422,6 @@
       return dias;
     }
 
-    // Descarga un comprobante de vuelo ya subido (Storage) como bytes, para
-    // poder fusionarlo al PDF del reporte.
     async function descargarTiqueteComoBytesOperador(tiquete) {
       const respuesta = await fetch(tiquete.url);
       if (!respuesta.ok) {
@@ -612,9 +431,6 @@
       return await blob.arrayBuffer();
     }
 
-    // NUEVO: pega los boletos de avión ya subidos (tiquetesVuelo) al final
-    // del Reporte de Operador — a diferencia del comprobante que se le manda
-    // al cliente, acá NO se tapa el precio (el operador sí puede verlo).
     async function fusionarReporteConBoletosOperador(pdfJsPDF, tiquetesVuelo) {
       const { PDFDocument } = PDFLib;
       const bytesReporte = pdfJsPDF.output("arraybuffer");
@@ -650,8 +466,6 @@
             paginasCopiadas.forEach(p => pdfFinal.addPage(p));
           }
         } catch (e) {
-          // Causa más común: el bucket de Firebase Storage sin CORS
-          // configurado para este dominio.
           console.error(`No se pudo anexar el comprobante de vuelo "${tiquete.nombre}":`, e);
           errores.push(`${tiquete.nombre || "un comprobante"} (${e.message || e})`);
         }
@@ -704,7 +518,6 @@
         y += 6;
       }
 
-      // ===== ENCABEZADO =====
       doc.setFont("helvetica", "bold");
       doc.setFontSize(16);
       doc.setTextColor(...COLOR_MARCA_OPERADOR);
@@ -715,7 +528,6 @@
       doc.text(`Excursiones Delgado — Código de reserva: ${codigo}`, margen, y);
       y += 10;
 
-      // ===== DESTINO Y FECHAS =====
       titulo("Datos del Viaje");
       linea("Destino", (data.nombreDestino || data.destino || "-").split(" (")[0]);
       linea("Fecha de viaje (ida)", formatearFechaVisible(data.vueloIda?.fecha || data.fechaReserva));
@@ -723,7 +535,6 @@
       linea("Cantidad de personas", calcularPersonas(data) ?? "-");
       y += 4;
 
-      // ===== VUELOS =====
       titulo("Itinerario de Vuelos");
       const vueloIdaTexto = textoDeVuelo(data.vueloIda);
       if (vueloIdaTexto) {
@@ -746,7 +557,6 @@
       }
       y += 4;
 
-      // ===== HOSPEDAJE =====
       if (Array.isArray(data.hoteles) && data.hoteles.length > 0) {
         titulo("Hospedaje");
         asegurarEspacio(30);
@@ -762,7 +572,6 @@
         y = doc.lastAutoTable.finalY + 8;
       }
 
-      // ===== PASAJEROS =====
       titulo("Lista de Pasajeros");
       const filasPasajeros = [];
       filasPasajeros.push([
@@ -795,7 +604,6 @@
       });
       y = doc.lastAutoTable.finalY + 8;
 
-      // ===== EQUIPAJE (si hay algo registrado) =====
       if (data.equipaje) {
         titulo("Equipaje");
         doc.setFont("helvetica", "normal");
@@ -810,7 +618,6 @@
         y += 3;
       }
 
-      // ===== ITINERARIO DE TOURS (día por día) =====
       const diasItinerario = parsearItinerarioPorDiasOperador(data.itinerario);
       if (diasItinerario.length > 0) {
         titulo("Itinerario de Tours");
@@ -840,24 +647,17 @@
         y += 3;
       }
 
-      // ===== CONTACTO DEL CLIENTE (para el operador en destino) =====
       titulo("Contacto del Cliente Titular");
       linea("Nombre", data.nombreTitular);
       linea("Teléfono", data.telefono);
       linea("Correo", data.correo);
       y += 4;
 
-      // ===== CONTACTO DE LA AGENCIA =====
       titulo("Contacto de la Agencia");
       linea("Agencia", "Excursiones Delgado");
       linea("Teléfono", "+506 6132 8183");
       linea("Correo", "boletosexcursionesdelgado@gmail.com");
 
-      // ===== BOLETOS DE AVIÓN YA CARGADOS =====
-      // NUEVO: si la reserva tiene comprobantes de vuelo subidos (los que se
-      // usan para autocompletar destinos/fechas al crear la reserva), se
-      // pegan aquí al final tal cual — sin tapar el precio, a diferencia del
-      // comprobante que recibe el cliente.
       const tiquetes = data.tiquetesVuelo || [];
       let mensajeBoletos = "";
       if (tiquetes.length > 0) {
@@ -881,19 +681,9 @@
       if (mensajeBoletos) alert(`✅ Reporte generado.${mensajeBoletos}`);
     }
 
-    // ==========================================
-    // NUEVO: "Buen Viaje" por correo — envía como adjunto la misma imagen
-    // que ya se mandaba por WhatsApp (subida una sola vez en Configuración
-    // → Comunicación con Cliente), envuelta en un PDF de una sola página.
-    // Reutiliza la MISMA función de backend que ya envía el comprobante en
-    // detalle_reserva.html — no hace falta tocar nada del servidor.
-    // ==========================================
-
     const WORKER_COMPROBANTE_URL = "/.netlify/functions/comprobante-correo";
     let urlImagenBuenViajeCache = null;
 
-    // Carga una imagen como dataURL — mismo helper que ya se usa en
-    // cotizacionformal.html y detalle_reserva.html.
     function cargarImagenComoDataURL(url) {
       return new Promise((resolve, reject) => {
         const img = new Image();
@@ -956,16 +746,9 @@
       document.getElementById("modalBuenViaje").style.display = "flex";
     }
 
-    // NUEVO: arma el cuerpo del correo con el detalle real del viaje (no
-    // placeholders) — es la opción "Con detalle del viaje" que se eligió,
-    // más unas recomendaciones generales antes de viajar.
     function construirMensajeBuenViaje(data, primerNombre) {
       const destino = (data.nombreDestino || data.destino || "").split(" (")[0];
 
-      // NOTA: a propósito, Fecha y Vuelo solo muestran DD/MM/AAAA (nunca
-      // hora) — formatearFechaVisible() no incluye horario, así que aunque
-      // el vuelo tenga una hora guardada en otro lado, no se muestra acá,
-      // por si hay una variación de último momento.
       const fechaIda = data.vueloIda?.fecha ? formatearFechaVisible(parseFechaReserva(data.vueloIda.fecha)) : "";
       const fechaRegreso = data.vueloRegreso?.fecha ? formatearFechaVisible(parseFechaReserva(data.vueloRegreso.fecha)) : "";
       let rangoFechas = "";
@@ -987,9 +770,6 @@
       if (vueloResumen) bloqueDetalle += `• Vuelo: ${vueloResumen}\n`;
       if (hotel) bloqueDetalle += `• Hospedaje: ${hotel}\n`;
 
-      // FIX: la función de correo ya le pone su propio "¡Hola [nombre
-      // completo]!" arriba (usa el campo "nombreTitular" que se le manda
-      // aparte) -- este mensaje NO debe repetirlo, si no sale duplicado.
       return `Faltan pocas horas para que arranque tu viaje, y queremos que llegues tranquilo/a sabiendo que ya tenemos todo preparado de nuestro lado.\n\n` +
         (bloqueDetalle ? bloqueDetalle + "\n" : "") +
         `En las próximas horas te vamos a enviar tu documentación oficial por WhatsApp.\n\n` +
@@ -1004,13 +784,6 @@
         `Equipo Excursiones Delgado ✈️`;
     }
 
-    // NUEVO: convierte el mensaje de texto plano del textarea a HTML con
-    // vida real (negrita en las etiquetas de cada viñeta, subtítulos
-    // resaltados en el color de marca) — en vez de agregar más emoticonos,
-    // que es justo lo que estaba fallando (📍📅🏨🌎 salían como cuadro
-    // negro en el correo real, solo ✈️ funcionaba). Se arma a partir de lo
-    // que Cristopher ve y edita en el textarea, así lo que escribe ahí
-    // sigue siendo la fuente real del contenido.
     function formatearMensajeComoHtml(textoPlano) {
       const escapar = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       const bloques = textoPlano.split("\n\n").filter(b => b.trim());
@@ -1024,7 +797,6 @@
           html += `<ul style="margin:0 0 16px 0; padding-left:20px;">`;
           lineas.forEach(linea => {
             let contenido = escapar(linea.replace(/^•\s*/, ""));
-            // Negrita en la "Etiqueta:" al inicio de la viñeta (ej. "Destino: X").
             contenido = contenido.replace(/^([^:]{2,20}:)/, '<strong style="color:#02535a;">$1</strong>');
             html += `<li style="margin-bottom:6px; line-height:1.5;">${contenido}</li>`;
           });
@@ -1032,8 +804,6 @@
         } else {
           lineas.forEach(linea => {
             const contenido = escapar(linea);
-            // Una línea corta que termina en ":" es un subtítulo -- negrita
-            // y color de marca, para que no se vea todo plano.
             if (/:\s*$/.test(linea.trim()) && linea.trim().length < 60) {
               html += `<p style="margin:0 0 8px 0;"><strong style="color:#02535a; font-size:16px;">${contenido}</strong></p>`;
             } else {
@@ -1070,9 +840,6 @@
         const urlImagen = await obtenerUrlImagenBuenViaje();
         const { dataUrl, width, height } = await cargarImagenComoDataURL(urlImagen);
 
-        // Arma un PDF de una sola pagina con la imagen a pantalla completa,
-        // con el mismo formato (ancho x alto) que la imagen real, para que
-        // no queden bordes ni recortes raros.
         const { jsPDF } = window.jspdf;
         const docPdf = new jsPDF({ unit: "px", format: [width, height], orientation: width > height ? "landscape" : "portrait" });
         docPdf.addImage(dataUrl, "JPEG", 0, 0, width, height);
@@ -1113,11 +880,99 @@
     }
 
     // ==========================================
-    // NUEVO: Reunión de Guía de Viaje — marca por reserva si ya se hizo la
-    // reunión virtual (Meet) de presentación de la guía. La alerta de
-    // "faltan menos de 15 días y no se ha hecho" vive en dashboard.html,
-    // no acá — este archivo solo guarda el estado del checkbox.
+    // NUEVO (11/8/2026): Encuesta de satisfacción post-viaje — botón
+    // manual "📝" junto al de "Buen Viaje". Manda un correo con el link a
+    // un Google Form ya armado (no genera PDF ni junta respuestas dentro
+    // del sistema — la encuesta vive afuera, en Google Forms). Reutiliza la
+    // MISMA función de backend (comprobante-correo) que Buen Viaje, pero
+    // esta vez SIN adjunto (no manda pdfBase64) — no se pudo confirmar con
+    // el código del Apps Script del otro lado si acepta un envío sin
+    // adjunto; si al probar da error, hay que revisar esa Apps Script para
+    // que el adjunto sea opcional.
     // ==========================================
+
+    const LINK_ENCUESTA_SATISFACCION = "https://forms.gle/ku4qzYNzNPU6FvfH7";
+
+    function abrirModalEncuesta(codigo) {
+      const data = window.datosReservasPorCodigo[codigo];
+      if (!data) {
+        alert("No se encontraron datos de esta reserva. Recargá la página e intentá de nuevo.");
+        return;
+      }
+
+      window.codigoEncuestaActual = codigo;
+      const primerNombre = (data.nombreTitular || "").split(" ")[0] || "";
+      const destino = (data.nombreDestino || data.destino || "").split(" (")[0];
+
+      document.getElementById("encuesta_para").value = data.correo || "";
+      document.getElementById("encuesta_cc").value = "";
+      document.getElementById("encuesta_cco").value = "";
+      document.getElementById("encuesta_asunto").value = `¿Cómo estuvo tu viaje a ${destino}, ${primerNombre || data.nombreTitular || ''}? 💬`;
+      document.getElementById("encuesta_mensaje").value = construirMensajeEncuesta(data, primerNombre, destino);
+      document.getElementById("encuestaMensajeModal").innerHTML = "";
+      document.getElementById("modalEncuesta").style.display = "flex";
+    }
+
+    function construirMensajeEncuesta(data, primerNombre, destino) {
+      return `¡Qué alegría que ya estés de vuelta! Esperamos que ${destino || 'tu destino'} haya sido todo lo que soñabas y más.\n\n` +
+        `Nos encantaría conocer cómo fue tu experiencia con nosotros — tu opinión nos ayuda a mejorar cada viaje que armamos.\n\n` +
+        `Contanos en menos de 2 minutos: ${LINK_ENCUESTA_SATISFACCION}\n\n` +
+        `Gracias por confiar en Excursiones Delgado para esta aventura — ¡esperamos verte de nuevo pronto!\n\n` +
+        `Equipo Excursiones Delgado ✈️`;
+    }
+
+    function cerrarModalEncuesta() {
+      document.getElementById("modalEncuesta").style.display = "none";
+    }
+
+    async function confirmarEnvioEncuesta() {
+      const mensajeModalEl = document.getElementById("encuestaMensajeModal");
+      const codigo = window.codigoEncuestaActual;
+      const data = window.datosReservasPorCodigo[codigo];
+
+      const para = document.getElementById("encuesta_para").value.trim();
+      if (!para) {
+        alert('El campo "Para" no puede quedar vacío.');
+        return;
+      }
+
+      const boton = document.getElementById("btnConfirmarEnvioEncuesta");
+      boton.disabled = true;
+      boton.textContent = "Enviando...";
+      mensajeModalEl.innerHTML = `<span style="color:#555;">⏳ Enviando...</span>`;
+
+      try {
+        const respuesta = await fetch(WORKER_COMPROBANTE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            correoDestino: para,
+            cc: document.getElementById("encuesta_cc").value.trim(),
+            cco: document.getElementById("encuesta_cco").value.trim(),
+            asunto: document.getElementById("encuesta_asunto").value.trim(),
+            mensaje: document.getElementById("encuesta_mensaje").value.trim(),
+            mensajeHtml: formatearMensajeComoHtml(document.getElementById("encuesta_mensaje").value.trim()),
+            nombreTitular: data?.nombreTitular || "",
+            codigo,
+            tipoDocumento: "Encuesta_Satisfaccion"
+          })
+        });
+
+        const resultado = await respuesta.json().catch(() => ({}));
+        if (!respuesta.ok || resultado.error) {
+          throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
+        }
+
+        alert(`✅ Encuesta enviada a ${para}.`);
+        cerrarModalEncuesta();
+      } catch (e) {
+        console.error("Error al enviar la encuesta:", e);
+        mensajeModalEl.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo enviar. Revisá la consola (F12) — puede que el Apps Script del otro lado necesite que el adjunto sea opcional.</span>`;
+      } finally {
+        boton.disabled = false;
+        boton.textContent = "Enviar";
+      }
+    }
 
     async function marcarReunionRealizada(codigo, marcada) {
       try {
@@ -1130,17 +985,6 @@
         alert("❌ No se pudo guardar el cambio. Intenta de nuevo.");
       }
     }
-
-    // ==========================================
-    // NUEVO: Exportar a Excel — respaldo manual calcado del formato real
-    // que ya usás en Drive ("Reservas Salidas Particulares"): una fila por
-    // PASAJERO (no por reserva), con los mismos encabezados. Tres columnas
-    // quedan vacías a propósito porque el sistema no las captura con ese
-    // detalle: "Apellidos" (el nombre se guarda completo, sin separar),
-    // "Lugar de Nacimiento" y "Paquete de Turismo" (texto libre que no se
-    // guarda tal cual). No hace ninguna consulta nueva a Firebase — usa
-    // los mismos datos que ya están en memoria.
-    // ==========================================
 
     const MESES_EXPORT = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
 
@@ -1169,10 +1013,6 @@
         const codigoVuelo = data.vueloIda?.codigo || "";
         const destino = data.nombreDestino || data.destino || "";
         const fechaViajeTexto = formatearFechaVisible(data.fechaReserva);
-        // NUEVO: "Paquete de Turismo" combina nivel (Flash/Esencial/Confort,
-        // solo aplica a salidas Individuales) + destino, mismo estilo que
-        // ya usás ("CONFORT MEDELLÍN"). "Precio de Tour" es el valor total
-        // de la reserva (mismo monto que ya se usa para calcular el saldo).
         const paqueteTexto = data.nivel ? `${data.nivel.toUpperCase()} ${destino.toUpperCase()}` : destino.toUpperCase();
 
         function agregarFilaPasajero(nombreCompleto, documento, vencimiento, nacionalidad, nacimiento, genero) {
@@ -1203,7 +1043,6 @@
           });
         }
 
-        // Titular primero, luego cada acompañante — mismo orden que tu hoja.
         agregarFilaPasajero(data.nombreTitular, data.cedula, data.vencimientoPasaporteTitular, data.nacionalidadTitular, data.fechaNacimientoTitular, data.generoTitular);
         (data.pasajeros || []).forEach(p => {
           agregarFilaPasajero(p.nombre, p.documento, p.vencimiento, p.nacionalidad, p.nacimiento, p.genero);
@@ -1233,54 +1072,11 @@
       }
     }
 
-    // NUEVO: menú lateral de navegación (igual que dashboard.html)
-    function inicializarMenuLateral() {
-      const usuario = JSON.parse(localStorage.getItem("usuario"));
-      const sidebar = document.getElementById("sidebar");
-      const contenido = document.getElementById("contenidoPrincipal");
-      const toggleBtn = document.querySelector('.toggle-btn');
-
-      if (usuario) {
-        document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-        document.getElementById("rolUsuario").innerText = usuario.rol || "";
-      } else {
-        document.getElementById("nombreUsuario").innerText = "Invitado";
-      }
-
-      window.toggleSidebar = function () {
-        sidebar.classList.toggle('active');
-        contenido.classList.toggle('sidebar-visible');
-      };
-
-      window.cerrarSesionYRedirigir = function () {
-        localStorage.removeItem("usuario");
-        window.location.href = "login.html";
-      };
-
-      function checkScreenSize() {
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('active');
-          contenido.classList.remove('sidebar-visible');
-        } else {
-          sidebar.classList.add('active');
-          contenido.classList.add('sidebar-visible');
-        }
-        toggleBtn.style.display = "block";
-      }
-
-      window.addEventListener('resize', checkScreenSize);
-      checkScreenSize();
-    }
-
     window.onload = function () {
-      inicializarMenuLateral();
       cargarReservas();
     };
   </script>
 
-  <!-- NUEVO: revisar Para/CC/CCO/Asunto/Mensaje antes de enviar la imagen
-       de Buen Viaje — mismo patrón que el modal de comprobante en
-       detalle_reserva.html. -->
   <div id="modalBuenViaje" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; max-height:88vh; overflow-y:auto; position:relative;">
       <h3 style="margin-top:0; color:#02535a;">🌴 Enviar "Buen Viaje" por correo</h3>
@@ -1316,10 +1112,44 @@
     </div>
   </div>
 
+  <div id="modalEncuesta" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; max-height:88vh; overflow-y:auto; position:relative;">
+      <h3 style="margin-top:0; color:#02535a;">📝 Enviar encuesta de satisfacción</h3>
+
+      <label>Para</label>
+      <input type="text" id="encuesta_para" placeholder="correo@ejemplo.com" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+
+      <div style="display:flex; gap:12px;">
+        <div style="flex:1;">
+          <label>CC (opcional)</label>
+          <input type="text" id="encuesta_cc" placeholder="separá varios con coma" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+        </div>
+        <div style="flex:1;">
+          <label>CCO (opcional)</label>
+          <input type="text" id="encuesta_cco" placeholder="separá varios con coma" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+        </div>
+      </div>
+
+      <label>Asunto</label>
+      <input type="text" id="encuesta_asunto" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+
+      <label>Mensaje</label>
+      <textarea id="encuesta_mensaje" rows="6" style="width:100%; padding:8px; box-sizing:border-box;"></textarea>
+
+      <div style="margin-top:12px; padding:10px 12px; background:#f0f7f7; border-radius:6px; font-size:13px; color:#5f9296;">🔗 El link a la encuesta (Google Form) ya viene incluido en el mensaje de arriba — no se adjunta ningún archivo.</div>
+
+      <div id="encuestaMensajeModal" style="margin-top:10px; font-size: 0.85rem;"></div>
+
+      <div style="margin-top:15px; text-align:right;">
+        <button onclick="cerrarModalEncuesta()" style="margin-right:10px; background:#ccc; border:none; padding:8px 14px; border-radius:6px; cursor:pointer;">Cancelar</button>
+        <button id="btnConfirmarEnvioEncuesta" onclick="confirmarEnvioEncuesta()" style="background:#02535a; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">Enviar</button>
+      </div>
+    </div>
+  </div>
+
   </main>
   <script src="topbar.js"></script>
-  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
-       de confiar solo en lo que dijera localStorage. -->
+  <script src="sidebar.js"></script>
   <script src="auth-guard.js"></script>
 </body>
 </html>
