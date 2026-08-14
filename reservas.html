@@ -296,7 +296,19 @@
           const data = doc.data();
           const fecha = parseFechaReserva(data.fechaReserva);
 
-          if (fecha && fecha < hoy) return;
+          // FIX (11/8/2026): antes se usaba fechaReserva (fecha de IDA) para
+          // decidir si la reserva ya pasó a históricas — eso hacía que una
+          // reserva desapareciera de "Activas" el mismo día que el cliente
+          // se iba, aunque el viaje todavía no hubiera terminado. Ahora usa
+          // la fecha de REGRESO (si existe) y recién la pasa a históricas
+          // el día SIGUIENTE a esa fecha — mientras el cliente sigue de
+          // viaje, la reserva se queda en Activas.
+          const fechaCorte = parseFechaReserva(data.vueloRegreso?.fecha) || fecha;
+          if (fechaCorte) {
+            const diaSiguienteRegreso = new Date(fechaCorte);
+            diaSiguienteRegreso.setDate(diaSiguienteRegreso.getDate() + 1);
+            if (diaSiguienteRegreso <= hoy) return;
+          }
 
           if (!fecha) contadorSinFecha++;
           contadorActivas++;
