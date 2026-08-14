@@ -904,6 +904,24 @@
     // ==========================================
 
     const LINK_ENCUESTA_SATISFACCION = "https://forms.gle/ku4qzYNzNPU6FvfH7";
+    // NUEVO (11/8/2026): link de invitación al grupo de WhatsApp — se
+    // consigue desde WhatsApp: abrir el grupo → nombre del grupo → "Invitar
+    // mediante enlace" → copiar enlace. Si el grupo se llena o se cambia,
+    // hay que actualizar este link acá.
+    const LINK_GRUPO_WHATSAPP = "https://chat.whatsapp.com/CGSAXShLnof5hVoU9JLAuz";
+
+    // NUEVO: los nombres se guardan en mayúsculas ("CAROLINA CHARPANTIER
+    // MARCHENA") — esta función los deja en formato normal (Primera Letra
+    // Mayúscula) para que no se vean gritados en el asunto ni en el saludo
+    // del correo.
+    function formatearNombrePropio(str) {
+      return (str || "")
+        .toLowerCase()
+        .split(" ")
+        .filter(Boolean)
+        .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+        .join(" ");
+    }
 
     function abrirModalEncuesta(codigo) {
       const data = window.datosReservasPorCodigo[codigo];
@@ -913,13 +931,16 @@
       }
 
       window.codigoEncuestaActual = codigo;
-      const primerNombre = (data.nombreTitular || "").split(" ")[0] || "";
+      const primerNombre = formatearNombrePropio((data.nombreTitular || "").split(" ")[0] || "");
       const destino = (data.nombreDestino || data.destino || "").split(" (")[0];
 
       document.getElementById("encuesta_para").value = data.correo || "";
       document.getElementById("encuesta_cc").value = "";
       document.getElementById("encuesta_cco").value = "";
-      document.getElementById("encuesta_asunto").value = `¿Cómo estuvo tu viaje a ${destino}, ${primerNombre || data.nombreTitular || ''}? 💬`;
+      // FIX: el emoji 💬 en el asunto salía como cuadros negros en Gmail —
+      // se cambia por ✈️, el único confirmado que renderiza bien en esta
+      // cadena de envío (mismo hallazgo que con el cuerpo del correo).
+      document.getElementById("encuesta_asunto").value = `¿Cómo estuvo tu viaje a ${destino}, ${primerNombre || 'viajero'}? ✈️`;
       document.getElementById("encuesta_mensaje").value = construirMensajeEncuesta(data, primerNombre, destino);
       document.getElementById("encuestaMensajeModal").innerHTML = "";
       document.getElementById("modalEncuesta").style.display = "flex";
@@ -929,6 +950,8 @@
       return `¡Qué alegría que ya estés de vuelta! Esperamos que ${destino || 'tu destino'} haya sido todo lo que soñabas y más.\n\n` +
         `Nos encantaría conocer cómo fue tu experiencia con nosotros — tu opinión nos ayuda a mejorar cada viaje que armamos.\n\n` +
         `Contanos en menos de 2 minutos: ${LINK_ENCUESTA_SATISFACCION}\n\n` +
+        `Si disfrutaste tu viaje con nosotros, te invitamos a ser parte de nuestra comunidad exclusiva en WhatsApp. Allí recibirás descuentos especiales, información sobre nuevos destinos y promociones imperdibles. ¡Únete ahora y sigue explorando el mundo con Excursiones Delgado!\n` +
+        `${LINK_GRUPO_WHATSAPP}\n\n` +
         `Gracias por confiar en Excursiones Delgado para esta aventura — ¡esperamos verte de nuevo pronto!\n\n` +
         `Equipo Excursiones Delgado ✈️`;
     }
@@ -964,7 +987,7 @@
             asunto: document.getElementById("encuesta_asunto").value.trim(),
             mensaje: document.getElementById("encuesta_mensaje").value.trim(),
             mensajeHtml: formatearMensajeComoHtml(document.getElementById("encuesta_mensaje").value.trim()),
-            nombreTitular: data?.nombreTitular || "",
+            nombreTitular: formatearNombrePropio(data?.nombreTitular || ""),
             codigo,
             tipoDocumento: "Encuesta_Satisfaccion"
           })
