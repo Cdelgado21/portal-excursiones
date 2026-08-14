@@ -943,8 +943,34 @@
       document.getElementById("encuesta_asunto").value = `¿Cómo estuvo tu viaje a ${destino}, ${primerNombre || 'viajero'}? ✈️`;
       document.getElementById("encuesta_mensaje").value = construirMensajeEncuesta(data, primerNombre, destino);
       document.getElementById("encuestaMensajeModal").innerHTML = "";
+      renderizarTelefonosEncuesta([data.telefono || ""]);
       document.getElementById("modalEncuesta").style.display = "flex";
     }
+
+    // NUEVO (14/8/2026): fila editable de teléfono(s) para la etiqueta de
+    // Kommo — separado del correo, porque el WhatsApp puede necesitar
+    // corregirse o sumar más de un número (varios viajeros).
+    function renderizarTelefonosEncuesta(lista) {
+      const contenedor = document.getElementById("telefonosEncuestaContenedor");
+      contenedor.innerHTML = "";
+      (lista.length ? lista : [""]).forEach(valor => agregarTelefonoEncuesta(valor));
+    }
+
+    function agregarTelefonoEncuesta(valorInicial) {
+      const contenedor = document.getElementById("telefonosEncuestaContenedor");
+      const fila = document.createElement("div");
+      fila.style.cssText = "display:flex; gap:8px; margin-bottom:6px;";
+      fila.innerHTML = `
+        <input type="text" class="input-telefono-encuesta" value="${(valorInicial || '').replace(/"/g, '&quot;')}" placeholder="Ej. 8888-8888" style="flex:1; padding:8px; box-sizing:border-box;">
+        <button type="button" onclick="this.closest('div').remove()" title="Quitar" style="background:#fbe2e0; color:#b23327; border:none; border-radius:6px; padding:0 12px; cursor:pointer;">🗑️</button>
+      `;
+      contenedor.appendChild(fila);
+    }
+
+    function obtenerTelefonosEncuesta() {
+      return Array.from(document.querySelectorAll(".input-telefono-encuesta"))
+        .map(input => input.value.trim())
+        .filter(Boolean);
 
     function construirMensajeEncuesta(data, primerNombre, destino) {
       return `¡Qué alegría que ya estés de vuelta! Esperamos que ${destino || 'tu destino'} haya sido todo lo que soñabas y más.\n\n` +
@@ -998,7 +1024,33 @@
           throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
         }
 
-        alert(`✅ Encuesta enviada a ${para}.`);
+        // Marca en Kommo el/los Lead(s) de los teléfonos confirmados en el
+        // modal (uno o varios) — un Salesbot armado adentro de Kommo
+        // detecta la etiqueta "Encuesta Pendiente" y manda el WhatsApp
+        // real. Si algún teléfono falla, el correo YA se mandó igual — se
+        // avisa aparte, sin bloquear el "enviado" del correo.
+        const telefonos = obtenerTelefonosEncuesta();
+        const erroresWhatsapp = [];
+        for (const telefono of telefonos) {
+          try {
+            const respuestaKommo = await fetch("/.netlify/functions/kommo-encuesta-whatsapp", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ telefono })
+            });
+            const resultadoKommo = await respuestaKommo.json().catch(() => ({}));
+            if (!respuestaKommo.ok || resultadoKommo.error) {
+              erroresWhatsapp.push(`${telefono}: ${resultadoKommo.error || 'error desconocido'}`);
+            }
+          } catch (errKommo) {
+            erroresWhatsapp.push(`${telefono}: ${errKommo.message}`);
+          }
+        }
+        const avisoWhatsapp = erroresWhatsapp.length > 0
+          ? `\n\n⚠️ El correo se envió, pero no se pudo marcar en Kommo:\n${erroresWhatsapp.join('\n')}`
+          : "";
+
+        alert(`✅ Encuesta enviada a ${para}.${avisoWhatsapp}`);
         cerrarModalEncuesta();
       } catch (e) {
         console.error("Error al enviar la encuesta:", e);
@@ -1170,6 +1222,13 @@
 
       <label>Mensaje</label>
       <textarea id="encuesta_mensaje" rows="6" style="width:100%; padding:8px; box-sizing:border-box;"></textarea>
+
+      <div style="margin-top:14px; padding:12px; background:#f7fbfb; border-radius:8px; border:1px solid #dde8e8;">
+        <label style="margin-top:0;">📱 Número(s) de WhatsApp (para marcar el Lead en Kommo)</label>
+        <div style="font-size:12px; color:#777; margin-top:-4px; margin-bottom:8px;">Confirmá o corregí el número — el sistema busca el Lead en Kommo por este teléfono para disparar el Salesbot. Podés agregar más de uno si viaja gente con distinto número.</div>
+        <div id="telefonosEncuestaContenedor"></div>
+        <a href="#" onclick="agregarTelefonoEncuesta(''); return false;" style="font-size:13px; color:#02535a; font-weight:bold; text-decoration:none;">➕ Agregar otro número</a>
+      </div>
 
       <div style="margin-top:12px; padding:10px 12px; background:#f0f7f7; border-radius:6px; font-size:13px; color:#5f9296;">🔗 El link a la encuesta (Google Form) ya viene incluido en el mensaje de arriba — no se adjunta ningún archivo.</div>
 
