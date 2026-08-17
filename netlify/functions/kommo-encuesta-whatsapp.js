@@ -1,11 +1,14 @@
 // netlify/functions/kommo-encuesta-whatsapp.js
 //
-// Busca en Kommo el Lead asociado a un número de teléfono y le agrega la
-// etiqueta "Encuesta Pendiente" — un Salesbot armado DENTRO de Kommo
-// (configuración manual, no código) detecta esa etiqueta y manda el
-// mensaje de WhatsApp real, porque el token de la API de CRM no puede
-// mandar mensajes directo a un WhatsApp conectado como dispositivo
-// adicional (solo a través del Salesbot).
+// Busca en Kommo el Lead asociado a un número de teléfono y lo MUEVE a la
+// etapa "Encuesta Pendiente" dentro de su mismo pipeline — un Salesbot
+// armado DENTRO de Kommo (configuración manual, no código) detecta ese
+// cambio de etapa y manda el mensaje de WhatsApp real.
+//
+// NOTA (14/8/2026): originalmente esto iba a hacerse con una ETIQUETA, pero
+// el disparador de Salesbot "cuando se añade una etiqueta" es una función
+// Pro de Kommo (de pago) — se cambió a "mover a una etapa del pipeline",
+// que sí está disponible en el plan actual, sin costo extra.
 //
 // Variables de entorno necesarias en Netlify (Site settings → Environment
 // variables) — NUNCA hardcodeadas acá:
@@ -14,7 +17,7 @@
 //                           Kommo → Ajustes → Integraciones → tu
 //                           integración → "Llaves y alcances"
 
-const ETIQUETA_ENCUESTA = "Encuesta Pendiente";
+const NOMBRE_ETAPA_ENCUESTA = "Encuesta Pendiente";
 
 exports.handler = async function (event) {
   if (event.httpMethod !== "POST") {
@@ -32,7 +35,7 @@ exports.handler = async function (event) {
   }
 
   try {
-    const { telefono } = JSON.parse(event.body || "{}");
+    const { telefono, nombreTitular } = JSON.parse(event.body || "{}");
     if (!telefono) {
       return { statusCode: 400, body: JSON.stringify({ error: "Falta el teléfono." }) };
     }
@@ -63,33 +66,63 @@ exports.handler = async function (event) {
     // Si hay varios Leads para el mismo número (ej. varias reservas a lo
     // largo del tiempo), se marca el primero que devuelve Kommo.
     const lead = leads[0];
-    const tagsActuales = lead._embedded?.tags || [];
-    const yaTieneEtiqueta = tagsActuales.some(t => t.name === ETIQUETA_ENCUESTA);
 
-    if (!yaTieneEtiqueta) {
-      // Al actualizar _embedded.tags, Kommo REEMPLAZA la lista completa —
-      // por eso se manda la lista existente + la nueva, no solo la nueva.
-      const nuevasTags = [...tagsActuales.map(t => ({ id: t.id })), { name: ETIQUETA_ENCUESTA }];
+    // Busca, dentro del pipeline al que pertenece ESTE lead, la etapa
+    // llamada "Encuesta Pendiente" — se resuelve el ID dinámicamente en
+    // cada llamada (en vez de guardarlo fijo) para no romperse si alguien
+    // reordena o recrea las etapas más adelante.
+    const respuestaPipeline = await fetch(`${baseUrl}/leads/pipelines/${lead.pipeline_id}`, { headers });
+    const dataPipeline = await respuestaPipeline.json();
+    const etapas = dataPipeline?._embedded?.statuses || [];
+    const etapaEncuesta = etapas.find(
+      s => (s.name || "").trim().toLowerCase() === NOMBRE_ETAPA_ENCUESTA.toLowerCase()
+    );
 
-      const respuestaActualizacion = await fetch(`${baseUrl}/leads/${lead.id}`, {
-        method: "PATCH",
-        headers,
-        body: JSON.stringify({ _embedded: { tags: nuevasTags } })
-      });
-
-      if (!respuestaActualizacion.ok) {
-        const errorKommo = await respuestaActualizacion.json().catch(() => ({}));
-        return {
-          statusCode: 502,
-          body: JSON.stringify({ error: `Kommo rechazó la actualización del Lead: ${JSON.stringify(errorKommo)}` })
-        };
-      }
+    if (!etapaEncuesta) {
+      return {
+        statusCode: 404,
+        body: JSON.stringify({
+          error: `No existe una etapa llamada "${NOMBRE_ETAPA_ENCUESTA}" en el pipeline de este Lead (${dataPipeline?.name || lead.pipeline_id}). Creala en Kommo con ese nombre exacto.`
+        })
+      };
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ ok: true, leadId: lead.id, yaEstabaMarcado: yaTieneEtiqueta })
-    };
+    if (lead.status_id === etapaEncuesta.id) {
+      // Ya estaba en esa etapa — igual actualiza el nombre por si cambió,
+      // pero no hace falta mover nada ni disparar el bot de nuevo.
+      if (nombreTitular) {
+        await fetch(`${baseUrl}/leads/${lead.id}`, {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ name: nombreTitular })
+        });
+      }
+      return { statusCode: 200, body: JSON.stringify({ ok: true, leadId: lead.id, yaEstabaEnEtapa: true }) };
+    }
+
+    // NUEVO (17/8/2026): antes de mover el Lead (lo que dispara el
+    // Salesbot), se actualiza también su NOMBRE con el nombreTitular real
+    // de la reserva — así, si adentro de Kommo el mensaje usa la variable
+    // "Nombre del lead", sale el nombre correcto que capturó el sistema,
+    // en vez de lo que el cliente haya puesto (o no puesto) en WhatsApp.
+    const datosActualizacion = { status_id: etapaEncuesta.id };
+    if (nombreTitular) datosActualizacion.name = nombreTitular;
+
+    const respuestaActualizacion = await fetch(`${baseUrl}/leads/${lead.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify(datosActualizacion)
+    });
+
+    if (!respuestaActualizacion.ok) {
+      const errorKommo = await respuestaActualizacion.json().catch(() => ({}));
+      return {
+        statusCode: 502,
+        body: JSON.stringify({ error: `Kommo rechazó mover el Lead: ${JSON.stringify(errorKommo)}` })
+      };
+    }
+
+    return { statusCode: 200, body: JSON.stringify({ ok: true, leadId: lead.id, yaEstabaEnEtapa: false }) };
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message || String(error) }) };
   }
