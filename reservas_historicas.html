@@ -9,101 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* NUEVO: menú lateral de navegación (mismo estilo que dashboard.html) */
-    .toggle-btn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      font-size: 24px;
-      background: white;
-      color: #02535a;
-      border: none;
-      border-radius: 50%;
-      padding: 8px 12px;
-      z-index: 1100;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 250px;
-      height: 100%;
-      background-color: #02535a;
-      color: white;
-      padding: 20px;
-      transform: translateX(-250px);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    .sidebar.active {
-      transform: translateX(0);
-    }
-    .sidebar .user-info {
-      text-align: center;
-      margin-bottom: 20px;
-      margin-top: 40px;
-    }
-    .sidebar .user-info .avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-    .sidebar .user-info h3 {
-      font-size: 1rem;
-      margin: 0;
-      color: white;
-    }
-    .sidebar .user-info small {
-      font-size: 0.8rem;
-      color: #f4f7f8;
-    }
-    .nav-links {
-      list-style: none;
-      padding: 0;
-    }
-    .nav-links li a {
-      background-color: #f4f7f8;
-      color: #02535a;
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .nav-links li a:hover {
-      background-color: #e0e0e0;
-    }
-    .nav-links li a.activo {
-      background-color: #ffb703;
-      color: #02535a;
-    }
-    .nav-links .icon {
-      margin-right: 10px;
-      font-size: 1.2rem;
-    }
-    main#contenidoPrincipal {
-      margin-left: 0;
-      padding: 20px 20px 20px 70px;
-      transition: margin-left 0.3s ease;
-      box-sizing: border-box;
-    }
-    main#contenidoPrincipal.sidebar-visible {
-      margin-left: 250px;
-      padding-left: 20px;
-    }
-    @media screen and (max-width: 768px) {
-      main#contenidoPrincipal.sidebar-visible {
-        margin-left: 0;
-        padding-left: 70px;
-      }
-    }
-
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f7f7;
@@ -174,27 +79,6 @@
   </style>
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-
-  <div class="sidebar" id="sidebar">
-    <div class="user-info">
-      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
-      <h3 id="nombreUsuario">Cargando...</h3>
-      <small id="rolUsuario">-</small>
-    </div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
-      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
-      <li><a href="reservas_historicas.html" class="activo"><span class="icon">🕓</span>Reservas Históricas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
-      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
-      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
-    </ul>
-  </div>
 
   <main id="contenidoPrincipal">
 
@@ -229,10 +113,6 @@
   </main>
 
   <script>
-    // FIX: firebaseConfig estaba incompleto (le faltaban storageBucket,
-    // messagingSenderId y appId) y tenía la misma apiKey mal escrita que ya
-    // encontramos en otros archivos — se corrige aquí para que quede igual a
-    // la configuración real usada en el resto del sistema.
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
@@ -244,14 +124,12 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const tabla = document.querySelector("#tablaReservas tbody");
+    window.datosReservasPorCodigo = {};
 
     // Misma función que reservas.html — convierte los dos formatos de fecha
     // que existen en la base de datos a un objeto Date comparable.
-    // NOTA: esta función está duplicada entre reservas.html y esta página.
-    // Cuando lleguemos a la Fase 6 (limpieza general), conviene moverla a un
-    // solo archivo .js compartido para no tener que mantenerla en dos lugares.
     function parseFechaReserva(str) {
-      if (!str) return null;
+      if (!str || typeof str !== "string") return null;
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
         return new Date(str + "T00:00:00");
       }
@@ -265,7 +143,7 @@
       return null;
     }
 
-    // NUEVO: normaliza la fecha guardada (a veces con guiones, a veces con
+    // Normaliza la fecha guardada (a veces con guiones, a veces con
     // barras, según qué versión del código la escribió) a un solo formato visible.
     function formatearFechaVisible(str) {
       const fecha = parseFechaReserva(str);
@@ -278,8 +156,6 @@
 
     // Calcula la cantidad de personas cubriendo los 3 esquemas distintos que
     // ha tenido el sistema a lo largo del tiempo (ver reservas.html para más detalle).
-    // FIX: se eliminó el uso de "data.numero" — ese campo es el consecutivo de
-    // la reserva (1, 2, 3...), no la cantidad de personas.
     function calcularPersonas(data) {
       const adultos = data.cantidadAdultos || 0;
       const ninos = data.cantidadNinos || 0;
@@ -301,12 +177,23 @@
           const data = doc.data();
           const fecha = parseFechaReserva(data.fechaReserva);
 
-          // Solo se muestran reservas con fecha confirmada en el pasado.
-          // Las que no tienen fecha registrada se quedan en reservas.html
-          // (activas) para que no se pierdan de vista sin revisar.
-          if (!fecha || fecha >= hoy) return;
+          // FIX (11/8/2026): espejo exacto del cambio en reservas.html —
+          // antes se usaba fechaReserva (fecha de IDA) para decidir si la
+          // reserva ya era "histórica", así que aparecía acá el mismo día
+          // que el cliente se iba, aunque el viaje (con regreso días
+          // después) todavía no hubiera terminado. Ahora usa la fecha de
+          // REGRESO (si existe) y solo se considera histórica a partir del
+          // día SIGUIENTE a esa fecha — mismo criterio en las dos páginas,
+          // para que una reserva nunca aparezca en ninguna de las dos a la
+          // vez, ni desaparezca de las dos.
+          const fechaCorte = parseFechaReserva(data.vueloRegreso?.fecha) || fecha;
+          if (!fechaCorte) return; // sin fecha registrada: se queda en Activas
+          const diaSiguienteRegreso = new Date(fechaCorte);
+          diaSiguienteRegreso.setDate(diaSiguienteRegreso.getDate() + 1);
+          if (diaSiguienteRegreso > hoy) return; // todavía no es histórica
 
           contador++;
+          window.datosReservasPorCodigo[doc.id] = data;
 
           const fila = document.createElement("tr");
           fila.innerHTML = `
@@ -320,6 +207,7 @@
             <td class="acciones">
               <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
               <button class="editar-btn" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
+              <button class="editar-btn" title="Enviar encuesta de satisfacción por correo (post-viaje)" onclick="abrirModalEncuesta('${doc.id}')">📝</button>
               <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
             </td>
           `;
@@ -332,7 +220,7 @@
       });
     }
 
-    // NUEVO: filtra las filas ya cargadas en la tabla según lo que se
+    // Filtra las filas ya cargadas en la tabla según lo que se
     // escriba en el buscador — mismo mecanismo que en reservas.html.
     function normalizarTexto(str) {
       return (str || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -366,53 +254,235 @@
       }
     }
 
-    // NUEVO: menú lateral de navegación (igual que dashboard.html)
-    function inicializarMenuLateral() {
-      const usuario = JSON.parse(localStorage.getItem("usuario"));
-      const sidebar = document.getElementById("sidebar");
-      const contenido = document.getElementById("contenidoPrincipal");
-      const toggleBtn = document.querySelector('.toggle-btn');
+    // ==========================================
+    // NUEVO (17/8/2026): Encuesta de satisfacción post-viaje — mismo botón
+    // y lógica que ya existe en reservas.html, calcada acá porque una
+    // reserva puede pasar a históricas antes de que se le mande la
+    // encuesta (ej. se revisa unos días después del regreso).
+    // ==========================================
 
-      if (usuario) {
-        document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-        document.getElementById("rolUsuario").innerText = usuario.rol || "";
-      } else {
-        document.getElementById("nombreUsuario").innerText = "Invitado";
-      }
+    const WORKER_COMPROBANTE_URL = "/.netlify/functions/comprobante-correo";
+    const LINK_ENCUESTA_SATISFACCION = "https://forms.gle/ku4qzYNzNPU6FvfH7";
+    const LINK_GRUPO_WHATSAPP = "https://chat.whatsapp.com/CGSAXShLnof5hVoU9JLAuz";
 
-      window.toggleSidebar = function () {
-        sidebar.classList.toggle('active');
-        contenido.classList.toggle('sidebar-visible');
-      };
+    function formatearNombrePropio(str) {
+      return (str || "")
+        .toLowerCase()
+        .split(" ")
+        .filter(Boolean)
+        .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+        .join(" ");
+    }
 
-      window.cerrarSesionYRedirigir = function () {
-        localStorage.removeItem("usuario");
-        window.location.href = "login.html";
-      };
+    function formatearMensajeComoHtml(textoPlano) {
+      const escapar = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const bloques = textoPlano.split("\n\n").filter(b => b.trim());
+      let html = "";
 
-      function checkScreenSize() {
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('active');
-          contenido.classList.remove('sidebar-visible');
+      bloques.forEach(bloque => {
+        const lineas = bloque.split("\n").filter(l => l.trim());
+        const esListaDeVinetas = lineas.length > 0 && lineas.every(l => l.trim().startsWith("•"));
+
+        if (esListaDeVinetas) {
+          html += `<ul style="margin:0 0 16px 0; padding-left:20px;">`;
+          lineas.forEach(linea => {
+            let contenido = escapar(linea.replace(/^•\s*/, ""));
+            contenido = contenido.replace(/^([^:]{2,20}:)/, '<strong style="color:#02535a;">$1</strong>');
+            html += `<li style="margin-bottom:6px; line-height:1.5;">${contenido}</li>`;
+          });
+          html += `</ul>`;
         } else {
-          sidebar.classList.add('active');
-          contenido.classList.add('sidebar-visible');
+          lineas.forEach(linea => {
+            const contenido = escapar(linea);
+            if (/:\s*$/.test(linea.trim()) && linea.trim().length < 60) {
+              html += `<p style="margin:0 0 8px 0;"><strong style="color:#02535a; font-size:16px;">${contenido}</strong></p>`;
+            } else {
+              html += `<p style="margin:0 0 16px 0; line-height:1.6;">${contenido}</p>`;
+            }
+          });
         }
-        toggleBtn.style.display = "block";
+      });
+
+      return html;
+    }
+
+    function abrirModalEncuesta(codigo) {
+      const data = window.datosReservasPorCodigo[codigo];
+      if (!data) {
+        alert("No se encontraron datos de esta reserva. Recargá la página e intentá de nuevo.");
+        return;
       }
 
-      window.addEventListener('resize', checkScreenSize);
-      checkScreenSize();
+      window.codigoEncuestaActual = codigo;
+      const primerNombre = formatearNombrePropio((data.nombreTitular || "").split(" ")[0] || "");
+      const destino = (data.nombreDestino || data.destino || "").split(" (")[0];
+
+      document.getElementById("encuesta_para").value = data.correo || "";
+      document.getElementById("encuesta_cc").value = "";
+      document.getElementById("encuesta_cco").value = "";
+      document.getElementById("encuesta_asunto").value = `¿Cómo estuvo tu viaje a ${destino}, ${primerNombre || 'viajero'}? ✈️`;
+      document.getElementById("encuesta_mensaje").value = construirMensajeEncuesta(data, primerNombre, destino);
+      document.getElementById("encuestaMensajeModal").innerHTML = "";
+      renderizarTelefonosEncuesta([data.telefono || ""]);
+      document.getElementById("modalEncuesta").style.display = "flex";
+    }
+
+    function renderizarTelefonosEncuesta(lista) {
+      const contenedor = document.getElementById("telefonosEncuestaContenedor");
+      contenedor.innerHTML = "";
+      (lista.length ? lista : [""]).forEach(valor => agregarTelefonoEncuesta(valor));
+    }
+
+    function agregarTelefonoEncuesta(valorInicial) {
+      const contenedor = document.getElementById("telefonosEncuestaContenedor");
+      const fila = document.createElement("div");
+      fila.style.cssText = "display:flex; gap:8px; margin-bottom:6px;";
+      fila.innerHTML = `
+        <input type="text" class="input-telefono-encuesta" value="${(valorInicial || '').replace(/"/g, '&quot;')}" placeholder="Ej. 8888-8888" style="flex:1; padding:8px; box-sizing:border-box;">
+        <button type="button" onclick="this.closest('div').remove()" title="Quitar" style="background:#fbe2e0; color:#b23327; border:none; border-radius:6px; padding:0 12px; cursor:pointer;">🗑️</button>
+      `;
+      contenedor.appendChild(fila);
+    }
+
+    function obtenerTelefonosEncuesta() {
+      return Array.from(document.querySelectorAll(".input-telefono-encuesta"))
+        .map(input => input.value.trim())
+        .filter(Boolean);
+    }
+
+    function construirMensajeEncuesta(data, primerNombre, destino) {
+      return `¡Qué alegría que ya estés de vuelta! Esperamos que ${destino || 'tu destino'} haya sido todo lo que soñabas y más.\n\n` +
+        `Nos encantaría conocer cómo fue tu experiencia con nosotros — tu opinión nos ayuda a mejorar cada viaje que armamos.\n\n` +
+        `Contanos en menos de 2 minutos: ${LINK_ENCUESTA_SATISFACCION}\n\n` +
+        `Si disfrutaste tu viaje con nosotros, te invitamos a ser parte de nuestra comunidad exclusiva en WhatsApp. Allí recibirás descuentos especiales, información sobre nuevos destinos y promociones imperdibles. ¡Únete ahora y sigue explorando el mundo con Excursiones Delgado!\n` +
+        `${LINK_GRUPO_WHATSAPP}\n\n` +
+        `Gracias por confiar en Excursiones Delgado para esta aventura — ¡esperamos verte de nuevo pronto!\n\n` +
+        `Equipo Excursiones Delgado ✈️`;
+    }
+
+    function cerrarModalEncuesta() {
+      document.getElementById("modalEncuesta").style.display = "none";
+    }
+
+    async function confirmarEnvioEncuesta() {
+      const mensajeModalEl = document.getElementById("encuestaMensajeModal");
+      const codigo = window.codigoEncuestaActual;
+      const data = window.datosReservasPorCodigo[codigo];
+
+      const para = document.getElementById("encuesta_para").value.trim();
+      if (!para) {
+        alert('El campo "Para" no puede quedar vacío.');
+        return;
+      }
+
+      const boton = document.getElementById("btnConfirmarEnvioEncuesta");
+      boton.disabled = true;
+      boton.textContent = "Enviando...";
+      mensajeModalEl.innerHTML = `<span style="color:#555;">⏳ Enviando...</span>`;
+
+      try {
+        const respuesta = await fetch(WORKER_COMPROBANTE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            correoDestino: para,
+            cc: document.getElementById("encuesta_cc").value.trim(),
+            cco: document.getElementById("encuesta_cco").value.trim(),
+            asunto: document.getElementById("encuesta_asunto").value.trim(),
+            mensaje: document.getElementById("encuesta_mensaje").value.trim(),
+            mensajeHtml: formatearMensajeComoHtml(document.getElementById("encuesta_mensaje").value.trim()),
+            nombreTitular: formatearNombrePropio(data?.nombreTitular || ""),
+            codigo,
+            tipoDocumento: "Encuesta_Satisfaccion"
+          })
+        });
+
+        const resultado = await respuesta.json().catch(() => ({}));
+        if (!respuesta.ok || resultado.error) {
+          throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
+        }
+
+        const telefonos = obtenerTelefonosEncuesta();
+        const erroresWhatsapp = [];
+        for (const telefono of telefonos) {
+          try {
+            const respuestaKommo = await fetch("/.netlify/functions/kommo-encuesta-whatsapp", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ telefono, nombreTitular: formatearNombrePropio(data?.nombreTitular || "") })
+            });
+            const resultadoKommo = await respuestaKommo.json().catch(() => ({}));
+            if (!respuestaKommo.ok || resultadoKommo.error) {
+              erroresWhatsapp.push(`${telefono}: ${resultadoKommo.error || 'error desconocido'}`);
+            }
+          } catch (errKommo) {
+            erroresWhatsapp.push(`${telefono}: ${errKommo.message}`);
+          }
+        }
+        const avisoWhatsapp = erroresWhatsapp.length > 0
+          ? `\n\n⚠️ El correo se envió, pero no se pudo marcar en Kommo:\n${erroresWhatsapp.join('\n')}`
+          : "";
+
+        alert(`✅ Encuesta enviada a ${para}.${avisoWhatsapp}`);
+        cerrarModalEncuesta();
+      } catch (e) {
+        console.error("Error al enviar la encuesta:", e);
+        mensajeModalEl.innerHTML = `<span style="color:#a35b00;">⚠️ No se pudo enviar. Revisá la consola (F12) para más detalle.</span>`;
+      } finally {
+        boton.disabled = false;
+        boton.textContent = "Enviar";
+      }
     }
 
     window.onload = function () {
-      inicializarMenuLateral();
       cargarReservas();
     };
   </script>
+
+  <div id="modalEncuesta" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
+    <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; max-height:88vh; overflow-y:auto; position:relative;">
+      <h3 style="margin-top:0; color:#02535a;">📝 Enviar encuesta de satisfacción</h3>
+
+      <label>Para</label>
+      <input type="text" id="encuesta_para" placeholder="correo@ejemplo.com" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+
+      <div style="display:flex; gap:12px;">
+        <div style="flex:1;">
+          <label>CC (opcional)</label>
+          <input type="text" id="encuesta_cc" placeholder="separá varios con coma" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+        </div>
+        <div style="flex:1;">
+          <label>CCO (opcional)</label>
+          <input type="text" id="encuesta_cco" placeholder="separá varios con coma" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+        </div>
+      </div>
+
+      <label>Asunto</label>
+      <input type="text" id="encuesta_asunto" style="width:100%; margin-bottom:10px; padding:8px; box-sizing:border-box;">
+
+      <label>Mensaje</label>
+      <textarea id="encuesta_mensaje" rows="6" style="width:100%; padding:8px; box-sizing:border-box;"></textarea>
+
+      <div style="margin-top:14px; padding:12px; background:#f7fbfb; border-radius:8px; border:1px solid #dde8e8;">
+        <label style="margin-top:0;">📱 Número(s) de WhatsApp (para marcar el Lead en Kommo)</label>
+        <div style="font-size:12px; color:#777; margin-top:-4px; margin-bottom:8px;">Confirmá o corregí el número — el sistema busca el Lead en Kommo por este teléfono para disparar el Salesbot. Podés agregar más de uno si viaja gente con distinto número.</div>
+        <div id="telefonosEncuestaContenedor"></div>
+        <a href="#" onclick="agregarTelefonoEncuesta(''); return false;" style="font-size:13px; color:#02535a; font-weight:bold; text-decoration:none;">➕ Agregar otro número</a>
+      </div>
+
+      <div style="margin-top:12px; padding:10px 12px; background:#f0f7f7; border-radius:6px; font-size:13px; color:#5f9296;">🔗 El link a la encuesta (Google Form) ya viene incluido en el mensaje de arriba — no se adjunta ningún archivo.</div>
+
+      <div id="encuestaMensajeModal" style="margin-top:10px; font-size: 0.85rem;"></div>
+
+      <div style="margin-top:15px; text-align:right;">
+        <button onclick="cerrarModalEncuesta()" style="margin-right:10px; background:#ccc; border:none; padding:8px 14px; border-radius:6px; cursor:pointer;">Cancelar</button>
+        <button id="btnConfirmarEnvioEncuesta" onclick="confirmarEnvioEncuesta()" style="background:#02535a; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">Enviar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="topbar.js"></script>
-  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
-       de confiar solo en lo que dijera localStorage. -->
+  <script src="sidebar.js"></script>
   <script src="auth-guard.js"></script>
 </body>
 </html>
