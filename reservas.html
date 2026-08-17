@@ -1036,7 +1036,7 @@
             const respuestaKommo = await fetch("/.netlify/functions/kommo-encuesta-whatsapp", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ telefono })
+              body: JSON.stringify({ telefono, nombreTitular: formatearNombrePropio(data?.nombreTitular || "") })
             });
             const resultadoKommo = await respuestaKommo.json().catch(() => ({}));
             if (!respuestaKommo.ok || resultadoKommo.error) {
