@@ -971,6 +971,7 @@
       return Array.from(document.querySelectorAll(".input-telefono-encuesta"))
         .map(input => input.value.trim())
         .filter(Boolean);
+    }
 
     function construirMensajeEncuesta(data, primerNombre, destino) {
       return `¡Qué alegría que ya estés de vuelta! Esperamos que ${destino || 'tu destino'} haya sido todo lo que soñabas y más.\n\n` +
