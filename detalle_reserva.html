@@ -119,6 +119,15 @@
       [style*="min-width"] { min-width: 0 !important; }
       [style*="flex: 1"] { flex-basis: 100% !important; }
       input, select, textarea { max-width: 100%; box-sizing: border-box; }
+      /* Seguro extra: en vez de confiar en que el navegador calcule solo
+         cuántas columnas caben (auto-fit), se lo decimos explícito — una
+         sola columna, sin ambigüedad, para evitar comportamientos raros
+         de cálculo en algunos navegadores de celular. */
+      #toursOpcionalesLista {
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+        box-sizing: border-box;
+      }
     }
   </style>
 </head>
