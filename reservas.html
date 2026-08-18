@@ -149,19 +149,10 @@
       text-decoration: underline;
     }
     .celda-acciones {
-      display: flex;
+      display: grid;
+      grid-template-columns: repeat(4, 34px);
       gap: 6px;
       justify-content: center;
-      /* FIX: con flex-wrap: wrap, si la columna quedaba angosta los 7
-         botones caían uno debajo del otro (una fila de icono por línea),
-         lo que estiraba TODA la fila de la tabla y dejaba un espacio en
-         blanco enorme arriba del texto de las demás celdas. nowrap
-         obliga a que la columna Acciones se ensanche lo necesario en vez
-         de apilar los botones verticalmente. */
-      flex-wrap: nowrap;
-    }
-    th:last-child, td:last-child {
-      white-space: nowrap;
     }
     .btn-icono {
       width: 34px;
@@ -255,8 +246,10 @@
       td[data-etiqueta="Acciones"] { justify-content: flex-end; }
       td[data-etiqueta="Acciones"]::before { content: ""; }
       .celda-acciones {
-        justify-content: flex-end;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(4, 34px);
+        gap: 6px;
+        justify-content: end;
         padding-top: 6px;
       }
     }
