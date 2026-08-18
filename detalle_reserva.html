@@ -104,6 +104,22 @@
       white-space: nowrap;
       box-sizing: border-box;
     }
+
+    /* NUEVO (17/8/2026 — responsive): casi todos los campos del formulario
+       usan "flex: 1; min-width: 250px" (o 200/180/140px) para acomodarse en
+       2-3 columnas en pantallas anchas. En celular, ese min-width es
+       justo lo que provoca que los campos se salgan de la tarjeta —
+       cuando dos columnas de 250px no caben en un teléfono, flexbox no
+       siempre las manda a la línea de abajo correctamente, y en cambio se
+       desbordan. Esta regla fuerza a TODOS esos campos a ocupar el 100%
+       del ancho (una sola columna) en pantallas angostas, sin tener que
+       editar cada uno de los ~30 campos por separado. */
+    @media screen and (max-width: 700px) {
+      body { overflow-x: hidden; }
+      [style*="min-width"] { min-width: 0 !important; }
+      [style*="flex: 1"] { flex-basis: 100% !important; }
+      input, select, textarea { max-width: 100%; box-sizing: border-box; }
+    }
   </style>
 </head>
 <body>
@@ -625,11 +641,11 @@
     </table>
     </div>
 
-    <div style="text-align: right; margin-top: 20px;">
-      <a id="btnFacturar" href="#" target="_blank" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none; display: inline-block;">📄 Ver Factura</a>
-      <a id="btnDescargarComprobante" href="#" onclick="descargarComprobante(); return false;" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none; margin-left: 10px;">📄 Descargar Comprobante</a>
-      <a id="btnEnviarComprobante" href="#" onclick="enviarComprobantePorCorreo(); return false;" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none; margin-left: 10px;">✉️ Enviar Comprobante</a>
-      <div id="comprobanteMensaje" style="margin-top:8px; font-size: 0.85rem;"></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+      <a id="btnFacturar" href="#" target="_blank" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none;">📄 Ver Factura</a>
+      <a id="btnDescargarComprobante" href="#" onclick="descargarComprobante(); return false;" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none;">📄 Descargar Comprobante</a>
+      <a id="btnEnviarComprobante" href="#" onclick="enviarComprobantePorCorreo(); return false;" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none;">✉️ Enviar Comprobante</a>
+      <div id="comprobanteMensaje" style="width: 100%; text-align: right; margin-top:8px; font-size: 0.85rem;"></div>
     </div>
   </section>
 </section>
@@ -2655,8 +2671,8 @@ async function cargarInfoTour(destinoId) {
           min-width: 250px;
         `;
         card.innerHTML = `
-          <input type="checkbox" name="opcionales" value="${item.nombre}">
-          <span><strong>${item.nombre}</strong> - $${item.precio}</span>
+          <input type="checkbox" name="opcionales" value="${item.nombre}" style="flex-shrink: 0;">
+          <span style="min-width: 0; word-wrap: break-word;"><strong>${item.nombre}</strong> - $${item.precio}</span>
         `;
         lista.appendChild(card);
       });
