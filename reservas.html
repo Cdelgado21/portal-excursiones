@@ -238,18 +238,19 @@
          solas (el código es el título de la tarjeta, la fila de acciones
          se ve sola por los íconos). */
       td[data-etiqueta="Código"] {
-        text-align: left;
+        text-align: center;
+        justify-content: center;
         font-size: 17px;
         padding-top: 14px;
       }
       td[data-etiqueta="Código"]::before { content: ""; }
-      td[data-etiqueta="Acciones"] { justify-content: flex-end; }
+      td[data-etiqueta="Acciones"] { justify-content: center; }
       td[data-etiqueta="Acciones"]::before { content: ""; }
       .celda-acciones {
         display: grid;
         grid-template-columns: repeat(4, 34px);
         gap: 6px;
-        justify-content: end;
+        justify-content: center;
         padding-top: 6px;
       }
     }
