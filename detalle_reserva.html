@@ -2680,8 +2680,8 @@ async function cargarInfoTour(destinoId) {
           min-width: 250px;
         `;
         card.innerHTML = `
-          <input type="checkbox" name="opcionales" value="${item.nombre}" style="flex-shrink: 0;">
-          <span style="min-width: 0; word-wrap: break-word;"><strong>${item.nombre}</strong> - $${item.precio}</span>
+          <input type="checkbox" name="opcionales" value="${item.nombre}">
+          <span><strong>${item.nombre}</strong> - $${item.precio}</span>
         `;
         lista.appendChild(card);
       });
