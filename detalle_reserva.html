@@ -420,7 +420,12 @@
 
   <div id="hotelesResumenContainer" style="margin-top: 20px;">
     <h3>Hoteles</h3>
-    <table id="tablaHoteles" style="width: 100%; border-collapse: collapse;">
+    <!-- FIX (17/8/2026 — responsive): en celular esta tabla se salía del
+         borde de la tarjeta porque no tenía dónde hacer scroll propio —
+         ahora el scroll horizontal queda contenido adentro del div, no en
+         toda la página. -->
+    <div style="overflow-x: auto;">
+    <table id="tablaHoteles" style="width: 100%; min-width: 560px; border-collapse: collapse;">
       <thead style="background: #02535a; color: white;">
         <tr>
           <th>Hotel</th>
@@ -432,6 +437,7 @@
       </thead>
       <tbody id="tablaHotelesBody"></tbody>
     </table>
+    </div>
   </div>
 
   <!-- NUEVO: revisar Para/CC/CCO/Asunto/Mensaje antes de enviar el
@@ -601,7 +607,11 @@
   <section style="margin-top: 30px;">
     <h2 style="background-color: #02535a; color: white; padding: 10px; border-radius: 6px;">💰 Historial de Pagos</h2>
 
-    <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
+    <!-- FIX (17/8/2026 — responsive): mismo motivo que la tabla de
+         hoteles arriba — sin este contenedor, esta tabla se salía de la
+         tarjeta en pantallas angostas. -->
+    <div style="overflow-x: auto;">
+    <table style="width: 100%; min-width: 560px; margin-top: 20px; border-collapse: collapse;">
       <thead style="background-color: #f0f0f0;">
         <tr>
           <th style="padding: 10px;">Fecha</th>
@@ -613,6 +623,7 @@
       </thead>
       <tbody id="tablaHistorialPagos"></tbody>
     </table>
+    </div>
 
     <div style="text-align: right; margin-top: 20px;">
       <a id="btnFacturar" href="#" target="_blank" style="display:none; background-color: #02535a; color: white; padding: 10px 20px; border: none; border-radius: 8px; text-decoration: none; display: inline-block;">📄 Ver Factura</a>
@@ -637,9 +648,9 @@
     </select>
   </div>
 
-  <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+  <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
     <button id="btnGuardarReserva" class="boton-principal">💾 Guardar Reserva</button>
-    <a id="btnCostos" target="_blank" href="#" class="boton-principal" style="display: none;">💼 Agregar Costos</a>
+    <a id="btnCostos" target="_blank" href="#" class="boton-principal" style="display: none; align-items: center; box-sizing: border-box;">💼 Agregar Costos</a>
   </div>
 </div>
 
