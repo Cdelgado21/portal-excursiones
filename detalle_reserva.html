@@ -2671,16 +2671,14 @@ async function cargarInfoTour(destinoId) {
         const card = document.createElement("div");
         card.style = `
           border: 1px solid #ccc;
-          padding: 10px 15px;
+          padding: 10px 15px 10px 44px;
           border-radius: 8px;
           background: #f9f9f9;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          min-width: 0;
+          position: relative;
+          box-sizing: border-box;
         `;
         card.innerHTML = `
-          <input type="checkbox" name="opcionales" value="${item.nombre}">
+          <input type="checkbox" name="opcionales" value="${item.nombre}" style="position: absolute; left: 15px; top: 14px;">
           <span><strong>${item.nombre}</strong> - $${item.precio}</span>
         `;
         lista.appendChild(card);
