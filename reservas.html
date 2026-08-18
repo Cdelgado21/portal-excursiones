@@ -152,7 +152,16 @@
       display: flex;
       gap: 6px;
       justify-content: center;
-      flex-wrap: wrap;
+      /* FIX: con flex-wrap: wrap, si la columna quedaba angosta los 7
+         botones caían uno debajo del otro (una fila de icono por línea),
+         lo que estiraba TODA la fila de la tabla y dejaba un espacio en
+         blanco enorme arriba del texto de las demás celdas. nowrap
+         obliga a que la columna Acciones se ensanche lo necesario en vez
+         de apilar los botones verticalmente. */
+      flex-wrap: nowrap;
+    }
+    th:last-child, td:last-child {
+      white-space: nowrap;
     }
     .btn-icono {
       width: 34px;
@@ -180,7 +189,14 @@
     /* NUEVO (17/8/2026 — diseño responsive): en pantallas angostas (celular),
        la tabla de 13 columnas es imposible de usar con scroll horizontal —
        cada fila se convierte en una tarjeta apilada, con la etiqueta de cada
-       columna al lado de su valor (técnica estándar de "tabla responsive"). */
+       columna al lado de su valor.
+       FIX: la primera versión usaba "float" para poner la etiqueta a la
+       izquierda del valor — con nombres largos (ej. "REBECA MADRIGAL
+       PORRAS") el float no envolvía bien el texto y la tarjeta se salía de
+       la pantalla (scroll horizontal). Ahora cada celda es un renglón flex
+       (etiqueta a la izquierda, valor a la derecha, ambos con permiso de
+       partirse en varias líneas), que sí se ajusta al ancho real de la
+       pantalla sin desbordar. */
     @media screen and (max-width: 768px) {
       .tabla-container {
         padding: 14px;
@@ -193,7 +209,7 @@
         left: -9999px;
         top: -9999px;
       }
-      table, tbody, tr, td {
+      table, tbody, tr {
         display: block;
         width: 100%;
       }
@@ -201,25 +217,31 @@
         margin-bottom: 16px;
         border: 1px solid #dde8e8;
         border-radius: 12px;
-        padding: 6px 12px;
+        padding: 6px 14px;
         box-shadow: 0 2px 8px rgba(2,83,90,0.06);
       }
       tbody tr:hover { background-color: transparent; }
       td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
         padding: 10px 0;
         border-bottom: 1px solid #eef3f3;
         text-align: right;
+        white-space: normal;
       }
-      td:last-child { border-bottom: none; }
+      td:last-child { border-bottom: none; white-space: normal; }
       td::before {
         content: attr(data-etiqueta);
-        float: left;
+        flex: 0 0 auto;
         font-weight: bold;
         color: #02535a;
         font-size: 12px;
         text-transform: uppercase;
         letter-spacing: 0.3px;
-        padding-right: 10px;
+        text-align: left;
+        padding-top: 2px;
       }
       /* Estas dos columnas no necesitan etiqueta repetida — ya se entienden
          solas (el código es el título de la tarjeta, la fila de acciones
@@ -230,9 +252,11 @@
         padding-top: 14px;
       }
       td[data-etiqueta="Código"]::before { content: ""; }
+      td[data-etiqueta="Acciones"] { justify-content: flex-end; }
       td[data-etiqueta="Acciones"]::before { content: ""; }
       .celda-acciones {
         justify-content: flex-end;
+        flex-wrap: wrap;
         padding-top: 6px;
       }
     }
