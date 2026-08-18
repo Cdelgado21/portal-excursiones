@@ -176,6 +176,66 @@
       height: 20px;
       cursor: pointer;
     }
+
+    /* NUEVO (17/8/2026 — diseño responsive): en pantallas angostas (celular),
+       la tabla de 13 columnas es imposible de usar con scroll horizontal —
+       cada fila se convierte en una tarjeta apilada, con la etiqueta de cada
+       columna al lado de su valor (técnica estándar de "tabla responsive"). */
+    @media screen and (max-width: 768px) {
+      .tabla-container {
+        padding: 14px;
+      }
+      table {
+        min-width: 0;
+      }
+      thead {
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
+      }
+      table, tbody, tr, td {
+        display: block;
+        width: 100%;
+      }
+      tbody tr {
+        margin-bottom: 16px;
+        border: 1px solid #dde8e8;
+        border-radius: 12px;
+        padding: 6px 12px;
+        box-shadow: 0 2px 8px rgba(2,83,90,0.06);
+      }
+      tbody tr:hover { background-color: transparent; }
+      td {
+        padding: 10px 0;
+        border-bottom: 1px solid #eef3f3;
+        text-align: right;
+      }
+      td:last-child { border-bottom: none; }
+      td::before {
+        content: attr(data-etiqueta);
+        float: left;
+        font-weight: bold;
+        color: #02535a;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        padding-right: 10px;
+      }
+      /* Estas dos columnas no necesitan etiqueta repetida — ya se entienden
+         solas (el código es el título de la tarjeta, la fila de acciones
+         se ve sola por los íconos). */
+      td[data-etiqueta="Código"] {
+        text-align: left;
+        font-size: 17px;
+        padding-top: 14px;
+      }
+      td[data-etiqueta="Código"]::before { content: ""; }
+      td[data-etiqueta="Acciones"]::before { content: ""; }
+      .celda-acciones {
+        justify-content: flex-end;
+        padding-top: 6px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -321,21 +381,21 @@
             mesesConReservas.add(claveMes);
           }
           fila.innerHTML = `
-            <td><a href="detalle_reserva.html?codigo=${doc.id}" class="link-codigo-reserva">${doc.id}</a></td>
-            <td>${formatearFechaCreacion(data.creado_el)}</td>
-            <td>${data.nombreTitular || '-'}</td>
-            <td>${data.telefono || '-'}</td>
-            <td>${data.correo || '-'}</td>
-            <td>${data.nombreDestino || data.destino || '-'}</td>
-            <td>${calcularPersonas(data) ?? '-'}</td>
-            <td>${formatearFechaVisible(data.fechaReserva)}</td>
-            <td>${data.vueloRegreso?.fecha ? formatearFechaVisible(data.vueloRegreso.fecha) : '-'}</td>
-            <td>${data.vueloIda?.aerolinea || '-'}</td>
-            <td>${data.vueloIda?.codigo || '-'}</td>
-            <td style="text-align:center;">
+            <td data-etiqueta="Código"><a href="detalle_reserva.html?codigo=${doc.id}" class="link-codigo-reserva">${doc.id}</a></td>
+            <td data-etiqueta="Fecha de Creación">${formatearFechaCreacion(data.creado_el)}</td>
+            <td data-etiqueta="Cliente">${data.nombreTitular || '-'}</td>
+            <td data-etiqueta="Teléfono">${data.telefono || '-'}</td>
+            <td data-etiqueta="Correo">${data.correo || '-'}</td>
+            <td data-etiqueta="Destino">${data.nombreDestino || data.destino || '-'}</td>
+            <td data-etiqueta="Personas">${calcularPersonas(data) ?? '-'}</td>
+            <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(data.fechaReserva)}</td>
+            <td data-etiqueta="Fecha de regreso">${data.vueloRegreso?.fecha ? formatearFechaVisible(data.vueloRegreso.fecha) : '-'}</td>
+            <td data-etiqueta="Aerolínea">${data.vueloIda?.aerolinea || '-'}</td>
+            <td data-etiqueta="Cód. Vuelo">${data.vueloIda?.codigo || '-'}</td>
+            <td data-etiqueta="Reunión" style="text-align:center;">
               <input type="checkbox" class="check-reunion" ${data.reunionRealizada ? 'checked' : ''} onchange="marcarReunionRealizada('${doc.id}', this.checked)" title="¿Ya se hizo la reunión de guía de viaje?">
             </td>
-            <td>
+            <td data-etiqueta="Acciones">
               <div class="celda-acciones">
                 <button class="btn-icono" title="Editar reserva" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
                 <button class="btn-icono" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
