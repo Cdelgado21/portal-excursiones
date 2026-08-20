@@ -944,23 +944,49 @@
       subtitulo.textContent = "Costo total (pagado + proyectado) de cada reserva con costos registrados, y cuánto te debe el cliente de esa misma reserva.";
       const filas = Object.keys(datosCostosPorCodigo).map(codigo => {
         const r = datosReservasPorCodigo[codigo] || {};
+        const costoTotal = datosCostosPorCodigo[codigo].costoTotal;
+        const pendiente = calcularPendientePagarProveedores(codigo);
         return {
           codigo,
           titular: r.titular || '-',
-          costoTotal: datosCostosPorCodigo[codigo].costoTotal,
-          pendiente: calcularPendientePagarProveedores(codigo),
+          destino: r.destino || '-',
+          costoTotal,
+          yaPagado: costoTotal - pendiente,
+          pendiente,
           saldoCliente: r.saldo || 0
         };
       }).sort((a, b) => b.costoTotal - a.costoTotal);
-      contenido.innerHTML = construirTablaDetalleCaja(
-        ["Código", "Titular", "Costo Total", "Pendiente a Proveedor", "Cliente aún debe"],
+
+      // NUEVO: fila de totales al final, para no tener que sumar a mano.
+      const totales = filas.reduce((acc, r) => {
+        acc.costoTotal += r.costoTotal;
+        acc.yaPagado += r.yaPagado;
+        acc.pendiente += r.pendiente;
+        return acc;
+      }, { costoTotal: 0, yaPagado: 0, pendiente: 0 });
+
+      let tablaHtml = construirTablaDetalleCaja(
+        ["Código", "Titular", "Destino", "Costo Total", "Ya Pagado", "Pendiente a Proveedor", "Cliente aún debe"],
         filas.map(r => [
           `<a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a>`,
-          r.titular, formatoMoneda(r.costoTotal),
+          r.titular, r.destino, formatoMoneda(r.costoTotal),
+          formatoMoneda(r.yaPagado),
           r.pendiente > 0.01 ? `<span class="costo-proyectado">${formatoMoneda(r.pendiente)}</span>` : formatoMoneda(0),
           r.saldoCliente > 0.01 ? `<span class="cifra-positiva">${formatoMoneda(r.saldoCliente)}</span>` : '-'
         ])
       );
+      // Inserta la fila de totales justo antes del cierre de </tbody>.
+      tablaHtml = tablaHtml.replace(
+        "</tbody>",
+        `<tr style="background:#eef6f6; font-weight:bold;">
+          <td colspan="3">TOTAL</td>
+          <td>${formatoMoneda(totales.costoTotal)}</td>
+          <td>${formatoMoneda(totales.yaPagado)}</td>
+          <td>${formatoMoneda(totales.pendiente)}</td>
+          <td></td>
+        </tr></tbody>`
+      );
+      contenido.innerHTML = tablaHtml;
 
     } else if (tipo === "operativos") {
       titulo.textContent = `Gastos Operativos Pagados — ${formatoMoneda(datosCajaReal.operativosTotal)}`;
