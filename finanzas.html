@@ -881,7 +881,11 @@
     // "me falta esa plata", cuando en realidad una parte puede estar por
     // cobrarse todavía del mismo viaje.
     let porCobrarDeEsasReservas = 0;
-    Object.keys(datosCostosPorCodigo).forEach(codigo => {
+    // FIX: cuando se elimina una reserva, el sistema borra el documento de
+    // "reservas" pero NO el de "costos_reservas" correspondiente — queda
+    // huérfano. Se filtra acá (solo cuenta códigos que sí tienen una
+    // reserva viva) para no sumar/mostrar basura de reservas eliminadas.
+    Object.keys(datosCostosPorCodigo).filter(codigo => datosReservasPorCodigo[codigo]).forEach(codigo => {
       comprometidoTotal += datosCostosPorCodigo[codigo].costoTotal;
       comprometidoPendiente += calcularPendientePagarProveedores(codigo);
       const saldoCliente = datosReservasPorCodigo[codigo]?.saldo || 0;
@@ -942,7 +946,7 @@
     } else if (tipo === "comprometido") {
       titulo.textContent = `Comprometido con Proveedores — ${formatoMoneda(datosCajaReal.comprometidoTotal)}`;
       subtitulo.textContent = "Costo total (pagado + proyectado) de cada reserva con costos registrados, y cuánto te debe el cliente de esa misma reserva.";
-      const filas = Object.keys(datosCostosPorCodigo).map(codigo => {
+      const filas = Object.keys(datosCostosPorCodigo).filter(codigo => datosReservasPorCodigo[codigo]).map(codigo => {
         const r = datosReservasPorCodigo[codigo] || {};
         const costoTotal = datosCostosPorCodigo[codigo].costoTotal;
         const pendiente = calcularPendientePagarProveedores(codigo);
