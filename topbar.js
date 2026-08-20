@@ -1,821 +1,1938 @@
-// ==========================================
-// BARRA SUPERIOR COMPARTIDA (topbar.js)
-// Se agrega a cada página, DESPUÉS de que la página ya haya llamado a
-// firebase.initializeApp(...) — este archivo no inicializa Firebase por su
-// cuenta, reutiliza la conexión que ya dejó abierta la página.
-//
-// Uso en cada página:
-//   <link rel="stylesheet" href="topbar.css">
-//   ...
-//   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-//   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-//   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>  <-- necesario para subir foto
-//   ...
-//   <script> firebase.initializeApp(firebaseConfig); ... </script>
-//   <script src="topbar.js"></script>  <-- SIEMPRE al final
-//
-// Si la página no tiene sesión guardada en localStorage("usuario"), esta
-// barra simplemente no aparece (ej. login.html).
-//
-// NUEVO (11/8/2026): las notificaciones ya leídas DESAPARECEN de la
-// campanita para siempre (la consulta filtra leido == false — quedan
-// guardadas en Firestore como historial, solo dejan de mostrarse). Al
-// hacer clic en una notificación que tenga "url" guardada, navega ahí
-// mismo (misma pestaña) además de marcarla como leída.
-//
-// IMPORTANTE: este filtro nuevo (leido == false) junto con el
-// orderBy("fecha") que ya existía muy probablemente va a pedir un ÍNDICE
-// COMPUESTO NUEVO en Firestore la primera vez que corra — mismo patrón que
-// el índice (destinatarioId + fecha) que ya tuvimos que crear antes. El
-// error de consola trae el link para crearlo con un clic.
-//
-// Comunicación interna — la campanita también permite CREAR una
-// notificación (comunicado o tarea) para otro usuario, no solo leer las
-// que le llegan a uno. Mismo esquema "notificaciones" de siempre, con
-// estos campos:
-//   tipo: "comunicado" | "tarea"
-//   estado: "Pendiente" | "Hecha"   (solo aplica a tipo "tarea")
-//   fechaLimite: "AAAA-MM-DD"       (opcional, solo tareas)
-//   url: "detalle_reserva.html?..." (opcional, solo avisos automáticos del
-//                                     sistema — a dónde navega al hacer clic)
-// Las tareas pendientes de uno se muestran también en la tarjeta
-// "Tareas asignadas" del dashboard — ver dashboard.html.
-// ==========================================
-
-(function () {
-  const MINUTOS_INACTIVIDAD = 30;
-  const MS_INACTIVIDAD = MINUTOS_INACTIVIDAD * 60 * 1000;
-
-  function obtenerUsuarioSesion() {
-    try {
-      return JSON.parse(localStorage.getItem("usuario") || "null");
-    } catch (e) {
-      return null;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finanzas - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+  <link rel="stylesheet" href="topbar.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      margin: 0;
+      padding: 0;
+      color: #02535a;
     }
-  }
-
-  function guardarUsuarioSesion(cambios) {
-    const actual = obtenerUsuarioSesion() || {};
-    const actualizado = { ...actual, ...cambios };
-    localStorage.setItem("usuario", JSON.stringify(actualizado));
-    return actualizado;
-  }
-
-  // ---------- Cierre de sesión por inactividad ----------
-  function cerrarSesionPorInactividad() {
-    localStorage.removeItem("usuario");
-    window.location.href = "login.html?motivo=inactividad";
-  }
-
-  function iniciarControlInactividad() {
-    let temporizador;
-    function reiniciar() {
-      clearTimeout(temporizador);
-      temporizador = setTimeout(cerrarSesionPorInactividad, MS_INACTIVIDAD);
+    h2 {
+      color: #02535a;
+      margin-bottom: 5px;
     }
-    ["mousemove", "keydown", "click", "scroll", "touchstart"].forEach(evento => {
-      document.addEventListener(evento, reiniciar, { passive: true });
-    });
-    reiniciar();
-  }
-
-  // ---------- Construcción visual de la barra ----------
-  function construirTopbarHTML(usuario) {
-    const fotoURL = usuario.fotoURL || "https://cdn-icons-png.flaticon.com/512/219/219986.png";
-    return `
-      <button type="button" id="botonMenuLateral" aria-label="Abrir menú">☰</button>
-      <span class="titulo-sistema">Excursiones Delgado — Sistema Integral</span>
-      <div style="display:flex; align-items:center;">
-        <div id="tipoCambioTopbar" title="Tipo de cambio de venta, Banco Nacional (vía BCCR) — se actualiza solo cada 45 minutos" style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.12); border-radius:8px; padding:5px 12px; font-size:0.82rem; color:white; font-weight:bold; white-space:nowrap; margin-right:14px;">
-          <span style="opacity:0.85;">T.C. ₡</span><span id="valorTipoCambioTopbar">...</span>
-        </div>
-        <div class="campana-container" id="botonCampanaTopbar">
-          <span class="campana-icono">🔔</span>
-          <span class="campana-badge" id="badgeNotificaciones">0</span>
-          <div id="panelNotificaciones"></div>
-        </div>
-        <div class="usuario-container" id="botonUsuarioTopbar">
-          <img src="${fotoURL}" class="usuario-avatar" id="avatarTopbar" alt="Usuario">
-          <div class="usuario-datos">
-            <span class="usuario-nombre">${usuario.nombre || "Usuario"}</span>
-            <span class="usuario-rol">${usuario.rol || ""}</span>
-          </div>
-          <div id="menuUsuarioDesplegable">
-            <button type="button" id="btnEditarPerfilTopbar">✏️ Editar perfil</button>
-            <button type="button" id="btnCerrarSesionTopbar">🚪 Cerrar sesión</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function construirModalPerfilHTML(usuario) {
-    const fotoURL = usuario.fotoURL || "https://cdn-icons-png.flaticon.com/512/219/219986.png";
-    const avisoStorage = (typeof firebase !== "undefined" && firebase.storage)
-      ? ""
-      : `<div class="aviso-modal">⚠️ Esta página todavía no tiene cargada la librería de Firebase Storage — agrega
-         <code>firebase-storage-compat.js</code> para poder subir la foto desde aquí.</div>`;
-    return `
-      <div class="modal-contenido">
-        <h3>Editar Perfil</h3>
-        <img src="${fotoURL}" class="preview-avatar" id="previewFotoPerfil" alt="Vista previa">
-        <input type="file" id="inputFotoPerfil" accept="image/*">
-        ${avisoStorage}
-        <div class="acciones-modal">
-          <button type="button" class="btn-cancelar" id="btnCancelarPerfil">Cancelar</button>
-          <button type="button" class="btn-guardar" id="btnGuardarPerfil">Guardar</button>
-        </div>
-      </div>
-    `;
-  }
-
-  async function subirFotoPerfil(usuario, archivo) {
-    if (!firebase.storage) return null;
-    const storage = firebase.storage();
-    const ref = storage.ref().child(`usuarios/${usuario.id}/foto_${Date.now()}_${archivo.name}`);
-    await ref.put(archivo);
-    return await ref.getDownloadURL();
-  }
-
-  function abrirModalPerfil(usuario) {
-    const modal = document.getElementById("modalEditarPerfil");
-    modal.innerHTML = construirModalPerfilHTML(usuario);
-    modal.style.display = "flex";
-
-    const inputFoto = document.getElementById("inputFotoPerfil");
-    inputFoto.addEventListener("change", function () {
-      const archivo = this.files[0];
-      if (!archivo) return;
-      document.getElementById("previewFotoPerfil").src = URL.createObjectURL(archivo);
-    });
-
-    document.getElementById("btnCancelarPerfil").addEventListener("click", () => {
-      modal.style.display = "none";
-    });
-
-    document.getElementById("btnGuardarPerfil").addEventListener("click", async () => {
-      const archivo = inputFoto.files[0];
-      if (!archivo) {
-        modal.style.display = "none";
-        return;
-      }
-      if (!usuario.id) {
-        alert("⚠️ No se pudo identificar tu usuario para guardar la foto. Cierra sesión y vuelve a entrar (esto solo pasa si iniciaste sesión antes de este cambio).");
-        return;
-      }
-      try {
-        const url = await subirFotoPerfil(usuario, archivo);
-        if (!url) {
-          alert("⚠️ No se pudo subir la foto: falta la librería de Firebase Storage en esta página.");
-          return;
-        }
-        await firebase.firestore().collection("usuarios").doc(usuario.id).update({ fotoURL: url });
-        guardarUsuarioSesion({ fotoURL: url });
-        document.getElementById("avatarTopbar").src = url;
-        modal.style.display = "none";
-      } catch (e) {
-        console.error("Error al guardar la foto de perfil:", e);
-        alert("❌ No se pudo guardar la foto de perfil. Intenta de nuevo.");
-      }
-    });
-  }
-
-  // ---------- Notificaciones ----------
-  function formatearFechaNotificacion(fecha) {
-    if (!fecha) return "";
-    const f = fecha.toDate ? fecha.toDate() : new Date(fecha);
-    if (isNaN(f.getTime())) return "";
-    return f.toLocaleString("es-CR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-  }
-
-  function actualizarBadge(cantidad) {
-    const badge = document.getElementById("badgeNotificaciones");
-    badge.textContent = cantidad;
-    badge.style.display = cantidad > 0 ? "inline-block" : "none";
-  }
-
-  function renderizarNotificaciones(notificaciones) {
-    const panel = document.getElementById("panelNotificaciones");
-
-    // NUEVO: la consulta ya trae solo leido == false, así que TODAS las
-    // que llegan acá están sin leer por definición — no hace falta
-    // distinguir visualmente cuáles sí/no.
-    actualizarBadge(notificaciones.length);
-
-    // El botón de "Nuevo comunicado / tarea" siempre va arriba del panel,
-    // sin importar si hay notificaciones o no.
-    const encabezado = `
-      <div class="notificacion-encabezado">
-        <button type="button" id="btnNuevoComunicado">➕ Nuevo comunicado / tarea</button>
-      </div>
-    `;
-
-    if (notificaciones.length === 0) {
-      panel.innerHTML = encabezado + `<div class="notificacion-vacia">No tienes notificaciones.</div>`;
-    } else {
-      const lista = notificaciones.map(n => {
-        const etiquetaTipo = n.tipo === "tarea" ? `<span class="notificacion-tipo-tarea">📋 Tarea</span>` : "";
-        // NUEVO: botón "✕" aparte para descartar SIN navegar — el resto de
-        // la notificación (texto/fecha) sigue marcando como leída y
-        // navegando al detalle si tiene link guardado.
-        return `
-        <div class="notificacion-item" data-id="${n.id}" data-url="${n.url ? n.url.replace(/"/g, '&quot;') : ''}">
-          <button type="button" class="notificacion-descartar" title="Quitar, sin ir al detalle">✕</button>
-          ${etiquetaTipo}
-          ${n.mensaje || ""}
-          <span class="notificacion-fecha">${formatearFechaNotificacion(n.fecha)}</span>
-        </div>
-      `;
-      }).join("");
-      panel.innerHTML = encabezado + lista;
+    .subtitulo {
+      color: #5f9296;
+      margin-top: 0;
+      margin-bottom: 25px;
+      font-size: 0.95rem;
     }
 
-    document.getElementById("btnNuevoComunicado").addEventListener("click", (e) => {
-      e.stopPropagation();
-      abrirModalNuevoComunicado();
-    });
-
-    // NUEVO: se marca como leída en Firestore (para que no vuelva a
-    // aparecer) y desaparece de la lista al toque en ambos casos — la
-    // única diferencia es si además navega al detalle (clic en el cuerpo
-    // de la notificación) o no (clic en el botón "✕" de descartar).
-    async function marcarLeidaYQuitar(el, navegar) {
-      const id = el.dataset.id;
-      const url = el.dataset.url;
-
-      try {
-        await firebase.firestore().collection("notificaciones").doc(id).update({ leido: true });
-      } catch (e) {
-        console.error("No se pudo marcar la notificación como leída:", e);
-        return; // si no se pudo marcar, mejor no la quitamos ni navegamos
-      }
-
-      el.remove();
-      const restantes = panel.querySelectorAll(".notificacion-item").length;
-      actualizarBadge(restantes);
-      if (restantes === 0) {
-        const vacia = document.createElement("div");
-        vacia.className = "notificacion-vacia";
-        vacia.textContent = "No tienes notificaciones.";
-        panel.appendChild(vacia);
-      }
-
-      if (navegar && url) {
-        window.location.href = url;
-      }
+    .tarjetas {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+    .tarjeta {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border-left: 6px solid #02535a;
+    }
+    .tarjeta.cobrar { border-left-color: #c0392b; }
+    .tarjeta.pagar { border-left-color: #e07d3c; }
+    .tarjeta.proyectada { border-left-color: #f39c12; }
+    .tarjeta.real { border-left-color: #1b9e3c; }
+    .tarjeta .etiqueta {
+      font-size: 0.85rem;
+      color: #5f9296;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .tarjeta .monto {
+      font-size: 1.8rem;
+      font-weight: bold;
+      margin-top: 6px;
+      color: #02535a;
+    }
+    .tarjeta .detalle {
+      font-size: 0.8rem;
+      color: #888;
+      margin-top: 4px;
     }
 
-    panel.querySelectorAll(".notificacion-descartar").forEach(boton => {
-      boton.addEventListener("click", (e) => {
-        e.stopPropagation(); // no dispara también el clic del contenedor
-        marcarLeidaYQuitar(boton.closest(".notificacion-item"), false);
-      });
-    });
-
-    panel.querySelectorAll(".notificacion-item").forEach(el => {
-      el.addEventListener("click", () => {
-        marcarLeidaYQuitar(el, true);
-      });
-    });
-  }
-
-  async function cargarNotificaciones(usuario) {
-    if (!usuario.id) return;
-    try {
-      // NUEVO: se agregó el filtro leido == false, para que las leídas
-      // dejen de traerse (desaparecen de la campanita, quedan como
-      // historial en Firestore). Junto con el orderBy("fecha"), esto
-      // probablemente pide un índice compuesto NUEVO la primera vez que
-      // corra — el error de consola trae el link para crearlo con un
-      // clic, mismo patrón que el índice (destinatarioId + fecha) que ya
-      // se creó antes.
-      const snapshot = await firebase.firestore().collection("notificaciones")
-        .where("destinatarioId", "==", usuario.id)
-        .where("leido", "==", false)
-        .orderBy("fecha", "desc")
-        .limit(20)
-        .get();
-      const notificaciones = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderizarNotificaciones(notificaciones);
-    } catch (e) {
-      console.error("No se pudieron cargar las notificaciones:", e);
-      // Igual se muestra el botón de "Nuevo comunicado" aunque falle la
-      // carga de la lista (ej. falta el índice todavía).
-      renderizarNotificaciones([]);
+    .seccion {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin-bottom: 30px;
     }
-  }
-
-  // ---------- Comunicación interna (crear notificación/tarea) ----------
-
-  let listaUsuariosParaComunicado = null; // cache — se carga una sola vez por sesión de página
-
-  async function cargarUsuariosParaComunicado() {
-    if (listaUsuariosParaComunicado) return listaUsuariosParaComunicado;
-    try {
-      const snap = await firebase.firestore().collection("usuarios").get();
-      listaUsuariosParaComunicado = snap.docs
-        .map(d => ({ id: d.id, ...d.data() }))
-        .filter(u => u.estado !== "Inactivo")
-        .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""));
-    } catch (e) {
-      console.error("No se pudo cargar la lista de usuarios:", e);
-      listaUsuariosParaComunicado = [];
+    .seccion h3 {
+      margin-top: 0;
+      color: #02535a;
     }
-    return listaUsuariosParaComunicado;
-  }
-
-  function construirModalNuevoComunicadoHTML(listaUsuarios, usuarioActual) {
-    const opciones = listaUsuarios
-      .filter(u => u.id !== usuarioActual.id) // no tiene sentido mandarse uno a sí mismo
-      .map(u => `<option value="${u.id}" data-nombre="${u.nombre || ''}">${u.nombre || u.id}</option>`)
-      .join("");
-
-    return `
-      <div class="modal-contenido">
-        <h3>Nuevo comunicado / tarea</h3>
-
-        <label>Para</label>
-        <select id="comunicadoPara">
-          <option value="">-- Seleccione un compañero --</option>
-          ${opciones}
-        </select>
-
-        <label>Tipo</label>
-        <select id="comunicadoTipo" onchange="document.getElementById('comunicadoFechaLimiteWrap').style.display = this.value === 'tarea' ? 'block' : 'none';">
-          <option value="comunicado">📢 Comunicado (solo avisar)</option>
-          <option value="tarea">📋 Tarea (con seguimiento)</option>
-        </select>
-
-        <label>Mensaje</label>
-        <textarea id="comunicadoMensaje" rows="4" placeholder="Ej. Revisar pasaportes del grupo Panamá antes del viernes"></textarea>
-
-        <div id="comunicadoFechaLimiteWrap" style="display:none;">
-          <label>Fecha límite (opcional)</label>
-          <input type="date" id="comunicadoFechaLimite">
-        </div>
-
-        <div class="aviso-modal" id="comunicadoAviso" style="display:none;"></div>
-
-        <div class="acciones-modal">
-          <button type="button" class="btn-cancelar" id="btnCancelarComunicado">Cancelar</button>
-          <button type="button" class="btn-guardar" id="btnEnviarComunicado">Enviar</button>
-        </div>
-      </div>
-    `;
-  }
-
-  async function abrirModalNuevoComunicado() {
-    document.getElementById("menuUsuarioDesplegable").style.display = "none";
-    document.getElementById("panelNotificaciones").style.display = "none";
-
-    const usuario = obtenerUsuarioSesion();
-    const modal = document.getElementById("modalNuevoComunicado");
-    modal.innerHTML = `<div class="modal-contenido"><p>Cargando compañeros...</p></div>`;
-    modal.classList.add("abierto");
-
-    const usuarios = await cargarUsuariosParaComunicado();
-    modal.innerHTML = construirModalNuevoComunicadoHTML(usuarios, usuario);
-
-    document.getElementById("btnCancelarComunicado").addEventListener("click", () => {
-      modal.classList.remove("abierto");
-    });
-
-    document.getElementById("btnEnviarComunicado").addEventListener("click", async () => {
-      await enviarNuevoComunicado(usuario);
-    });
-  }
-
-  async function enviarNuevoComunicado(usuarioActual) {
-    const selectPara = document.getElementById("comunicadoPara");
-    const destinatarioId = selectPara.value;
-    const destinatarioNombre = selectPara.selectedOptions[0]?.dataset.nombre || "";
-    const tipo = document.getElementById("comunicadoTipo").value;
-    const mensaje = document.getElementById("comunicadoMensaje").value.trim();
-    const fechaLimite = document.getElementById("comunicadoFechaLimite")?.value || "";
-    const aviso = document.getElementById("comunicadoAviso");
-
-    if (!destinatarioId || !mensaje) {
-      aviso.style.display = "block";
-      aviso.textContent = "⚠️ Elegí a quién va dirigido y escribí un mensaje.";
-      return;
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+      font-size: 0.9rem;
+    }
+    th {
+      background-color: #02535a;
+      color: white;
+    }
+    tr:hover { background-color: #f7fbfb; }
+    .cifra-positiva { color: #1b9e3c; font-weight: bold; }
+    .cifra-alerta { color: #c0392b; font-weight: bold; }
+    .costo-proyectado { color: #e07d3c; font-weight: bold; }
+    .costo-pagado { color: #c0392b; font-weight: bold; }
+    .aviso-sin-costos {
+      color: #a35b00;
+      font-size: 0.82rem;
+    }
+    .btn-panel-costos {
+      display: inline-block;
+      margin-top: 4px;
+      background-color: #02535a;
+      color: white;
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    .btn-panel-costos:hover { background-color: #036a6d; }
+    .vacio {
+      text-align: center;
+      color: #999;
+      padding: 20px;
+      font-size: 0.9rem;
+    }
+    .enlace-fila {
+      color: #02535a;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .enlace-fila:hover { text-decoration: underline; }
+    .btn-rango {
+      background: #eef6f6;
+      color: #02535a;
+      border: 1px solid #cfe3e4;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    .btn-rango:hover { background: #dcecec; }
+    .btn-rango.activo {
+      background: #02535a;
+      color: white;
+      border-color: #02535a;
+    }
+    .modal-finanzas {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 3000;
+    }
+    .modal-finanzas-content {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      width: 92%;
+      max-width: 720px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    .modal-finanzas-content h3 {
+      margin-top: 0;
+      color: #02535a;
+    }
+    .btn-cerrar-modal-finanzas {
+      background: #ccc;
+      color: #333;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .tabla-vendedores th {
+      background-color: #5f9296;
+    }
+    .alerta-vacia {
+      color: #1b9e3c;
+      font-weight: bold;
+      padding: 10px 0;
+    }
+    .badge-dias {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: bold;
+      background: #fbe2e0;
+      color: #c0392b;
     }
 
-    const boton = document.getElementById("btnEnviarComunicado");
-    boton.disabled = true;
-    boton.textContent = "Enviando...";
-
-    try {
-      const datosNotificacion = {
-        destinatarioId,
-        destinatarioNombre,
-        remitenteId: usuarioActual.id || "",
-        remitenteNombre: usuarioActual.nombre || "Alguien del equipo",
-        tipo,
-        mensaje: tipo === "tarea" ? `📋 Tarea de ${usuarioActual.nombre || 'un compañero'}: ${mensaje}` : `${usuarioActual.nombre || 'Un compañero'}: ${mensaje}`,
-        leido: false,
-        fecha: new Date()
-      };
-      if (tipo === "tarea") {
-        datosNotificacion.estado = "Pendiente";
-        if (fechaLimite) datosNotificacion.fechaLimite = fechaLimite;
+    /* NUEVO (17/8/2026 — diseño responsive): en pantallas angostas (celular),
+       todas las tablas de esta página (varias, hasta 8 columnas) son
+       imposibles de usar con scroll horizontal — cada fila se convierte en
+       una tarjeta apilada, con la etiqueta de cada columna al lado de su
+       valor. Mismo patrón ya probado en reservas.html. Aplica a TODAS las
+       tablas (selector genérico, sin "main" adelante) para que también
+       cubra las tablas de adentro de los modales. */
+    @media screen and (max-width: 768px) {
+      table { min-width: 0; }
+      thead { position: absolute; left: -9999px; top: -9999px; }
+      table, tbody, tr { display: block; width: 100%; }
+      tbody tr {
+        margin-bottom: 14px;
+        border: 1px solid #dde8e8;
+        border-radius: 10px;
+        padding: 6px 12px;
+        box-shadow: 0 2px 8px rgba(2,83,90,0.06);
       }
-
-      await firebase.firestore().collection("notificaciones").add(datosNotificacion);
-
-      document.getElementById("modalNuevoComunicado").classList.remove("abierto");
-    } catch (e) {
-      console.error("No se pudo enviar el comunicado:", e);
-      aviso.style.display = "block";
-      aviso.textContent = "❌ No se pudo enviar. Intenta de nuevo.";
-      boton.disabled = false;
-      boton.textContent = "Enviar";
-    }
-  }
-
-  // Estilos mínimos para las piezas nuevas (botón de "Nuevo comunicado",
-  // etiqueta de tarea, y los campos del formulario del modal) — inyectados
-  // acá para no depender de reglas de topbar.css que no están a la vista
-  // en este archivo. Los campos genéricos (label/select/textarea/input)
-  // quedan acotados a #modalNuevoComunicado, para no pisarle el estilo a
-  // inputs de otras partes de la página.
-  function inyectarEstilosComunicacionInterna() {
-    if (document.getElementById("estilosComunicacionInterna")) return;
-    const estilo = document.createElement("style");
-    estilo.id = "estilosComunicacionInterna";
-    estilo.textContent = `
-      .notificacion-encabezado {
-        padding: 8px 12px;
-        border-bottom: 1px solid #eee;
+      tbody tr:hover { background-color: transparent; }
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid #eef3f3;
+        text-align: right;
+        white-space: normal;
       }
-      #btnNuevoComunicado {
-        width: 100%;
-        background-color: #02535a;
-        color: white;
-        border: none;
-        padding: 8px 10px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 13px;
+      td:last-child { border-bottom: none; }
+      td::before {
+        content: attr(data-etiqueta);
+        flex: 0 0 auto;
         font-weight: bold;
-      }
-      #btnNuevoComunicado:hover { background-color: #036a6d; }
-      .notificacion-tipo-tarea {
-        display: inline-block;
-        background: #ffb703;
         color: #02535a;
         font-size: 11px;
-        font-weight: bold;
-        padding: 2px 8px;
-        border-radius: 999px;
-        margin-right: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        text-align: left;
+        padding-top: 2px;
       }
-      /* NUEVO: botón de menú lateral (☰), ahora vive DENTRO de la barra
-         superior en vez de flotar aparte como un círculo — sidebar.js lo
-         usa en vez de crear su propio botón. */
-      #botonMenuLateral {
-        background: transparent;
-        border: none;
-        color: white;
-        font-size: 22px;
-        cursor: pointer;
-        padding: 4px 10px;
-        margin-right: 12px;
-        border-radius: 6px;
-        line-height: 1;
+      /* Filas de filtro (Desde/Hasta/botones) — que no se estiren raro. */
+      div[style*="align-items:flex-end"], div[style*="align-items: flex-end"] {
+        align-items: stretch;
       }
-      #botonMenuLateral:hover {
-        background: rgba(255, 255, 255, 0.12);
+    }
+  </style>
+</head>
+<body>
+
+  <main id="contenidoPrincipal">
+
+  <h2>💰 Panel Financiero</h2>
+  <p class="subtitulo">Vista general de dinero por cobrar, por pagar, y ganancia — desglosada por período en las secciones de abajo.</p>
+
+  <div class="seccion" id="seccionAlertaCobro" style="border-left: 6px solid #c0392b;">
+    <h3>⚠️ Cobro Urgente</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Reservas que viajan en los próximos 15 días y todavía tienen saldo pendiente — según tu propia política, el saldo debe estar cancelado 15 días antes del viaje.</p>
+    <div id="contenidoAlertaCobro"></div>
+  </div>
+
+  <div class="seccion">
+    <h3>📊 Resumen de Ventas por Período</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Se cuenta por la fecha en que se hizo la reserva (cuando se vendió), sin importar cuándo viaja el cliente — por defecto, este mes.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="ventasDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="ventasHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoVentas('mes-actual')" class="btn-rango btn-rango-ventas">Este mes</button>
+        <button type="button" onclick="aplicarRangoVentas('mes-anterior')" class="btn-rango btn-rango-ventas">Mes anterior</button>
+        <button type="button" onclick="aplicarRangoVentas('ano-actual')" class="btn-rango btn-rango-ventas">Este año</button>
+      </div>
+    </div>
+
+    <div class="tarjetas" style="margin-bottom:20px;">
+      <div class="tarjeta proyectada">
+        <div class="etiqueta">Total vendido</div>
+        <div class="monto" id="ventasTotalVendido">$0.00</div>
+        <div class="detalle" id="ventasCantidadReservas">calculando...</div>
+      </div>
+      <div class="tarjeta real">
+        <div class="etiqueta">Ganancia de estas ventas</div>
+        <div class="monto" id="ventasGanancia">$0.00</div>
+        <div class="detalle">proyectada + real, según cada reserva</div>
+      </div>
+      <div class="tarjeta cobrar">
+        <div class="etiqueta">Por cobrar de estas ventas</div>
+        <div class="monto" id="ventasPorCobrar">$0.00</div>
+        <div class="detalle">saldo pendiente de este mismo grupo</div>
+      </div>
+    </div>
+
+    <h4 style="color:#02535a; margin-bottom:8px;">Desglose por Vendedor(a)</h4>
+    <table class="tabla-vendedores">
+      <thead>
+        <tr>
+          <th>Vendedor(a)</th>
+          <th>Reservas</th>
+          <th>Total vendido</th>
+          <th>Por cobrar</th>
+        </tr>
+      </thead>
+      <tbody id="tablaVentasPorVendedor"></tbody>
+    </table>
+    <div id="avisoSinVentas" class="vacio" style="display:none;">No hay reservas vendidas en ese rango.</div>
+    <p style="font-size:0.78rem; color:#999; margin-top:10px;">⚠️ Solo cuenta reservas creadas después de que se agregó el campo "Vendedor" — las anteriores no aparecen aquí.</p>
+  </div>
+
+  <div class="seccion">
+    <h3>📈 Comportamiento de Ventas</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Tendencia mes a mes o año a año — "Total creado" cuenta por fecha de venta, "Total pagado" cuenta por fecha real de cada pago recibido.</p>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+      <div style="display:flex; gap:6px;">
+        <button type="button" onclick="cambiarTipoGrafico('creado')" id="btnGraficoCreado" class="btn-rango activo">Total creado</button>
+        <button type="button" onclick="cambiarTipoGrafico('pagado')" id="btnGraficoPagado" class="btn-rango">Total pagado</button>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button type="button" onclick="cambiarPeriodoGrafico('mensual')" id="btnGraficoMensual" class="btn-rango activo">Mensual</button>
+        <button type="button" onclick="cambiarPeriodoGrafico('anual')" id="btnGraficoAnual" class="btn-rango">Anual</button>
+      </div>
+    </div>
+
+    <div style="font-size:1.8rem; font-weight:bold; color:#02535a; margin-bottom:12px;" id="graficoTotalGeneral">$0.00</div>
+
+    <div style="position:relative; height:320px;">
+      <canvas id="canvasGraficoVentas"></canvas>
+    </div>
+  </div>
+
+  <div class="seccion">
+    <h3>🗓️ Viajes por fecha</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Elige el rango que quieras ver — por defecto muestra los próximos 30 días, pero lo puedes ampliar o achicar.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="filtroDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="filtroHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoRapido(7)" class="btn-rango btn-rango-viajes">7 días</button>
+        <button type="button" onclick="aplicarRangoRapido(30)" class="btn-rango btn-rango-viajes">30 días</button>
+        <button type="button" onclick="aplicarRangoRapido(60)" class="btn-rango btn-rango-viajes">60 días</button>
+        <button type="button" onclick="aplicarRangoRapido(90)" class="btn-rango btn-rango-viajes">90 días</button>
+        <button type="button" onclick="aplicarRangoTodas()" class="btn-rango btn-rango-viajes">Todas las activas</button>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Titular</th>
+          <th>Fecha de viaje</th>
+          <th>Ingreso</th>
+          <th>Costo total</th>
+          <th>Ganancia</th>
+          <th>Por cobrar</th>
+          <th>Por pagar</th>
+        </tr>
+      </thead>
+      <tbody id="tablaProximosViajes"></tbody>
+    </table>
+    <div id="avisoSinProximos" class="vacio" style="display:none;">No hay viajes con fecha en ese rango.</div>
+  </div>
+
+  <div class="seccion" id="seccionPorCobrar">
+    <h3>💵 Por Cobrar</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE — así podés ver, por ejemplo, quién viaja en los próximos 30 días y todavía debe.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="cobrarDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="cobrarHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoCobrar(7)" class="btn-rango btn-rango-cobrar">7 días</button>
+        <button type="button" onclick="aplicarRangoCobrar(30)" class="btn-rango btn-rango-cobrar">30 días</button>
+        <button type="button" onclick="aplicarRangoCobrar(60)" class="btn-rango btn-rango-cobrar">60 días</button>
+        <button type="button" onclick="aplicarRangoCobrar(90)" class="btn-rango btn-rango-cobrar">90 días</button>
+        <button type="button" onclick="aplicarRangoCobrarTodas()" class="btn-rango btn-rango-cobrar">Todas las activas</button>
+      </div>
+    </div>
+
+    <div class="tarjeta cobrar" style="max-width:340px; margin-bottom:18px;">
+      <div class="etiqueta">Total por cobrar en el rango</div>
+      <div class="monto" id="cobrarTotalPendiente">$0.00</div>
+      <div class="detalle" id="cobrarDetalleTotal">calculando...</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Titular</th>
+          <th>Destino</th>
+          <th>Fecha de viaje</th>
+          <th>Saldo pendiente</th>
+        </tr>
+      </thead>
+      <tbody id="tablaPorCobrar"></tbody>
+    </table>
+    <div id="avisoSinCobrar" class="vacio" style="display:none;">No hay saldos pendientes en ese rango.</div>
+  </div>
+
+  <div class="seccion">
+    <h3>💳 Proyecciones de Pago por Proveedor</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE (no de venta) — así sabés con cuánto tenés que contar para un período específico. Solo cuenta lo todavía proyectado (sin marcar como pagado en costos_agregar.html). Dale clic a un proveedor para ver el detalle reserva por reserva.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="proveedoresDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="proveedoresHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoProveedores(7)" class="btn-rango btn-rango-proveedores">7 días</button>
+        <button type="button" onclick="aplicarRangoProveedores(30)" class="btn-rango btn-rango-proveedores">30 días</button>
+        <button type="button" onclick="aplicarRangoProveedores(60)" class="btn-rango btn-rango-proveedores">60 días</button>
+        <button type="button" onclick="aplicarRangoProveedores(90)" class="btn-rango btn-rango-proveedores">90 días</button>
+        <button type="button" onclick="aplicarRangoProveedoresTodas()" class="btn-rango btn-rango-proveedores">Todas las activas</button>
+      </div>
+    </div>
+
+    <div class="tarjeta pagar" style="max-width:340px; margin-bottom:18px;">
+      <div class="etiqueta">Total a tener disponible en el rango</div>
+      <div class="monto" id="proveedoresTotalPendiente">$0.00</div>
+      <div class="detalle" id="proveedoresDetalleTotal">calculando...</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Categoría</th>
+          <th>Reservas pendientes</th>
+          <th>Monto pendiente</th>
+        </tr>
+      </thead>
+      <tbody id="tablaProyeccionesPago"></tbody>
+    </table>
+    <div id="avisoSinProyecciones" class="vacio" style="display:none;">No hay montos proyectados pendientes de pago en ese rango.</div>
+  </div>
+
+  <div class="seccion">
+    <h3>🏆 Ranking de Destinos por Margen</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">No es lo mismo vender mucho que ganar mucho — acá ves qué destinos te dejan más ganancia real, no solo cuáles se venden más. Filtra por fecha de viaje.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="destinosDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="destinosHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoDestinos(30)" class="btn-rango btn-rango-destinos">30 días</button>
+        <button type="button" onclick="aplicarRangoDestinos(90)" class="btn-rango btn-rango-destinos">90 días</button>
+        <button type="button" onclick="aplicarRangoDestinos(180)" class="btn-rango btn-rango-destinos">180 días</button>
+        <button type="button" onclick="aplicarRangoDestinosTodas()" class="btn-rango btn-rango-destinos activo">Todas las activas</button>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Destino</th>
+          <th>Reservas</th>
+          <th>Ingreso</th>
+          <th>Costo</th>
+          <th>Ganancia</th>
+          <th>Margen</th>
+        </tr>
+      </thead>
+      <tbody id="tablaRankingDestinos"></tbody>
+    </table>
+    <div id="avisoSinDestinos" class="vacio" style="display:none;">No hay reservas con costos registrados en ese rango.</div>
+  </div>
+
+  <div class="seccion">
+    <h3>📑 Balance por Período</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE — el Ingreso acá es lo que REALMENTE entró de esas reservas (no el valor total de la venta), así "Ganancia Real Final" es tu ganancia de verdad, después de costos, comisiones y gastos operativos. Hacé clic en esa tarjeta para ver el detalle reserva por reserva.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Desde</label>
+        <input type="date" id="balanceDesde" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div>
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Hasta</label>
+        <input type="date" id="balanceHasta" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" onclick="aplicarRangoBalance('mes-actual')" class="btn-rango btn-rango-balance activo">Este mes</button>
+        <button type="button" onclick="aplicarRangoBalance('mes-anterior')" class="btn-rango btn-rango-balance">Mes anterior</button>
+        <button type="button" onclick="aplicarRangoBalance('ano-actual')" class="btn-rango btn-rango-balance">Este año</button>
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <label style="display:block; font-size:0.8rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Mes específico</label>
+        <input type="month" id="balanceMesEspecifico" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+        <button type="button" onclick="aplicarMesEspecificoBalance()" class="btn-rango" style="margin-top:4px;">Ver ese mes</button>
+      </div>
+    </div>
+
+    <div class="tarjetas" style="margin-bottom:6px;">
+      <div class="tarjeta cobrar" style="cursor:pointer;" onclick="abrirModalDetalleBalance('ingreso')" title="Clic para ver el detalle reserva por reserva">
+        <div class="etiqueta">Ingreso Cobrado 🔍</div>
+        <div class="monto" id="balanceIngreso">$0.00</div>
+        <div class="detalle" id="balanceCantidad">0 reservas</div>
+      </div>
+      <div class="tarjeta pagar" style="cursor:pointer;" onclick="abrirModalDetalleBalance('costo')" title="Clic para ver el detalle reserva por reserva">
+        <div class="etiqueta">Costo Total (con comisiones) 🔍</div>
+        <div class="monto" id="balanceCosto">$0.00</div>
+        <div class="detalle" id="balanceDetalleComision">comisiones: $0.00</div>
+      </div>
+      <div class="tarjeta" style="border-left-color:#5f9296; cursor:pointer;" onclick="abrirModalDetalleBalance('operativos')" title="Clic para ver el detalle">
+        <div class="etiqueta">Gastos Operativos 🔍</div>
+        <div class="monto" id="balanceOperativos">$0.00</div>
+        <div class="detalle">Nómina, publicidad, apps, etc. de este período</div>
+      </div>
+      <div class="tarjeta real" style="cursor:pointer;" onclick="abrirModalDetalleBalance('ganancia')" title="Clic para ver el detalle reserva por reserva">
+        <div class="etiqueta">Ganancia Real Final 🔍</div>
+        <div class="monto" id="balanceGananciaReal" style="font-size:2.1rem;">$0.00</div>
+        <div class="detalle" id="balanceMargenReal">margen real: 0%</div>
+      </div>
+    </div>
+    <p style="font-size:0.8rem; color:#888; margin-top:-2px; margin-bottom:15px;">"Ingreso Cobrado" solo cuenta la plata que ya entró de estas reservas — si un cliente todavía debe, esa parte no cuenta hasta que pague. <span id="balanceDetalleVenta"></span></p>
+
+    <h4 style="color:#02535a; margin-bottom:8px;">Desglose de Costos</h4>
+    <table>
+      <thead>
+        <tr>
+          <th>Categoría</th>
+          <th>Monto</th>
+          <th>% del total</th>
+        </tr>
+      </thead>
+      <tbody id="tablaDesgloseBalance"></tbody>
+    </table>
+
+    <button type="button" onclick="exportarBalancePDF()" class="btn-panel-costos" style="margin-top:15px;">📄 Exportar Balance a PDF</button>
+  </div>
+
+  </main>
+
+  <div id="modalReservasVendedor" class="modal-finanzas">
+    <div class="modal-finanzas-content">
+      <h3 id="tituloModalVendedor">Reservas de</h3>
+      <p style="font-size:0.85rem; color:#666; margin-top:-8px;">Reservas vendidas en el rango de fechas que tenés seleccionado en "Resumen de Ventas por Período" (incluye viajes ya realizados).</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Destino</th>
+            <th>Fecha de viaje</th>
+            <th>Ingreso</th>
+            <th>Por cobrar</th>
+          </tr>
+        </thead>
+        <tbody id="tablaModalReservasVendedor"></tbody>
+      </table>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalReservasVendedor()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalProveedorDetalle" class="modal-finanzas">
+    <div class="modal-finanzas-content">
+      <h3 id="tituloModalProveedor">Detalle de pagos pendientes</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Destino</th>
+            <th>Fecha de viaje</th>
+            <th>Monto proyectado</th>
+          </tr>
+        </thead>
+        <tbody id="tablaModalProveedor"></tbody>
+      </table>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalProveedorDetalle()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalDetalleGrafico" class="modal-finanzas">
+    <div class="modal-finanzas-content">
+      <h3 id="tituloModalGrafico">Detalle</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Titular</th>
+            <th>Fecha</th>
+            <th id="encabezadoMontoModalGrafico">Monto</th>
+            <th id="encabezadoMetodoModalGrafico">Método</th>
+          </tr>
+        </thead>
+        <tbody id="tablaModalGrafico"></tbody>
+      </table>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalDetalleGrafico()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de detalle reserva por reserva de "Ganancia Real Final",
+       dentro de Balance por Período. -->
+  <div id="modalDetalleBalance" class="modal-finanzas">
+    <div class="modal-finanzas-content" style="max-width:900px;">
+      <h3 id="tituloModalDetalleBalance">Detalle de Ganancia Real</h3>
+      <p id="subtituloModalDetalleBalance" style="font-size:0.85rem; color:#666; margin-top:-8px;"></p>
+      <div id="contenidoModalDetalleBalance"></div>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalDetalleBalance()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.firebasestorage.app",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  function parseFechaReserva(str) {
+    if (!str) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return new Date(str + "T00:00:00");
+    }
+    const partes = str.split("/");
+    if (partes.length === 3) {
+      const [dia, mes, año] = partes.map(Number);
+      if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) {
+        return new Date(año, mes - 1, dia);
       }
-      /* NUEVO: botón "✕" para descartar una notificación sin navegar al
-         detalle — flota a la derecha, discreto hasta que se pasa el mouse
-         por encima de la notificación. */
-      .notificacion-item {
-        position: relative;
-      }
-      .notificacion-descartar {
-        position: absolute;
-        top: 6px;
-        right: 8px;
-        background: transparent;
-        border: none;
-        color: #aaa;
-        font-size: 13px;
-        line-height: 1;
-        cursor: pointer;
-        padding: 2px 4px;
-        border-radius: 4px;
-      }
-      .notificacion-descartar:hover {
-        color: #b00020;
-        background: rgba(176, 0, 32, 0.08);
-      }
-      /* FIX: el modal salía sin ningún estilo (se insertaba en medio de la
-         página, en vez de flotar como ventana centrada) — acá se define
-         TODO lo que necesita para verse bien, sin depender de nada de
-         topbar.css que no está a la vista en este archivo. Usa el mismo
-         id como selector para tener prioridad sobre cualquier regla
-         genérica que pudiera existir en otro lado. */
-      #modalNuevoComunicado {
-        display: none !important;
-        position: fixed !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        background-color: rgba(0, 0, 0, 0.5) !important;
-        z-index: 99999 !important;
-        align-items: center !important;
-        justify-content: center !important;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      #modalNuevoComunicado.abierto {
-        display: flex !important;
-      }
-      #modalNuevoComunicado .modal-contenido {
-        background: white;
-        border-radius: 12px;
-        padding: 24px;
-        max-width: 420px;
-        width: 90%;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-        box-sizing: border-box;
-      }
-      #modalNuevoComunicado h3 {
-        margin: 0 0 4px 0;
-        color: #02535a;
-      }
-      #modalNuevoComunicado label {
-        display: block;
-        margin-top: 12px;
-        margin-bottom: 4px;
-        font-weight: bold;
-        font-size: 13px;
-        color: #02535a;
-      }
-      #modalNuevoComunicado select,
-      #modalNuevoComunicado textarea,
-      #modalNuevoComunicado input[type="date"] {
-        width: 100%;
-        padding: 8px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-        box-sizing: border-box;
-        font-family: inherit;
-        font-size: 14px;
-      }
-      #modalNuevoComunicado .aviso-modal {
-        margin-top: 10px;
-        font-size: 13px;
-        color: #a35b00;
-      }
-      #modalNuevoComunicado .acciones-modal {
-        margin-top: 18px;
-        text-align: right;
-      }
-      #modalNuevoComunicado .acciones-modal button {
-        border: none;
-        padding: 9px 18px;
-        border-radius: 6px;
-        font-weight: bold;
-        cursor: pointer;
-        font-size: 14px;
-        margin-left: 8px;
-      }
-      #modalNuevoComunicado .btn-cancelar {
-        background: #ccc;
-        color: #333;
-      }
-      #modalNuevoComunicado .btn-guardar {
-        background: #02535a;
-        color: white;
-      }
-      #modalNuevoComunicado .btn-guardar:hover { background: #036a6d; }
-    `;
-    document.head.appendChild(estilo);
+    }
+    return null;
   }
 
-  // ---------- Inicialización ----------
-  function inicializarTopbar() {
-    const usuario = obtenerUsuarioSesion();
-    if (!usuario) return; // sin sesión (ej. login.html) no se muestra nada
+  function formatearFechaVisible(fecha) {
+    if (!fecha) return '-';
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const año = fecha.getFullYear();
+    return `${dia}/${mes}/${año}`;
+  }
 
-    if (typeof firebase === "undefined" || !firebase.apps || !firebase.apps.length) {
-      console.error("topbar.js: Firebase no está inicializado todavía. Asegúrate de cargar topbar.js DESPUÉS de firebase.initializeApp(...).");
+  function formatoMoneda(valor) {
+    return `$${(valor || 0).toFixed(2)}`;
+  }
+
+  function analizarCostosDeReserva(data) {
+    const esModeloViejo = !data.categorias;
+
+    if (esModeloViejo) {
+      const proy = data.desglose_proyectado || {};
+      const real = data.desglose_real || {};
+      const usarReal = Object.keys(real).length > 0;
+      const fuente = usarReal ? real : proy;
+      const costoTotal = Number(fuente.boletos || 0) + Number(fuente.hospedaje || 0) +
+             Number(fuente.operador || 0) + Number(fuente.tours || 0) +
+             Number(fuente.comision || 0);
+      return { costoTotal, todosPagados: usarReal };
+    }
+
+    const boletos = Number(data.boletos_real || 0);
+    let sumaCategorias = 0;
+    let filasConDatos = 0;
+    let filasPagadas = 0;
+
+    ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+      let items = data.categorias?.[clave];
+      if (!items) items = [];
+      else if (!Array.isArray(items)) items = [items];
+      items.forEach(item => {
+        const tieneDatos = item.proveedor || item.proyectado > 0 || typeof item.real === "number";
+        if (!tieneDatos) return;
+        filasConDatos++;
+        const esReal = typeof item.real === "number";
+        if (esReal) filasPagadas++;
+        sumaCategorias += esReal ? item.real : Number(item.proyectado || 0);
+      });
+    });
+
+    const costoTotal = boletos + sumaCategorias;
+    const todosPagados = filasConDatos === 0 ? true : (filasPagadas === filasConDatos);
+
+    return { costoTotal, todosPagados };
+  }
+
+  let datosReservasPorCodigo = {};
+  let datosVentasCreadas = [];
+  let datosPagosRealizados = [];
+  let datosCostosPorCodigo = {};
+  let datosCategoriasPorCodigo = {};
+  let datosMovimientosGastos = [];
+
+  async function cargarPanelFinanciero() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    const reservasSnap = await db.collection("reservas").get();
+    const reservasPorCodigo = {};
+    const ventasCreadas = [];
+    const pagosRealizados = [];
+
+    reservasSnap.forEach(doc => {
+      const data = doc.data();
+      const fecha = parseFechaReserva(data.fechaReserva);
+      const esActiva = !fecha || fecha >= hoy;
+
+      const total = Number(data.total || 0);
+      const pagado = (data.pagos || []).reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+      const saldo = total - pagado;
+
+      const creadoEl = data.creado_el?.toDate ? data.creado_el.toDate() : (data.creado_el ? new Date(data.creado_el) : null);
+
+      reservasPorCodigo[doc.id] = {
+        titular: data.nombreTitular || '-',
+        fecha,
+        saldo,
+        ingreso: total,
+        activa: esActiva,
+        creadoEl,
+        vendedor: data.vendedor || '',
+        destino: data.nombreDestino || ''
+      };
+
+      if (creadoEl) ventasCreadas.push({ fecha: creadoEl, monto: total, codigo: doc.id, titular: data.nombreTitular || '-' });
+      (data.pagos || []).forEach(p => {
+        const fechaPago = parseFechaReserva(p.fecha);
+        if (fechaPago) pagosRealizados.push({
+          fecha: fechaPago,
+          monto: Number(p.monto) || 0,
+          codigo: doc.id,
+          titular: data.nombreTitular || '-',
+          metodo: p.metodo || '-'
+        });
+      });
+    });
+
+    const costosSnap = await db.collection("costos_reservas").get();
+    const costosPorCodigo = {};
+    const categoriasPorCodigo = {};
+
+    costosSnap.forEach(doc => {
+      const data = doc.data();
+      const codigo = data.codigo;
+
+      const { costoTotal, todosPagados } = analizarCostosDeReserva(data);
+      const venta = Number(data.venta_total || 0);
+      const ganancia = venta - costoTotal;
+
+      costosPorCodigo[codigo] = { costoTotal, ganancia, todosPagados, boletos: Number(data.boletos_real || 0) };
+      if (data.categorias) categoriasPorCodigo[codigo] = data.categorias;
+    });
+
+    datosReservasPorCodigo = reservasPorCodigo;
+    datosCostosPorCodigo = costosPorCodigo;
+    datosCategoriasPorCodigo = categoriasPorCodigo;
+    datosVentasCreadas = ventasCreadas;
+    datosPagosRealizados = pagosRealizados;
+
+    try {
+      const movimientosSnap = await db.collection("movimientos_gastos").get();
+      datosMovimientosGastos = movimientosSnap.docs.map(doc => {
+        const d = doc.data();
+        return {
+          monto: Number(d.monto || 0),
+          fecha: d.fecha ? new Date(d.fecha + "T12:00:00") : null,
+          descripcion: d.descripcion || "-",
+          categoria: d.categoria || "Otro"
+        };
+      });
+    } catch (e) {
+      console.warn("No se pudieron cargar los movimientos de gastos:", e);
+      datosMovimientosGastos = [];
+    }
+
+    aplicarRangoRapido(30);
+    aplicarRangoVentas("mes-actual");
+    renderizarGraficoVentas();
+    aplicarRangoCobrar(30);
+    aplicarRangoProveedores(30);
+    aplicarRangoDestinosTodas();
+    aplicarRangoBalance("mes-actual");
+    renderizarAlertaCobro();
+  }
+
+  // NUEVO: guarda el detalle reserva por reserva calculado por
+  // renderizarBalance(), para que el modal de "Ganancia Real Final" no
+  // tenga que recalcular nada — solo arma la tabla con lo que ya se sumó.
+  let datosBalanceDetalle = [];
+  // NUEVO: lista de movimientos operativos del período actual — para el
+  // detalle de la tarjeta "Gastos Operativos".
+  let datosOperativosPeriodoLista = [];
+
+  function abrirModalDetalleBalance(tipo) {
+    const titulo = document.getElementById("tituloModalDetalleBalance");
+    const subtitulo = document.getElementById("subtituloModalDetalleBalance");
+    const contenido = document.getElementById("contenidoModalDetalleBalance");
+    const rangoTexto = `${ultimoBalanceCalculado?.desdeStr ? formatearFechaVisible(new Date(ultimoBalanceCalculado.desdeStr + "T00:00:00")) : "—"} al ${ultimoBalanceCalculado?.hastaStr ? formatearFechaVisible(new Date(ultimoBalanceCalculado.hastaStr + "T00:00:00")) : "—"}`;
+
+    if (tipo === "ingreso") {
+      titulo.textContent = `Ingreso Cobrado — ${rangoTexto}`;
+      subtitulo.textContent = "Lo que realmente entró de cada reserva (venta − saldo pendiente) en este período.";
+      const filas = datosBalanceDetalle.slice().sort((a, b) => b.ingresoCobrado - a.ingresoCobrado);
+      let tablaHtml = construirTablaDetalleCaja(
+        ["Código", "Titular", "Destino", "Ingreso Cobrado"],
+        filas.map(r => [
+          `<a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a>`,
+          r.titular, r.destino, formatoMoneda(r.ingresoCobrado)
+        ])
+      );
+      const totalIngreso = filas.reduce((s, r) => s + r.ingresoCobrado, 0);
+      tablaHtml = tablaHtml.replace("</tbody>", `<tr style="background:#eef6f6; font-weight:bold;"><td colspan="3">TOTAL</td><td>${formatoMoneda(totalIngreso)}</td></tr></tbody>`);
+      const falta = ultimoBalanceCalculado?.faltaPorCobrar || 0;
+      contenido.innerHTML = tablaHtml + (falta > 0.01 ? `<p style="font-size:0.85rem; color:#c0392b; margin-top:10px;">Todavía falta cobrar en este período: ${formatoMoneda(falta)} (venta total: ${formatoMoneda(ultimoBalanceCalculado.ventaTotal)}).</p>` : '');
+
+    } else if (tipo === "costo") {
+      titulo.textContent = `Costo Total — ${rangoTexto}`;
+      subtitulo.textContent = "Costo de viaje (boletos, hospedaje, traslados, tours) + comisión, de cada reserva de este período.";
+      const filas = datosBalanceDetalle.slice().sort((a, b) => (b.costoViaje + b.comision) - (a.costoViaje + a.comision));
+      let tablaHtml = construirTablaDetalleCaja(
+        ["Código", "Titular", "Destino", "Costo de Viaje", "Comisión", "Costo Total"],
+        filas.map(r => [
+          `<a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a>`,
+          r.titular, r.destino, formatoMoneda(r.costoViaje), formatoMoneda(r.comision), formatoMoneda(r.costoViaje + r.comision)
+        ])
+      );
+      const t = filas.reduce((acc, r) => ({ viaje: acc.viaje + r.costoViaje, comision: acc.comision + r.comision }), { viaje: 0, comision: 0 });
+      tablaHtml = tablaHtml.replace("</tbody>", `<tr style="background:#eef6f6; font-weight:bold;"><td colspan="3">TOTAL</td><td>${formatoMoneda(t.viaje)}</td><td>${formatoMoneda(t.comision)}</td><td>${formatoMoneda(t.viaje + t.comision)}</td></tr></tbody>`);
+      contenido.innerHTML = tablaHtml;
+
+    } else if (tipo === "operativos") {
+      titulo.textContent = `Gastos Operativos — ${rangoTexto}`;
+      subtitulo.textContent = "Pagos operativos (nómina, publicidad, etc.) registrados en Gastos, con fecha de pago dentro de este período.";
+      const filas = datosOperativosPeriodoLista.slice().sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+      let tablaHtml = construirTablaDetalleCaja(
+        ["Fecha", "Descripción", "Categoría", "Monto"],
+        filas.map(m => [formatearFechaVisible(m.fecha), m.descripcion, m.categoria, formatoMoneda(m.monto)])
+      );
+      const totalOperativo = filas.reduce((s, m) => s + m.monto, 0);
+      tablaHtml = tablaHtml.replace("</tbody>", `<tr style="background:#eef6f6; font-weight:bold;"><td colspan="3">TOTAL</td><td>${formatoMoneda(totalOperativo)}</td></tr></tbody>`);
+      contenido.innerHTML = tablaHtml;
+
+    } else {
+      titulo.textContent = `Ganancia por reserva — ${rangoTexto}`;
+      subtitulo.textContent = "Ingreso cobrado − costo de viaje − comisión, reserva por reserva. Los Gastos Operativos NO son de una reserva en particular, se restan una sola vez al final.";
+
+      const totales = datosBalanceDetalle.reduce((acc, r) => {
+        acc.ingreso += r.ingresoCobrado;
+        acc.costo += r.costoViaje;
+        acc.comision += r.comision;
+        acc.ganancia += r.ganancia;
+        return acc;
+      }, { ingreso: 0, costo: 0, comision: 0, ganancia: 0 });
+
+      let tablaHtml = construirTablaDetalleCaja(
+        ["Código", "Titular", "Destino", "Ingreso Cobrado", "Costo de Viaje", "Comisión", "Ganancia"],
+        datosBalanceDetalle.map(r => [
+          `<a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a>`,
+          r.titular, r.destino, formatoMoneda(r.ingresoCobrado), formatoMoneda(r.costoViaje), formatoMoneda(r.comision),
+          `<span class="${r.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${formatoMoneda(r.ganancia)}</span>`
+        ])
+      );
+      tablaHtml = tablaHtml.replace(
+        "</tbody>",
+        `<tr style="background:#eef6f6; font-weight:bold;">
+          <td colspan="3">TOTAL</td>
+          <td>${formatoMoneda(totales.ingreso)}</td>
+          <td>${formatoMoneda(totales.costo)}</td>
+          <td>${formatoMoneda(totales.comision)}</td>
+          <td>${formatoMoneda(totales.ganancia)}</td>
+        </tr></tbody>`
+      );
+
+      const operativos = ultimoBalanceCalculado?.gastosOperativosPeriodo || 0;
+      contenido.innerHTML = tablaHtml + `
+        <div style="background:#f7fbfb; border:1px solid #dde8e8; border-radius:8px; padding:14px; margin-top:14px; font-size:0.95rem;">
+          Suma de ganancia por reserva&nbsp; <strong style="float:right;">${formatoMoneda(totales.ganancia)}</strong><br>
+          ➖ Gastos Operativos del período&nbsp; <strong style="float:right; color:#c0392b;">${formatoMoneda(operativos)}</strong><br>
+          <hr style="margin:8px 0;">
+          <strong>= Ganancia Real Final&nbsp; <span style="float:right; color:#02535a;">${formatoMoneda(totales.ganancia - operativos)}</span></strong>
+        </div>
+      `;
+    }
+
+    document.getElementById("modalDetalleBalance").style.display = "flex";
+  }
+
+  function construirTablaDetalleCaja(encabezados, filas) {
+    if (filas.length === 0) {
+      return `<p style="text-align:center; color:#999; padding:20px;">No hay registros para mostrar.</p>`;
+    }
+    return `
+      <div style="max-height:50vh; overflow-y:auto;">
+        <table>
+          <thead><tr>${encabezados.map(e => `<th>${e}</th>`).join('')}</tr></thead>
+          <tbody>${filas.map(fila => `<tr>${fila.map(celda => `<td>${celda}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function cerrarModalDetalleBalance() {
+    document.getElementById("modalDetalleBalance").style.display = "none";
+  }
+
+  function calcularPendientePagarProveedores(codigo) {
+    const categorias = datosCategoriasPorCodigo[codigo];
+    if (!categorias) return 0;
+
+    let pendiente = 0;
+    ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+      let items = categorias[clave];
+      if (!items) items = [];
+      else if (!Array.isArray(items)) items = [items];
+      items.forEach(item => {
+        const esReal = typeof item.real === "number";
+        if (esReal) return;
+        if (!item.proveedor && !(item.proyectado > 0)) return;
+        pendiente += Number(item.proyectado || 0);
+      });
+    });
+    return pendiente;
+  }
+
+  function renderizarViajesPorFecha() {
+    const desdeStr = document.getElementById("filtroDesde").value;
+    const hastaStr = document.getElementById("filtroHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const filtrados = Object.entries(datosReservasPorCodigo)
+      .filter(([codigo, r]) => {
+        if (!r.fecha) return false;
+        if (desde && r.fecha < desde) return false;
+        if (hasta && r.fecha > hasta) return false;
+        return true;
+      })
+      .sort((a, b) => a[1].fecha - b[1].fecha);
+
+    const tabla = document.getElementById("tablaProximosViajes");
+    tabla.innerHTML = "";
+
+    if (filtrados.length === 0) {
+      document.getElementById("avisoSinProximos").style.display = "block";
+    } else {
+      document.getElementById("avisoSinProximos").style.display = "none";
+      filtrados.forEach(([codigo, r]) => {
+        const costos = datosCostosPorCodigo[codigo];
+        const claseCosto = costos ? (costos.todosPagados ? 'costo-pagado' : 'costo-proyectado') : '';
+        const porPagar = calcularPendientePagarProveedores(codigo);
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
+          <td data-etiqueta="Titular">${r.titular}</td>
+          <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Ingreso">${formatoMoneda(r.ingreso)}</td>
+          <td data-etiqueta="Costo total" class="${claseCosto}">${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Editar costos de esta reserva">${formatoMoneda(costos.costoTotal)}</a>` : `<span class="aviso-sin-costos">⚠️ sin costos — <a class="enlace-fila" href="costos_agregar.html?reserva=${codigo}">agregar</a></span>`}</td>
+          <td data-etiqueta="Ganancia" class="${costos ? (costos.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta') : ''}">${costos ? formatoMoneda(costos.ganancia) : '-'}</td>
+          <td data-etiqueta="Por cobrar" class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}"><a class="enlace-fila" style="color:inherit;" href="detalle_reserva.html?codigo=${codigo}" title="Ver detalle y registrar pagos">${formatoMoneda(r.saldo)}</a></td>
+          <td data-etiqueta="Por pagar" class="${porPagar > 0.01 ? 'costo-proyectado' : ''}">${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Ver y marcar pagos a proveedores">${formatoMoneda(porPagar)}</a>` : '-'}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  function formatearFechaInput(fecha) {
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    return `${fecha.getFullYear()}-${mes}-${dia}`;
+  }
+
+  function aplicarRangoRapido(dias) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const hasta = new Date(hoy);
+    hasta.setDate(hasta.getDate() + dias);
+
+    document.getElementById("filtroDesde").value = formatearFechaInput(hoy);
+    document.getElementById("filtroHasta").value = formatearFechaInput(hasta);
+    marcarBotonRangoActivo(dias);
+    renderizarViajesPorFecha();
+  }
+
+  function aplicarRangoTodas() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    document.getElementById("filtroDesde").value = formatearFechaInput(hoy);
+    document.getElementById("filtroHasta").value = "";
+    marcarBotonRangoActivo("todas");
+    renderizarViajesPorFecha();
+  }
+
+  function marcarBotonRangoActivo(cual) {
+    document.querySelectorAll(".btn-rango-viajes").forEach(btn => btn.classList.remove("activo"));
+    const indice = { 7: 0, 30: 1, 60: 2, 90: 3, todas: 4 }[cual];
+    const botones = document.querySelectorAll(".btn-rango-viajes");
+    if (botones[indice]) botones[indice].classList.add("activo");
+  }
+
+  function marcarBotonVentasActivo(cual) {
+    document.querySelectorAll(".btn-rango-ventas").forEach(btn => btn.classList.remove("activo"));
+    const boton = Array.from(document.querySelectorAll(".btn-rango-ventas")).find(b => b.getAttribute("onclick") === `aplicarRangoVentas('${cual}')`);
+    if (boton) boton.classList.add("activo");
+  }
+
+  function aplicarRangoVentas(tipo) {
+    const hoy = new Date();
+    let desde, hasta;
+
+    if (tipo === "mes-actual") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    } else if (tipo === "mes-anterior") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    } else if (tipo === "ano-actual") {
+      desde = new Date(hoy.getFullYear(), 0, 1);
+      hasta = new Date(hoy.getFullYear(), 11, 31);
+    }
+
+    document.getElementById("ventasDesde").value = formatearFechaInput(desde);
+    document.getElementById("ventasHasta").value = formatearFechaInput(hasta);
+    marcarBotonVentasActivo(tipo);
+    renderizarResumenVentas();
+  }
+
+  function renderizarResumenVentas() {
+    const desdeStr = document.getElementById("ventasDesde").value;
+    const hastaStr = document.getElementById("ventasHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const vendidasEnRango = Object.entries(datosReservasPorCodigo).filter(([codigo, r]) => {
+      if (!r.creadoEl) return false;
+      if (desde && r.creadoEl < desde) return false;
+      if (hasta && r.creadoEl > hasta) return false;
+      return true;
+    });
+
+    let totalVendido = 0;
+    let totalGanancia = 0;
+    let totalPorCobrarPeriodo = 0;
+    const porVendedor = {};
+
+    vendidasEnRango.forEach(([codigo, r]) => {
+      totalVendido += r.ingreso;
+      totalPorCobrarPeriodo += Math.max(r.saldo, 0);
+      const costos = datosCostosPorCodigo[codigo];
+      if (costos) totalGanancia += costos.ganancia;
+
+      const nombreVendedor = r.vendedor || "Sin vendedor asignado";
+      if (!porVendedor[nombreVendedor]) porVendedor[nombreVendedor] = { cantidad: 0, vendido: 0, porCobrar: 0 };
+      porVendedor[nombreVendedor].cantidad++;
+      porVendedor[nombreVendedor].vendido += r.ingreso;
+      porVendedor[nombreVendedor].porCobrar += Math.max(r.saldo, 0);
+    });
+
+    document.getElementById("ventasTotalVendido").textContent = formatoMoneda(totalVendido);
+    document.getElementById("ventasCantidadReservas").textContent =
+      `${vendidasEnRango.length} reserva${vendidasEnRango.length === 1 ? '' : 's'} vendida${vendidasEnRango.length === 1 ? '' : 's'}`;
+    document.getElementById("ventasGanancia").textContent = formatoMoneda(totalGanancia);
+    document.getElementById("ventasPorCobrar").textContent = formatoMoneda(totalPorCobrarPeriodo);
+
+    const tabla = document.getElementById("tablaVentasPorVendedor");
+    tabla.innerHTML = "";
+    const nombresVendedores = Object.keys(porVendedor).sort((a, b) => porVendedor[b].vendido - porVendedor[a].vendido);
+
+    if (nombresVendedores.length === 0) {
+      document.getElementById("avisoSinVentas").style.display = "block";
+    } else {
+      document.getElementById("avisoSinVentas").style.display = "none";
+      nombresVendedores.forEach(nombre => {
+        const v = porVendedor[nombre];
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-etiqueta="Vendedor(a)">${nombre}</td>
+          <td data-etiqueta="Reservas"><a class="enlace-fila" href="#" onclick="abrirModalReservasVendedor('${nombre.replace(/'/g, "\\'")}'); return false;">${v.cantidad}</a></td>
+          <td data-etiqueta="Total vendido">${formatoMoneda(v.vendido)}</td>
+          <td data-etiqueta="Por cobrar" class="${v.porCobrar > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(v.porCobrar)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  let tipoGraficoActual = "creado";
+  let periodoGraficoActual = "mensual";
+  let chartVentas = null;
+  let bucketsGraficoActual = [];
+
+  const NOMBRES_MES_CORTOS = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
+
+  function cambiarTipoGrafico(tipo) {
+    tipoGraficoActual = tipo;
+    document.getElementById("btnGraficoCreado").classList.toggle("activo", tipo === "creado");
+    document.getElementById("btnGraficoPagado").classList.toggle("activo", tipo === "pagado");
+    renderizarGraficoVentas();
+  }
+
+  function cambiarPeriodoGrafico(periodo) {
+    periodoGraficoActual = periodo;
+    document.getElementById("btnGraficoMensual").classList.toggle("activo", periodo === "mensual");
+    document.getElementById("btnGraficoAnual").classList.toggle("activo", periodo === "anual");
+    renderizarGraficoVentas();
+  }
+
+  function renderizarGraficoVentas() {
+    const datos = tipoGraficoActual === "creado" ? datosVentasCreadas : datosPagosRealizados;
+    let labels = [];
+    let valores = [];
+    bucketsGraficoActual = [];
+
+    if (periodoGraficoActual === "mensual") {
+      const hoy = new Date();
+      const meses = [];
+      for (let i = 11; i >= 0; i--) {
+        meses.push(new Date(hoy.getFullYear(), hoy.getMonth() - i, 1));
+      }
+      labels = meses.map(d => NOMBRES_MES_CORTOS[d.getMonth()]);
+      valores = meses.map(d =>
+        datos
+          .filter(x => x.fecha.getFullYear() === d.getFullYear() && x.fecha.getMonth() === d.getMonth())
+          .reduce((sum, x) => sum + x.monto, 0)
+      );
+      bucketsGraficoActual = meses.map(d => ({
+        etiqueta: `${NOMBRES_MES_CORTOS[d.getMonth()]} ${d.getFullYear()}`,
+        filtro: x => x.fecha.getFullYear() === d.getFullYear() && x.fecha.getMonth() === d.getMonth()
+      }));
+    } else {
+      const porAnio = {};
+      datos.forEach(x => {
+        const anio = x.fecha.getFullYear();
+        porAnio[anio] = (porAnio[anio] || 0) + x.monto;
+      });
+      const anios = Object.keys(porAnio).sort();
+      labels = anios;
+      valores = anios.map(a => porAnio[a]);
+      bucketsGraficoActual = anios.map(a => ({
+        etiqueta: a,
+        filtro: x => String(x.fecha.getFullYear()) === a
+      }));
+    }
+
+    const totalGeneral = valores.reduce((sum, v) => sum + v, 0);
+    document.getElementById("graficoTotalGeneral").textContent = formatoMoneda(totalGeneral);
+
+    const ctx = document.getElementById("canvasGraficoVentas").getContext("2d");
+    if (chartVentas) chartVentas.destroy();
+    chartVentas = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: tipoGraficoActual === "creado" ? "Total creado" : "Total pagado",
+          data: valores,
+          backgroundColor: "#02535a",
+          borderRadius: 6,
+          maxBarThickness: 60
+        }]
+      },
+      options: {
+        responsive: true,
+        onClick: (evt, elementos) => {
+          if (!elementos.length) return;
+          abrirModalDetalleGrafico(elementos[0].index);
+        },
+        onHover: (evt, elementos) => {
+          evt.native.target.style.cursor = elementos.length ? "pointer" : "default";
+        },
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => formatoMoneda(ctx.parsed.y)
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { callback: v => "$" + v.toLocaleString() }
+          }
+        }
+      }
+    });
+  }
+
+  function abrirModalDetalleGrafico(indice) {
+    const bucket = bucketsGraficoActual[indice];
+    if (!bucket) return;
+
+    const datos = tipoGraficoActual === "creado" ? datosVentasCreadas : datosPagosRealizados;
+    const registros = datos.filter(bucket.filtro).sort((a, b) => a.fecha - b.fecha);
+    const total = registros.reduce((sum, r) => sum + r.monto, 0);
+
+    document.getElementById("tituloModalGrafico").textContent =
+      `${tipoGraficoActual === "creado" ? "Ventas creadas" : "Pagos recibidos"} en ${bucket.etiqueta} (total: ${formatoMoneda(total)})`;
+
+    const encabezado = document.getElementById("encabezadoMontoModalGrafico");
+    encabezado.textContent = tipoGraficoActual === "creado" ? "Venta" : "Monto pagado";
+
+    const contenedorMetodo = document.getElementById("encabezadoMetodoModalGrafico");
+    contenedorMetodo.style.display = tipoGraficoActual === "pagado" ? "table-cell" : "none";
+
+    const tabla = document.getElementById("tablaModalGrafico");
+    tabla.innerHTML = "";
+
+    if (registros.length === 0) {
+      tabla.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999; padding:15px;">Sin registros en este período.</td></tr>`;
+    } else {
+      registros.forEach(r => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a></td>
+          <td data-etiqueta="Titular">${r.titular}</td>
+          <td data-etiqueta="Fecha">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Monto">${formatoMoneda(r.monto)}</td>
+          ${tipoGraficoActual === "pagado" ? `<td data-etiqueta="Método">${r.metodo || '-'}</td>` : ''}
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+
+    document.getElementById("modalDetalleGrafico").style.display = "flex";
+  }
+
+  function cerrarModalDetalleGrafico() {
+    document.getElementById("modalDetalleGrafico").style.display = "none";
+  }
+
+  const DIAS_ALERTA_COBRO = 15;
+
+  function renderizarAlertaCobro() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const limite = new Date(hoy);
+    limite.setDate(limite.getDate() + DIAS_ALERTA_COBRO);
+
+    const urgentes = Object.entries(datosReservasPorCodigo)
+      .filter(([codigo, r]) => r.activa && r.saldo > 0.01 && r.fecha && r.fecha >= hoy && r.fecha <= limite)
+      .sort((a, b) => a[1].fecha - b[1].fecha);
+
+    const contenedor = document.getElementById("contenidoAlertaCobro");
+
+    if (urgentes.length === 0) {
+      contenedor.innerHTML = `<div class="alerta-vacia">✅ Ninguna reserva con saldo pendiente viaja en los próximos ${DIAS_ALERTA_COBRO} días.</div>`;
       return;
     }
 
-    inyectarEstilosComunicacionInterna();
-
-    const contenedor = document.createElement("div");
-    contenedor.id = "barraSuperiorSIED";
-    contenedor.innerHTML = construirTopbarHTML(usuario);
-    document.body.insertBefore(contenedor, document.body.firstChild);
-
-    const modalPerfil = document.createElement("div");
-    modalPerfil.id = "modalEditarPerfil";
-    document.body.appendChild(modalPerfil);
-
-    // Contenedor del modal de "Nuevo comunicado / tarea" — el
-    // posicionamiento (overlay oscuro, centrado) vive en el CSS inyectado
-    // por inyectarEstilosComunicacionInterna() (con !important, por si
-    // topbar.css tiene alguna regla genérica que lo pise), no acá.
-    const modalComunicado = document.createElement("div");
-    modalComunicado.id = "modalNuevoComunicado";
-    document.body.appendChild(modalComunicado);
-
-    document.getElementById("botonUsuarioTopbar").addEventListener("click", (e) => {
-      e.stopPropagation();
-      document.getElementById("panelNotificaciones").style.display = "none";
-      const menu = document.getElementById("menuUsuarioDesplegable");
-      menu.style.display = menu.style.display === "block" ? "none" : "block";
+    const totalUrgente = urgentes.reduce((sum, [codigo, r]) => sum + r.saldo, 0);
+    let filasHtml = "";
+    urgentes.forEach(([codigo, r]) => {
+      const diasRestantes = Math.round((r.fecha - hoy) / 86400000);
+      filasHtml += `
+        <tr>
+          <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
+          <td data-etiqueta="Titular">${r.titular}</td>
+          <td data-etiqueta="Destino">${r.destino || '-'}</td>
+          <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Faltan"><span class="badge-dias">${diasRestantes === 0 ? 'Hoy' : diasRestantes + ' día' + (diasRestantes === 1 ? '' : 's')}</span></td>
+          <td data-etiqueta="Saldo" class="cifra-alerta">${formatoMoneda(r.saldo)}</td>
+        </tr>
+      `;
     });
 
-    document.getElementById("botonCampanaTopbar").addEventListener("click", (e) => {
-      e.stopPropagation();
-      document.getElementById("menuUsuarioDesplegable").style.display = "none";
-      const panel = document.getElementById("panelNotificaciones");
-      panel.style.display = panel.style.display === "block" ? "none" : "block";
-    });
-
-    document.addEventListener("click", () => {
-      const menu = document.getElementById("menuUsuarioDesplegable");
-      const panel = document.getElementById("panelNotificaciones");
-      if (menu) menu.style.display = "none";
-      if (panel) panel.style.display = "none";
-    });
-
-    document.getElementById("btnEditarPerfilTopbar").addEventListener("click", () => {
-      abrirModalPerfil(usuario);
-    });
-
-    document.getElementById("btnCerrarSesionTopbar").addEventListener("click", () => {
-      localStorage.removeItem("usuario");
-      window.location.href = "login.html";
-    });
-
-    cargarNotificaciones(usuario);
-    iniciarControlInactividad();
-    iniciarTipoCambioTopbar();
-  }
-
-  // ---------- Tipo de cambio (Banco Nacional, vía la página de
-  // "Ventanilla" del BCCR) en la barra superior ----------
-  // Reusa la misma Netlify Function que ya usan Gastos y Comisiones para
-  // convertir pagos en colones — acá solo se muestra el dato, no se hace
-  // ningún cálculo. Se refresca solo cada 45 minutos (el tipo de cambio no
-  // cambia tan seguido en el día, y así no se satura la página del BCCR de
-  // la que se saca el dato).
-  const MINUTOS_REFRESCO_TIPO_CAMBIO = 45;
-  // NUEVO: guarda el último valor mostrado, para saber si el nuevo dato
-  // realmente cambió y así destellar el recuadro solo cuando corresponde
-  // (no en cada refresco, si el número sigue siendo el mismo).
-  let ultimoValorTipoCambio = null;
-
-  async function cargarTipoCambioTopbar() {
-    const elemento = document.getElementById("valorTipoCambioTopbar");
-    const contenedor = document.getElementById("tipoCambioTopbar");
-    if (!elemento) return;
-    try {
-      const respuesta = await fetch("/.netlify/functions/tipo-cambio-bncr");
-      const resultado = await respuesta.json().catch(() => ({}));
-      if (!respuesta.ok || resultado.error) {
-        throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
-      }
-      const nuevoValor = resultado.venta.toFixed(2);
-
-      if (contenedor && ultimoValorTipoCambio !== null && ultimoValorTipoCambio !== nuevoValor) {
-        // Destello: el recuadro cambia de color un par de segundos y vuelve
-        // solo, para que se note que el número cambió sin tener que estar
-        // mirando fijo la barra.
-        contenedor.style.transition = "background-color 0.3s ease, color 0.3s ease";
-        contenedor.style.backgroundColor = "#ffb703";
-        contenedor.style.color = "#02535a";
-        setTimeout(() => {
-          contenedor.style.backgroundColor = "rgba(255,255,255,0.12)";
-          contenedor.style.color = "white";
-        }, 2500);
-      }
-
-      ultimoValorTipoCambio = nuevoValor;
-      elemento.textContent = nuevoValor;
-    } catch (e) {
-      console.warn("No se pudo cargar el tipo de cambio en la barra superior:", e);
-      elemento.textContent = "—";
-    }
-  }
-
-  function iniciarTipoCambioTopbar() {
-    cargarTipoCambioTopbar();
-    setInterval(cargarTipoCambioTopbar, MINUTOS_REFRESCO_TIPO_CAMBIO * 60 * 1000);
-  }
-
-  // ---------- Helper global para avisos AUTOMÁTICOS del sistema ----------
-  // Distinto del modal de "Nuevo comunicado/tarea" (ese es para mensajes
-  // manuales entre compañeros) — este es para que el propio sistema le
-  // avise a quien tenga rol "Administrador" cuando pasa algo importante
-  // (nueva solicitud de cotización, nueva reserva, pago registrado, etc.),
-  // sin que nadie tenga que escribirlo a mano. Se expone en "window" para
-  // que cualquier página pueda llamarlo después de guardar algo, sin
-  // duplicar esta lógica en cada archivo.
-  //
-  // NUEVO (11/8/2026): segundo parámetro opcional "url" — a dónde navega
-  // el usuario si hace clic en esa notificación en la campanita. Si no se
-  // pasa, la notificación funciona como antes (solo se marca leída y
-  // desaparece, sin navegar a ningún lado).
-  async function crearNotificacionParaAdmins(mensaje, url) {
-    try {
-      const snap = await firebase.firestore().collection("usuarios")
-        .where("rol", "==", "Administrador")
-        .get();
-      const escrituras = snap.docs
-        .filter(d => d.data().estado !== "Inactivo")
-        .map(d => {
-          const datos = {
-            destinatarioId: d.id,
-            destinatarioNombre: d.data().nombre || "",
-            remitenteId: "sistema",
-            remitenteNombre: "Sistema",
-            tipo: "comunicado",
-            mensaje,
-            leido: false,
-            fecha: new Date()
-          };
-          if (url) datos.url = url;
-          return firebase.firestore().collection("notificaciones").add(datos);
-        });
-      await Promise.all(escrituras);
-    } catch (e) {
-      console.error("No se pudo crear la notificación automática:", e);
-    }
-  }
-  window.crearNotificacionParaAdmins = crearNotificacionParaAdmins;
-
-  // Aviso automático por CORREO — a propósito, NO usa el rol
-  // "Administrador" (eso es sobre permisos de acceso al sistema, no sobre
-  // quién debe recibir estos avisos operativos). Usa un campo aparte,
-  // "recibeAvisosOperativos" (true/false), para que el Dueño/Gerente pueda
-  // marcar exactamente a quién le llegan, sin importar cuántas cuentas con
-  // rol Administrador existan.
-  //
-  // MIGRADO (11/8/2026): antes le pegaba directo al Worker de Cloudflare
-  // correo-cotizaciones.cris-delgado21.workers.dev — se descubrió que ese
-  // dominio (*.workers.dev) queda bloqueado en redes/computadoras con
-  // ciertos antivirus o firewalls corporativos. Ahora usa una Netlify
-  // Function que vive en el MISMO dominio del sistema — mismo patrón que
-  // ya usaba el comprobante de reserva (comprobante-correo.js).
-  const URL_CORREO_AVISOS = "/.netlify/functions/correo-cotizaciones";
-
-  async function enviarCorreoAdmins(asunto, html) {
-    try {
-      const snap = await firebase.firestore().collection("usuarios")
-        .where("recibeAvisosOperativos", "==", true)
-        .get();
-      const correos = snap.docs
-        .filter(d => d.data().estado !== "Inactivo")
-        .map(d => d.data().correo)
-        .filter(Boolean);
-
-      if (correos.length === 0) {
-        console.warn('No hay ningún usuario con "recibeAvisosOperativos: true" y correo cargado — no se envió el aviso automático.');
-        return;
-      }
-
-      const respuesta = await fetch(URL_CORREO_AVISOS, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: correos, subject: asunto, html })
-      });
-      if (!respuesta.ok) {
-        const texto = await respuesta.text().catch(() => "");
-        console.error("El envío del correo automático respondió con error:", respuesta.status, texto);
-      }
-    } catch (e) {
-      console.error("No se pudo enviar el correo automático:", e);
-    }
-  }
-  window.enviarCorreoAdmins = enviarCorreoAdmins;
-
-  // Arma el HTML del correo con el mismo estilo que ya usaba el aviso de
-  // "nueva solicitud de cotización" — título en el color de marca, una
-  // fila por dato, y un botón naranja "Ver en el sistema" que lleva
-  // directo al detalle de lo que sea que disparó el aviso.
-  function construirHtmlCorreoAviso(titulo, filas, urlDetalle, textoBoton) {
-    const filasHtml = filas
-      .filter(([, valor]) => valor)
-      .map(([etiqueta, valor]) => `<p><strong>${etiqueta}:</strong> ${valor}</p>`)
-      .join("");
-    return `
-      <h2 style="color:#02535a;">${titulo}</h2>
-      ${filasHtml}
-      <a href="${urlDetalle}" target="_blank" style="display:inline-block; padding:12px 20px; margin-top:15px; background-color:#f49859; color:white; text-decoration:none; border-radius:8px; font-weight:bold;">${textoBoton || 'Ver en el sistema'}</a>
-      <p style="margin-top:20px; font-size:12px; color:#888;">Equipo Excursiones Delgado</p>
+    contenedor.innerHTML = `
+      <p style="font-weight:bold; color:#c0392b; margin-bottom:10px;">${urgentes.length} reserva${urgentes.length === 1 ? '' : 's'} — total pendiente: ${formatoMoneda(totalUrgente)}</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Titular</th>
+            <th>Destino</th>
+            <th>Fecha de viaje</th>
+            <th>Faltan</th>
+            <th>Saldo</th>
+          </tr>
+        </thead>
+        <tbody>${filasHtml}</tbody>
+      </table>
     `;
   }
-  window.construirHtmlCorreoAviso = construirHtmlCorreoAviso;
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", inicializarTopbar);
-  } else {
-    inicializarTopbar();
+  function renderizarPorCobrar() {
+    const desdeStr = document.getElementById("cobrarDesde").value;
+    const hastaStr = document.getElementById("cobrarHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const pendientes = Object.entries(datosReservasPorCodigo)
+      .filter(([codigo, r]) => {
+        if (!r.activa || r.saldo <= 0.01) return false;
+        if (!r.fecha) return false;
+        if (desde && r.fecha < desde) return false;
+        if (hasta && r.fecha > hasta) return false;
+        return true;
+      })
+      .sort((a, b) => a[1].fecha - b[1].fecha);
+
+    const totalPendiente = pendientes.reduce((sum, [codigo, r]) => sum + r.saldo, 0);
+    document.getElementById("cobrarTotalPendiente").textContent = formatoMoneda(totalPendiente);
+    document.getElementById("cobrarDetalleTotal").textContent =
+      `${pendientes.length} reserva${pendientes.length === 1 ? '' : 's'} con saldo pendiente en el rango`;
+
+    const tabla = document.getElementById("tablaPorCobrar");
+    tabla.innerHTML = "";
+
+    if (pendientes.length === 0) {
+      document.getElementById("avisoSinCobrar").style.display = "block";
+    } else {
+      document.getElementById("avisoSinCobrar").style.display = "none";
+      pendientes.forEach(([codigo, r]) => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
+          <td data-etiqueta="Titular">${r.titular}</td>
+          <td data-etiqueta="Destino">${r.destino || '-'}</td>
+          <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Saldo pendiente" class="cifra-alerta">${formatoMoneda(r.saldo)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
   }
-})();
+
+  function aplicarRangoCobrar(dias) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const hasta = new Date(hoy);
+    hasta.setDate(hasta.getDate() + dias);
+
+    document.getElementById("cobrarDesde").value = formatearFechaInput(hoy);
+    document.getElementById("cobrarHasta").value = formatearFechaInput(hasta);
+    marcarBotonCobrarActivo(dias);
+    renderizarPorCobrar();
+  }
+
+  function aplicarRangoCobrarTodas() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    document.getElementById("cobrarDesde").value = formatearFechaInput(hoy);
+    document.getElementById("cobrarHasta").value = "";
+    marcarBotonCobrarActivo("todas");
+    renderizarPorCobrar();
+  }
+
+  function marcarBotonCobrarActivo(cual) {
+    document.querySelectorAll(".btn-rango-cobrar").forEach(btn => btn.classList.remove("activo"));
+    const indice = { 7: 0, 30: 1, 60: 2, 90: 3, todas: 4 }[cual];
+    const botones = document.querySelectorAll(".btn-rango-cobrar");
+    if (botones[indice]) botones[indice].classList.add("activo");
+  }
+
+  function abrirModalReservasVendedor(nombreVendedor) {
+    document.getElementById("tituloModalVendedor").textContent = `Reservas de ${nombreVendedor}`;
+
+    const desdeStr = document.getElementById("ventasDesde").value;
+    const hastaStr = document.getElementById("ventasHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const filtradas = Object.entries(datosReservasPorCodigo).filter(([codigo, r]) => {
+      const vendedorReal = r.vendedor || "Sin vendedor asignado";
+      if (vendedorReal !== nombreVendedor) return false;
+      if (!r.creadoEl) return false;
+      if (desde && r.creadoEl < desde) return false;
+      if (hasta && r.creadoEl > hasta) return false;
+      return true;
+    }).sort((a, b) => (b[1].creadoEl || 0) - (a[1].creadoEl || 0));
+
+    const tabla = document.getElementById("tablaModalReservasVendedor");
+    tabla.innerHTML = "";
+    filtradas.forEach(([codigo, r]) => {
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}" target="_blank">${codigo}</a></td>
+        <td data-etiqueta="Destino">${r.destino || '-'}</td>
+        <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+        <td data-etiqueta="Ingreso">${formatoMoneda(r.ingreso)}</td>
+        <td data-etiqueta="Por cobrar" class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(r.saldo)}</td>
+      `;
+      tabla.appendChild(fila);
+    });
+
+    document.getElementById("modalReservasVendedor").style.display = "flex";
+  }
+
+  function cerrarModalReservasVendedor() {
+    document.getElementById("modalReservasVendedor").style.display = "none";
+  }
+
+  const ETIQUETA_CATEGORIA_FINANZAS = { hospedaje: "Hospedaje", traslados: "Traslados", tours: "Tours", comision: "Comisión" };
+
+  let datosProyeccionesPago = {};
+
+  function calcularProyeccionesDePago() {
+    const desdeStr = document.getElementById("proveedoresDesde").value;
+    const hastaStr = document.getElementById("proveedoresHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const grupos = {};
+
+    Object.entries(datosCategoriasPorCodigo).forEach(([codigo, categorias]) => {
+      const infoReserva = datosReservasPorCodigo[codigo];
+
+      if (!infoReserva?.fecha) return;
+      if (desde && infoReserva.fecha < desde) return;
+      if (hasta && infoReserva.fecha > hasta) return;
+
+      ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+        let items = categorias?.[clave];
+        if (!items) items = [];
+        else if (!Array.isArray(items)) items = [items];
+
+        items.forEach(item => {
+          const esReal = typeof item.real === "number";
+          if (esReal) return;
+          const monto = Number(item.proyectado || 0);
+          if (!item.proveedor || monto <= 0) return;
+
+          const llave = `${item.proveedor}|${clave}`;
+          if (!grupos[llave]) {
+            grupos[llave] = {
+              proveedor: item.proveedor,
+              categoria: ETIQUETA_CATEGORIA_FINANZAS[clave] || clave,
+              total: 0,
+              reservas: []
+            };
+          }
+          grupos[llave].total += monto;
+          grupos[llave].reservas.push({
+            codigo,
+            monto,
+            destino: infoReserva?.destino || '-',
+            fecha: infoReserva?.fecha || null
+          });
+        });
+      });
+    });
+
+    return grupos;
+  }
+
+  function renderizarProyeccionesPago() {
+    datosProyeccionesPago = calcularProyeccionesDePago();
+    const tabla = document.getElementById("tablaProyeccionesPago");
+    tabla.innerHTML = "";
+
+    const llaves = Object.keys(datosProyeccionesPago).sort((a, b) => datosProyeccionesPago[b].total - datosProyeccionesPago[a].total);
+    const totalGeneral = llaves.reduce((sum, llave) => sum + datosProyeccionesPago[llave].total, 0);
+    const totalReservasUnicas = new Set(llaves.flatMap(llave => datosProyeccionesPago[llave].reservas.map(r => r.codigo))).size;
+
+    document.getElementById("proveedoresTotalPendiente").textContent = formatoMoneda(totalGeneral);
+    document.getElementById("proveedoresDetalleTotal").textContent =
+      `${llaves.length} proveedor${llaves.length === 1 ? '' : 'es'} · ${totalReservasUnicas} reserva${totalReservasUnicas === 1 ? '' : 's'}`;
+
+    if (llaves.length === 0) {
+      document.getElementById("avisoSinProyecciones").style.display = "block";
+    } else {
+      document.getElementById("avisoSinProyecciones").style.display = "none";
+      llaves.forEach(llave => {
+        const g = datosProyeccionesPago[llave];
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-etiqueta="Proveedor"><a class="enlace-fila" href="#" onclick="abrirModalProveedorDetalle('${llave.replace(/'/g, "\\'")}'); return false;">${g.proveedor}</a></td>
+          <td data-etiqueta="Categoría">${g.categoria}</td>
+          <td data-etiqueta="Reservas pendientes">${g.reservas.length}</td>
+          <td data-etiqueta="Monto pendiente">${formatoMoneda(g.total)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  function aplicarRangoProveedores(dias) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const hasta = new Date(hoy);
+    hasta.setDate(hasta.getDate() + dias);
+
+    document.getElementById("proveedoresDesde").value = formatearFechaInput(hoy);
+    document.getElementById("proveedoresHasta").value = formatearFechaInput(hasta);
+    marcarBotonProveedoresActivo(dias);
+    renderizarProyeccionesPago();
+  }
+
+  function aplicarRangoProveedoresTodas() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    document.getElementById("proveedoresDesde").value = formatearFechaInput(hoy);
+    document.getElementById("proveedoresHasta").value = "";
+    marcarBotonProveedoresActivo("todas");
+    renderizarProyeccionesPago();
+  }
+
+  function marcarBotonProveedoresActivo(cual) {
+    document.querySelectorAll(".btn-rango-proveedores").forEach(btn => btn.classList.remove("activo"));
+    const indice = { 7: 0, 30: 1, 60: 2, 90: 3, todas: 4 }[cual];
+    const botones = document.querySelectorAll(".btn-rango-proveedores");
+    if (botones[indice]) botones[indice].classList.add("activo");
+  }
+
+  function abrirModalProveedorDetalle(llave) {
+    const g = datosProyeccionesPago[llave];
+    if (!g) return;
+
+    document.getElementById("tituloModalProveedor").textContent = `${g.proveedor} — ${g.categoria} (pendiente: ${formatoMoneda(g.total)})`;
+
+    const tabla = document.getElementById("tablaModalProveedor");
+    tabla.innerHTML = "";
+    g.reservas
+      .slice()
+      .sort((a, b) => (a.fecha || 0) - (b.fecha || 0))
+      .forEach(r => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-etiqueta="Código"><a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a></td>
+          <td data-etiqueta="Destino">${r.destino}</td>
+          <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Monto proyectado">${formatoMoneda(r.monto)}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+
+    document.getElementById("modalProveedorDetalle").style.display = "flex";
+  }
+
+  function cerrarModalProveedorDetalle() {
+    document.getElementById("modalProveedorDetalle").style.display = "none";
+  }
+
+  let ultimoBalanceCalculado = null;
+
+  const ETIQUETAS_DESGLOSE_BALANCE = {
+    boletos: "✈️ Boletos Aéreos",
+    hospedaje: "🏨 Hospedaje",
+    traslados: "🚐 Traslados",
+    tours: "🎟️ Tours",
+    comision: "💼 Comisión",
+    operativo: "🧾 Gastos Operativos"
+  };
+
+  function sumarCategoriaMejorMonto(items) {
+    if (!items) return 0;
+    if (!Array.isArray(items)) items = [items];
+    return items.reduce((sum, item) => sum + (typeof item.real === "number" ? item.real : Number(item.proyectado || 0)), 0);
+  }
+
+  function calcularDesgloseCostos(codigo) {
+    const categorias = datosCategoriasPorCodigo[codigo] || {};
+    return {
+      boletos: datosCostosPorCodigo[codigo]?.boletos || 0,
+      hospedaje: sumarCategoriaMejorMonto(categorias.hospedaje),
+      traslados: sumarCategoriaMejorMonto(categorias.traslados),
+      tours: sumarCategoriaMejorMonto(categorias.tours),
+      comision: sumarCategoriaMejorMonto(categorias.comision)
+    };
+  }
+
+  function renderizarBalance() {
+    const desdeStr = document.getElementById("balanceDesde").value;
+    const hastaStr = document.getElementById("balanceHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const incluidas = Object.entries(datosReservasPorCodigo).filter(([codigo, r]) => {
+      if (!r.fecha) return false;
+      if (desde && r.fecha < desde) return false;
+      if (hasta && r.fecha > hasta) return false;
+      return true;
+    });
+
+    const conCostos = incluidas.filter(([codigo]) => datosCostosPorCodigo[codigo]);
+    const sinCostos = incluidas.length - conCostos.length;
+
+    // NUEVO: el Ingreso ahora es lo que REALMENTE entró de cada reserva
+    // (venta − saldo pendiente), no el valor total de la venta — si un
+    // cliente todavía debe, esa parte no cuenta hasta que pague. La venta
+    // total y lo que falta por cobrar quedan como referencia aparte.
+    let ingreso = 0;
+    let ventaTotal = 0;
+    let faltaPorCobrar = 0;
+    const desglose = { boletos: 0, hospedaje: 0, traslados: 0, tours: 0, comision: 0 };
+    datosBalanceDetalle = [];
+
+    conCostos.forEach(([codigo, r]) => {
+      const cobradoReserva = Math.max(r.ingreso - r.saldo, 0);
+      ingreso += cobradoReserva;
+      ventaTotal += r.ingreso;
+      faltaPorCobrar += Math.max(r.saldo, 0);
+
+      const d = calcularDesgloseCostos(codigo);
+      desglose.boletos += d.boletos;
+      desglose.hospedaje += d.hospedaje;
+      desglose.traslados += d.traslados;
+      desglose.tours += d.tours;
+      desglose.comision += d.comision;
+
+      const costoViajeReserva = d.boletos + d.hospedaje + d.traslados + d.tours;
+      datosBalanceDetalle.push({
+        codigo,
+        titular: r.titular || '-',
+        destino: r.destino || '-',
+        ingresoCobrado: cobradoReserva,
+        costoViaje: costoViajeReserva,
+        comision: d.comision,
+        ganancia: cobradoReserva - costoViajeReserva - d.comision
+      });
+    });
+    datosBalanceDetalle.sort((a, b) => b.ingresoCobrado - a.ingresoCobrado);
+
+    const costo = desglose.boletos + desglose.hospedaje + desglose.traslados + desglose.tours + desglose.comision;
+    const ganancia = ingreso - costo;
+
+    datosOperativosPeriodoLista = datosMovimientosGastos
+      .filter(m => m.fecha && (!desde || m.fecha >= desde) && (!hasta || m.fecha <= hasta));
+    const gastosOperativosPeriodo = datosOperativosPeriodoLista.reduce((suma, m) => suma + m.monto, 0);
+    const gananciaReal = ganancia - gastosOperativosPeriodo;
+    const margenReal = ingreso > 0 ? (gananciaReal / ingreso * 100) : 0;
+
+    // Los Gastos Operativos entran como una fila más del desglose, y el %
+    // de cada categoría se calcula contra el TOTAL GENERAL (costos de
+    // reserva + operativos), no solo contra el costo de reservas.
+    desglose.operativo = gastosOperativosPeriodo;
+    const costoConOperativo = costo + gastosOperativosPeriodo;
+
+    document.getElementById("balanceIngreso").textContent = formatoMoneda(ingreso);
+    document.getElementById("balanceCantidad").textContent =
+      `${conCostos.length} reserva${conCostos.length === 1 ? '' : 's'} con costos` +
+      (sinCostos > 0 ? ` (${sinCostos} sin costos registrados, no incluida${sinCostos === 1 ? '' : 's'})` : '');
+    document.getElementById("balanceCosto").textContent = formatoMoneda(costo);
+    document.getElementById("balanceDetalleComision").textContent = `comisiones: ${formatoMoneda(desglose.comision)}`;
+    document.getElementById("balanceOperativos").textContent = formatoMoneda(gastosOperativosPeriodo);
+    document.getElementById("balanceGananciaReal").textContent = formatoMoneda(gananciaReal);
+    document.getElementById("balanceMargenReal").textContent = `margen real: ${margenReal.toFixed(1)}%`;
+    document.getElementById("balanceDetalleVenta").textContent =
+      faltaPorCobrar > 0.01 ? `Venta total de estas reservas: ${formatoMoneda(ventaTotal)} — todavía falta cobrar ${formatoMoneda(faltaPorCobrar)}.` : '';
+
+    const tabla = document.getElementById("tablaDesgloseBalance");
+    tabla.innerHTML = "";
+    Object.keys(ETIQUETAS_DESGLOSE_BALANCE).forEach(clave => {
+      const monto = desglose[clave];
+      const porcentaje = costoConOperativo > 0 ? (monto / costoConOperativo * 100) : 0;
+      const fila = document.createElement("tr");
+      fila.innerHTML = `
+        <td data-etiqueta="Categoría">${ETIQUETAS_DESGLOSE_BALANCE[clave]}</td>
+        <td data-etiqueta="Monto">${formatoMoneda(monto)}</td>
+        <td data-etiqueta="% del total">${porcentaje.toFixed(1)}%</td>
+      `;
+      tabla.appendChild(fila);
+    });
+
+    ultimoBalanceCalculado = {
+      desdeStr, hastaStr, ingreso, ventaTotal, faltaPorCobrar, costo, ganancia,
+      gastosOperativosPeriodo, gananciaReal, margenReal, costoConOperativo,
+      cantidad: conCostos.length, sinCostos, desglose
+    };
+  }
+
+  function exportarBalancePDF() {
+    if (!ultimoBalanceCalculado) {
+      alert("Todavía no hay un balance calculado. Esperá a que termine de cargar la página.");
+      return;
+    }
+    const b = ultimoBalanceCalculado;
+    const doc = new jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+    const COLOR_MARCA = [2, 83, 90];
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...COLOR_MARCA);
+    doc.text("Excursiones Delgado — Balance por Período", 18, 20);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    const periodoTexto = `Período: ${b.desdeStr ? formatearFechaVisible(new Date(b.desdeStr + "T00:00:00")) : "—"} al ${b.hastaStr ? formatearFechaVisible(new Date(b.hastaStr + "T00:00:00")) : "—"}`;
+    doc.text(periodoTexto, 18, 28);
+    const notaSinCostos = b.sinCostos > 0 ? ` (${b.sinCostos} reserva${b.sinCostos === 1 ? '' : 's'} sin costos registrados, no incluida${b.sinCostos === 1 ? '' : 's'})` : '';
+    doc.text(`Generado el ${formatearFechaVisible(new Date())} — ${b.cantidad} reserva${b.cantidad === 1 ? '' : 's'} con costos registrados${notaSinCostos}`, 18, 34);
+
+    doc.autoTable({
+      startY: 42,
+      margin: { left: 18, right: 18 },
+      head: [["Concepto", "Monto"]],
+      body: [
+        ["Ingreso Cobrado", formatoMoneda(b.ingreso)],
+        ["Venta total (con lo que falta cobrar)", formatoMoneda(b.ventaTotal)],
+        ["Costo Total (con comisiones)", formatoMoneda(b.costo)],
+        ["Gastos operativos del período", formatoMoneda(b.gastosOperativosPeriodo)],
+        ["Ganancia Real Final", formatoMoneda(b.gananciaReal)],
+        ["Margen Real", `${b.margenReal.toFixed(1)}%`]
+      ],
+      theme: "plain",
+      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
+      styles: { fontSize: 10, cellPadding: 3 }
+    });
+
+    const filasDesglose = Object.keys(ETIQUETAS_DESGLOSE_BALANCE).map(clave => {
+      const monto = b.desglose[clave];
+      const porcentaje = b.costoConOperativo > 0 ? (monto / b.costoConOperativo * 100) : 0;
+      return [ETIQUETAS_DESGLOSE_BALANCE[clave], formatoMoneda(monto), `${porcentaje.toFixed(1)}%`];
+    });
+
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 10,
+      margin: { left: 18, right: 18 },
+      head: [["Desglose de Costos", "Monto", "% del total"]],
+      body: filasDesglose,
+      theme: "plain",
+      headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
+      styles: { fontSize: 10, cellPadding: 3 }
+    });
+
+    const nombreArchivo = `Balance_${b.desdeStr || 'inicio'}_a_${b.hastaStr || 'hoy'}.pdf`;
+    doc.save(nombreArchivo);
+  }
+
+  function aplicarRangoBalance(tipo) {
+    const hoy = new Date();
+    let desde, hasta;
+
+    if (tipo === "mes-actual") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    } else if (tipo === "mes-anterior") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    } else if (tipo === "ano-actual") {
+      desde = new Date(hoy.getFullYear(), 0, 1);
+      hasta = new Date(hoy.getFullYear(), 11, 31);
+    }
+
+    document.getElementById("balanceDesde").value = formatearFechaInput(desde);
+    document.getElementById("balanceHasta").value = formatearFechaInput(hasta);
+    document.getElementById("balanceMesEspecifico").value = "";
+    marcarBotonBalanceActivo(tipo);
+    renderizarBalance();
+  }
+
+  function aplicarMesEspecificoBalance() {
+    const valor = document.getElementById("balanceMesEspecifico").value;
+    if (!valor) {
+      alert("Elegí un mes primero.");
+      return;
+    }
+    const [anio, mes] = valor.split("-").map(Number);
+    const desde = new Date(anio, mes - 1, 1);
+    const hasta = new Date(anio, mes, 0);
+
+    document.getElementById("balanceDesde").value = formatearFechaInput(desde);
+    document.getElementById("balanceHasta").value = formatearFechaInput(hasta);
+    document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
+    renderizarBalance();
+  }
+
+  function marcarBotonBalanceActivo(cual) {
+    document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
+    const indice = { "mes-actual": 0, "mes-anterior": 1, "ano-actual": 2 }[cual];
+    const botones = document.querySelectorAll(".btn-rango-balance");
+    if (botones[indice]) botones[indice].classList.add("activo");
+  }
+
+  function renderizarRankingDestinos() {
+    const desdeStr = document.getElementById("destinosDesde").value;
+    const hastaStr = document.getElementById("destinosHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const grupos = {};
+
+    Object.entries(datosReservasPorCodigo).forEach(([codigo, r]) => {
+      if (!r.fecha) return;
+      if (desde && r.fecha < desde) return;
+      if (hasta && r.fecha > hasta) return;
+      const costos = datosCostosPorCodigo[codigo];
+      if (!costos) return;
+
+      const nombreDestino = r.destino || "Sin destino";
+      if (!grupos[nombreDestino]) grupos[nombreDestino] = { reservas: 0, ingreso: 0, costo: 0 };
+      grupos[nombreDestino].reservas++;
+      grupos[nombreDestino].ingreso += r.ingreso;
+      grupos[nombreDestino].costo += costos.costoTotal;
+    });
+
+    const nombres = Object.keys(grupos).map(nombre => {
+      const g = grupos[nombre];
+      const ganancia = g.ingreso - g.costo;
+      const margen = g.ingreso > 0 ? (ganancia / g.ingreso * 100) : 0;
+      return { nombre, ...g, ganancia, margen };
+    }).sort((a, b) => b.margen - a.margen);
+
+    const tabla = document.getElementById("tablaRankingDestinos");
+    tabla.innerHTML = "";
+
+    if (nombres.length === 0) {
+      document.getElementById("avisoSinDestinos").style.display = "block";
+    } else {
+      document.getElementById("avisoSinDestinos").style.display = "none";
+      nombres.forEach(d => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-etiqueta="Destino">${d.nombre}</td>
+          <td data-etiqueta="Reservas">${d.reservas}</td>
+          <td data-etiqueta="Ingreso">${formatoMoneda(d.ingreso)}</td>
+          <td data-etiqueta="Costo">${formatoMoneda(d.costo)}</td>
+          <td data-etiqueta="Ganancia" class="${d.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${formatoMoneda(d.ganancia)}</td>
+          <td data-etiqueta="Margen" class="${d.margen >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${d.margen.toFixed(1)}%</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+  }
+
+  function aplicarRangoDestinos(dias) {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const hasta = new Date(hoy);
+    hasta.setDate(hasta.getDate() + dias);
+
+    document.getElementById("destinosDesde").value = formatearFechaInput(hoy);
+    document.getElementById("destinosHasta").value = formatearFechaInput(hasta);
+    marcarBotonDestinosActivo(dias);
+    renderizarRankingDestinos();
+  }
+
+  function aplicarRangoDestinosTodas() {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    document.getElementById("destinosDesde").value = formatearFechaInput(hoy);
+    document.getElementById("destinosHasta").value = "";
+    marcarBotonDestinosActivo("todas");
+    renderizarRankingDestinos();
+  }
+
+  function marcarBotonDestinosActivo(cual) {
+    document.querySelectorAll(".btn-rango-destinos").forEach(btn => btn.classList.remove("activo"));
+    const indice = { 30: 0, 90: 1, 180: 2, todas: 3 }[cual];
+    const botones = document.querySelectorAll(".btn-rango-destinos");
+    if (botones[indice]) botones[indice].classList.add("activo");
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    cargarPanelFinanciero();
+
+    document.getElementById("filtroDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-viajes").forEach(btn => btn.classList.remove("activo"));
+      renderizarViajesPorFecha();
+    });
+    document.getElementById("filtroHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-viajes").forEach(btn => btn.classList.remove("activo"));
+      renderizarViajesPorFecha();
+    });
+
+    document.getElementById("ventasDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-ventas").forEach(btn => btn.classList.remove("activo"));
+      renderizarResumenVentas();
+    });
+    document.getElementById("ventasHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-ventas").forEach(btn => btn.classList.remove("activo"));
+      renderizarResumenVentas();
+    });
+
+    document.getElementById("proveedoresDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-proveedores").forEach(btn => btn.classList.remove("activo"));
+      renderizarProyeccionesPago();
+    });
+    document.getElementById("proveedoresHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-proveedores").forEach(btn => btn.classList.remove("activo"));
+      renderizarProyeccionesPago();
+    });
+
+    document.getElementById("cobrarDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-cobrar").forEach(btn => btn.classList.remove("activo"));
+      renderizarPorCobrar();
+    });
+    document.getElementById("cobrarHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-cobrar").forEach(btn => btn.classList.remove("activo"));
+      renderizarPorCobrar();
+    });
+
+    document.getElementById("balanceDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
+      document.getElementById("balanceMesEspecifico").value = "";
+      renderizarBalance();
+    });
+    document.getElementById("balanceHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
+      document.getElementById("balanceMesEspecifico").value = "";
+      renderizarBalance();
+    });
+
+    document.getElementById("destinosDesde").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-destinos").forEach(btn => btn.classList.remove("activo"));
+      renderizarRankingDestinos();
+    });
+    document.getElementById("destinosHasta").addEventListener("change", () => {
+      document.querySelectorAll(".btn-rango-destinos").forEach(btn => btn.classList.remove("activo"));
+      renderizarRankingDestinos();
+    });
+  });
+</script>
+  <script src="topbar.js"></script>
+  <script src="sidebar.js"></script>
+  <!-- Verificación real de sesión (Firebase Authentication). -->
+  <script src="auth-guard.js"></script>
+</body>
+</html>
