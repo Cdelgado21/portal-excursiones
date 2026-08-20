@@ -9,101 +9,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* Menú lateral — mismo estilo que el resto del sistema. */
-    .toggle-btn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      font-size: 24px;
-      background: white;
-      color: #02535a;
-      border: none;
-      border-radius: 50%;
-      padding: 8px 12px;
-      z-index: 1100;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 250px;
-      height: 100%;
-      background-color: #02535a;
-      color: white;
-      padding: 20px;
-      transform: translateX(-250px);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    .sidebar.active {
-      transform: translateX(0);
-    }
-    .sidebar .user-info {
-      text-align: center;
-      margin-bottom: 20px;
-      margin-top: 40px;
-    }
-    .sidebar .user-info .avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-    .sidebar .user-info h3 {
-      font-size: 1rem;
-      margin: 0;
-      color: white;
-    }
-    .sidebar .user-info small {
-      font-size: 0.8rem;
-      color: #f4f7f8;
-    }
-    .nav-links {
-      list-style: none;
-      padding: 0;
-    }
-    .nav-links li a {
-      background-color: #f4f7f8;
-      color: #02535a;
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .nav-links li a:hover {
-      background-color: #e0e0e0;
-    }
-    .nav-links li a.activo {
-      background-color: #ffb703;
-      color: #02535a;
-    }
-    .nav-links .icon {
-      margin-right: 10px;
-      font-size: 1.2rem;
-    }
-    main#contenidoPrincipal {
-      margin-left: 0;
-      padding: 20px 20px 20px 70px;
-      transition: margin-left 0.3s ease;
-      box-sizing: border-box;
-    }
-    main#contenidoPrincipal.sidebar-visible {
-      margin-left: 250px;
-      padding-left: 20px;
-    }
-    @media screen and (max-width: 768px) {
-      main#contenidoPrincipal.sidebar-visible {
-        margin-left: 0;
-        padding-left: 70px;
-      }
-    }
-
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f7f7;
@@ -261,31 +166,48 @@
     }
     .pastilla-activo { background: #eafaf0; color: #1b9e3c; }
     .pastilla-pausado { background: #f0f0f0; color: #888; }
+
+    /* NUEVO: bloque de moneda/tipo de cambio en "Registrar Pago" — para
+       pagos que se hacen en colones (ej. nómina de Tati), en vez de
+       forzar todo a dólares. */
+    .bloque-moneda {
+      background: #f7fbfb;
+      border: 1px solid #dde8e8;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: flex-end;
+    }
+    .estado-tipo-cambio {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 4px;
+      max-width: 220px;
+    }
+    .estado-tipo-cambio.error { color: #c0392b; }
+    .btn-traer-tc {
+      background: #02535a;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+    .btn-traer-tc:hover { background: #036a6d; }
+    .btn-traer-tc:disabled { opacity: 0.6; cursor: default; }
+    .equivalencia-usd {
+      font-size: 0.8rem;
+      color: #5f9296;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-
-  <div class="sidebar" id="sidebar">
-    <div class="user-info">
-      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
-      <h3 id="nombreUsuario">Cargando...</h3>
-      <small id="rolUsuario">-</small>
-    </div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
-      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
-      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
-      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
-      <li><a href="gastos.html" class="activo"><span class="icon">💼</span>Gastos</a></li>
-      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
-    </ul>
-  </div>
 
   <main id="contenidoPrincipal">
 
@@ -342,7 +264,7 @@
         <input type="text" id="plantillaDescripcion" placeholder="Ej. Pago quincenal a Tatiana" style="width:100%;">
       </div>
       <div style="min-width:110px;">
-        <label class="campo-form">Monto sugerido</label>
+        <label class="campo-form">Monto sugerido ($)</label>
         <input type="number" id="plantillaMonto" step="0.01" style="width:100%;">
       </div>
       <div style="min-width:130px;">
@@ -363,6 +285,7 @@
       </div>
       <button type="button" onclick="agregarPlantillaGasto()" class="btn-panel-costos">➕ Agregar plantilla</button>
     </div>
+    <p style="font-size:0.78rem; color:#999; margin-top:-8px;">El monto sugerido acá siempre es en dólares (es solo una referencia) — el monto REAL en colones se ingresa al momento de "Registrar pago", abajo.</p>
 
     <table>
       <thead>
@@ -384,13 +307,41 @@
     <h3>➕ Registrar Pago</h3>
     <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Para gastos operativos puntuales, o para confirmar el pago de una plantilla de arriba.</p>
 
+    <!-- NUEVO: bloque de moneda — si el pago fue en colones (ej. nómina de
+         Tati), se ingresa el monto en ₡ + el tipo de cambio de venta del
+         Banco Nacional, y el sistema calcula el equivalente en $ solo, que
+         es lo que el resto del sistema usa para sumar. Se guardan los tres
+         datos (colones, tipo de cambio, y el $ calculado) — no se pierde
+         el monto real pagado. -->
+    <div class="bloque-moneda">
+      <div>
+        <label class="campo-form">Moneda del pago</label>
+        <select id="movMoneda" onchange="alternarMonedaGasto()">
+          <option value="USD">Dólares ($)</option>
+          <option value="CRC">Colones (₡)</option>
+        </select>
+      </div>
+      <div id="bloqueTipoCambioGasto" style="display:none;">
+        <label class="campo-form">Tipo de cambio (venta, Banco Nacional)</label>
+        <div style="display:flex; gap:6px;">
+          <input type="number" id="movTipoCambio" step="0.01" placeholder="Ej. 458.00" style="width:110px;" oninput="recalcularMontoUSDGasto()">
+          <button type="button" onclick="traerTipoCambioGasto()" class="btn-traer-tc" id="btnTraerTCGasto">🔄 Traer</button>
+        </div>
+        <div id="estadoTipoCambioGasto" class="estado-tipo-cambio"></div>
+      </div>
+    </div>
+
     <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
       <div style="flex:2; min-width:200px;">
         <label class="campo-form">Descripción</label>
         <input type="text" id="movDescripcion" placeholder="Ej. Pago quincenal a Tatiana" style="width:100%;">
       </div>
+      <div id="bloqueMontoColonesGasto" style="min-width:130px; display:none;">
+        <label class="campo-form">Monto (₡)</label>
+        <input type="number" id="movMontoColones" step="1" style="width:100%;" oninput="recalcularMontoUSDGasto()">
+      </div>
       <div style="min-width:110px;">
-        <label class="campo-form">Monto</label>
+        <label class="campo-form" id="etiquetaMovMonto">Monto ($)</label>
         <input type="number" id="movMonto" step="0.01" style="width:100%;">
       </div>
       <div style="min-width:130px;">
@@ -407,6 +358,7 @@
       </div>
       <button type="button" onclick="agregarMovimientoGasto()" class="btn-panel-costos">💾 Guardar pago</button>
     </div>
+    <div id="equivalenciaMovGasto" class="equivalencia-usd"></div>
   </div>
 
   <div class="seccion">
@@ -459,6 +411,70 @@
     const dia = String(fecha.getDate()).padStart(2, '0');
     const mes = String(fecha.getMonth() + 1).padStart(2, '0');
     return `${fecha.getFullYear()}-${mes}-${dia}`;
+  }
+
+  // ==========================================
+  // NUEVO: Tipo de cambio — trae el de VENTA del Banco Nacional (vía la
+  // Netlify Function que lee la página del BCCR) y calcula el equivalente
+  // en $ a partir del monto en colones. Compartido entre "Registrar Pago"
+  // acá y el modal de pago de comisiones.
+  // ==========================================
+
+  async function consultarTipoCambioBNCR() {
+    const respuesta = await fetch("/.netlify/functions/tipo-cambio-bncr");
+    const resultado = await respuesta.json().catch(() => ({}));
+    if (!respuesta.ok || resultado.error) {
+      throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
+    }
+    return resultado; // { venta, compra, fuente, consultadoEl }
+  }
+
+  function alternarMonedaGasto() {
+    const esColones = document.getElementById("movMoneda").value === "CRC";
+    document.getElementById("bloqueTipoCambioGasto").style.display = esColones ? "block" : "none";
+    document.getElementById("bloqueMontoColonesGasto").style.display = esColones ? "block" : "none";
+    document.getElementById("etiquetaMovMonto").textContent = esColones ? "Monto ($) — calculado" : "Monto ($)";
+    document.getElementById("movMonto").readOnly = esColones;
+    document.getElementById("movMonto").style.backgroundColor = esColones ? "#f0f0f0" : "";
+    if (!esColones) {
+      document.getElementById("equivalenciaMovGasto").textContent = "";
+    }
+  }
+
+  async function traerTipoCambioGasto() {
+    const boton = document.getElementById("btnTraerTCGasto");
+    const estado = document.getElementById("estadoTipoCambioGasto");
+    boton.disabled = true;
+    boton.textContent = "⏳...";
+    estado.classList.remove("error");
+    estado.textContent = "Consultando...";
+
+    try {
+      const datos = await consultarTipoCambioBNCR();
+      document.getElementById("movTipoCambio").value = datos.venta;
+      estado.textContent = `✅ ${datos.fuente} — ₡${datos.venta.toFixed(2)}`;
+      recalcularMontoUSDGasto();
+    } catch (e) {
+      estado.classList.add("error");
+      estado.textContent = `⚠️ No se pudo traer el tipo de cambio automático (${e.message}). Escribilo a mano.`;
+    } finally {
+      boton.disabled = false;
+      boton.textContent = "🔄 Traer";
+    }
+  }
+
+  function recalcularMontoUSDGasto() {
+    const colones = parseFloat(document.getElementById("movMontoColones").value) || 0;
+    const tipoCambio = parseFloat(document.getElementById("movTipoCambio").value) || 0;
+    const equivalenciaEl = document.getElementById("equivalenciaMovGasto");
+
+    if (colones > 0 && tipoCambio > 0) {
+      const usd = colones / tipoCambio;
+      document.getElementById("movMonto").value = usd.toFixed(2);
+      equivalenciaEl.textContent = `₡${colones.toLocaleString('es-CR')} ÷ ${tipoCambio} = ${formatoMoneda(usd)}`;
+    } else {
+      equivalenciaEl.textContent = "";
+    }
   }
 
   // ==========================================
@@ -549,10 +565,15 @@
   }
 
   // Prellena el formulario de "Registrar Pago" con los datos de la
-  // plantilla — solo falta confirmar la fecha y guardar.
+  // plantilla — solo falta confirmar la fecha (y si corresponde, el monto
+  // real en colones) y guardar. Siempre deja el formulario en modo
+  // dólares al prellenar — si el pago real fue en colones, hay que
+  // cambiar la moneda a mano antes de guardar.
   function registrarPagoDesdePlantilla(id) {
     const p = listaPlantillas.find(x => x.id === id);
     if (!p) return;
+    document.getElementById("movMoneda").value = "USD";
+    alternarMonedaGasto();
     document.getElementById("movDescripcion").value = p.descripcion || "";
     document.getElementById("movMonto").value = p.monto || "";
     document.getElementById("movCategoria").value = p.categoria || "Otro";
@@ -571,19 +592,39 @@
     const monto = parseFloat(document.getElementById("movMonto").value) || 0;
     const categoria = document.getElementById("movCategoria").value;
     const fecha = document.getElementById("movFecha").value;
+    const esColones = document.getElementById("movMoneda").value === "CRC";
 
     if (!descripcion || monto <= 0 || !fecha) {
       alert("Completá descripción, monto y fecha antes de guardar.");
       return;
     }
 
+    // NUEVO: si el pago fue en colones, se validan también el monto en ₡ y
+    // el tipo de cambio, y se guardan los tres datos — el sistema sigue
+    // sumando siempre en $ (campo "monto"), pero el registro en colones
+    // queda intacto para consultarlo después.
+    const datosPago = { descripcion, monto, categoria, fecha, creado_el: new Date() };
+
+    if (esColones) {
+      const montoColones = parseFloat(document.getElementById("movMontoColones").value) || 0;
+      const tipoCambio = parseFloat(document.getElementById("movTipoCambio").value) || 0;
+      if (montoColones <= 0 || tipoCambio <= 0) {
+        alert("Con pago en colones, completá también el monto en ₡ y el tipo de cambio.");
+        return;
+      }
+      datosPago.moneda = "CRC";
+      datosPago.monto_colones = montoColones;
+      datosPago.tipo_cambio = tipoCambio;
+    }
+
     try {
-      await db.collection("movimientos_gastos").add({
-        descripcion, monto, categoria, fecha, creado_el: new Date()
-      });
+      await db.collection("movimientos_gastos").add(datosPago);
       document.getElementById("movDescripcion").value = "";
       document.getElementById("movMonto").value = "";
+      document.getElementById("movMontoColones").value = "";
+      document.getElementById("movTipoCambio").value = "";
       document.getElementById("movFecha").value = "";
+      document.getElementById("equivalenciaMovGasto").textContent = "";
       alert("✅ Pago registrado.");
       await cargarDiario();
     } catch (e) {
@@ -641,10 +682,16 @@
           const fechaPago = item.fecha_pago_real?.toDate ? item.fecha_pago_real.toDate() : (item.fecha_pago_real ? new Date(item.fecha_pago_real) : null);
           if (!fechaPago) return;
 
+          // NUEVO: si esta fila se pagó en colones (guardado desde el
+          // modal de comisiones), se muestra la referencia en el Diario.
+          const referenciaColones = (typeof item.real_colones === "number" && item.tipo_cambio)
+            ? ` (₡${item.real_colones.toLocaleString('es-CR')} @ ${item.tipo_cambio})`
+            : "";
+
           pagos.push({
             tipo: clave === "comision" ? "Comisión" : "Proveedor",
             fecha: fechaPago,
-            descripcion: `${item.proveedor || 'Sin nombre'} — ${resumenReserva.titular || codigo}`,
+            descripcion: `${item.proveedor || 'Sin nombre'} — ${resumenReserva.titular || codigo}${referenciaColones}`,
             categoria: clave === "comision" ? "Comisión" : (clave === "hospedaje" ? "Hospedaje" : clave === "traslados" ? "Traslados" : "Tours"),
             monto: item.real,
             codigo
@@ -659,11 +706,16 @@
     const movSnap = await db.collection("movimientos_gastos").get();
     datosMovimientosOperativos = movSnap.docs.map(doc => {
       const d = doc.data();
+      // NUEVO: si el pago se guardó en colones, se agrega esa referencia a
+      // la descripción visible en el Diario, sin perder el dato.
+      const referenciaColones = (d.moneda === "CRC" && d.monto_colones)
+        ? ` (₡${Number(d.monto_colones).toLocaleString('es-CR')} @ ${d.tipo_cambio})`
+        : "";
       return {
         id: doc.id,
         tipo: "Operativo",
         fecha: d.fecha ? new Date(d.fecha + "T12:00:00") : null,
-        descripcion: d.descripcion || "",
+        descripcion: (d.descripcion || "") + referenciaColones,
         categoria: d.categoria || "Otro",
         monto: Number(d.monto || 0)
       };
@@ -753,47 +805,7 @@
     renderizarDiario();
   }
 
-  // Menú lateral de navegación (igual que el resto del sistema)
-  function inicializarMenuLateral() {
-    const usuario = JSON.parse(localStorage.getItem("usuario"));
-    const sidebar = document.getElementById("sidebar");
-    const contenido = document.getElementById("contenidoPrincipal");
-    const toggleBtn = document.querySelector('.toggle-btn');
-
-    if (usuario) {
-      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-      document.getElementById("rolUsuario").innerText = usuario.rol || "";
-    } else {
-      document.getElementById("nombreUsuario").innerText = "Invitado";
-    }
-
-    window.toggleSidebar = function () {
-      sidebar.classList.toggle('active');
-      contenido.classList.toggle('sidebar-visible');
-    };
-
-    window.cerrarSesionYRedirigir = function () {
-      localStorage.removeItem("usuario");
-      window.location.href = "login.html";
-    };
-
-    function checkScreenSize() {
-      if (window.innerWidth <= 768) {
-        sidebar.classList.remove('active');
-        contenido.classList.remove('sidebar-visible');
-      } else {
-        sidebar.classList.add('active');
-        contenido.classList.add('sidebar-visible');
-      }
-      toggleBtn.style.display = "block";
-    }
-
-    window.addEventListener('resize', checkScreenSize);
-    checkScreenSize();
-  }
-
   window.addEventListener("DOMContentLoaded", async () => {
-    inicializarMenuLateral();
     await cargarPlantillas();
     await cargarDatosBase();
     await cargarDiario();
@@ -810,6 +822,8 @@
   });
 </script>
   <script src="topbar.js"></script>
+  <script src="sidebar.js"></script>
+  <!-- Verificación real de sesión (Firebase Authentication). -->
   <script src="auth-guard.js"></script>
 </body>
 </html>
