@@ -517,22 +517,22 @@
     </div>
 
     <div class="tarjetas" style="margin-bottom:6px;">
-      <div class="tarjeta cobrar">
-        <div class="etiqueta">Ingreso Cobrado</div>
+      <div class="tarjeta cobrar" style="cursor:pointer;" onclick="abrirModalDetalleBalance('ingreso')" title="Clic para ver el detalle reserva por reserva">
+        <div class="etiqueta">Ingreso Cobrado 🔍</div>
         <div class="monto" id="balanceIngreso">$0.00</div>
         <div class="detalle" id="balanceCantidad">0 reservas</div>
       </div>
-      <div class="tarjeta pagar">
-        <div class="etiqueta">Costo Total (con comisiones)</div>
+      <div class="tarjeta pagar" style="cursor:pointer;" onclick="abrirModalDetalleBalance('costo')" title="Clic para ver el detalle reserva por reserva">
+        <div class="etiqueta">Costo Total (con comisiones) 🔍</div>
         <div class="monto" id="balanceCosto">$0.00</div>
         <div class="detalle" id="balanceDetalleComision">comisiones: $0.00</div>
       </div>
-      <div class="tarjeta" style="border-left-color:#5f9296;">
-        <div class="etiqueta">Gastos Operativos</div>
+      <div class="tarjeta" style="border-left-color:#5f9296; cursor:pointer;" onclick="abrirModalDetalleBalance('operativos')" title="Clic para ver el detalle">
+        <div class="etiqueta">Gastos Operativos 🔍</div>
         <div class="monto" id="balanceOperativos">$0.00</div>
         <div class="detalle">Nómina, publicidad, apps, etc. de este período</div>
       </div>
-      <div class="tarjeta real" style="cursor:pointer;" onclick="abrirModalDetalleBalance()" title="Clic para ver el detalle reserva por reserva">
+      <div class="tarjeta real" style="cursor:pointer;" onclick="abrirModalDetalleBalance('ganancia')" title="Clic para ver el detalle reserva por reserva">
         <div class="etiqueta">Ganancia Real Final 🔍</div>
         <div class="monto" id="balanceGananciaReal" style="font-size:2.1rem;">$0.00</div>
         <div class="detalle" id="balanceMargenReal">margen real: 0%</div>
@@ -814,51 +814,100 @@
   // renderizarBalance(), para que el modal de "Ganancia Real Final" no
   // tenga que recalcular nada — solo arma la tabla con lo que ya se sumó.
   let datosBalanceDetalle = [];
+  // NUEVO: lista de movimientos operativos del período actual — para el
+  // detalle de la tarjeta "Gastos Operativos".
+  let datosOperativosPeriodoLista = [];
 
-  function abrirModalDetalleBalance() {
+  function abrirModalDetalleBalance(tipo) {
     const titulo = document.getElementById("tituloModalDetalleBalance");
     const subtitulo = document.getElementById("subtituloModalDetalleBalance");
     const contenido = document.getElementById("contenidoModalDetalleBalance");
+    const rangoTexto = `${ultimoBalanceCalculado?.desdeStr ? formatearFechaVisible(new Date(ultimoBalanceCalculado.desdeStr + "T00:00:00")) : "—"} al ${ultimoBalanceCalculado?.hastaStr ? formatearFechaVisible(new Date(ultimoBalanceCalculado.hastaStr + "T00:00:00")) : "—"}`;
 
-    titulo.textContent = `Ganancia por reserva — ${ultimoBalanceCalculado?.desdeStr ? formatearFechaVisible(new Date(ultimoBalanceCalculado.desdeStr + "T00:00:00")) : "—"} al ${ultimoBalanceCalculado?.hastaStr ? formatearFechaVisible(new Date(ultimoBalanceCalculado.hastaStr + "T00:00:00")) : "—"}`;
-    subtitulo.textContent = "Ingreso cobrado − costo de viaje − comisión, reserva por reserva. Los Gastos Operativos NO son de una reserva en particular, se restan una sola vez al final.";
+    if (tipo === "ingreso") {
+      titulo.textContent = `Ingreso Cobrado — ${rangoTexto}`;
+      subtitulo.textContent = "Lo que realmente entró de cada reserva (venta − saldo pendiente) en este período.";
+      const filas = datosBalanceDetalle.slice().sort((a, b) => b.ingresoCobrado - a.ingresoCobrado);
+      let tablaHtml = construirTablaDetalleCaja(
+        ["Código", "Titular", "Destino", "Ingreso Cobrado"],
+        filas.map(r => [
+          `<a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a>`,
+          r.titular, r.destino, formatoMoneda(r.ingresoCobrado)
+        ])
+      );
+      const totalIngreso = filas.reduce((s, r) => s + r.ingresoCobrado, 0);
+      tablaHtml = tablaHtml.replace("</tbody>", `<tr style="background:#eef6f6; font-weight:bold;"><td colspan="3">TOTAL</td><td>${formatoMoneda(totalIngreso)}</td></tr></tbody>`);
+      const falta = ultimoBalanceCalculado?.faltaPorCobrar || 0;
+      contenido.innerHTML = tablaHtml + (falta > 0.01 ? `<p style="font-size:0.85rem; color:#c0392b; margin-top:10px;">Todavía falta cobrar en este período: ${formatoMoneda(falta)} (venta total: ${formatoMoneda(ultimoBalanceCalculado.ventaTotal)}).</p>` : '');
 
-    const totales = datosBalanceDetalle.reduce((acc, r) => {
-      acc.ingreso += r.ingresoCobrado;
-      acc.costo += r.costoViaje;
-      acc.comision += r.comision;
-      acc.ganancia += r.ganancia;
-      return acc;
-    }, { ingreso: 0, costo: 0, comision: 0, ganancia: 0 });
+    } else if (tipo === "costo") {
+      titulo.textContent = `Costo Total — ${rangoTexto}`;
+      subtitulo.textContent = "Costo de viaje (boletos, hospedaje, traslados, tours) + comisión, de cada reserva de este período.";
+      const filas = datosBalanceDetalle.slice().sort((a, b) => (b.costoViaje + b.comision) - (a.costoViaje + a.comision));
+      let tablaHtml = construirTablaDetalleCaja(
+        ["Código", "Titular", "Destino", "Costo de Viaje", "Comisión", "Costo Total"],
+        filas.map(r => [
+          `<a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a>`,
+          r.titular, r.destino, formatoMoneda(r.costoViaje), formatoMoneda(r.comision), formatoMoneda(r.costoViaje + r.comision)
+        ])
+      );
+      const t = filas.reduce((acc, r) => ({ viaje: acc.viaje + r.costoViaje, comision: acc.comision + r.comision }), { viaje: 0, comision: 0 });
+      tablaHtml = tablaHtml.replace("</tbody>", `<tr style="background:#eef6f6; font-weight:bold;"><td colspan="3">TOTAL</td><td>${formatoMoneda(t.viaje)}</td><td>${formatoMoneda(t.comision)}</td><td>${formatoMoneda(t.viaje + t.comision)}</td></tr></tbody>`);
+      contenido.innerHTML = tablaHtml;
 
-    let tablaHtml = construirTablaDetalleCaja(
-      ["Código", "Titular", "Destino", "Ingreso Cobrado", "Costo de Viaje", "Comisión", "Ganancia"],
-      datosBalanceDetalle.map(r => [
-        `<a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a>`,
-        r.titular, r.destino, formatoMoneda(r.ingresoCobrado), formatoMoneda(r.costoViaje), formatoMoneda(r.comision),
-        `<span class="${r.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${formatoMoneda(r.ganancia)}</span>`
-      ])
-    );
-    tablaHtml = tablaHtml.replace(
-      "</tbody>",
-      `<tr style="background:#eef6f6; font-weight:bold;">
-        <td colspan="3">TOTAL</td>
-        <td>${formatoMoneda(totales.ingreso)}</td>
-        <td>${formatoMoneda(totales.costo)}</td>
-        <td>${formatoMoneda(totales.comision)}</td>
-        <td>${formatoMoneda(totales.ganancia)}</td>
-      </tr></tbody>`
-    );
+    } else if (tipo === "operativos") {
+      titulo.textContent = `Gastos Operativos — ${rangoTexto}`;
+      subtitulo.textContent = "Pagos operativos (nómina, publicidad, etc.) registrados en Gastos, con fecha de pago dentro de este período.";
+      const filas = datosOperativosPeriodoLista.slice().sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+      let tablaHtml = construirTablaDetalleCaja(
+        ["Fecha", "Descripción", "Categoría", "Monto"],
+        filas.map(m => [formatearFechaVisible(m.fecha), m.descripcion, m.categoria, formatoMoneda(m.monto)])
+      );
+      const totalOperativo = filas.reduce((s, m) => s + m.monto, 0);
+      tablaHtml = tablaHtml.replace("</tbody>", `<tr style="background:#eef6f6; font-weight:bold;"><td colspan="3">TOTAL</td><td>${formatoMoneda(totalOperativo)}</td></tr></tbody>`);
+      contenido.innerHTML = tablaHtml;
 
-    const operativos = ultimoBalanceCalculado?.gastosOperativosPeriodo || 0;
-    contenido.innerHTML = tablaHtml + `
-      <div style="background:#f7fbfb; border:1px solid #dde8e8; border-radius:8px; padding:14px; margin-top:14px; font-size:0.95rem;">
-        Suma de ganancia por reserva&nbsp; <strong style="float:right;">${formatoMoneda(totales.ganancia)}</strong><br>
-        ➖ Gastos Operativos del período&nbsp; <strong style="float:right; color:#c0392b;">${formatoMoneda(operativos)}</strong><br>
-        <hr style="margin:8px 0;">
-        <strong>= Ganancia Real Final&nbsp; <span style="float:right; color:#02535a;">${formatoMoneda(totales.ganancia - operativos)}</span></strong>
-      </div>
-    `;
+    } else {
+      titulo.textContent = `Ganancia por reserva — ${rangoTexto}`;
+      subtitulo.textContent = "Ingreso cobrado − costo de viaje − comisión, reserva por reserva. Los Gastos Operativos NO son de una reserva en particular, se restan una sola vez al final.";
+
+      const totales = datosBalanceDetalle.reduce((acc, r) => {
+        acc.ingreso += r.ingresoCobrado;
+        acc.costo += r.costoViaje;
+        acc.comision += r.comision;
+        acc.ganancia += r.ganancia;
+        return acc;
+      }, { ingreso: 0, costo: 0, comision: 0, ganancia: 0 });
+
+      let tablaHtml = construirTablaDetalleCaja(
+        ["Código", "Titular", "Destino", "Ingreso Cobrado", "Costo de Viaje", "Comisión", "Ganancia"],
+        datosBalanceDetalle.map(r => [
+          `<a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a>`,
+          r.titular, r.destino, formatoMoneda(r.ingresoCobrado), formatoMoneda(r.costoViaje), formatoMoneda(r.comision),
+          `<span class="${r.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${formatoMoneda(r.ganancia)}</span>`
+        ])
+      );
+      tablaHtml = tablaHtml.replace(
+        "</tbody>",
+        `<tr style="background:#eef6f6; font-weight:bold;">
+          <td colspan="3">TOTAL</td>
+          <td>${formatoMoneda(totales.ingreso)}</td>
+          <td>${formatoMoneda(totales.costo)}</td>
+          <td>${formatoMoneda(totales.comision)}</td>
+          <td>${formatoMoneda(totales.ganancia)}</td>
+        </tr></tbody>`
+      );
+
+      const operativos = ultimoBalanceCalculado?.gastosOperativosPeriodo || 0;
+      contenido.innerHTML = tablaHtml + `
+        <div style="background:#f7fbfb; border:1px solid #dde8e8; border-radius:8px; padding:14px; margin-top:14px; font-size:0.95rem;">
+          Suma de ganancia por reserva&nbsp; <strong style="float:right;">${formatoMoneda(totales.ganancia)}</strong><br>
+          ➖ Gastos Operativos del período&nbsp; <strong style="float:right; color:#c0392b;">${formatoMoneda(operativos)}</strong><br>
+          <hr style="margin:8px 0;">
+          <strong>= Ganancia Real Final&nbsp; <span style="float:right; color:#02535a;">${formatoMoneda(totales.ganancia - operativos)}</span></strong>
+        </div>
+      `;
+    }
 
     document.getElementById("modalDetalleBalance").style.display = "flex";
   }
@@ -1593,9 +1642,9 @@
     const costo = desglose.boletos + desglose.hospedaje + desglose.traslados + desglose.tours + desglose.comision;
     const ganancia = ingreso - costo;
 
-    const gastosOperativosPeriodo = datosMovimientosGastos
-      .filter(m => m.fecha && (!desde || m.fecha >= desde) && (!hasta || m.fecha <= hasta))
-      .reduce((suma, m) => suma + m.monto, 0);
+    datosOperativosPeriodoLista = datosMovimientosGastos
+      .filter(m => m.fecha && (!desde || m.fecha >= desde) && (!hasta || m.fecha <= hasta));
+    const gastosOperativosPeriodo = datosOperativosPeriodoLista.reduce((suma, m) => suma + m.monto, 0);
     const gananciaReal = ganancia - gastosOperativosPeriodo;
     const margenReal = ingreso > 0 ? (gananciaReal / ingreso * 100) : 0;
 
