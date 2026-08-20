@@ -253,6 +253,34 @@
     <div id="contenidoAlertaCobro"></div>
   </div>
 
+  <div class="seccion" style="border-left: 6px solid #1b9e3c;">
+    <h3>💵 Posición de Caja Real</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">De TODO lo cobrado hasta hoy (reservas activas + históricas juntas, sin filtro de fecha), cuánto ya está comprometido con proveedores y cuánto es realmente tuyo para quedarte.</p>
+
+    <div class="tarjetas" style="margin-bottom:6px;">
+      <div class="tarjeta" style="border-left-color:#1b9e3c;">
+        <div class="etiqueta">Total Cobrado (histórico)</div>
+        <div class="monto" id="cajaTotalCobrado">$0.00</div>
+        <div class="detalle" id="cajaDetalleCobrado">calculando...</div>
+      </div>
+      <div class="tarjeta pagar">
+        <div class="etiqueta">Comprometido con Proveedores</div>
+        <div class="monto" id="cajaComprometido">$0.00</div>
+        <div class="detalle" id="cajaDetalleComprometido">calculando...</div>
+      </div>
+      <div class="tarjeta" style="border-left-color:#5f9296;">
+        <div class="etiqueta">Gastos Operativos Pagados (histórico)</div>
+        <div class="monto" id="cajaOperativos">$0.00</div>
+        <div class="detalle">Nómina, publicidad, apps, etc. — todo el tiempo</div>
+      </div>
+      <div class="tarjeta" style="border-left-color:#02535a;">
+        <div class="etiqueta">Ganancia Neta Real Disponible</div>
+        <div class="monto" id="cajaGananciaNeta" style="font-size:2.1rem;">$0.00</div>
+      </div>
+    </div>
+    <p style="font-size:0.78rem; color:#a35b00; margin-top:4px;">⚠️ Supone que TODO lo "Comprometido con Proveedores" eventualmente se termina pagando completo — si una reserva todavía no tiene sus costos registrados en Costos, esa reserva queda afuera de este cálculo (mismo criterio que el resto de Finanzas). No reemplaza tu saldo bancario real, es una aproximación de gerencia.</p>
+  </div>
+
   <div class="seccion">
     <h3>📊 Resumen de Ventas por Período</h3>
     <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Se cuenta por la fecha en que se hizo la reserva (cuando se vendió), sin importar cuándo viaja el cliente — por defecto, este mes.</p>
@@ -789,6 +817,53 @@
     aplicarRangoDestinosTodas();
     aplicarRangoBalance("mes-actual");
     renderizarAlertaCobro();
+    renderizarCajaReal();
+  }
+
+  // ==========================================
+  // NUEVO (20/8/2026): Posición de Caja Real — a diferencia de "Balance por
+  // Período" (que filtra por fecha de VIAJE), esto NO filtra por fecha —
+  // mira TODAS las reservas (activas + históricas juntas) para responder
+  // "de toda la plata que he cobrado en la vida del negocio, cuánto ya
+  // está comprometido con proveedores y cuánto es realmente ganancia mía
+  // para quedarme". Es una aproximación de gerencia — asume que TODO lo
+  // proyectado a proveedores eventualmente se paga completo, y solo cuenta
+  // reservas que ya tienen costos registrados en costos_agregar.html.
+  // ==========================================
+
+  function renderizarCajaReal() {
+    // Total cobrado: la plata que YA entró (venta - saldo pendiente) de
+    // CADA reserva que exista, sin importar si ya viajó o todavía no.
+    let totalCobrado = 0;
+    Object.values(datosReservasPorCodigo).forEach(r => {
+      totalCobrado += Math.max(r.ingreso - r.saldo, 0);
+    });
+
+    // Comprometido con proveedores: el costo TOTAL (ya pagado + todavía
+    // proyectado) de cada reserva que tenga costos registrados — mismo
+    // dato que ya usa el resto de Finanzas (analizarCostosDeReserva),
+    // pero sumado SIN filtrar por fecha de viaje.
+    let comprometidoTotal = 0;
+    let comprometidoPendiente = 0;
+    Object.keys(datosCostosPorCodigo).forEach(codigo => {
+      comprometidoTotal += datosCostosPorCodigo[codigo].costoTotal;
+      comprometidoPendiente += calcularPendientePagarProveedores(codigo);
+    });
+    const comprometidoYaPagado = comprometidoTotal - comprometidoPendiente;
+
+    // Gastos operativos: TODO el historial, sin filtro de fecha.
+    const operativosTotal = datosMovimientosGastos.reduce((suma, m) => suma + m.monto, 0);
+
+    const gananciaNeta = totalCobrado - comprometidoTotal - operativosTotal;
+
+    document.getElementById("cajaTotalCobrado").textContent = formatoMoneda(totalCobrado);
+    document.getElementById("cajaDetalleCobrado").textContent =
+      `${Object.keys(datosReservasPorCodigo).length} reserva${Object.keys(datosReservasPorCodigo).length === 1 ? '' : 's'} en total`;
+    document.getElementById("cajaComprometido").textContent = formatoMoneda(comprometidoTotal);
+    document.getElementById("cajaDetalleComprometido").textContent =
+      `Ya pagado: ${formatoMoneda(comprometidoYaPagado)} · Pendiente: ${formatoMoneda(comprometidoPendiente)}`;
+    document.getElementById("cajaOperativos").textContent = formatoMoneda(operativosTotal);
+    document.getElementById("cajaGananciaNeta").textContent = formatoMoneda(gananciaNeta);
   }
 
   function calcularPendientePagarProveedores(codigo) {
