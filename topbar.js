@@ -666,9 +666,14 @@
   // cambia tan seguido en el día, y así no se satura la página del BCCR de
   // la que se saca el dato).
   const MINUTOS_REFRESCO_TIPO_CAMBIO = 45;
+  // NUEVO: guarda el último valor mostrado, para saber si el nuevo dato
+  // realmente cambió y así destellar el recuadro solo cuando corresponde
+  // (no en cada refresco, si el número sigue siendo el mismo).
+  let ultimoValorTipoCambio = null;
 
   async function cargarTipoCambioTopbar() {
     const elemento = document.getElementById("valorTipoCambioTopbar");
+    const contenedor = document.getElementById("tipoCambioTopbar");
     if (!elemento) return;
     try {
       const respuesta = await fetch("/.netlify/functions/tipo-cambio-bncr");
@@ -676,7 +681,23 @@
       if (!respuesta.ok || resultado.error) {
         throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
       }
-      elemento.textContent = resultado.venta.toFixed(2);
+      const nuevoValor = resultado.venta.toFixed(2);
+
+      if (contenedor && ultimoValorTipoCambio !== null && ultimoValorTipoCambio !== nuevoValor) {
+        // Destello: el recuadro cambia de color un par de segundos y vuelve
+        // solo, para que se note que el número cambió sin tener que estar
+        // mirando fijo la barra.
+        contenedor.style.transition = "background-color 0.3s ease, color 0.3s ease";
+        contenedor.style.backgroundColor = "#ffb703";
+        contenedor.style.color = "#02535a";
+        setTimeout(() => {
+          contenedor.style.backgroundColor = "rgba(255,255,255,0.12)";
+          contenedor.style.color = "white";
+        }, 2500);
+      }
+
+      ultimoValorTipoCambio = nuevoValor;
+      elemento.textContent = nuevoValor;
     } catch (e) {
       console.warn("No se pudo cargar el tipo de cambio en la barra superior:", e);
       elemento.textContent = "—";
