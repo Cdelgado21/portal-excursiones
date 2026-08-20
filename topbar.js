@@ -85,6 +85,9 @@
     return `
       <button type="button" id="botonMenuLateral" aria-label="Abrir menú">☰</button>
       <span class="titulo-sistema">Excursiones Delgado — Sistema Integral</span>
+      <div id="tipoCambioTopbar" title="Tipo de cambio de venta, Banco Nacional (vía BCCR) — se actualiza solo cada 45 minutos" style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.12); border-radius:8px; padding:5px 12px; font-size:0.82rem; color:white; font-weight:bold; white-space:nowrap; margin-left:12px;">
+        <span style="opacity:0.85;">₡</span><span id="valorTipoCambioTopbar">...</span>
+      </div>
       <div style="display:flex; align-items:center;">
         <div class="campana-container" id="botonCampanaTopbar">
           <span class="campana-icono">🔔</span>
@@ -652,6 +655,37 @@
 
     cargarNotificaciones(usuario);
     iniciarControlInactividad();
+    iniciarTipoCambioTopbar();
+  }
+
+  // ---------- Tipo de cambio (Banco Nacional, vía la página de
+  // "Ventanilla" del BCCR) en la barra superior ----------
+  // Reusa la misma Netlify Function que ya usan Gastos y Comisiones para
+  // convertir pagos en colones — acá solo se muestra el dato, no se hace
+  // ningún cálculo. Se refresca solo cada 45 minutos (el tipo de cambio no
+  // cambia tan seguido en el día, y así no se satura la página del BCCR de
+  // la que se saca el dato).
+  const MINUTOS_REFRESCO_TIPO_CAMBIO = 45;
+
+  async function cargarTipoCambioTopbar() {
+    const elemento = document.getElementById("valorTipoCambioTopbar");
+    if (!elemento) return;
+    try {
+      const respuesta = await fetch("/.netlify/functions/tipo-cambio-bncr");
+      const resultado = await respuesta.json().catch(() => ({}));
+      if (!respuesta.ok || resultado.error) {
+        throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
+      }
+      elemento.textContent = resultado.venta.toFixed(2);
+    } catch (e) {
+      console.warn("No se pudo cargar el tipo de cambio en la barra superior:", e);
+      elemento.textContent = "—";
+    }
+  }
+
+  function iniciarTipoCambioTopbar() {
+    cargarTipoCambioTopbar();
+    setInterval(cargarTipoCambioTopbar, MINUTOS_REFRESCO_TIPO_CAMBIO * 60 * 1000);
   }
 
   // ---------- Helper global para avisos AUTOMÁTICOS del sistema ----------
