@@ -493,7 +493,12 @@
 
   <div class="seccion">
     <h3>📑 Balance por Período</h3>
-    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE — el Ingreso acá es lo que REALMENTE entró de esas reservas (no el valor total de la venta), así "Ganancia Real Final" es tu ganancia de verdad, después de costos, comisiones y gastos operativos. Hacé clic en esa tarjeta para ver el detalle reserva por reserva.</p>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE. Elegí la vista: <strong>Caja</strong> cuenta solo lo que REALMENTE entró (aunque un cliente todavía deba), <strong>Balance General</strong> cuenta el valor total de la venta (aunque no se haya cobrado todo). Hacé clic en cualquier tarjeta para ver el detalle reserva por reserva.</p>
+
+    <div style="display:flex; gap:6px; margin-bottom:15px;">
+      <button type="button" onclick="cambiarModoBalance('caja')" id="btnModoCaja" class="btn-rango activo">💵 Caja (Cobrado)</button>
+      <button type="button" onclick="cambiarModoBalance('general')" id="btnModoGeneral" class="btn-rango">📊 Balance General (Vendido)</button>
+    </div>
 
     <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
       <div>
@@ -518,27 +523,28 @@
 
     <div class="tarjetas" style="margin-bottom:6px;">
       <div class="tarjeta cobrar" style="cursor:pointer;" onclick="abrirModalDetalleBalance('ingreso')" title="Clic para ver el detalle reserva por reserva">
-        <div class="etiqueta">Ingreso Cobrado 🔍</div>
+        <div class="etiqueta" id="balanceEtiquetaIngreso">Ingreso Cobrado 🔍</div>
         <div class="monto" id="balanceIngreso">$0.00</div>
         <div class="detalle" id="balanceCantidad">0 reservas</div>
       </div>
       <div class="tarjeta pagar" style="cursor:pointer;" onclick="abrirModalDetalleBalance('costo')" title="Clic para ver el detalle reserva por reserva">
-        <div class="etiqueta">Costo Total (con comisiones) 🔍</div>
+        <div class="etiqueta">Costo de Reserva (con comisiones) 🔍</div>
         <div class="monto" id="balanceCosto">$0.00</div>
         <div class="detalle" id="balanceDetalleComision">comisiones: $0.00</div>
       </div>
       <div class="tarjeta" style="border-left-color:#5f9296; cursor:pointer;" onclick="abrirModalDetalleBalance('operativos')" title="Clic para ver el detalle">
-        <div class="etiqueta">Gastos Operativos 🔍</div>
+        <div class="etiqueta">Costo de Operación 🔍</div>
         <div class="monto" id="balanceOperativos">$0.00</div>
         <div class="detalle">Nómina, publicidad, apps, etc. de este período</div>
       </div>
       <div class="tarjeta real" style="cursor:pointer;" onclick="abrirModalDetalleBalance('ganancia')" title="Clic para ver el detalle reserva por reserva">
-        <div class="etiqueta">Ganancia Real Final 🔍</div>
+        <div class="etiqueta" id="balanceEtiquetaGanancia">Ganancia Real Final 🔍</div>
         <div class="monto" id="balanceGananciaReal" style="font-size:2.1rem;">$0.00</div>
         <div class="detalle" id="balanceMargenReal">margen real: 0%</div>
       </div>
     </div>
-    <p style="font-size:0.8rem; color:#888; margin-top:-2px; margin-bottom:15px;">"Ingreso Cobrado" solo cuenta la plata que ya entró de estas reservas — si un cliente todavía debe, esa parte no cuenta hasta que pague. <span id="balanceDetalleVenta"></span></p>
+    <p style="font-size:0.8rem; color:#888; margin-top:-2px; margin-bottom:15px;" id="balanceNotaModo"></p>
+
 
     <h4 style="color:#02535a; margin-bottom:8px;">Desglose de Costos</h4>
     <table>
@@ -825,11 +831,15 @@
     const rangoTexto = `${ultimoBalanceCalculado?.desdeStr ? formatearFechaVisible(new Date(ultimoBalanceCalculado.desdeStr + "T00:00:00")) : "—"} al ${ultimoBalanceCalculado?.hastaStr ? formatearFechaVisible(new Date(ultimoBalanceCalculado.hastaStr + "T00:00:00")) : "—"}`;
 
     if (tipo === "ingreso") {
-      titulo.textContent = `Ingreso Cobrado — ${rangoTexto}`;
-      subtitulo.textContent = "Lo que realmente entró de cada reserva (venta − saldo pendiente) en este período.";
+      const esCaja = modoBalanceActual === "caja";
+      const etiquetaCol = esCaja ? "Ingreso Cobrado" : "Venta Total";
+      titulo.textContent = `${etiquetaCol} — ${rangoTexto}`;
+      subtitulo.textContent = esCaja
+        ? "Lo que realmente entró de cada reserva (venta − saldo pendiente) en este período."
+        : "El valor total de la venta de cada reserva en este período, se haya cobrado o no.";
       const filas = datosBalanceDetalle.slice().sort((a, b) => b.ingresoCobrado - a.ingresoCobrado);
       let tablaHtml = construirTablaDetalleCaja(
-        ["Código", "Titular", "Destino", "Ingreso Cobrado"],
+        ["Código", "Titular", "Destino", etiquetaCol],
         filas.map(r => [
           `<a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a>`,
           r.titular, r.destino, formatoMoneda(r.ingresoCobrado)
@@ -868,8 +878,10 @@
       contenido.innerHTML = tablaHtml;
 
     } else {
-      titulo.textContent = `Ganancia por reserva — ${rangoTexto}`;
-      subtitulo.textContent = "Ingreso cobrado − costo de viaje − comisión, reserva por reserva. Los Gastos Operativos NO son de una reserva en particular, se restan una sola vez al final.";
+      const esCajaG = modoBalanceActual === "caja";
+      const etiquetaColG = esCajaG ? "Ingreso Cobrado" : "Venta Total";
+      titulo.textContent = `${esCajaG ? "Ganancia Real" : "Ganancia (Balance General)"} por reserva — ${rangoTexto}`;
+      subtitulo.textContent = `${etiquetaColG} − costo de viaje − comisión, reserva por reserva. Los Gastos Operativos NO son de una reserva en particular, se restan una sola vez al final.`;
 
       const totales = datosBalanceDetalle.reduce((acc, r) => {
         acc.ingreso += r.ingresoCobrado;
@@ -880,7 +892,7 @@
       }, { ingreso: 0, costo: 0, comision: 0, ganancia: 0 });
 
       let tablaHtml = construirTablaDetalleCaja(
-        ["Código", "Titular", "Destino", "Ingreso Cobrado", "Costo de Viaje", "Comisión", "Ganancia"],
+        ["Código", "Titular", "Destino", etiquetaColG, "Costo de Viaje", "Comisión", "Ganancia"],
         datosBalanceDetalle.map(r => [
           `<a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a>`,
           r.titular, r.destino, formatoMoneda(r.ingresoCobrado), formatoMoneda(r.costoViaje), formatoMoneda(r.comision),
@@ -1587,6 +1599,18 @@
     };
   }
 
+  // NUEVO: modo de vista — "caja" (lo que ya armamos: solo cuenta lo
+  // REALMENTE cobrado) vs "general" (cuenta el valor total de la venta,
+  // se haya cobrado o no — como un balance contable tradicional).
+  let modoBalanceActual = "caja";
+
+  function cambiarModoBalance(modo) {
+    modoBalanceActual = modo;
+    document.getElementById("btnModoCaja").classList.toggle("activo", modo === "caja");
+    document.getElementById("btnModoGeneral").classList.toggle("activo", modo === "general");
+    renderizarBalance();
+  }
+
   function renderizarBalance() {
     const desdeStr = document.getElementById("balanceDesde").value;
     const hastaStr = document.getElementById("balanceHasta").value;
@@ -1603,10 +1627,11 @@
     const conCostos = incluidas.filter(([codigo]) => datosCostosPorCodigo[codigo]);
     const sinCostos = incluidas.length - conCostos.length;
 
-    // NUEVO: el Ingreso ahora es lo que REALMENTE entró de cada reserva
-    // (venta − saldo pendiente), no el valor total de la venta — si un
-    // cliente todavía debe, esa parte no cuenta hasta que pague. La venta
-    // total y lo que falta por cobrar quedan como referencia aparte.
+    // NUEVO: la BASE del ingreso depende del modo elegido — en "Caja" es
+    // lo que REALMENTE entró (venta − saldo pendiente); en "Balance
+    // General" es el valor TOTAL de la venta, sin importar si ya se
+    // cobró. La venta total y lo que falta por cobrar siempre se calculan
+    // aparte, como referencia, sin importar el modo.
     let ingreso = 0;
     let ventaTotal = 0;
     let faltaPorCobrar = 0;
@@ -1615,7 +1640,8 @@
 
     conCostos.forEach(([codigo, r]) => {
       const cobradoReserva = Math.max(r.ingreso - r.saldo, 0);
-      ingreso += cobradoReserva;
+      const ingresoBaseReserva = modoBalanceActual === "caja" ? cobradoReserva : r.ingreso;
+      ingreso += ingresoBaseReserva;
       ventaTotal += r.ingreso;
       faltaPorCobrar += Math.max(r.saldo, 0);
 
@@ -1631,10 +1657,10 @@
         codigo,
         titular: r.titular || '-',
         destino: r.destino || '-',
-        ingresoCobrado: cobradoReserva,
+        ingresoCobrado: ingresoBaseReserva,
         costoViaje: costoViajeReserva,
         comision: d.comision,
-        ganancia: cobradoReserva - costoViajeReserva - d.comision
+        ganancia: ingresoBaseReserva - costoViajeReserva - d.comision
       });
     });
     datosBalanceDetalle.sort((a, b) => b.ingresoCobrado - a.ingresoCobrado);
@@ -1654,6 +1680,10 @@
     desglose.operativo = gastosOperativosPeriodo;
     const costoConOperativo = costo + gastosOperativosPeriodo;
 
+    document.getElementById("balanceEtiquetaIngreso").textContent =
+      modoBalanceActual === "caja" ? "Ingreso Cobrado 🔍" : "Venta Total (Vendido) 🔍";
+    document.getElementById("balanceEtiquetaGanancia").textContent =
+      modoBalanceActual === "caja" ? "Ganancia Real Final 🔍" : "Ganancia (Balance General) 🔍";
     document.getElementById("balanceIngreso").textContent = formatoMoneda(ingreso);
     document.getElementById("balanceCantidad").textContent =
       `${conCostos.length} reserva${conCostos.length === 1 ? '' : 's'} con costos` +
@@ -1663,8 +1693,10 @@
     document.getElementById("balanceOperativos").textContent = formatoMoneda(gastosOperativosPeriodo);
     document.getElementById("balanceGananciaReal").textContent = formatoMoneda(gananciaReal);
     document.getElementById("balanceMargenReal").textContent = `margen real: ${margenReal.toFixed(1)}%`;
-    document.getElementById("balanceDetalleVenta").textContent =
-      faltaPorCobrar > 0.01 ? `Venta total de estas reservas: ${formatoMoneda(ventaTotal)} — todavía falta cobrar ${formatoMoneda(faltaPorCobrar)}.` : '';
+    document.getElementById("balanceNotaModo").textContent =
+      modoBalanceActual === "caja"
+        ? (faltaPorCobrar > 0.01 ? `"Ingreso Cobrado" no incluye lo que todavía deben los clientes. Venta total de estas reservas: ${formatoMoneda(ventaTotal)} — falta cobrar ${formatoMoneda(faltaPorCobrar)}.` : '')
+        : `"Venta Total" cuenta el valor completo de la venta, se haya cobrado o no.` + (faltaPorCobrar > 0.01 ? ` De este total, todavía falta cobrar ${formatoMoneda(faltaPorCobrar)}.` : '');
 
     const tabla = document.getElementById("tablaDesgloseBalance");
     tabla.innerHTML = "";
@@ -1683,7 +1715,7 @@
     ultimoBalanceCalculado = {
       desdeStr, hastaStr, ingreso, ventaTotal, faltaPorCobrar, costo, ganancia,
       gastosOperativosPeriodo, gananciaReal, margenReal, costoConOperativo,
-      cantidad: conCostos.length, sinCostos, desglose
+      cantidad: conCostos.length, sinCostos, desglose, modo: modoBalanceActual
     };
   }
 
