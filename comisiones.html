@@ -152,13 +152,38 @@
     <div class="modal-content">
       <h2 id="tituloModalComisiones">Comisiones de</h2>
       <p style="font-size:0.85rem; color:#666; margin-top:-10px;">Marca las reservas que quieres incluir en este pago. El monto se puede ajustar si pagaste distinto a lo proyectado.</p>
+
+      <!-- NUEVO: bloque de moneda — si le pagaste a la colaboradora en
+           colones, se ingresa el tipo de cambio de venta del Banco
+           Nacional (a mano o traído automático) y por fila se pone el
+           monto en ₡; el sistema calcula solo el equivalente en $, que es
+           lo que se sigue usando para sumar en todo el sistema. -->
+      <div class="bloque-moneda-comision" style="background:#f7fbfb; border:1px solid #dde8e8; border-radius:8px; padding:12px; margin-bottom:15px; display:flex; flex-wrap:wrap; gap:15px; align-items:flex-end;">
+        <div>
+          <label style="display:block; font-size:0.78rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Moneda del pago</label>
+          <select id="monedaPagoComision" onchange="alternarMonedaComision()" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+            <option value="USD">Dólares ($)</option>
+            <option value="CRC">Colones (₡)</option>
+          </select>
+        </div>
+        <div id="bloqueTipoCambioComision" style="display:none;">
+          <label style="display:block; font-size:0.78rem; font-weight:bold; color:#5f9296; margin-bottom:4px;">Tipo de cambio (venta, Banco Nacional)</label>
+          <div style="display:flex; gap:6px;">
+            <input type="number" id="tipoCambioComision" step="0.01" placeholder="Ej. 458.00" style="width:100px; padding:8px; border-radius:6px; border:1px solid #ccc;" oninput="recalcularTodosMontosComision()">
+            <button type="button" onclick="traerTipoCambioComision()" id="btnTraerTCComision" style="background:#02535a; color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer; font-size:0.85rem;">🔄 Traer</button>
+          </div>
+          <div id="estadoTipoCambioComision" style="font-size:0.75rem; color:#888; margin-top:4px; max-width:220px;"></div>
+        </div>
+      </div>
+
       <table style="width:100%; border-collapse:collapse; margin-bottom:15px;">
         <thead>
           <tr style="background:#5f9296; color:white;">
             <th style="padding:8px;"></th>
             <th style="padding:8px;">Reserva</th>
             <th style="padding:8px;">Fecha viaje</th>
-            <th style="padding:8px;">Monto</th>
+            <th style="padding:8px; display:none;" id="encabezadoMontoColonesComision">Monto (₡)</th>
+            <th style="padding:8px;">Monto ($)</th>
           </tr>
         </thead>
         <tbody id="filasComisionesPendientes"></tbody>
@@ -293,7 +318,9 @@
           reserva: data.codigo,
           fecha_viaje: data.fecha_viaje,
           monto: esReal ? item.real : (item.proyectado || 0),
-          fecha_pago_real: item.fecha_pago_real || null
+          fecha_pago_real: item.fecha_pago_real || null,
+          real_colones: typeof item.real_colones === "number" ? item.real_colones : null,
+          tipo_cambio: item.tipo_cambio || null
         };
         if (esReal) {
           window.comisionesPorUsuario[item.proveedor].pagadas.push(registro);
@@ -333,6 +360,10 @@
   function abrirModalComisiones(nombreUsuario, nombreCompleto) {
     window.comisionesUsuarioActual = nombreUsuario;
     document.getElementById("tituloModalComisiones").textContent = `Comisiones de ${nombreCompleto}`;
+    document.getElementById("monedaPagoComision").value = "USD";
+    document.getElementById("tipoCambioComision").value = "";
+    document.getElementById("estadoTipoCambioComision").textContent = "";
+    alternarMonedaComision();
 
     const pendientes = window.comisionesPorUsuario[nombreUsuario]?.pendientes || [];
     const filas = document.getElementById("filasComisionesPendientes");
@@ -348,6 +379,7 @@
           <td style="padding:8px; text-align:center;"><input type="checkbox" class="check-comision" data-indice="${i}" checked></td>
           <td style="padding:8px;">${r.reserva}</td>
           <td style="padding:8px;">${formatearFechaViajeComision(r.fecha_viaje)}</td>
+          <td style="padding:8px; display:none;" class="celda-monto-colones-comision"><input type="number" class="monto-colones-comision" data-indice="${i}" step="1" style="width:100px; margin:0; padding:6px;" oninput="recalcularMontoUSDComisionFila(${i})"></td>
           <td style="padding:8px;"><input type="number" class="monto-comision" data-indice="${i}" value="${r.monto.toFixed(2)}" style="width:90px; margin:0; padding:6px;"></td>
         `;
         filas.appendChild(fila);
@@ -361,12 +393,93 @@
     document.getElementById("modalComisiones").style.display = "none";
   }
 
+  // ==========================================
+  // NUEVO: Moneda del pago (₡/$) — para cuando se le paga a la
+  // colaboradora en colones en vez de dólares. Trae el tipo de cambio de
+  // VENTA del Banco Nacional (vía la Netlify Function que lee la página
+  // del BCCR) y calcula el equivalente en $ de cada fila marcada —
+  // guardando el monto en colones y el tipo de cambio usado, para no
+  // perder el dato real de lo pagado.
+  // ==========================================
+
+  async function consultarTipoCambioBNCR() {
+    const respuesta = await fetch("/.netlify/functions/tipo-cambio-bncr");
+    const resultado = await respuesta.json().catch(() => ({}));
+    if (!respuesta.ok || resultado.error) {
+      throw new Error(resultado.error || `Error HTTP ${respuesta.status}`);
+    }
+    return resultado; // { venta, compra, fuente, consultadoEl }
+  }
+
+  function alternarMonedaComision() {
+    const esColones = document.getElementById("monedaPagoComision").value === "CRC";
+    document.getElementById("bloqueTipoCambioComision").style.display = esColones ? "block" : "none";
+    document.getElementById("encabezadoMontoColonesComision").style.display = esColones ? "table-cell" : "none";
+    document.querySelectorAll(".celda-monto-colones-comision").forEach(td => {
+      td.style.display = esColones ? "table-cell" : "none";
+    });
+    document.querySelectorAll(".monto-comision").forEach(input => {
+      input.readOnly = esColones;
+      input.style.backgroundColor = esColones ? "#f0f0f0" : "";
+    });
+  }
+
+  async function traerTipoCambioComision() {
+    const boton = document.getElementById("btnTraerTCComision");
+    const estado = document.getElementById("estadoTipoCambioComision");
+    boton.disabled = true;
+    boton.textContent = "⏳...";
+    estado.style.color = "#888";
+    estado.textContent = "Consultando...";
+
+    try {
+      const datos = await consultarTipoCambioBNCR();
+      document.getElementById("tipoCambioComision").value = datos.venta;
+      estado.textContent = `✅ ${datos.fuente} — ₡${datos.venta.toFixed(2)}`;
+      recalcularTodosMontosComision();
+    } catch (e) {
+      estado.style.color = "#c0392b";
+      estado.textContent = `⚠️ No se pudo traer el tipo de cambio automático (${e.message}). Escribilo a mano.`;
+    } finally {
+      boton.disabled = false;
+      boton.textContent = "🔄 Traer";
+    }
+  }
+
+  function recalcularMontoUSDComisionFila(indice) {
+    const tipoCambio = parseFloat(document.getElementById("tipoCambioComision").value) || 0;
+    const colonesInput = document.querySelector(`.monto-colones-comision[data-indice="${indice}"]`);
+    const usdInput = document.querySelector(`.monto-comision[data-indice="${indice}"]`);
+    const colones = parseFloat(colonesInput?.value) || 0;
+    if (colones > 0 && tipoCambio > 0) {
+      usdInput.value = (colones / tipoCambio).toFixed(2);
+    }
+  }
+
+  // Al cambiar el tipo de cambio general, recalcula TODAS las filas que ya
+  // tengan un monto en colones cargado.
+  function recalcularTodosMontosComision() {
+    document.querySelectorAll(".monto-colones-comision").forEach(input => {
+      const indice = parseInt(input.dataset.indice);
+      recalcularMontoUSDComisionFila(indice);
+    });
+  }
+
+
   async function pagarComisionesSeleccionadas() {
     const pendientes = window.comisionesPorUsuario[window.comisionesUsuarioActual]?.pendientes || [];
     const checks = document.querySelectorAll(".check-comision:checked");
 
     if (checks.length === 0) {
       alert("Marca al menos una reserva para registrar el pago.");
+      return;
+    }
+
+    const monedaActual = document.getElementById("monedaPagoComision").value;
+    const tipoCambioActual = parseFloat(document.getElementById("tipoCambioComision").value) || null;
+
+    if (monedaActual === "CRC" && !tipoCambioActual) {
+      alert("Con pago en colones, completá el tipo de cambio antes de guardar.");
       return;
     }
 
@@ -377,8 +490,19 @@
       const montoInput = document.querySelector(`.monto-comision[data-indice="${i}"]`);
       const montoReal = parseFloat(montoInput.value) || 0;
 
+      const cambio = { indice: registro.indice, montoReal };
+
+      // NUEVO: si el pago es en colones, se guarda también el monto en ₡
+      // y el tipo de cambio usado — así queda el registro real de lo
+      // pagado, no solo el equivalente en $.
+      if (monedaActual === "CRC") {
+        const colonesInput = document.querySelector(`.monto-colones-comision[data-indice="${i}"]`);
+        cambio.montoColones = parseFloat(colonesInput?.value) || 0;
+        cambio.tipoCambio = tipoCambioActual;
+      }
+
       if (!porDoc[registro.docId]) porDoc[registro.docId] = [];
-      porDoc[registro.docId].push({ indice: registro.indice, montoReal });
+      porDoc[registro.docId].push(cambio);
     });
 
     const ahora = new Date();
@@ -394,7 +518,8 @@
           comisiones[cambio.indice] = {
             ...comisiones[cambio.indice],
             real: cambio.montoReal,
-            fecha_pago_real: ahora
+            fecha_pago_real: ahora,
+            ...(cambio.montoColones ? { real_colones: cambio.montoColones, tipo_cambio: cambio.tipoCambio } : {})
           };
         });
 
@@ -463,11 +588,14 @@
       filtradas.forEach(r => {
         total += r.monto;
         const fila = document.createElement("tr");
+        const referenciaColones = r.real_colones
+          ? `<div style="font-size:0.75rem; color:#888;">₡${r.real_colones.toLocaleString('es-CR')} @ ${r.tipo_cambio}</div>`
+          : "";
         fila.innerHTML = `
           <td style="padding:8px;">${r.reserva}</td>
           <td style="padding:8px;">${formatearFechaViajeComision(r.fecha_viaje)}</td>
           <td style="padding:8px;">${formatearFechaComision(r.fechaPago)}</td>
-          <td style="padding:8px;">$${r.monto.toFixed(2)}</td>
+          <td style="padding:8px;">$${r.monto.toFixed(2)}${referenciaColones}</td>
         `;
         filas.appendChild(fila);
       });
