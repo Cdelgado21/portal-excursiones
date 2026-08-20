@@ -85,10 +85,10 @@
     return `
       <button type="button" id="botonMenuLateral" aria-label="Abrir menú">☰</button>
       <span class="titulo-sistema">Excursiones Delgado — Sistema Integral</span>
-      <div id="tipoCambioTopbar" title="Tipo de cambio de venta, Banco Nacional (vía BCCR) — se actualiza solo cada 45 minutos" style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.12); border-radius:8px; padding:5px 12px; font-size:0.82rem; color:white; font-weight:bold; white-space:nowrap; margin-left:12px;">
-        <span style="opacity:0.85;">₡</span><span id="valorTipoCambioTopbar">...</span>
-      </div>
       <div style="display:flex; align-items:center;">
+        <div id="tipoCambioTopbar" title="Tipo de cambio de venta, Banco Nacional (vía BCCR) — se actualiza solo cada 45 minutos" style="display:flex; align-items:center; gap:5px; background:rgba(255,255,255,0.12); border-radius:8px; padding:5px 12px; font-size:0.82rem; color:white; font-weight:bold; white-space:nowrap; margin-right:14px;">
+          <span style="opacity:0.85;">T.C. ₡</span><span id="valorTipoCambioTopbar">...</span>
+        </div>
         <div class="campana-container" id="botonCampanaTopbar">
           <span class="campana-icono">🔔</span>
           <span class="campana-badge" id="badgeNotificaciones">0</span>
