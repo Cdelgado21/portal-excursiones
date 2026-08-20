@@ -845,9 +845,17 @@
     // pero sumado SIN filtrar por fecha de viaje.
     let comprometidoTotal = 0;
     let comprometidoPendiente = 0;
+    // NUEVO: de esas MISMAS reservas (las que tienen costos registrados,
+    // por eso cuentan en "Comprometido"), cuánto TODAVÍA te deben los
+    // clientes — para que el "$X pendiente a proveedores" no se lea como
+    // "me falta esa plata", cuando en realidad una parte puede estar por
+    // cobrarse todavía del mismo viaje.
+    let porCobrarDeEsasReservas = 0;
     Object.keys(datosCostosPorCodigo).forEach(codigo => {
       comprometidoTotal += datosCostosPorCodigo[codigo].costoTotal;
       comprometidoPendiente += calcularPendientePagarProveedores(codigo);
+      const saldoCliente = datosReservasPorCodigo[codigo]?.saldo || 0;
+      if (saldoCliente > 0.01) porCobrarDeEsasReservas += saldoCliente;
     });
     const comprometidoYaPagado = comprometidoTotal - comprometidoPendiente;
 
@@ -860,8 +868,9 @@
     document.getElementById("cajaDetalleCobrado").textContent =
       `${Object.keys(datosReservasPorCodigo).length} reserva${Object.keys(datosReservasPorCodigo).length === 1 ? '' : 's'} en total`;
     document.getElementById("cajaComprometido").textContent = formatoMoneda(comprometidoTotal);
-    document.getElementById("cajaDetalleComprometido").textContent =
-      `Ya pagado: ${formatoMoneda(comprometidoYaPagado)} · Pendiente: ${formatoMoneda(comprometidoPendiente)}`;
+    document.getElementById("cajaDetalleComprometido").innerHTML =
+      `Ya pagado: ${formatoMoneda(comprometidoYaPagado)} · Pendiente: ${formatoMoneda(comprometidoPendiente)}` +
+      (porCobrarDeEsasReservas > 0.01 ? `<br><span style="color:#1b9e3c; font-weight:bold;">De estas mismas reservas, los clientes aún te deben: ${formatoMoneda(porCobrarDeEsasReservas)}</span>` : '');
     document.getElementById("cajaOperativos").textContent = formatoMoneda(operativosTotal);
     document.getElementById("cajaGananciaNeta").textContent = formatoMoneda(gananciaNeta);
   }
