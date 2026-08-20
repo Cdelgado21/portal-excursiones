@@ -12,101 +12,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* Menú lateral — mismo estilo que el resto del sistema. */
-    .toggle-btn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      font-size: 24px;
-      background: white;
-      color: #02535a;
-      border: none;
-      border-radius: 50%;
-      padding: 8px 12px;
-      z-index: 1100;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 250px;
-      height: 100%;
-      background-color: #02535a;
-      color: white;
-      padding: 20px;
-      transform: translateX(-250px);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    .sidebar.active {
-      transform: translateX(0);
-    }
-    .sidebar .user-info {
-      text-align: center;
-      margin-bottom: 20px;
-      margin-top: 40px;
-    }
-    .sidebar .user-info .avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-    .sidebar .user-info h3 {
-      font-size: 1rem;
-      margin: 0;
-      color: white;
-    }
-    .sidebar .user-info small {
-      font-size: 0.8rem;
-      color: #f4f7f8;
-    }
-    .nav-links {
-      list-style: none;
-      padding: 0;
-    }
-    .nav-links li a {
-      background-color: #f4f7f8;
-      color: #02535a;
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .nav-links li a:hover {
-      background-color: #e0e0e0;
-    }
-    .nav-links li a.activo {
-      background-color: #ffb703;
-      color: #02535a;
-    }
-    .nav-links .icon {
-      margin-right: 10px;
-      font-size: 1.2rem;
-    }
-    main#contenidoPrincipal {
-      margin-left: 0;
-      padding: 20px 20px 20px 70px;
-      transition: margin-left 0.3s ease;
-      box-sizing: border-box;
-    }
-    main#contenidoPrincipal.sidebar-visible {
-      margin-left: 250px;
-      padding-left: 20px;
-    }
-    @media screen and (max-width: 768px) {
-      main#contenidoPrincipal.sidebar-visible {
-        margin-left: 0;
-        padding-left: 70px;
-      }
-    }
-
     body {
       font-family: Arial, sans-serif;
       background-color: #f0f7f7;
@@ -286,31 +191,56 @@
       background: #fbe2e0;
       color: #c0392b;
     }
+
+    /* NUEVO (17/8/2026 — diseño responsive): en pantallas angostas (celular),
+       todas las tablas de esta página (varias, hasta 8 columnas) son
+       imposibles de usar con scroll horizontal — cada fila se convierte en
+       una tarjeta apilada, con la etiqueta de cada columna al lado de su
+       valor. Mismo patrón ya probado en reservas.html. Aplica a TODAS las
+       tablas (selector genérico, sin "main" adelante) para que también
+       cubra las tablas de adentro de los modales. */
+    @media screen and (max-width: 768px) {
+      table { min-width: 0; }
+      thead { position: absolute; left: -9999px; top: -9999px; }
+      table, tbody, tr { display: block; width: 100%; }
+      tbody tr {
+        margin-bottom: 14px;
+        border: 1px solid #dde8e8;
+        border-radius: 10px;
+        padding: 6px 12px;
+        box-shadow: 0 2px 8px rgba(2,83,90,0.06);
+      }
+      tbody tr:hover { background-color: transparent; }
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid #eef3f3;
+        text-align: right;
+        white-space: normal;
+      }
+      td:last-child { border-bottom: none; }
+      td::before {
+        content: attr(data-etiqueta);
+        flex: 0 0 auto;
+        font-weight: bold;
+        color: #02535a;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        text-align: left;
+        padding-top: 2px;
+      }
+      /* Filas de filtro (Desde/Hasta/botones) — que no se estiren raro. */
+      div[style*="align-items:flex-end"], div[style*="align-items: flex-end"] {
+        align-items: stretch;
+      }
+    }
   </style>
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-
-  <div class="sidebar" id="sidebar">
-    <div class="user-info">
-      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
-      <h3 id="nombreUsuario">Cargando...</h3>
-      <small id="rolUsuario">-</small>
-    </div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
-      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
-      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
-      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="finanzas.html" class="activo"><span class="icon">💰</span>Finanzas</a></li>
-      <li><a href="gastos.html"><span class="icon">💼</span>Gastos</a></li>
-      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
-    </ul>
-  </div>
 
   <main id="contenidoPrincipal">
 
@@ -615,7 +545,7 @@
         <tr>
           <th>Categoría</th>
           <th>Monto</th>
-          <th>% del costo total</th>
+          <th>% del total</th>
         </tr>
       </thead>
       <tbody id="tablaDesgloseBalance"></tbody>
@@ -701,9 +631,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
-  // Mismo parseo flexible de fechas que ya usa reservas.html — la fecha de
-  // viaje se ha guardado con formatos distintos a lo largo del tiempo
-  // ("2025-06-08" con guiones, o "16/7/2026" con barras).
   function parseFechaReserva(str) {
     if (!str) return null;
     if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
@@ -731,19 +658,6 @@
     return `$${(valor || 0).toFixed(2)}`;
   }
 
-  // FIX: costos_reservas ya no guarda desglose_proyectado/desglose_real
-  // plano — desde el ajuste hecho en costos_agregar.html, cada reserva
-  // guarda "categorias" (hospedaje/traslados/tours/comision), cada una
-  // como un ARREGLO de filas {proveedor, proyectado, real}. Esta función
-  // calcula el costo total leyendo ese modelo nuevo — fila por fila, usa
-  // el monto real si esa fila específica ya se marcó como pagada, o si no,
-  // el proyectado como mejor estimado — y sigue soportando el modelo viejo
-  // para cualquier reserva que aún no se haya vuelto a guardar.
-  //
-  // NUEVO: además del monto, devuelve "todosPagados" — true solo si CADA
-  // fila de proveedor con datos ya está marcada como real (pagada). Esto
-  // permite mostrar el Costo Total en naranja (todavía proyección) o en
-  // rojo (ya se le pagó a todos los proveedores de esta reserva).
   function analizarCostosDeReserva(data) {
     const esModeloViejo = !data.categorias;
 
@@ -778,43 +692,22 @@
     });
 
     const costoTotal = boletos + sumaCategorias;
-    // Boletos se registra siempre como monto ya pagado desde el inicio, así
-    // que solo hace falta que las demás filas (hospedaje/traslados/tours/
-    // comisión) con datos estén todas marcadas como reales.
     const todosPagados = filasConDatos === 0 ? true : (filasPagadas === filasConDatos);
 
     return { costoTotal, todosPagados };
   }
 
-  // NUEVO: guardados aparte (no solo dentro de la función) para poder
-  // volver a filtrar la tabla de "Viajes por fecha" al instante cuando se
-  // cambia el rango — sin tener que volver a consultar Firebase cada vez.
   let datosReservasPorCodigo = {};
-  // NUEVO: para el gráfico de "Comportamiento de Ventas" — un registro por
-  // venta (fecha de creación de la reserva + su monto) y uno por cada pago
-  // individual recibido (fecha real del pago + su monto), sin agrupar
-  // todavía — el gráfico agrupa por mes o año según lo que se elija.
   let datosVentasCreadas = [];
   let datosPagosRealizados = [];
   let datosCostosPorCodigo = {};
-  // NUEVO: guarda las categorías tal cual (proveedor+monto por fila) de
-  // cada reserva, para poder armar la Proyección de Pago por Proveedor —
-  // datosCostosPorCodigo solo tiene el total agregado, no el detalle.
   let datosCategoriasPorCodigo = {};
-  // NUEVO: pagos operativos (nómina, publicidad, etc.) registrados en la
-  // página gastos.html — acá solo se leen para restarlos de la ganancia en
-  // Balance por Período; el registro/edición vive en esa otra página.
   let datosMovimientosGastos = [];
 
   async function cargarPanelFinanciero() {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
 
-    // ---------- 1. RESERVAS: por cobrar, calculado en vivo ----------
-    // NUEVO: el saldo se calcula aquí mismo (total - suma de pagos), sin
-    // confiar en el campo "saldo" guardado en la reserva — ese campo queda
-    // desactualizado en cuanto se registra un pago nuevo desde
-    // facturacion.html, así que usarlo directo daría cifras viejas.
     const reservasSnap = await db.collection("reservas").get();
     const reservasPorCodigo = {};
     const ventasCreadas = [];
@@ -829,11 +722,6 @@
       const pagado = (data.pagos || []).reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
       const saldo = total - pagado;
 
-      // NUEVO: creado_el (fecha en que se hizo la venta, distinta de la
-      // fecha de viaje) y vendedor — para el Resumen de Ventas por
-      // Período. Se guardan TODAS las reservas aquí (no solo las activas),
-      // porque una venta de este mes cuenta aunque el viaje ya haya
-      // pasado; solo "Por cobrar" se sigue limitando a las activas.
       const creadoEl = data.creado_el?.toDate ? data.creado_el.toDate() : (data.creado_el ? new Date(data.creado_el) : null);
 
       reservasPorCodigo[doc.id] = {
@@ -847,7 +735,6 @@
         destino: data.nombreDestino || ''
       };
 
-      // NUEVO: alimenta el gráfico de Comportamiento de Ventas.
       if (creadoEl) ventasCreadas.push({ fecha: creadoEl, monto: total, codigo: doc.id, titular: data.nombreTitular || '-' });
       (data.pagos || []).forEach(p => {
         const fechaPago = parseFechaReserva(p.fecha);
@@ -861,8 +748,6 @@
       });
     });
 
-    // ---------- 2. COSTOS: se usa para las secciones de abajo (Viajes por
-    // fecha, Proyecciones de Pago) — ya no hay tarjetas de resumen aquí. ----------
     const costosSnap = await db.collection("costos_reservas").get();
     const costosPorCodigo = {};
     const categoriasPorCodigo = {};
@@ -879,16 +764,12 @@
       if (data.categorias) categoriasPorCodigo[codigo] = data.categorias;
     });
 
-    // NUEVO: se guardan aparte para que el filtro de fechas pueda reusarlos
-    // sin volver a consultar Firebase.
     datosReservasPorCodigo = reservasPorCodigo;
     datosCostosPorCodigo = costosPorCodigo;
     datosCategoriasPorCodigo = categoriasPorCodigo;
     datosVentasCreadas = ventasCreadas;
     datosPagosRealizados = pagosRealizados;
 
-    // NUEVO: pagos operativos registrados en gastos.html (solo lectura acá,
-    // para restarlos en Balance por Período).
     try {
       const movimientosSnap = await db.collection("movimientos_gastos").get();
       datosMovimientosGastos = movimientosSnap.docs.map(doc => {
@@ -900,31 +781,16 @@
       datosMovimientosGastos = [];
     }
 
-    // Por defecto arranca mostrando los próximos 30 días.
     aplicarRangoRapido(30);
-    // Y el resumen de ventas arranca mostrando el mes en curso.
     aplicarRangoVentas("mes-actual");
-    // Gráfico de Comportamiento de Ventas — arranca en Total creado / Mensual.
     renderizarGraficoVentas();
-    // Por Cobrar arranca mostrando los próximos 30 días de viaje.
     aplicarRangoCobrar(30);
-    // Proyección de pago por proveedor — mismo criterio de rango rápido
-    // que "Viajes por fecha", pero como sección independiente.
     aplicarRangoProveedores(30);
-    // Ranking de Destinos por Margen — arranca mostrando todas las activas.
     aplicarRangoDestinosTodas();
-    // Balance por Período arranca mostrando el mes en curso.
     aplicarRangoBalance("mes-actual");
-    // Alerta de Cobro Urgente — no depende de un rango de fechas, siempre
-    // muestra los próximos 15 días.
     renderizarAlertaCobro();
   }
 
-  // NUEVO: cuánto falta pagar A PROVEEDORES de una reserva específica —
-  // suma el proyectado de las filas de hospedaje/traslados/tours/comisión
-  // que TODAVÍA no se marcaron como pagadas (real). Distinto del "Costo
-  // Total" (que suma TODO el costo, esté pagado o no) — esto es solo la
-  // porción que sigue pendiente de salir de la cuenta.
   function calcularPendientePagarProveedores(codigo) {
     const categorias = datosCategoriasPorCodigo[codigo];
     if (!categorias) return 0;
@@ -936,17 +802,14 @@
       else if (!Array.isArray(items)) items = [items];
       items.forEach(item => {
         const esReal = typeof item.real === "number";
-        if (esReal) return; // ya pagado, no cuenta
-        if (!item.proveedor && !(item.proyectado > 0)) return; // fila vacía
+        if (esReal) return;
+        if (!item.proveedor && !(item.proyectado > 0)) return;
         pendiente += Number(item.proyectado || 0);
       });
     });
     return pendiente;
   }
 
-  // NUEVO: filtra y vuelve a dibujar la tabla de "Viajes por fecha" según
-  // los valores actuales de los campos Desde/Hasta — no vuelve a consultar
-  // Firebase, solo reutiliza los datos ya cargados en memoria.
   function renderizarViajesPorFecha() {
     const desdeStr = document.getElementById("filtroDesde").value;
     const hastaStr = document.getElementById("filtroHasta").value;
@@ -972,20 +835,17 @@
       filtrados.forEach(([codigo, r]) => {
         const costos = datosCostosPorCodigo[codigo];
         const claseCosto = costos ? (costos.todosPagados ? 'costo-pagado' : 'costo-proyectado') : '';
-        // NUEVO: "Por pagar" — cuánto de esta reserva todavía le falta
-        // pagar a proveedores (hospedaje/traslados/tours/comisión), no el
-        // costo total. En $0.00 y sin datos de costos, no se resalta.
         const porPagar = calcularPendientePagarProveedores(codigo);
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
-          <td>${r.titular}</td>
-          <td>${formatearFechaVisible(r.fecha)}</td>
-          <td>${formatoMoneda(r.ingreso)}</td>
-          <td class="${claseCosto}">${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Editar costos de esta reserva">${formatoMoneda(costos.costoTotal)}</a>` : `<span class="aviso-sin-costos">⚠️ sin costos — <a class="enlace-fila" href="costos_agregar.html?reserva=${codigo}">agregar</a></span>`}</td>
-          <td class="${costos ? (costos.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta') : ''}">${costos ? formatoMoneda(costos.ganancia) : '-'}</td>
-          <td class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}"><a class="enlace-fila" style="color:inherit;" href="detalle_reserva.html?codigo=${codigo}" title="Ver detalle y registrar pagos">${formatoMoneda(r.saldo)}</a></td>
-          <td class="${porPagar > 0.01 ? 'costo-proyectado' : ''}">${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Ver y marcar pagos a proveedores">${formatoMoneda(porPagar)}</a>` : '-'}</td>
+          <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
+          <td data-etiqueta="Titular">${r.titular}</td>
+          <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Ingreso">${formatoMoneda(r.ingreso)}</td>
+          <td data-etiqueta="Costo total" class="${claseCosto}">${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Editar costos de esta reserva">${formatoMoneda(costos.costoTotal)}</a>` : `<span class="aviso-sin-costos">⚠️ sin costos — <a class="enlace-fila" href="costos_agregar.html?reserva=${codigo}">agregar</a></span>`}</td>
+          <td data-etiqueta="Ganancia" class="${costos ? (costos.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta') : ''}">${costos ? formatoMoneda(costos.ganancia) : '-'}</td>
+          <td data-etiqueta="Por cobrar" class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}"><a class="enlace-fila" style="color:inherit;" href="detalle_reserva.html?codigo=${codigo}" title="Ver detalle y registrar pagos">${formatoMoneda(r.saldo)}</a></td>
+          <td data-etiqueta="Por pagar" class="${porPagar > 0.01 ? 'costo-proyectado' : ''}">${costos ? `<a class="enlace-fila" style="color:inherit;" href="costos_agregar.html?reserva=${codigo}" title="Ver y marcar pagos a proveedores">${formatoMoneda(porPagar)}</a>` : '-'}</td>
         `;
         tabla.appendChild(fila);
       });
@@ -998,7 +858,6 @@
     return `${fecha.getFullYear()}-${mes}-${dia}`;
   }
 
-  // NUEVO: botones de atajo — hoy hasta N días adelante.
   function aplicarRangoRapido(dias) {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
@@ -1011,9 +870,6 @@
     renderizarViajesPorFecha();
   }
 
-  // NUEVO: quita el límite superior — muestra todas las reservas activas
-  // con fecha, sin importar qué tan lejos esté (incluyendo un caso como el
-  // que mencionaste, una reserva hasta 2028).
   function aplicarRangoTodas() {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
@@ -1029,12 +885,6 @@
     const botones = document.querySelectorAll(".btn-rango-viajes");
     if (botones[indice]) botones[indice].classList.add("activo");
   }
-
-  // ==========================================
-  // NUEVO: Resumen de Ventas por Período — cuenta por fecha de CREACIÓN de
-  // la reserva (cuándo se vendió), no por fecha de viaje. Así una venta de
-  // hoy que viaja hasta setiembre igual cuenta como vendida este mes.
-  // ==========================================
 
   function marcarBotonVentasActivo(cual) {
     document.querySelectorAll(".btn-rango-ventas").forEach(btn => btn.classList.remove("activo"));
@@ -1063,9 +913,6 @@
     renderizarResumenVentas();
   }
 
-  // Vuelve a calcular el resumen según los campos Desde/Hasta actuales —
-  // reutiliza los datos ya cargados en memoria, sin consultar Firebase de
-  // nuevo.
   function renderizarResumenVentas() {
     const desdeStr = document.getElementById("ventasDesde").value;
     const hastaStr = document.getElementById("ventasHasta").value;
@@ -1073,7 +920,7 @@
     const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
 
     const vendidasEnRango = Object.entries(datosReservasPorCodigo).filter(([codigo, r]) => {
-      if (!r.creadoEl) return false; // reservas de antes de guardar creado_el no entran aquí
+      if (!r.creadoEl) return false;
       if (desde && r.creadoEl < desde) return false;
       if (hasta && r.creadoEl > hasta) return false;
       return true;
@@ -1115,21 +962,15 @@
         const v = porVendedor[nombre];
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td>${nombre}</td>
-          <td><a class="enlace-fila" href="#" onclick="abrirModalReservasVendedor('${nombre.replace(/'/g, "\\'")}'); return false;">${v.cantidad}</a></td>
-          <td>${formatoMoneda(v.vendido)}</td>
-          <td class="${v.porCobrar > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(v.porCobrar)}</td>
+          <td data-etiqueta="Vendedor(a)">${nombre}</td>
+          <td data-etiqueta="Reservas"><a class="enlace-fila" href="#" onclick="abrirModalReservasVendedor('${nombre.replace(/'/g, "\\'")}'); return false;">${v.cantidad}</a></td>
+          <td data-etiqueta="Total vendido">${formatoMoneda(v.vendido)}</td>
+          <td data-etiqueta="Por cobrar" class="${v.porCobrar > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(v.porCobrar)}</td>
         `;
         tabla.appendChild(fila);
       });
     }
   }
-
-  // ==========================================
-  // NUEVO: Gráfico "Comportamiento de Ventas" — barras mes a mes (últimos
-  // 12 meses) o año a año, alternando entre Total Creado (fecha de venta)
-  // y Total Pagado (fecha real de cada pago recibido).
-  // ==========================================
 
   let tipoGraficoActual = "creado";
   let periodoGraficoActual = "mensual";
@@ -1156,13 +997,9 @@
     const datos = tipoGraficoActual === "creado" ? datosVentasCreadas : datosPagosRealizados;
     let labels = [];
     let valores = [];
-    // NUEVO: guarda, por cada barra, el filtro exacto usado para calcularla
-    // — así al hacer clic se puede recuperar la lista de registros reales
-    // que la componen, sin tener que adivinar ni volver a calcular.
     bucketsGraficoActual = [];
 
     if (periodoGraficoActual === "mensual") {
-      // Últimos 12 meses, terminando en el mes actual.
       const hoy = new Date();
       const meses = [];
       for (let i = 11; i >= 0; i--) {
@@ -1179,7 +1016,6 @@
         filtro: x => x.fecha.getFullYear() === d.getFullYear() && x.fecha.getMonth() === d.getMonth()
       }));
     } else {
-      // Anual: agrupa todo lo que haya, por año.
       const porAnio = {};
       datos.forEach(x => {
         const anio = x.fecha.getFullYear();
@@ -1239,9 +1075,6 @@
     });
   }
 
-  // NUEVO: al hacer clic en una barra, muestra la lista real de registros
-  // que la componen — así se puede verificar cualquier número del gráfico
-  // sin tener que adivinar ni revisar reserva por reserva a mano.
   function abrirModalDetalleGrafico(indice) {
     const bucket = bucketsGraficoActual[indice];
     if (!bucket) return;
@@ -1268,11 +1101,11 @@
       registros.forEach(r => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a></td>
-          <td>${r.titular}</td>
-          <td>${formatearFechaVisible(r.fecha)}</td>
-          <td>${formatoMoneda(r.monto)}</td>
-          ${tipoGraficoActual === "pagado" ? `<td>${r.metodo || '-'}</td>` : ''}
+          <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a></td>
+          <td data-etiqueta="Titular">${r.titular}</td>
+          <td data-etiqueta="Fecha">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Monto">${formatoMoneda(r.monto)}</td>
+          ${tipoGraficoActual === "pagado" ? `<td data-etiqueta="Método">${r.metodo || '-'}</td>` : ''}
         `;
         tabla.appendChild(fila);
       });
@@ -1284,12 +1117,6 @@
   function cerrarModalDetalleGrafico() {
     document.getElementById("modalDetalleGrafico").style.display = "none";
   }
-
-  // ==========================================
-  // NUEVO: Alerta de Cobro Urgente — reservas que viajan en los próximos
-  // 15 días y todavía tienen saldo pendiente, según la propia política de
-  // la agencia (el saldo debe estar cancelado 15 días antes del viaje).
-  // ==========================================
 
   const DIAS_ALERTA_COBRO = 15;
 
@@ -1316,12 +1143,12 @@
       const diasRestantes = Math.round((r.fecha - hoy) / 86400000);
       filasHtml += `
         <tr>
-          <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
-          <td>${r.titular}</td>
-          <td>${r.destino || '-'}</td>
-          <td>${formatearFechaVisible(r.fecha)}</td>
-          <td><span class="badge-dias">${diasRestantes === 0 ? 'Hoy' : diasRestantes + ' día' + (diasRestantes === 1 ? '' : 's')}</span></td>
-          <td class="cifra-alerta">${formatoMoneda(r.saldo)}</td>
+          <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
+          <td data-etiqueta="Titular">${r.titular}</td>
+          <td data-etiqueta="Destino">${r.destino || '-'}</td>
+          <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Faltan"><span class="badge-dias">${diasRestantes === 0 ? 'Hoy' : diasRestantes + ' día' + (diasRestantes === 1 ? '' : 's')}</span></td>
+          <td data-etiqueta="Saldo" class="cifra-alerta">${formatoMoneda(r.saldo)}</td>
         </tr>
       `;
     });
@@ -1343,11 +1170,6 @@
       </table>
     `;
   }
-
-  // ==========================================
-  // NUEVO: Sección "Por Cobrar" — filtra por fecha de VIAJE, para poder
-  // ver, por ejemplo, quién viaja en los próximos 30 días y todavía debe.
-  // ==========================================
 
   function renderizarPorCobrar() {
     const desdeStr = document.getElementById("cobrarDesde").value;
@@ -1380,11 +1202,11 @@
       pendientes.forEach(([codigo, r]) => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
-          <td>${r.titular}</td>
-          <td>${r.destino || '-'}</td>
-          <td>${formatearFechaVisible(r.fecha)}</td>
-          <td class="cifra-alerta">${formatoMoneda(r.saldo)}</td>
+          <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}">${codigo}</a></td>
+          <td data-etiqueta="Titular">${r.titular}</td>
+          <td data-etiqueta="Destino">${r.destino || '-'}</td>
+          <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Saldo pendiente" class="cifra-alerta">${formatoMoneda(r.saldo)}</td>
         `;
         tabla.appendChild(fila);
       });
@@ -1419,12 +1241,6 @@
     if (botones[indice]) botones[indice].classList.add("activo");
   }
 
-  // ==========================================
-  // NUEVO: Reservas de un vendedor específico (clic en la cantidad, dentro
-  // del Resumen de Ventas por Período) — respeta el mismo rango de fechas
-  // que esté seleccionado ahí, e incluye viajes ya realizados (histórico).
-  // ==========================================
-
   function abrirModalReservasVendedor(nombreVendedor) {
     document.getElementById("tituloModalVendedor").textContent = `Reservas de ${nombreVendedor}`;
 
@@ -1447,11 +1263,11 @@
     filtradas.forEach(([codigo, r]) => {
       const fila = document.createElement("tr");
       fila.innerHTML = `
-        <td><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}" target="_blank">${codigo}</a></td>
-        <td>${r.destino || '-'}</td>
-        <td>${formatearFechaVisible(r.fecha)}</td>
-        <td>${formatoMoneda(r.ingreso)}</td>
-        <td class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(r.saldo)}</td>
+        <td data-etiqueta="Código"><a class="enlace-fila" href="detalle_reserva.html?codigo=${codigo}" target="_blank">${codigo}</a></td>
+        <td data-etiqueta="Destino">${r.destino || '-'}</td>
+        <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+        <td data-etiqueta="Ingreso">${formatoMoneda(r.ingreso)}</td>
+        <td data-etiqueta="Por cobrar" class="${r.saldo > 0.01 ? 'cifra-alerta' : ''}">${formatoMoneda(r.saldo)}</td>
       `;
       tabla.appendChild(fila);
     });
@@ -1462,13 +1278,6 @@
   function cerrarModalReservasVendedor() {
     document.getElementById("modalReservasVendedor").style.display = "none";
   }
-
-  // ==========================================
-  // NUEVO: Proyecciones de Pago por Proveedor — agrupa TODAS las filas
-  // pendientes (proyectado, todavía sin marcar como pagado) de todas las
-  // reservas, por proveedor + categoría. Así se ve de un vistazo "a Hotel
-  // Obo le debo $X en 5 reservas", sin tener que abrir cada una.
-  // ==========================================
 
   const ETIQUETA_CATEGORIA_FINANZAS = { hospedaje: "Hospedaje", traslados: "Traslados", tours: "Tours", comision: "Comisión" };
 
@@ -1485,8 +1294,6 @@
     Object.entries(datosCategoriasPorCodigo).forEach(([codigo, categorias]) => {
       const infoReserva = datosReservasPorCodigo[codigo];
 
-      // Filtra por fecha de VIAJE de esa reserva (no por fecha de venta) —
-      // sin fecha de viaje conocida, no se puede ubicar en el rango.
       if (!infoReserva?.fecha) return;
       if (desde && infoReserva.fecha < desde) return;
       if (hasta && infoReserva.fecha > hasta) return;
@@ -1498,7 +1305,7 @@
 
         items.forEach(item => {
           const esReal = typeof item.real === "number";
-          if (esReal) return; // ya pagado, no cuenta como proyección pendiente
+          if (esReal) return;
           const monto = Number(item.proyectado || 0);
           if (!item.proveedor || monto <= 0) return;
 
@@ -1546,18 +1353,16 @@
         const g = datosProyeccionesPago[llave];
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td><a class="enlace-fila" href="#" onclick="abrirModalProveedorDetalle('${llave.replace(/'/g, "\\'")}'); return false;">${g.proveedor}</a></td>
-          <td>${g.categoria}</td>
-          <td>${g.reservas.length}</td>
-          <td>${formatoMoneda(g.total)}</td>
+          <td data-etiqueta="Proveedor"><a class="enlace-fila" href="#" onclick="abrirModalProveedorDetalle('${llave.replace(/'/g, "\\'")}'); return false;">${g.proveedor}</a></td>
+          <td data-etiqueta="Categoría">${g.categoria}</td>
+          <td data-etiqueta="Reservas pendientes">${g.reservas.length}</td>
+          <td data-etiqueta="Monto pendiente">${formatoMoneda(g.total)}</td>
         `;
         tabla.appendChild(fila);
       });
     }
   }
 
-  // NUEVO: rangos rápidos para Proyecciones de Pago — filtra por fecha de
-  // viaje, igual que "Viajes por fecha", pero como sección independiente.
   function aplicarRangoProveedores(dias) {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
@@ -1600,10 +1405,10 @@
       .forEach(r => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td><a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a></td>
-          <td>${r.destino}</td>
-          <td>${formatearFechaVisible(r.fecha)}</td>
-          <td>${formatoMoneda(r.monto)}</td>
+          <td data-etiqueta="Código"><a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a></td>
+          <td data-etiqueta="Destino">${r.destino}</td>
+          <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
+          <td data-etiqueta="Monto proyectado">${formatoMoneda(r.monto)}</td>
         `;
         tabla.appendChild(fila);
       });
@@ -1615,13 +1420,6 @@
     document.getElementById("modalProveedorDetalle").style.display = "none";
   }
 
-  // ==========================================
-  // NUEVO: Balance por Período — ingreso, costo desglosado por categoría y
-  // ganancia de los viajes (fecha de VIAJE) dentro del rango elegido. Se
-  // puede elegir un mes específico directo (ej. "Junio 2026") en vez de
-  // tener que ajustar Desde/Hasta a mano.
-  // ==========================================
-
   let ultimoBalanceCalculado = null;
 
   const ETIQUETAS_DESGLOSE_BALANCE = {
@@ -1629,11 +1427,10 @@
     hospedaje: "🏨 Hospedaje",
     traslados: "🚐 Traslados",
     tours: "🎟️ Tours",
-    comision: "💼 Comisión"
+    comision: "💼 Comisión",
+    operativo: "🧾 Gastos Operativos"
   };
 
-  // Suma el mejor monto disponible por fila (real si ya está pagada, si no
-  // el proyectado) — mismo criterio que se usa en el resto de Finanzas.
   function sumarCategoriaMejorMonto(items) {
     if (!items) return 0;
     if (!Array.isArray(items)) items = [items];
@@ -1664,12 +1461,6 @@
       return true;
     });
 
-    // FIX: antes se sumaba el ingreso de TODAS las reservas en el rango,
-    // aunque no tuvieran costos cargados todavía — eso inflaba la ganancia
-    // (contaba la venta sin su costo real, no que costara $0). Ahora, igual
-    // que en "Ranking de Destinos por Margen", solo se cuentan reservas que
-    // SÍ tienen costos registrados en costos_agregar.html — las demás se
-    // excluyen del cálculo de dinero, pero se avisa cuántas quedaron afuera.
     const conCostos = incluidas.filter(([codigo]) => datosCostosPorCodigo[codigo]);
     const sinCostos = incluidas.length - conCostos.length;
 
@@ -1690,14 +1481,20 @@
     const ganancia = ingreso - costo;
     const margen = ingreso > 0 ? (ganancia / ingreso * 100) : 0;
 
-    // NUEVO: gastos operativos REALES (nómina, publicidad, etc.) registrados
-    // en gastos.html cuya fecha cae dentro de este mismo rango — a
-    // diferencia de una proyección, esto es lo que efectivamente se pagó.
     const gastosOperativosPeriodo = datosMovimientosGastos
       .filter(m => m.fecha && (!desde || m.fecha >= desde) && (!hasta || m.fecha <= hasta))
       .reduce((suma, m) => suma + m.monto, 0);
     const gananciaReal = ganancia - gastosOperativosPeriodo;
     const margenReal = ingreso > 0 ? (gananciaReal / ingreso * 100) : 0;
+
+    // NUEVO: los Gastos Operativos ahora entran como una fila más del
+    // desglose (antes solo se restaban en la tarjeta "Ganancia Real", sin
+    // verse como línea aparte) — y el % de cada categoría se recalcula
+    // contra el TOTAL GENERAL (costos de reserva + operativos), no solo
+    // contra el costo de reservas, para que el % sí refleje qué tan
+    // grande es cada porción del gasto total real del período.
+    desglose.operativo = gastosOperativosPeriodo;
+    const costoConOperativo = costo + gastosOperativosPeriodo;
 
     document.getElementById("balanceIngreso").textContent = formatoMoneda(ingreso);
     document.getElementById("balanceCantidad").textContent =
@@ -1714,28 +1511,23 @@
     tabla.innerHTML = "";
     Object.keys(ETIQUETAS_DESGLOSE_BALANCE).forEach(clave => {
       const monto = desglose[clave];
-      const porcentaje = costo > 0 ? (monto / costo * 100) : 0;
+      const porcentaje = costoConOperativo > 0 ? (monto / costoConOperativo * 100) : 0;
       const fila = document.createElement("tr");
       fila.innerHTML = `
-        <td>${ETIQUETAS_DESGLOSE_BALANCE[clave]}</td>
-        <td>${formatoMoneda(monto)}</td>
-        <td>${porcentaje.toFixed(1)}%</td>
+        <td data-etiqueta="Categoría">${ETIQUETAS_DESGLOSE_BALANCE[clave]}</td>
+        <td data-etiqueta="Monto">${formatoMoneda(monto)}</td>
+        <td data-etiqueta="% del total">${porcentaje.toFixed(1)}%</td>
       `;
       tabla.appendChild(fila);
     });
 
-    // NUEVO: guardado aparte para poder exportarlo a PDF sin tener que
-    // volver a calcular ni leer los valores desde el DOM.
     ultimoBalanceCalculado = {
       desdeStr, hastaStr, ingreso, costo, ganancia, margen,
-      gastosOperativosPeriodo, gananciaReal, margenReal,
+      gastosOperativosPeriodo, gananciaReal, margenReal, costoConOperativo,
       cantidad: conCostos.length, sinCostos, desglose
     };
   }
 
-  // NUEVO: exporta el Balance por Período visible ahora mismo a un PDF
-  // simple — útil para llevárselo al contador o guardarlo como respaldo,
-  // sin tener que compartir acceso al sistema.
   function exportarBalancePDF() {
     if (!ultimoBalanceCalculado) {
       alert("Todavía no hay un balance calculado. Esperá a que termine de cargar la página.");
@@ -1778,14 +1570,14 @@
 
     const filasDesglose = Object.keys(ETIQUETAS_DESGLOSE_BALANCE).map(clave => {
       const monto = b.desglose[clave];
-      const porcentaje = b.costo > 0 ? (monto / b.costo * 100) : 0;
+      const porcentaje = b.costoConOperativo > 0 ? (monto / b.costoConOperativo * 100) : 0;
       return [ETIQUETAS_DESGLOSE_BALANCE[clave], formatoMoneda(monto), `${porcentaje.toFixed(1)}%`];
     });
 
     doc.autoTable({
       startY: doc.lastAutoTable.finalY + 10,
       margin: { left: 18, right: 18 },
-      head: [["Desglose de Costos", "Monto", "% del costo total"]],
+      head: [["Desglose de Costos", "Monto", "% del total"]],
       body: filasDesglose,
       theme: "plain",
       headStyles: { fillColor: COLOR_MARCA, textColor: 255, fontStyle: "bold" },
@@ -1818,10 +1610,8 @@
     renderizarBalance();
   }
 
-  // NUEVO: para consultas puntuales como "cuánto fue la ganancia de junio
-  // 2026" sin tener que calcular a mano el primer y último día del mes.
   function aplicarMesEspecificoBalance() {
-    const valor = document.getElementById("balanceMesEspecifico").value; // formato "2026-06"
+    const valor = document.getElementById("balanceMesEspecifico").value;
     if (!valor) {
       alert("Elegí un mes primero.");
       return;
@@ -1843,12 +1633,6 @@
     if (botones[indice]) botones[indice].classList.add("activo");
   }
 
-  // ==========================================
-  // NUEVO: Ranking de Destinos por Margen — agrupa las reservas con costos
-  // registrados por destino, y compara ganancia real (no solo volumen de
-  // venta) — para saber cuáles destinos realmente conviene empujar.
-  // ==========================================
-
   function renderizarRankingDestinos() {
     const desdeStr = document.getElementById("destinosDesde").value;
     const hastaStr = document.getElementById("destinosHasta").value;
@@ -1862,7 +1646,7 @@
       if (desde && r.fecha < desde) return;
       if (hasta && r.fecha > hasta) return;
       const costos = datosCostosPorCodigo[codigo];
-      if (!costos) return; // sin costos registrados, no se puede calcular margen
+      if (!costos) return;
 
       const nombreDestino = r.destino || "Sin destino";
       if (!grupos[nombreDestino]) grupos[nombreDestino] = { reservas: 0, ingreso: 0, costo: 0 };
@@ -1888,12 +1672,12 @@
       nombres.forEach(d => {
         const fila = document.createElement("tr");
         fila.innerHTML = `
-          <td>${d.nombre}</td>
-          <td>${d.reservas}</td>
-          <td>${formatoMoneda(d.ingreso)}</td>
-          <td>${formatoMoneda(d.costo)}</td>
-          <td class="${d.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${formatoMoneda(d.ganancia)}</td>
-          <td class="${d.margen >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${d.margen.toFixed(1)}%</td>
+          <td data-etiqueta="Destino">${d.nombre}</td>
+          <td data-etiqueta="Reservas">${d.reservas}</td>
+          <td data-etiqueta="Ingreso">${formatoMoneda(d.ingreso)}</td>
+          <td data-etiqueta="Costo">${formatoMoneda(d.costo)}</td>
+          <td data-etiqueta="Ganancia" class="${d.ganancia >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${formatoMoneda(d.ganancia)}</td>
+          <td data-etiqueta="Margen" class="${d.margen >= 0 ? 'cifra-positiva' : 'cifra-alerta'}">${d.margen.toFixed(1)}%</td>
         `;
         tabla.appendChild(fila);
       });
@@ -1928,51 +1712,9 @@
     if (botones[indice]) botones[indice].classList.add("activo");
   }
 
-  // Menú lateral de navegación (igual que el resto del sistema)
-  function inicializarMenuLateral() {
-    const usuario = JSON.parse(localStorage.getItem("usuario"));
-    const sidebar = document.getElementById("sidebar");
-    const contenido = document.getElementById("contenidoPrincipal");
-    const toggleBtn = document.querySelector('.toggle-btn');
-
-    if (usuario) {
-      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-      document.getElementById("rolUsuario").innerText = usuario.rol || "";
-    } else {
-      document.getElementById("nombreUsuario").innerText = "Invitado";
-    }
-
-    window.toggleSidebar = function () {
-      sidebar.classList.toggle('active');
-      contenido.classList.toggle('sidebar-visible');
-    };
-
-    window.cerrarSesionYRedirigir = function () {
-      localStorage.removeItem("usuario");
-      window.location.href = "login.html";
-    };
-
-    function checkScreenSize() {
-      if (window.innerWidth <= 768) {
-        sidebar.classList.remove('active');
-        contenido.classList.remove('sidebar-visible');
-      } else {
-        sidebar.classList.add('active');
-        contenido.classList.add('sidebar-visible');
-      }
-      toggleBtn.style.display = "block";
-    }
-
-    window.addEventListener('resize', checkScreenSize);
-    checkScreenSize();
-  }
-
   window.addEventListener("DOMContentLoaded", () => {
-    inicializarMenuLateral();
     cargarPanelFinanciero();
 
-    // NUEVO: si Cristopher cambia las fechas a mano (no con los botones
-    // rápidos), la tabla se vuelve a filtrar sola, al instante.
     document.getElementById("filtroDesde").addEventListener("change", () => {
       document.querySelectorAll(".btn-rango-viajes").forEach(btn => btn.classList.remove("activo"));
       renderizarViajesPorFecha();
@@ -1982,7 +1724,6 @@
       renderizarViajesPorFecha();
     });
 
-    // NUEVO: mismo comportamiento para el Resumen de Ventas por Período.
     document.getElementById("ventasDesde").addEventListener("change", () => {
       document.querySelectorAll(".btn-rango-ventas").forEach(btn => btn.classList.remove("activo"));
       renderizarResumenVentas();
@@ -1992,7 +1733,6 @@
       renderizarResumenVentas();
     });
 
-    // NUEVO: mismo comportamiento para Proyecciones de Pago por Proveedor.
     document.getElementById("proveedoresDesde").addEventListener("change", () => {
       document.querySelectorAll(".btn-rango-proveedores").forEach(btn => btn.classList.remove("activo"));
       renderizarProyeccionesPago();
@@ -2002,7 +1742,6 @@
       renderizarProyeccionesPago();
     });
 
-    // NUEVO: mismo comportamiento para la sección Por Cobrar.
     document.getElementById("cobrarDesde").addEventListener("change", () => {
       document.querySelectorAll(".btn-rango-cobrar").forEach(btn => btn.classList.remove("activo"));
       renderizarPorCobrar();
@@ -2012,7 +1751,6 @@
       renderizarPorCobrar();
     });
 
-    // NUEVO: mismo comportamiento para Balance por Período.
     document.getElementById("balanceDesde").addEventListener("change", () => {
       document.querySelectorAll(".btn-rango-balance").forEach(btn => btn.classList.remove("activo"));
       document.getElementById("balanceMesEspecifico").value = "";
@@ -2024,7 +1762,6 @@
       renderizarBalance();
     });
 
-    // NUEVO: mismo comportamiento para el Ranking de Destinos por Margen.
     document.getElementById("destinosDesde").addEventListener("change", () => {
       document.querySelectorAll(".btn-rango-destinos").forEach(btn => btn.classList.remove("activo"));
       renderizarRankingDestinos();
@@ -2036,6 +1773,7 @@
   });
 </script>
   <script src="topbar.js"></script>
+  <script src="sidebar.js"></script>
   <!-- Verificación real de sesión (Firebase Authentication). -->
   <script src="auth-guard.js"></script>
 </body>
