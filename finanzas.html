@@ -258,27 +258,27 @@
     <p style="font-size:0.85rem; color:#888; margin-top:-6px;">De TODO lo cobrado hasta hoy (reservas activas + históricas juntas, sin filtro de fecha), cuánto ya está comprometido con proveedores y cuánto es realmente tuyo para quedarte.</p>
 
     <div class="tarjetas" style="margin-bottom:6px;">
-      <div class="tarjeta" style="border-left-color:#1b9e3c;">
-        <div class="etiqueta">Total Cobrado (histórico)</div>
+      <div class="tarjeta" style="border-left-color:#1b9e3c; cursor:pointer;" onclick="abrirModalDetalleCaja('cobrado')" title="Clic para ver el detalle">
+        <div class="etiqueta">Total Cobrado (histórico) 🔍</div>
         <div class="monto" id="cajaTotalCobrado">$0.00</div>
         <div class="detalle" id="cajaDetalleCobrado">calculando...</div>
       </div>
-      <div class="tarjeta pagar">
-        <div class="etiqueta">Comprometido con Proveedores</div>
+      <div class="tarjeta pagar" style="cursor:pointer;" onclick="abrirModalDetalleCaja('comprometido')" title="Clic para ver el detalle">
+        <div class="etiqueta">Comprometido con Proveedores 🔍</div>
         <div class="monto" id="cajaComprometido">$0.00</div>
         <div class="detalle" id="cajaDetalleComprometido">calculando...</div>
       </div>
-      <div class="tarjeta" style="border-left-color:#5f9296;">
-        <div class="etiqueta">Gastos Operativos Pagados (histórico)</div>
+      <div class="tarjeta" style="border-left-color:#5f9296; cursor:pointer;" onclick="abrirModalDetalleCaja('operativos')" title="Clic para ver el detalle">
+        <div class="etiqueta">Gastos Operativos Pagados (histórico) 🔍</div>
         <div class="monto" id="cajaOperativos">$0.00</div>
         <div class="detalle">Nómina, publicidad, apps, etc. — todo el tiempo</div>
       </div>
-      <div class="tarjeta" style="border-left-color:#02535a;">
-        <div class="etiqueta">Ganancia Neta Real Disponible</div>
+      <div class="tarjeta" style="border-left-color:#02535a; cursor:pointer;" onclick="abrirModalDetalleCaja('ganancia')" title="Clic para ver cómo se calcula">
+        <div class="etiqueta">Ganancia Neta Real Disponible 🔍</div>
         <div class="monto" id="cajaGananciaNeta" style="font-size:2.1rem;">$0.00</div>
       </div>
     </div>
-    <p style="font-size:0.78rem; color:#a35b00; margin-top:4px;">⚠️ Supone que TODO lo "Comprometido con Proveedores" eventualmente se termina pagando completo — si una reserva todavía no tiene sus costos registrados en Costos, esa reserva queda afuera de este cálculo (mismo criterio que el resto de Finanzas). No reemplaza tu saldo bancario real, es una aproximación de gerencia.</p>
+    <p style="font-size:0.78rem; color:#a35b00; margin-top:4px;">⚠️ Supone que TODO lo "Comprometido con Proveedores" eventualmente se termina pagando completo — si una reserva todavía no tiene sus costos registrados en Costos, esa reserva queda afuera de este cálculo (mismo criterio que el resto de Finanzas). No reemplaza tu saldo bancario real, es una aproximación de gerencia. Hacé clic en cualquier tarjeta para ver el detalle.</p>
   </div>
 
   <div class="seccion">
@@ -647,6 +647,20 @@
     </div>
   </div>
 
+  <!-- NUEVO (20/8/2026): modal genérico de detalle para las 4 tarjetas de
+       "Posición de Caja Real" — el contenido de adentro (tabla o resumen)
+       se arma con JS según qué tarjeta se haya clickeado. -->
+  <div id="modalDetalleCaja" class="modal-finanzas">
+    <div class="modal-finanzas-content" style="max-width:820px;">
+      <h3 id="tituloModalDetalleCaja">Detalle</h3>
+      <p id="subtituloModalDetalleCaja" style="font-size:0.85rem; color:#666; margin-top:-8px;"></p>
+      <div id="contenidoModalDetalleCaja"></div>
+      <div style="text-align:right; margin-top:15px;">
+        <button type="button" class="btn-cerrar-modal-finanzas" onclick="cerrarModalDetalleCaja()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -802,7 +816,12 @@
       const movimientosSnap = await db.collection("movimientos_gastos").get();
       datosMovimientosGastos = movimientosSnap.docs.map(doc => {
         const d = doc.data();
-        return { monto: Number(d.monto || 0), fecha: d.fecha ? new Date(d.fecha + "T12:00:00") : null };
+        return {
+          monto: Number(d.monto || 0),
+          fecha: d.fecha ? new Date(d.fecha + "T12:00:00") : null,
+          descripcion: d.descripcion || "-",
+          categoria: d.categoria || "Otro"
+        };
       });
     } catch (e) {
       console.warn("No se pudieron cargar los movimientos de gastos:", e);
@@ -831,13 +850,24 @@
   // reservas que ya tienen costos registrados en costos_agregar.html.
   // ==========================================
 
+  // NUEVO: guarda lo último calculado por renderizarCajaReal(), para que
+  // los modales de detalle (abrirModalDetalleCaja) no tengan que volver a
+  // calcular nada — solo arman la tabla con lo que ya se sumó acá.
+  let datosCajaReal = {};
+
   function renderizarCajaReal() {
     // Total cobrado: la plata que YA entró (venta - saldo pendiente) de
     // CADA reserva que exista, sin importar si ya viajó o todavía no.
+    // NUEVO: "Falta por Cobrar" es el reverso — el saldo pendiente de
+    // TODAS las reservas (no solo las que tienen costos registrados),
+    // para ver la venta total esperada si se cobrara todo.
     let totalCobrado = 0;
+    let faltaPorCobrar = 0;
     Object.values(datosReservasPorCodigo).forEach(r => {
       totalCobrado += Math.max(r.ingreso - r.saldo, 0);
+      faltaPorCobrar += Math.max(r.saldo, 0);
     });
+    const ventaTotalEsperada = totalCobrado + faltaPorCobrar;
 
     // Comprometido con proveedores: el costo TOTAL (ya pagado + todavía
     // proyectado) de cada reserva que tenga costos registrados — mismo
@@ -865,14 +895,116 @@
     const gananciaNeta = totalCobrado - comprometidoTotal - operativosTotal;
 
     document.getElementById("cajaTotalCobrado").textContent = formatoMoneda(totalCobrado);
-    document.getElementById("cajaDetalleCobrado").textContent =
-      `${Object.keys(datosReservasPorCodigo).length} reserva${Object.keys(datosReservasPorCodigo).length === 1 ? '' : 's'} en total`;
+    document.getElementById("cajaDetalleCobrado").innerHTML =
+      `${Object.keys(datosReservasPorCodigo).length} reserva${Object.keys(datosReservasPorCodigo).length === 1 ? '' : 's'} en total` +
+      (faltaPorCobrar > 0.01 ? `<br><span style="color:#c0392b; font-weight:bold;">Falta por cobrar: ${formatoMoneda(faltaPorCobrar)}</span> (venta total esperada: ${formatoMoneda(ventaTotalEsperada)})` : '');
     document.getElementById("cajaComprometido").textContent = formatoMoneda(comprometidoTotal);
     document.getElementById("cajaDetalleComprometido").innerHTML =
       `Ya pagado: ${formatoMoneda(comprometidoYaPagado)} · Pendiente: ${formatoMoneda(comprometidoPendiente)}` +
       (porCobrarDeEsasReservas > 0.01 ? `<br><span style="color:#1b9e3c; font-weight:bold;">De estas mismas reservas, los clientes aún te deben: ${formatoMoneda(porCobrarDeEsasReservas)}</span>` : '');
     document.getElementById("cajaOperativos").textContent = formatoMoneda(operativosTotal);
     document.getElementById("cajaGananciaNeta").textContent = formatoMoneda(gananciaNeta);
+
+    // Se guarda todo para que los modales de detalle no recalculen nada.
+    datosCajaReal = {
+      totalCobrado, faltaPorCobrar, ventaTotalEsperada,
+      comprometidoTotal, comprometidoPendiente, comprometidoYaPagado, porCobrarDeEsasReservas,
+      operativosTotal, gananciaNeta
+    };
+  }
+
+  // ==========================================
+  // NUEVO: Modal de detalle para las 4 tarjetas de Posición de Caja Real —
+  // arma una tabla (o un resumen, para "Ganancia") según cuál tarjeta se
+  // haya clickeado, reusando los datos ya cargados en memoria.
+  // ==========================================
+
+  function abrirModalDetalleCaja(tipo) {
+    const titulo = document.getElementById("tituloModalDetalleCaja");
+    const subtitulo = document.getElementById("subtituloModalDetalleCaja");
+    const contenido = document.getElementById("contenidoModalDetalleCaja");
+
+    if (tipo === "cobrado") {
+      titulo.textContent = `Total Cobrado — ${formatoMoneda(datosCajaReal.totalCobrado)}`;
+      subtitulo.textContent = "Lo que ya entró de cada reserva (venta − saldo pendiente), de todo el historial.";
+      const filas = Object.entries(datosReservasPorCodigo)
+        .map(([codigo, r]) => ({ codigo, ...r, cobrado: Math.max(r.ingreso - r.saldo, 0) }))
+        .filter(r => r.cobrado > 0.01)
+        .sort((a, b) => b.cobrado - a.cobrado);
+      contenido.innerHTML = construirTablaDetalleCaja(
+        ["Código", "Titular", "Destino", "Cobrado"],
+        filas.map(r => [
+          `<a class="enlace-fila" href="detalle_reserva.html?codigo=${r.codigo}" target="_blank">${r.codigo}</a>`,
+          r.titular, r.destino || '-', formatoMoneda(r.cobrado)
+        ])
+      );
+
+    } else if (tipo === "comprometido") {
+      titulo.textContent = `Comprometido con Proveedores — ${formatoMoneda(datosCajaReal.comprometidoTotal)}`;
+      subtitulo.textContent = "Costo total (pagado + proyectado) de cada reserva con costos registrados, y cuánto te debe el cliente de esa misma reserva.";
+      const filas = Object.keys(datosCostosPorCodigo).map(codigo => {
+        const r = datosReservasPorCodigo[codigo] || {};
+        return {
+          codigo,
+          titular: r.titular || '-',
+          costoTotal: datosCostosPorCodigo[codigo].costoTotal,
+          pendiente: calcularPendientePagarProveedores(codigo),
+          saldoCliente: r.saldo || 0
+        };
+      }).sort((a, b) => b.costoTotal - a.costoTotal);
+      contenido.innerHTML = construirTablaDetalleCaja(
+        ["Código", "Titular", "Costo Total", "Pendiente a Proveedor", "Cliente aún debe"],
+        filas.map(r => [
+          `<a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a>`,
+          r.titular, formatoMoneda(r.costoTotal),
+          r.pendiente > 0.01 ? `<span class="costo-proyectado">${formatoMoneda(r.pendiente)}</span>` : formatoMoneda(0),
+          r.saldoCliente > 0.01 ? `<span class="cifra-positiva">${formatoMoneda(r.saldoCliente)}</span>` : '-'
+        ])
+      );
+
+    } else if (tipo === "operativos") {
+      titulo.textContent = `Gastos Operativos Pagados — ${formatoMoneda(datosCajaReal.operativosTotal)}`;
+      subtitulo.textContent = "Todos los pagos operativos registrados en Gastos, de todo el historial.";
+      const filas = datosMovimientosGastos.slice().sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+      contenido.innerHTML = construirTablaDetalleCaja(
+        ["Fecha", "Descripción", "Categoría", "Monto"],
+        filas.map(m => [formatearFechaVisible(m.fecha), m.descripcion, m.categoria, formatoMoneda(m.monto)])
+      );
+
+    } else if (tipo === "ganancia") {
+      titulo.textContent = "Cómo se calcula la Ganancia Neta Real Disponible";
+      subtitulo.textContent = "";
+      contenido.innerHTML = `
+        <div style="background:#f7fbfb; border:1px solid #dde8e8; border-radius:8px; padding:16px; font-size:0.95rem; line-height:2;">
+          <div>💰 Total Cobrado&nbsp; <strong style="float:right;">${formatoMoneda(datosCajaReal.totalCobrado)}</strong></div>
+          <div>➖ Comprometido con Proveedores&nbsp; <strong style="float:right; color:#c0392b;">${formatoMoneda(datosCajaReal.comprometidoTotal)}</strong></div>
+          <div>➖ Gastos Operativos Pagados&nbsp; <strong style="float:right; color:#c0392b;">${formatoMoneda(datosCajaReal.operativosTotal)}</strong></div>
+          <hr style="margin:8px 0;">
+          <div style="font-size:1.15rem;">🟢 = Ganancia Neta Real Disponible&nbsp; <strong style="float:right; color:#02535a;">${formatoMoneda(datosCajaReal.gananciaNeta)}</strong></div>
+        </div>
+        <p style="font-size:0.8rem; color:#a35b00; margin-top:12px;">⚠️ Ojo: "Comprometido con Proveedores" incluye TODO el costo (ya pagado + lo que falta pagar), asumiendo que se termina de pagar completo — no es plata que ya salió de la cuenta hoy.</p>
+      `;
+    }
+
+    document.getElementById("modalDetalleCaja").style.display = "flex";
+  }
+
+  function construirTablaDetalleCaja(encabezados, filas) {
+    if (filas.length === 0) {
+      return `<p style="text-align:center; color:#999; padding:20px;">No hay registros para mostrar.</p>`;
+    }
+    return `
+      <div style="max-height:50vh; overflow-y:auto;">
+        <table>
+          <thead><tr>${encabezados.map(e => `<th>${e}</th>`).join('')}</tr></thead>
+          <tbody>${filas.map(fila => `<tr>${fila.map(celda => `<td>${celda}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function cerrarModalDetalleCaja() {
+    document.getElementById("modalDetalleCaja").style.display = "none";
   }
 
   function calcularPendientePagarProveedores(codigo) {
