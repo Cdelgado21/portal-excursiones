@@ -493,7 +493,7 @@
 
   <div class="seccion">
     <h3>📑 Balance por Período</h3>
-    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Filtra por fecha de VIAJE. Elegí la vista: <strong>Caja</strong> cuenta solo lo que REALMENTE entró (aunque un cliente todavía deba), <strong>Balance General</strong> cuenta el valor total de la venta (aunque no se haya cobrado todo). Hacé clic en cualquier tarjeta para ver el detalle reserva por reserva.</p>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Elegí la vista: <strong>Caja</strong> filtra por fecha de VIAJE y cuenta solo lo que REALMENTE entró (aunque un cliente todavía deba). <strong>Balance General</strong> filtra por fecha de VENTA (igual que el gráfico de Comportamiento de Ventas de arriba) y cuenta el valor total de la venta, se haya cobrado o no. Hacé clic en cualquier tarjeta para ver el detalle reserva por reserva.</p>
 
     <div style="display:flex; gap:6px; margin-bottom:15px;">
       <button type="button" onclick="cambiarModoBalance('caja')" id="btnModoCaja" class="btn-rango activo">💵 Caja (Cobrado)</button>
@@ -1617,10 +1617,15 @@
     const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
     const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
 
+    // NUEVO: en modo "Caja" se filtra por fecha de VIAJE (como siempre);
+    // en modo "Balance General" se filtra por fecha de VENTA (creado_el),
+    // igual que el gráfico de "Comportamiento de Ventas" — así "cuánto se
+    // vendió este mes" contesta la misma pregunta en los dos lugares.
     const incluidas = Object.entries(datosReservasPorCodigo).filter(([codigo, r]) => {
-      if (!r.fecha) return false;
-      if (desde && r.fecha < desde) return false;
-      if (hasta && r.fecha > hasta) return false;
+      const fechaRelevante = modoBalanceActual === "general" ? r.creadoEl : r.fecha;
+      if (!fechaRelevante) return false;
+      if (desde && fechaRelevante < desde) return false;
+      if (hasta && fechaRelevante > hasta) return false;
       return true;
     });
 
