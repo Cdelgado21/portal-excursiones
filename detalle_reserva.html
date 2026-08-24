@@ -136,6 +136,26 @@
 <img id="fondoPortadaComprobante" src="fondo_portada_comprobante.png" style="display:none;">
 <img id="fondoInteriorComprobante" src="fondo_interior_comprobante.png" style="display:none;">
 
+<datalist id="listaAerolineas">
+  <option value="Avianca">
+  <option value="Copa Airlines">
+  <option value="Volaris">
+  <option value="Wingo">
+  <option value="Iberia">
+  <option value="Iberojet">
+  <option value="American Airlines">
+  <option value="United Airlines">
+  <option value="Delta Air Lines">
+  <option value="LATAM Airlines">
+  <option value="Aeroméxico">
+  <option value="Air France">
+  <option value="KLM">
+  <option value="Lufthansa">
+  <option value="Turkish Airlines">
+  <option value="JetBlue">
+  <option value="Spirit Airlines">
+</datalist>
+
 <main id="contenidoPrincipal">
 
 <h2>Detalle de Reserva</h2>
@@ -254,14 +274,8 @@
   <h3>Vuelo de Ida</h3>
   <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
     <div style="display: flex; align-items: center; gap: 6px;">
-      <label for="aerolineaIda">Aerolínea:</label>
-      <select id="aerolineaIda" style="min-width: 160px;">
-        <option value="">Seleccione una</option>
-        <option value="Avianca">Avianca</option>
-        <option value="Volaris">Volaris</option>
-        <option value="Copa Airlines">Copa Airlines</option>
-        <option value="Wingo">Wingo</option>
-      </select>
+   <label for="aerolineaIda">Aerolínea:</label>
+      <input type="text" id="aerolineaIda" list="listaAerolineas" placeholder="Ej. Avianca, Iberia..." style="min-width: 180px;">
     </div>
 
     <div style="display: flex; align-items: center; gap: 6px;">
@@ -291,14 +305,10 @@
   <h3>Vuelo de Regreso</h3>
   <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
     <div style="display: flex; align-items: center; gap: 6px;">
-      <label for="aerolineaRegreso">Aerolínea:</label>
-      <select id="aerolineaRegreso" style="min-width: 160px;">
-        <option value="">Seleccione una</option>
-        <option value="Avianca">Avianca</option>
-        <option value="Volaris">Volaris</option>
-        <option value="Copa Airlines">Copa Airlines</option>
-        <option value="Wingo">Wingo</option>
-      </select>
+       <label for="aerolineaRegreso">Aerolínea:</label>
+      <input type="text" id="aerolineaRegreso" list="listaAerolineas" placeholder="Ej. Avianca, Iberia..." style="min-width: 180px;">
+
+4) Aerolínea del Vuelo Intermedio — está dentro de la función agregarVueloIntermedio(),
     </div>
 
     <div style="display: flex; align-items: center; gap: 6px;">
@@ -422,10 +432,13 @@
        cargar reserva existente, etc.) sigue leyendo este mismo campo. -->
   <input type="hidden" id="destino">
 
-  <!-- NUEVO: Incluye / No incluye escritos a mano — solo aplica a
-       Personalizado, ya que en Grupal e Individual esta información vive en
-       el catálogo de tours (tours.html), no se repite aquí. -->
-  <div id="contenedorIncluyePersonalizado" style="display:none; margin-top: 15px;">
+  <!-- NUEVO: Incluye / No incluye — ahora editable para CUALQUIER Tipo de
+       Salida (antes solo aplicaba a Personalizado). Para Grupal/Individual
+       se precarga automáticamente con lo que tenga el tour del catálogo
+       (ver cargarInfoTour), pero queda editable por si hay que ajustarlo
+       puntual para esta reserva sin tocar el catálogo. -->
+  <div id="contenedorIncluyePersonalizado" style="margin-top: 15px;">
+    <p style="font-size:0.85rem; color:#5f9296; margin: 0 0 6px 0;">Para Grupal/Individual se precarga desde el Catálogo de Tours — podés ajustarlo aquí solo para esta reserva, sin afectar el catálogo.</p>
     <div style="display: flex; flex-wrap: wrap; gap: 20px;">
       <div style="flex: 1; min-width: 250px;">
         <label><strong>Incluye</strong></label>
@@ -854,8 +867,24 @@ const AEROLINEAS_CONOCIDAS = {
   "COPA": "Copa Airlines",
   "VOLARIS": "Volaris",
   "WINGO": "Wingo",
-  "AERO REPUBLICA": "Wingo",
-  "AERO REPÚBLICA": "Wingo"
+   "AERO REPUBLICA": "Wingo",
+  "AERO REPÚBLICA": "Wingo",
+  "IBERIA": "Iberia",
+  "IBEROJET": "Iberojet",
+  "EVELOP": "Iberojet",
+  "AMERICAN AIRLINES": "American Airlines",
+  "UNITED AIRLINES": "United Airlines",
+  "DELTA": "Delta Air Lines",
+  "LATAM": "LATAM Airlines",
+  "AEROMEXICO": "Aeroméxico",
+  "AEROMÉXICO": "Aeroméxico",
+  "AIR FRANCE": "Air France",
+  "KLM": "KLM",
+  "LUFTHANSA": "Lufthansa",
+  "TURKISH AIRLINES": "Turkish Airlines",
+  "JETBLUE": "JetBlue",
+  "SPIRIT": "Spirit Airlines"
+};
 };
 
 const MESES_TEXTO = {
@@ -1810,8 +1839,12 @@ async function guardarReserva() {
     // liga a ningún tour específico.
     const destino = tipoSalidaActual === "Personalizado" ? "" : (document.getElementById("destino").value || "");
     const nombreDestino = document.getElementById("destinoNombre").value || "";
-    const incluyePersonalizado = tipoSalidaActual === "Personalizado" ? (document.getElementById("incluyePersonalizado").value || "") : "";
-    const no_incluyePersonalizado = tipoSalidaActual === "Personalizado" ? (document.getElementById("no_incluyePersonalizado").value || "") : "";
+    // FIX: Incluye/No incluye ahora se guarda para CUALQUIER Tipo de Salida
+    // (antes solo para Personalizado) — para Grupal/Individual se precarga
+    // desde el catálogo en cargarInfoTour(), pero queda editable para esta
+    // reserva puntual sin tocar el tour del catálogo.
+    const incluyePersonalizado = document.getElementById("incluyePersonalizado").value || "";
+    const no_incluyePersonalizado = document.getElementById("no_incluyePersonalizado").value || "";
     const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
     const pagos = window.listaPagos || [];
     const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
@@ -2229,14 +2262,8 @@ function agregarVueloIntermedio() {
             title="Quitar este vuelo intermedio">❌</span>
       <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
         <div style="display: flex; align-items: center; gap: 6px;">
-          <label>Aerolínea:</label>
-          <select class="aerolineaIntermedio" style="min-width: 160px;">
-            <option value="">Seleccione una</option>
-            <option value="Avianca">Avianca</option>
-            <option value="Volaris">Volaris</option>
-            <option value="Copa Airlines">Copa Airlines</option>
-            <option value="Wingo">Wingo</option>
-          </select>
+                   <label>Aerolínea:</label>
+          <input type="text" class="aerolineaIntermedio" list="listaAerolineas" placeholder="Ej. Avianca, Iberia..." style="min-width: 180px;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
           <label>Fecha:</label>
@@ -2521,7 +2548,6 @@ function asegurarOpcionDestino(nombre) {
 // único que cambia es que no se liga a un tour específico del catálogo, y
 // el Incluye/No incluye se escriben a mano en vez de autocompletarse.
 function aplicarModoPersonalizado() {
-  document.getElementById("contenedorIncluyePersonalizado").style.display = "block";
   document.getElementById("contenedorToursOpcionales").style.display = "none";
   document.getElementById("contenedorNivelReserva").style.display = "none";
   document.getElementById("nivelReserva").innerHTML = "";
@@ -2532,7 +2558,6 @@ function aplicarModoPersonalizado() {
 }
 
 function aplicarModoCatalogo() {
-  document.getElementById("contenedorIncluyePersonalizado").style.display = "none";
   document.getElementById("contenedorToursOpcionales").style.display = "block";
 }
 
@@ -2653,8 +2678,17 @@ async function cargarInfoTour(destinoId) {
     const doc = await db.collection("tours").doc(destinoId).get();
     if (doc.exists) {
       const data = doc.data();
-      document.getElementById("duracion").value = data.duracion || "";
+            document.getElementById("duracion").value = data.duracion || "";
       document.getElementById("itinerario").value = data.itinerario_tours || "";
+
+      // NUEVO: precarga Incluye/No incluye desde el tour del catálogo —
+      // solo si el campo está vacío, para no pisar un ajuste manual que ya
+      // se haya hecho puntual para esta reserva (por ejemplo si se cambió
+      // de tour después de haber editado el texto a mano).
+      const campoIncluye = document.getElementById("incluyePersonalizado");
+      const campoNoIncluye = document.getElementById("no_incluyePersonalizado");
+      if (campoIncluye && !campoIncluye.value.trim()) campoIncluye.value = data.incluye || "";
+      if (campoNoIncluye && !campoNoIncluye.value.trim()) campoNoIncluye.value = data.no_incluye || "";
 
       // NUEVO: los tours opcionales ya no viven dentro de cada tour — son
       // compartidos por destino (colección "tours_opcionales"), así que se
@@ -3111,18 +3145,24 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("cedulaTitular").value = data.cedula || "";
     document.getElementById("correoTitular").value = data.correo || "";
     document.getElementById("telefonoTitular").value = data.telefono || "";
-    document.getElementById("equipaje").value = data.equipaje || "";
+        document.getElementById("equipaje").value = data.equipaje || "";
 
-    // NUEVO: el Destino de una reserva Personalizada se restaura en el mismo
+    // FIX: Incluye/No incluye guardado de la reserva se carga SIEMPRE (antes
+    // solo para Personalizado) — para Grupal/Individual esto sirve como
+    // ajuste puntual guardado; si la reserva no tenía nada guardado todavía
+    // (reservas viejas o recién creadas), cargarInfoTour() más abajo lo
+    // precarga desde el tour del catálogo porque el campo queda vacío.
+    document.getElementById("incluyePersonalizado").value = data.incluyePersonalizado || "";
+    document.getElementById("no_incluyePersonalizado").value = data.no_incluyePersonalizado || "";
+
+    // NUEVO: el Destino de una reserva Personalizada se restaura
     // campo destinoNombre — si ese nombre ya no existe como opción (por
     // ejemplo, una reserva vieja de antes de este cambio), se agrega como
     // opción de respaldo para que se siga viendo correctamente.
     if (data.tipoSalidaReserva === "Personalizado") {
       document.getElementById("tipoSalidaReserva").value = "Personalizado";
-      asegurarOpcionDestino(data.nombreDestino || "");
+           asegurarOpcionDestino(data.nombreDestino || "");
       actualizarFlujoSegunSeleccion();
-      document.getElementById("incluyePersonalizado").value = data.incluyePersonalizado || "";
-      document.getElementById("no_incluyePersonalizado").value = data.no_incluyePersonalizado || "";
     } else {
       // Reconstruye Destino → Tipo de Salida → Nivel a partir del tour
       // guardado, para que los 3 selectores queden exactamente como cuando
@@ -3527,10 +3567,13 @@ function parsearItinerarioPorDias(texto) {
 // Trae incluye/no_incluye directamente del tour en Firestore (detalle_reserva.html hoy no
 // guarda esos campos dentro de la reserva, así que se leen en el momento de generar el PDF).
 async function obtenerIncluyeDelTour(destinoId, datosReserva) {
-  // NUEVO: en una reserva Personalizada no hay tour del catálogo — el
-  // incluye/no incluye se toma directo de lo que se escribió a mano en la
-  // propia reserva.
-  if (datosReserva?.tipoSalidaReserva === "Personalizado") {
+  // FIX: ahora el campo editable de la reserva (incluyePersonalizado /
+  // no_incluyePersonalizado) es la fuente de verdad para CUALQUIER Tipo de
+  // Salida, no solo Personalizado — refleja los ajustes puntuales que se
+  // hayan hecho para esta reserva. Si por algún motivo llegara vacío
+  // (reservas viejas guardadas antes de este cambio), se cae al incluye/
+  // no_incluye del tour del catálogo como respaldo.
+  if (datosReserva?.incluyePersonalizado || datosReserva?.no_incluyePersonalizado) {
     return {
       incluye: datosReserva.incluyePersonalizado || "",
       no_incluye: datosReserva.no_incluyePersonalizado || ""
