@@ -541,6 +541,7 @@
               if (!items) items = [];
               else if (!Array.isArray(items)) items = [items];
               items.forEach(item => {
+                if (item.no_aplica) return; // incluido en el tour — no cuenta como pendiente
                 const tieneDatos = item.proveedor || item.proyectado > 0;
                 if (tieneDatos && !item.confirmado) faltan++;
               });
