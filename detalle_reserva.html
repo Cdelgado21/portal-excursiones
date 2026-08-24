@@ -274,7 +274,7 @@
   <h3>Vuelo de Ida</h3>
   <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
     <div style="display: flex; align-items: center; gap: 6px;">
-   <label for="aerolineaIda">Aerolínea:</label>
+      <label for="aerolineaIda">Aerolínea:</label>
       <input type="text" id="aerolineaIda" list="listaAerolineas" placeholder="Ej. Avianca, Iberia..." style="min-width: 180px;">
     </div>
 
@@ -305,8 +305,8 @@
   <h3>Vuelo de Regreso</h3>
   <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
     <div style="display: flex; align-items: center; gap: 6px;">
-       <label for="aerolineaRegreso">Aerolínea:</label>
-          <input type="text" id="aerolineaRegreso" list="listaAerolineas" placeholder="Ej. Avianca, Iberia..." style="min-width: 180px;">
+      <label for="aerolineaRegreso">Aerolínea:</label>
+      <input type="text" id="aerolineaRegreso" list="listaAerolineas" placeholder="Ej. Avianca, Iberia..." style="min-width: 180px;">
     </div>
 
     <div style="display: flex; align-items: center; gap: 6px;">
@@ -865,7 +865,7 @@ const AEROLINEAS_CONOCIDAS = {
   "COPA": "Copa Airlines",
   "VOLARIS": "Volaris",
   "WINGO": "Wingo",
-   "AERO REPUBLICA": "Wingo",
+  "AERO REPUBLICA": "Wingo",
   "AERO REPÚBLICA": "Wingo",
   "IBERIA": "Iberia",
   "IBEROJET": "Iberojet",
@@ -1915,6 +1915,19 @@ async function guardarReserva() {
       if (!continuar) return;
     }
 
+    // NUEVO: si el Tipo de Salida es Grupal pero no quedó ninguna Salida
+    // Grupal seleccionada, la reserva se guarda sin poder agruparse por
+    // fecha en salidas_grupales.html — se avisa antes de guardar en vez de
+    // que quede así en silencio.
+    if (tipoSalidaActual === "Grupal" && !salidaGrupalId) {
+      const continuarSinSalida = confirm(
+        "⚠️ No se seleccionó una Salida Grupal (fecha concreta) para esta reserva.\n\n" +
+        "Sin esto, la reserva no va a aparecer agrupada en Salidas Grupales.\n\n" +
+        "¿Deseas guardar la reserva de todas formas?"
+      );
+      if (!continuarSinSalida) return;
+    }
+
     const tarjetasPasajero = document.querySelectorAll(".tarjeta-pasajero");
     for (const tarjeta of tarjetasPasajero) {
       const nacimiento = tarjeta.querySelector(".fechaNacimientoPasajero");
@@ -2259,7 +2272,7 @@ function agregarVueloIntermedio() {
             title="Quitar este vuelo intermedio">❌</span>
       <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
         <div style="display: flex; align-items: center; gap: 6px;">
-                   <label>Aerolínea:</label>
+          <label>Aerolínea:</label>
           <input type="text" class="aerolineaIntermedio" list="listaAerolineas" placeholder="Ej. Avianca, Iberia..." style="min-width: 180px;">
         </div>
         <div style="display: flex; align-items: center; gap: 6px;">
@@ -2524,7 +2537,7 @@ function poblarDestinoPrincipal() {
 // NUEVO: al restaurar una reserva Personalizada guardada antes de este
 // cambio (cuando el destino se escribía aparte, sin pasar por el catálogo),
 // el nombre puede no existir como opción en el desplegable — se agrega como
-// respaldo para que se vea y se pueda editar con normalidad.
+// respaldo para que se siga viendo correctamente.
 function asegurarOpcionDestino(nombre) {
   const select = document.getElementById("destinoNombre");
   if (!nombre) return;
@@ -2543,7 +2556,9 @@ function asegurarOpcionDestino(nombre) {
 // NUEVO: Personalizado ya NO oculta el Destino — se sigue usando el mismo
 // desplegable (exista el destino en el catálogo o se cree ahí mismo). Lo
 // único que cambia es que no se liga a un tour específico del catálogo, y
-// el Incluye/No incluye se escriben a mano en vez de autocompletarse.
+// el Incluye/No incluye se escriben a mano en Personalizado, y se precargan
+// del tour en Grupal/Individual (ver cargarInfoTour) — pero el bloque en sí
+// queda visible y editable siempre.
 function aplicarModoPersonalizado() {
   document.getElementById("contenedorToursOpcionales").style.display = "none";
   document.getElementById("contenedorNivelReserva").style.display = "none";
@@ -2578,7 +2593,15 @@ function alCambiarTipoSalida() {
   actualizarFlujoSegunSeleccion();
 }
 
-function actualizarFlujoSegunSeleccion() {
+// NUEVO: función async (antes era sync) — así se puede esperar (await) a
+// que termine de cargar el desplegable de Salida Grupal antes de seguir.
+// Esto evita una condición de carrera: cargarReservaExistente() hacía esta
+// misma llamada dos veces casi al mismo tiempo (una disparada acá adentro,
+// sin esperar, y otra explícita después para restaurar la selección
+// guardada) — si la de acá adentro terminaba DESPUÉS de la explícita,
+// pisaba el desplegable entero y la reserva quedaba sin Salida Grupal
+// seleccionada aunque sí se hubiera guardado bien.
+async function actualizarFlujoSegunSeleccion() {
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
 
   if (tipoSalida === "Personalizado") {
@@ -2598,7 +2621,7 @@ function actualizarFlujoSegunSeleccion() {
   const contenedorSalidaGrupal = document.getElementById("contenedorSalidaGrupal");
   if (tipoSalida === "Grupal" && destinoNombre) {
     contenedorSalidaGrupal.style.display = "block";
-    cargarSalidasGrupalesParaDestino(destinoNombre);
+    await cargarSalidasGrupalesParaDestino(destinoNombre);
   } else {
     contenedorSalidaGrupal.style.display = "none";
   }
@@ -2642,7 +2665,7 @@ function alCambiarNivelReserva() {
 
 // Una vez que Destino + Tipo (+ Nivel, si aplica) dejan claro exactamente
 // cuál tour del catálogo es, se resuelve su ID real y se cargan sus datos
-// (duración, itinerario, tours opcionales).
+// (duración, itinerario, tours opcionales, incluye/no incluye).
 function resolverTourSeleccionado() {
   const destinoNombre = document.getElementById("destinoNombre").value;
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
@@ -2675,7 +2698,7 @@ async function cargarInfoTour(destinoId) {
     const doc = await db.collection("tours").doc(destinoId).get();
     if (doc.exists) {
       const data = doc.data();
-            document.getElementById("duracion").value = data.duracion || "";
+      document.getElementById("duracion").value = data.duracion || "";
       document.getElementById("itinerario").value = data.itinerario_tours || "";
 
       // NUEVO: precarga Incluye/No incluye desde el tour del catálogo —
@@ -3142,7 +3165,7 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("cedulaTitular").value = data.cedula || "";
     document.getElementById("correoTitular").value = data.correo || "";
     document.getElementById("telefonoTitular").value = data.telefono || "";
-        document.getElementById("equipaje").value = data.equipaje || "";
+    document.getElementById("equipaje").value = data.equipaje || "";
 
     // FIX: Incluye/No incluye guardado de la reserva se carga SIEMPRE (antes
     // solo para Personalizado) — para Grupal/Individual esto sirve como
@@ -3152,13 +3175,13 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("incluyePersonalizado").value = data.incluyePersonalizado || "";
     document.getElementById("no_incluyePersonalizado").value = data.no_incluyePersonalizado || "";
 
-    // NUEVO: el Destino de una reserva Personalizada se restaura
+    // NUEVO: el Destino de una reserva Personalizada se restaura en el mismo
     // campo destinoNombre — si ese nombre ya no existe como opción (por
     // ejemplo, una reserva vieja de antes de este cambio), se agrega como
     // opción de respaldo para que se siga viendo correctamente.
     if (data.tipoSalidaReserva === "Personalizado") {
       document.getElementById("tipoSalidaReserva").value = "Personalizado";
-           asegurarOpcionDestino(data.nombreDestino || "");
+      asegurarOpcionDestino(data.nombreDestino || "");
       actualizarFlujoSegunSeleccion();
     } else {
       // Reconstruye Destino → Tipo de Salida → Nivel a partir del tour
@@ -3168,15 +3191,19 @@ async function cargarReservaExistente(codigo) {
       if (tourGuardado) {
         document.getElementById("destinoNombre").value = tourGuardado.nombre;
         document.getElementById("tipoSalidaReserva").value = tourGuardado.tipoSalida;
-        actualizarFlujoSegunSeleccion();
+        // FIX: actualizarFlujoSegunSeleccion() ahora es async y espera (await)
+        // su propia carga interna del desplegable de Salida Grupal — antes
+        // esa carga interna corría en paralelo con la restauración explícita
+        // de abajo, y la que terminara última podía pisar a la otra, dejando
+        // el desplegable vacío aunque la reserva sí tuviera guardado el ID.
+        await actualizarFlujoSegunSeleccion();
         if (tourGuardado.tipoSalida === "Individual") {
           document.getElementById("nivelReserva").value = tourGuardado.nivel || "";
         }
-        // NUEVO: restaura la Salida Grupal elegida — hay que esperar a que
-        // termine de cargar la lista (actualizarFlujoSegunSeleccion la
-        // dispara, pero no la espera) antes de poder seleccionar el valor.
+        // Restaura la Salida Grupal elegida — ya no hace falta volver a
+        // cargar la lista acá (actualizarFlujoSegunSeleccion ya la esperó),
+        // solo queda seleccionar el valor guardado.
         if (tourGuardado.tipoSalida === "Grupal" && data.salidaGrupalId) {
-          await cargarSalidasGrupalesParaDestino(tourGuardado.nombre);
           document.getElementById("salidaGrupalId").value = data.salidaGrupalId;
         }
       }
