@@ -348,6 +348,26 @@
     </div>
   </div>
 
+  <!-- NUEVO: Modal — lista consolidada de pasajeros (titular + acompañantes)
+       de TODAS las reservas de esta salida, con la columna "Reserva" para
+       saber a cuál pertenece cada quien. Pensado para armar el manifiesto
+       del grupo completo, sin tener que abrir reserva por reserva. -->
+  <div id="modalPasajerosSalida" class="modal-sg">
+    <div class="modal-sg-content ancho">
+      <h3 id="tituloModalPasajerosSalida">Pasajeros de esta salida</h3>
+      <table class="tabla-reservas-sg">
+        <thead>
+          <tr><th>Nombre</th><th>Documento</th><th>Nacimiento</th><th>Nacionalidad</th><th>Venc. Pasaporte</th><th>Reserva</th></tr>
+        </thead>
+        <tbody id="tablaPasajerosDeSalida"></tbody>
+      </table>
+      <div id="avisoSinPasajerosSalida" class="vacio" style="display:none;">Todavía no hay ningún pasajero en esta salida.</div>
+      <div class="botones">
+        <button class="btn-cancelar-sg" onclick="cerrarModalPasajerosSalida()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
@@ -381,6 +401,7 @@
 
   let listaSalidas = [];
   let reservasPorSalida = {}; // { salidaId: [ {codigo, titular, personas, saldo}, ... ] }
+  let pasajerosPorSalida = {}; // { salidaId: [ {nombre, documento, nacimiento, nacionalidad, vencimiento, codigoReserva}, ... ] }
   let destinosDisponibles = [];
   let salidaEnEdicion = null;
 
@@ -412,6 +433,7 @@
   async function cargarReservasPorSalida() {
     const snap = await db.collection("reservas").get();
     reservasPorSalida = {};
+    pasajerosPorSalida = {};
     snap.forEach(doc => {
       const data = doc.data();
       if (!data.salidaGrupalId) return;
@@ -423,6 +445,29 @@
         titular: data.nombreTitular || '-',
         personas: calcularPersonasSG(data),
         saldo: total - pagado
+      });
+
+      // NUEVO: lista consolidada de pasajeros (titular + acompañantes) de
+      // TODAS las reservas de esta salida, para el botón 👥 — cada fila
+      // lleva el código de reserva a la que pertenece esa persona.
+      if (!pasajerosPorSalida[data.salidaGrupalId]) pasajerosPorSalida[data.salidaGrupalId] = [];
+      pasajerosPorSalida[data.salidaGrupalId].push({
+        nombre: data.nombreTitular || '-',
+        documento: data.cedula || '-',
+        nacimiento: data.fechaNacimientoTitular || '',
+        nacionalidad: data.nacionalidadTitular || '-',
+        vencimiento: data.vencimientoPasaporteTitular || '',
+        codigoReserva: doc.id
+      });
+      (data.pasajeros || []).forEach(p => {
+        pasajerosPorSalida[data.salidaGrupalId].push({
+          nombre: p.nombre || '-',
+          documento: p.documento || '-',
+          nacimiento: p.nacimiento || '',
+          nacionalidad: p.nacionalidad || '-',
+          vencimiento: p.vencimiento || '',
+          codigoReserva: doc.id
+        });
       });
     });
   }
@@ -469,6 +514,8 @@
         </td>
         <td>
           <div class="celda-acciones">
+            <button class="btn-icono" title="Costos del grupo" onclick="window.open('costos_salida_grupal.html?salida=${salida.id}', '_blank')">💼</button>
+            <button class="btn-icono" title="Lista de pasajeros" onclick="abrirModalPasajerosDeSalida('${salida.id}')">👥</button>
             <button class="btn-icono" title="Editar" onclick="abrirModalEditarSalida('${salida.id}')">✏️</button>
             <button class="btn-icono eliminar" title="Eliminar" onclick="eliminarSalida('${salida.id}')">🗑️</button>
           </div>
@@ -588,6 +635,40 @@
 
   function cerrarModalReservasSalida() {
     document.getElementById("modalReservasSalida").style.display = "none";
+  }
+
+  // NUEVO: formatea nacimiento como fecha visible (mismo parseo flexible ya
+  // usado en el resto del sistema).
+  function abrirModalPasajerosDeSalida(id) {
+    const salida = listaSalidas.find(s => s.id === id);
+    const pasajerosAsociados = pasajerosPorSalida[id] || [];
+    document.getElementById("tituloModalPasajerosSalida").textContent =
+      `Pasajeros — ${salida?.destino || ''} (${formatearFechaSG(salida?.fechaSalida)})`;
+
+    const tabla = document.getElementById("tablaPasajerosDeSalida");
+    tabla.innerHTML = "";
+    if (pasajerosAsociados.length === 0) {
+      document.getElementById("avisoSinPasajerosSalida").style.display = "block";
+    } else {
+      document.getElementById("avisoSinPasajerosSalida").style.display = "none";
+      pasajerosAsociados.forEach(p => {
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${p.nombre}</td>
+          <td>${p.documento}</td>
+          <td>${p.nacimiento ? formatearFechaSG(p.nacimiento) : '-'}</td>
+          <td>${p.nacionalidad}</td>
+          <td>${p.vencimiento ? formatearFechaSG(p.vencimiento) : '-'}</td>
+          <td><a href="detalle_reserva.html?codigo=${p.codigoReserva}" target="_blank">${p.codigoReserva}</a></td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
+    document.getElementById("modalPasajerosSalida").style.display = "flex";
+  }
+
+  function cerrarModalPasajerosSalida() {
+    document.getElementById("modalPasajerosSalida").style.display = "none";
   }
 
   function inicializarMenuLateral() {
