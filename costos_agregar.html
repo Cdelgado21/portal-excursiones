@@ -194,29 +194,37 @@
     <div id="detalleVenta"></div>
   </div>
 
-  <div class="caja-categoria">
-    <h4>✈️ Boletos Aéreos</h4>
-    <div class="nota-boletos">Se paga prácticamente al momento de reservar, así que aquí se registra directo como monto ya pagado (no es una proyección).</div>
-    <label>Monto ya pagado</label>
-    <input type="number" id="costoBoletos" oninput="calcularGanancia()" />
-  </div>
+  <!-- NUEVO: cuando la reserva es Grupal y ya tiene Salida Grupal asignada,
+       Boletos/Hospedaje/Traslados/Tours viven en el grupo (costos
+       compartidos entre todas las reservas de esa salida) — acá solo queda
+       la Comisión, que sigue siendo por reserva. -->
+  <div id="avisoEsGrupal" class="aviso-existente" style="display:none; background:#eef6f6; border-color:#a9d0ec;"></div>
 
-  <div class="caja-categoria" id="cajaHospedaje" data-clave="hospedaje">
-    <h4>🏨 Hospedaje</h4>
-    <div class="filas-categoria" id="filasHospedaje"></div>
-    <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('hospedaje'); return false;">➕ Otra ciudad / proveedor</a>
-  </div>
+  <div id="contenedorCostosIndividuales">
+    <div class="caja-categoria">
+      <h4>✈️ Boletos Aéreos</h4>
+      <div class="nota-boletos">Se paga prácticamente al momento de reservar, así que aquí se registra directo como monto ya pagado (no es una proyección).</div>
+      <label>Monto ya pagado</label>
+      <input type="number" id="costoBoletos" oninput="calcularGanancia()" />
+    </div>
 
-  <div class="caja-categoria" id="cajaTraslados" data-clave="traslados">
-    <h4>🚐 Traslados</h4>
-    <div class="filas-categoria" id="filasTraslados"></div>
-    <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('traslados'); return false;">➕ Otra ciudad / proveedor</a>
-  </div>
+    <div class="caja-categoria" id="cajaHospedaje" data-clave="hospedaje">
+      <h4>🏨 Hospedaje</h4>
+      <div class="filas-categoria" id="filasHospedaje"></div>
+      <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('hospedaje'); return false;">➕ Otra ciudad / proveedor</a>
+    </div>
 
-  <div class="caja-categoria" id="cajaTours" data-clave="tours">
-    <h4>🎟️ Tours y Actividades</h4>
-    <div class="filas-categoria" id="filasTours"></div>
-    <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('tours'); return false;">➕ Otra ciudad / proveedor</a>
+    <div class="caja-categoria" id="cajaTraslados" data-clave="traslados">
+      <h4>🚐 Traslados</h4>
+      <div class="filas-categoria" id="filasTraslados"></div>
+      <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('traslados'); return false;">➕ Otra ciudad / proveedor</a>
+    </div>
+
+    <div class="caja-categoria" id="cajaTours" data-clave="tours">
+      <h4>🎟️ Tours y Actividades</h4>
+      <div class="filas-categoria" id="filasTours"></div>
+      <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('tours'); return false;">➕ Otra ciudad / proveedor</a>
+    </div>
   </div>
 
   <div class="caja-categoria" id="cajaComision" data-clave="comision">
@@ -615,6 +623,7 @@
   }
 
   let datosExistentesCostos = null;
+  let esReservaGrupal = false; // NUEVO: Grupal + salidaGrupalId asignada — oculta Boletos/Hospedaje/Traslados/Tours
 
   async function precargarDatosReserva() {
     if (!codigo) return;
@@ -626,6 +635,17 @@
       const venta = parseFloat(data.total || 0);
       document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
       document.getElementById("ventaTotal").value = venta;
+
+      // NUEVO: si es Grupal con Salida Grupal asignada, los costos
+      // compartidos (Boletos/Hospedaje/Traslados/Tours) viven en
+      // costos_salida_grupal.html — acá solo queda la Comisión.
+      esReservaGrupal = data.tipoSalidaReserva === "Grupal" && !!data.salidaGrupalId;
+      if (esReservaGrupal) {
+        document.getElementById("contenedorCostosIndividuales").style.display = "none";
+        const aviso = document.getElementById("avisoEsGrupal");
+        aviso.style.display = "block";
+        aviso.innerHTML = `🚌 Esta reserva pertenece a una Salida Grupal — los Boletos, Hospedaje, Traslados y Tours se cargan una sola vez para todo el grupo. <a href="costos_salida_grupal.html?salida=${data.salidaGrupalId}" style="color:#02535a; font-weight:bold;">Ir a Costos de la Salida →</a>`;
+      }
 
       const adultos = data.cantidadAdultos || 0;
       const ninos = data.cantidadNinos || 0;
@@ -723,10 +743,14 @@
 
   function calcularGanancia() {
     const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-    const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+    // NUEVO: en una reserva Grupal, Boletos/Hospedaje/Traslados/Tours viven
+    // en costos_salida_grupal.html — acá la "ganancia" de esta pantalla
+    // solo resta la Comisión, para no mostrar un número engañoso.
+    const boletos = esReservaGrupal ? 0 : (parseFloat(document.getElementById("costoBoletos").value) || 0);
 
     let totalCategorias = 0;
-    document.querySelectorAll(".fila-proveedor").forEach(fila => {
+    const selectorFilas = esReservaGrupal ? "#cajaComision .fila-proveedor" : ".fila-proveedor";
+    document.querySelectorAll(selectorFilas).forEach(fila => {
       if (fila.dataset.real !== undefined) {
         totalCategorias += parseFloat(fila.dataset.real) || 0;
       } else {
@@ -758,8 +782,12 @@
       return;
     }
 
+    // NUEVO: en una reserva Grupal, solo se guarda/toca la categoría
+    // Comisión — Boletos/Hospedaje/Traslados/Tours se dejan intactos (viven
+    // en costos_salida_grupal.html, no se deben pisar desde acá).
     const categorias = {};
     CATEGORIAS.forEach(cat => {
+      if (esReservaGrupal && cat.clave !== "comision") return;
       const filas = Array.from(contenedorFilas(cat.clave).querySelectorAll(".fila-proveedor"));
       const items = filas.map(fila => {
         const select = fila.querySelector(".select-proveedor");
@@ -783,16 +811,22 @@
     });
 
     try {
-      await db.collection("costos_reservas").doc(codigo).set({
+      const datosAGuardar = {
         codigo,
         fecha_viaje: fechaViaje,
         venta_total: venta,
         estado: datosExistentesCostos?.estado || "Proyectado",
         creado_el: datosExistentesCostos?.creado_el || new Date(),
         actualizado_el: new Date(),
-        boletos_real: boletos,
         categorias
-      }, { merge: true });
+      };
+      // Si es Grupal, no se toca boletos_real (vive en el grupo) — se omite
+      // del set() para no pisarlo con 0 vía merge.
+      if (!esReservaGrupal) {
+        datosAGuardar.boletos_real = boletos;
+      }
+
+      await db.collection("costos_reservas").doc(codigo).set(datosAGuardar, { merge: true });
 
       alert("✅ Costos guardados correctamente.");
       window.location.href = `detalle_reserva.html?codigo=${codigo}`;
