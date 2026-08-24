@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Costos de la Salida Grupal</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
+  <style>
+    main#contenidoPrincipal {
+      max-width: 760px;
+    }
+    .btn-volver {
+      display: inline-block;
+      margin-bottom: 15px;
+      padding: 8px 16px;
+      background-color: #02535a;
+      color: white;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .btn-volver:hover { background-color: #036a6d; }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f7f7;
+      color: #02535a;
+      margin: 0;
+      padding: 0;
+    }
+    h2 {
+      background-color: #02535a;
+      color: white;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+      font-size: 15px;
+    }
+    .btn {
+      margin-top: 20px;
+      background-color: #02535a;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .resultado { margin-top: 15px; font-size: 18px; font-weight: bold; }
+    .aviso-existente {
+      margin-top: 15px;
+      padding: 10px 14px;
+      background: #eaf5f0;
+      border: 1px solid #b6ddc9;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: normal;
+    }
+    .caja-categoria {
+      margin-top: 18px;
+      padding: 14px 16px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #dde8e8;
+    }
+    .caja-categoria h4 { margin: 0 0 8px 0; color: #02535a; }
+    .caja-categoria .fila { display: flex; gap: 12px; flex-wrap: wrap; }
+    .caja-categoria .fila > div { flex: 1; min-width: 160px; }
+    .aviso-ya-pagado {
+      margin-top: 8px; padding: 8px 12px; background: #eaf5ea;
+      border: 1px solid #b6ddb6; border-radius: 6px; font-size: 13px;
+      color: #1b6e1b; font-weight: bold;
+    }
+    .aviso-ya-confirmado {
+      margin-top: 8px; padding: 8px 12px; background: #e8f2fb;
+      border: 1px solid #a9d0ec; border-radius: 6px; font-size: 13px;
+      color: #1a5276; font-weight: bold;
+    }
+    .aviso-no-aplica {
+      margin-top: 8px; padding: 8px 12px; background: #f0f0f0;
+      border: 1px solid #ccc; border-radius: 6px; font-size: 13px;
+      color: #555; font-weight: bold;
+    }
+    .nota-boletos { font-weight: normal; font-size: 13px; color: #777; margin-top: 2px; }
+    .fila-proveedor {
+      margin-bottom: 10px; padding-bottom: 10px;
+      border-bottom: 1px dashed #e0e8e8;
+    }
+    .fila-proveedor:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .fila-proveedor .fila { align-items: flex-end; }
+    .btn-quitar-fila {
+      background: #fbe2e0; color: #b23327; border: none; border-radius: 6px;
+      padding: 8px 10px; cursor: pointer; font-size: 14px; height: 38px;
+    }
+    .btn-quitar-fila:hover { background: #c0392b; color: white; }
+    .btn-agregar-fila {
+      display: inline-block; margin-top: 4px; font-size: 13px;
+      color: #02535a; font-weight: bold; text-decoration: none;
+    }
+    .btn-agregar-fila:hover { text-decoration: underline; }
+
+    /* NUEVO: selector de modo de costeo — Paquete completo vs Desglosado */
+    .selector-modo {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .btn-modo {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      border-radius: 8px;
+      border: 2px solid #dde8e8;
+      background: white;
+      cursor: pointer;
+      font-weight: bold;
+      color: #5f9296;
+    }
+    .btn-modo.activo {
+      border-color: #02535a;
+      background: #eef6f6;
+      color: #02535a;
+    }
+    .caja-paquete {
+      margin-top: 18px;
+      padding: 16px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #dde8e8;
+    }
+    .resumen-paquete {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #f0f7f7;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <main id="contenidoPrincipal">
+
+  <a href="#" id="btnVolverSalidas" class="btn-volver">◀ Volver a Salidas Grupales</a>
+
+  <h2>💼 Costos de la Salida Grupal</h2>
+
+  <div id="avisoExistente" class="aviso-existente" style="display:none;"></div>
+
+  <label>Destino</label>
+  <input type="text" id="destinoSalida" readonly />
+
+  <label>Fecha de Salida</label>
+  <input type="text" id="fechaSalidaTexto" readonly />
+
+  <div id="desgloseVenta" style="margin-top: 15px; font-size: 15px; background: #f9f9f9; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+    <strong>Venta Total del Grupo (todas las reservas de esta salida):</strong>
+    <div id="detalleVentaGrupo" style="margin-top:6px;"></div>
+  </div>
+
+  <!-- NUEVO: Comisiones — solo lectura acá, se editan por reserva en
+       costos_agregar.html (cada reserva puede tener una vendedora distinta). -->
+  <div id="desgloseComisiones" style="margin-top: 15px; font-size: 14px; background: #f9f9f9; padding: 12px; border-radius: 8px; border: 1px solid #ddd;">
+    <strong>Comisiones (una por reserva, se editan desde cada reserva):</strong>
+    <div id="detalleComisionesGrupo" style="margin-top:6px;"></div>
+  </div>
+
+  <label>Modo de costeo</label>
+  <div class="selector-modo">
+    <div class="btn-modo" id="btnModoPaquete" onclick="cambiarModoCosteo('paquete')">📦 Paquete completo</div>
+    <div class="btn-modo" id="btnModoDesglosado" onclick="cambiarModoCosteo('desglosado')">📋 Desglosado por categoría</div>
+  </div>
+
+  <!-- Modo Paquete completo -->
+  <div id="contenedorModoPaquete" class="caja-paquete" style="display:none;">
+    <h4 style="margin-top:0;">📦 Paquete completo (todo incluido)</h4>
+    <div class="nota-boletos">Para cuando el proveedor vende vuelos+hospedaje+tours+traslados como un solo paquete por persona (ej. "$2999 todo incluido").</div>
+
+    <div class="fila">
+      <div>
+        <label>Proveedor (opcional)</label>
+        <input type="text" id="paquete_proveedor" placeholder="Ej. Mayorista XYZ">
+      </div>
+      <div>
+        <label>Costo por persona (USD)</label>
+        <input type="number" id="paquete_costoPorPersona" oninput="calcularGananciaGrupo()">
+      </div>
+    </div>
+
+    <div class="resumen-paquete">
+      <span id="paquete_totalPersonasTexto">0 personas en esta salida</span> ×
+      $<span id="paquete_costoPorPersonaTexto">0.00</span> =
+      <strong>$<span id="paquete_costoTotalTexto">0.00</span></strong>
+    </div>
+
+    <div style="display:flex; gap:20px; margin-top:12px;">
+      <div style="flex: 0 0 auto; text-align:center;">
+        <label style="font-size:11px;">Pagado</label>
+        <input type="checkbox" id="paquete_chkPagado" onchange="alternarPaquetePagado(this)" style="width:20px; height:20px; margin-top:5px; cursor:pointer;">
+      </div>
+      <div style="flex: 0 0 auto; text-align:center;">
+        <label style="font-size:11px;">Confirmado</label>
+        <input type="checkbox" id="paquete_chkConfirmado" onchange="alternarPaqueteConfirmado(this)" style="width:20px; height:20px; margin-top:5px; cursor:pointer;">
+      </div>
+    </div>
+    <div id="paquete_avisoPagado" style="display:none;"></div>
+    <div id="paquete_avisoConfirmado" style="display:none;"></div>
+  </div>
+
+  <!-- Modo Desglosado -->
+  <div id="contenedorModoDesglosado" style="display:none;">
+    <div class="caja-categoria">
+      <h4>✈️ Boletos Aéreos</h4>
+      <div class="nota-boletos">Se paga prácticamente al momento de reservar, así que aquí se registra directo como monto ya pagado (no es una proyección).</div>
+      <label>Monto ya pagado (total del grupo)</label>
+      <input type="number" id="costoBoletos" oninput="calcularGananciaGrupo()" />
+    </div>
+
+    <div class="caja-categoria" id="cajaHospedaje" data-clave="hospedaje">
+      <h4>🏨 Hospedaje</h4>
+      <div class="filas-categoria" id="filasHospedaje"></div>
+      <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('hospedaje'); return false;">➕ Otra ciudad / proveedor</a>
+    </div>
+
+    <div class="caja-categoria" id="cajaTraslados" data-clave="traslados">
+      <h4>🚐 Traslados</h4>
+      <div class="filas-categoria" id="filasTraslados"></div>
+      <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('traslados'); return false;">➕ Otra ciudad / proveedor</a>
+    </div>
+
+    <div class="caja-categoria" id="cajaTours" data-clave="tours">
+      <h4>🎟️ Tours y Actividades</h4>
+      <div class="filas-categoria" id="filasTours"></div>
+      <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('tours'); return false;">➕ Otra ciudad / proveedor</a>
+    </div>
+
+    <div class="caja-categoria" id="cajaGuia" data-clave="guia">
+      <h4>🧑‍✈️ Guía Acompañante</h4>
+      <div class="nota-boletos">Sueldo, viáticos u honorarios del guía que acompaña al grupo durante el viaje.</div>
+      <div class="filas-categoria" id="filasGuia"></div>
+      <a href="#" class="btn-agregar-fila" onclick="agregarFilaCategoria('guia'); return false;">➕ Otro guía</a>
+    </div>
+  </div>
+
+  <div class="resultado">Ganancia Estimada del Grupo: $<span id="gananciaProyectada">0.00</span> <span id="porcentajeGanancia" style="font-weight:normal; font-size:15px; color:#5f9296;"></span></div>
+
+  <button class="btn" onclick="guardarCostosGrupo()">Guardar Costos del Grupo</button>
+
+  </main>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+    authDomain: "tours-460717.firebaseapp.com",
+    projectId: "tours-460717",
+    storageBucket: "tours-460717.firebasestorage.app",
+    messagingSenderId: "1000749333444",
+    appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const params = new URLSearchParams(window.location.search);
+  const salidaId = params.get("salida");
+
+  const btnVolver = document.getElementById("btnVolverSalidas");
+  if (btnVolver) btnVolver.href = "salidas_grupales.html";
+
+  // Categorías desglosadas — mismo patrón que costos_agregar.html, más "guia".
+  const CATEGORIAS = ["hospedaje", "traslados", "tours", "guia"];
+
+  function contenedorFilas(clave) {
+    return document.getElementById(`filas${clave.charAt(0).toUpperCase()}${clave.slice(1)}`);
+  }
+
+  function parseFechaCSG(str) {
+    if (!str) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + "T00:00:00");
+    const partes = str.split("/");
+    if (partes.length === 3) {
+      const [dia, mes, año] = partes.map(Number);
+      if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) return new Date(año, mes - 1, dia);
+    }
+    return null;
+  }
+  function formatearFechaCSG(str) {
+    const f = parseFechaCSG(str);
+    if (!f) return '-';
+    return `${String(f.getDate()).padStart(2,'0')}/${String(f.getMonth()+1).padStart(2,'0')}/${f.getFullYear()}`;
+  }
+
+  function calcularPersonasCSG(data) {
+    const adultos = data.cantidadAdultos || 0;
+    const ninos = data.cantidadNinos || 0;
+    const bebes = data.cantidadBebes || 0;
+    const suma = adultos + ninos + bebes;
+    if (suma > 0) return suma;
+    if (Array.isArray(data.pasajeros) && data.pasajeros.length > 0) return data.pasajeros.length + 1;
+    return 1;
+  }
+
+  let listaProveedores = [];
+  let destinoActualSalida = "";
+  let reservasDeEstaSalida = []; // [{codigo, titular, total, personas}]
+  let totalPersonasGrupo = 0;
+  let ventaTotalGrupo = 0;
+  let comisionesTotalGrupo = 0;
+  let datosExistentesCostos = null;
+  let modoActual = "desglosado";
+
+  const ETIQUETA_CATEGORIA = { hospedaje: "Hospedaje", traslados: "Traslados", tours: "Tours", guia: "Guía Acompañante" };
+
+  function crearFilaCategoria(clave, datos) {
+    datos = datos || {};
+    const etiquetaProveedor = clave === "guia" ? "Guía" : "Proveedor";
+
+    const contenedor = contenedorFilas(clave);
+    const fila = document.createElement("div");
+    fila.className = "fila-proveedor";
+    fila.dataset.clave = clave;
+    fila.innerHTML = `
+      <div class="fila">
+        <div>
+          <label>${etiquetaProveedor}</label>
+          <select class="select-proveedor" onchange="manejarSeleccionProveedor(this)"></select>
+        </div>
+        <div>
+          <label>Monto proyectado</label>
+          <input type="number" class="input-proyectado" oninput="calcularGananciaGrupo()">
+        </div>
+        <div style="flex: 0 0 auto; min-width:0; text-align:center;">
+          <label style="font-size:11px;">Pagado</label>
+          <input type="checkbox" class="chk-pagado" onchange="alternarPagadoFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;">
+        </div>
+        <div style="flex: 0 0 auto; min-width:0; text-align:center;">
+          <label style="font-size:11px;">Confirmado</label>
+          <input type="checkbox" class="chk-confirmado" onchange="alternarConfirmadoFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;">
+        </div>
+        <div style="flex: 0 0 auto; min-width:0; text-align:center;">
+          <label style="font-size:11px;">N/A</label>
+          <input type="checkbox" class="chk-no-aplica" onchange="alternarNoAplicaFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;" title="No aplica esta categoría para esta salida">
+        </div>
+        <div style="flex: 0 0 auto; min-width:0;">
+          <label>&nbsp;</label>
+          <button type="button" class="btn-quitar-fila" onclick="quitarFilaCategoria(this)" title="Quitar esta fila">🗑️</button>
+        </div>
+      </div>
+      <div class="aviso-real-fila" style="display:none;"></div>
+      <div class="aviso-confirmado-fila" style="display:none;"></div>
+      <div class="aviso-no-aplica-fila" style="display:none;"></div>
+    `;
+    contenedor.appendChild(fila);
+
+    const selectProveedor = fila.querySelector(".select-proveedor");
+    poblarUnSelectDeProveedor(selectProveedor, clave);
+    if (datos.proveedor) selectProveedor.value = datos.proveedor;
+    fila.querySelector(".input-proyectado").value = (datos.proyectado !== undefined && datos.proyectado !== null) ? datos.proyectado : "";
+
+    if (typeof datos.real === "number") {
+      marcarFilaComoPagada(fila, datos.real, datos.proveedor || "", datos.fecha_pago_real);
+    }
+    if (datos.confirmado) {
+      marcarFilaComoConfirmada(fila, datos.fecha_confirmado);
+    }
+    if (datos.no_aplica) {
+      marcarFilaComoNoAplica(fila);
+    }
+
+    return fila;
+  }
+
+  function agregarFilaCategoria(clave) {
+    crearFilaCategoria(clave, {});
+    calcularGananciaGrupo();
+  }
+
+  function quitarFilaCategoria(boton) {
+    boton.closest(".fila-proveedor").remove();
+    calcularGananciaGrupo();
+  }
+
+  function marcarFilaComoPagada(fila, monto, proveedor, fechaPago) {
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const chk = fila.querySelector(".chk-pagado");
+    const aviso = fila.querySelector(".aviso-real-fila");
+
+    select.disabled = true;
+    input.disabled = true;
+    if (chk) { chk.checked = true; chk.disabled = true; }
+    if (proveedor) select.value = proveedor;
+
+    const fecha = fechaPago?.toDate ? fechaPago.toDate() : (fechaPago ? new Date(fechaPago) : null);
+    fila.dataset.real = monto;
+    if (fecha) fila.dataset.fechaPagoReal = fecha.toISOString();
+
+    const fechaTexto = fecha ? ` el ${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : "";
+    aviso.style.display = "block";
+    aviso.className = "aviso-ya-pagado aviso-real-fila";
+    aviso.innerHTML = `✅ Ya pagado (real): $${monto.toFixed(2)}${fechaTexto} <a href="#" onclick="desmarcarFilaPagada(this); return false;" style="margin-left:10px; font-weight:normal; text-decoration:underline; color:#1b6e1b;">deshacer</a>`;
+  }
+
+  function alternarPagadoFila(checkbox) {
+    if (!checkbox.checked) return;
+    const fila = checkbox.closest(".fila-proveedor");
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const monto = parseFloat(input.value) || 0;
+
+    if (!select.value || monto <= 0) {
+      alert("Selecciona el proveedor e ingresa el monto antes de marcarlo como pagado.");
+      checkbox.checked = false;
+      return;
+    }
+    marcarFilaComoPagada(fila, monto, select.value, new Date());
+    calcularGananciaGrupo();
+  }
+
+  function desmarcarFilaPagada(enlace) {
+    const fila = enlace.closest(".fila-proveedor");
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const chk = fila.querySelector(".chk-pagado");
+    const aviso = fila.querySelector(".aviso-real-fila");
+
+    delete fila.dataset.real;
+    delete fila.dataset.fechaPagoReal;
+    select.disabled = false;
+    input.disabled = false;
+    if (chk) { chk.checked = false; chk.disabled = false; }
+    aviso.style.display = "none";
+    aviso.innerHTML = "";
+    calcularGananciaGrupo();
+  }
+
+  function marcarFilaComoConfirmada(fila, fechaConfirmado) {
+    const chk = fila.querySelector(".chk-confirmado");
+    const aviso = fila.querySelector(".aviso-confirmado-fila");
+    if (chk) chk.checked = true;
+
+    const fecha = fechaConfirmado?.toDate ? fechaConfirmado.toDate() : (fechaConfirmado ? new Date(fechaConfirmado) : null);
+    fila.dataset.confirmado = "true";
+    if (fecha) fila.dataset.fechaConfirmado = fecha.toISOString();
+
+    const fechaTexto = fecha ? ` el ${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : "";
+    aviso.style.display = "block";
+    aviso.className = "aviso-ya-confirmado aviso-confirmado-fila";
+    aviso.innerHTML = `📞 Confirmado con el proveedor${fechaTexto} <a href="#" onclick="desmarcarConfirmadoFila(this); return false;" style="margin-left:10px; font-weight:normal; text-decoration:underline; color:#1a5276;">deshacer</a>`;
+  }
+
+  function alternarConfirmadoFila(checkbox) {
+    const fila = checkbox.closest(".fila-proveedor");
+    if (checkbox.checked) {
+      const select = fila.querySelector(".select-proveedor");
+      if (!select.value) {
+        alert("Selecciona el proveedor antes de marcarlo como confirmado.");
+        checkbox.checked = false;
+        return;
+      }
+      marcarFilaComoConfirmada(fila, new Date());
+    } else {
+      quitarConfirmacionFila(fila);
+    }
+  }
+
+  function quitarConfirmacionFila(fila) {
+    const aviso = fila.querySelector(".aviso-confirmado-fila");
+    delete fila.dataset.confirmado;
+    delete fila.dataset.fechaConfirmado;
+    aviso.style.display = "none";
+    aviso.innerHTML = "";
+  }
+
+  function desmarcarConfirmadoFila(enlace) {
+    const fila = enlace.closest(".fila-proveedor");
+    const chk = fila.querySelector(".chk-confirmado");
+    if (chk) chk.checked = false;
+    quitarConfirmacionFila(fila);
+  }
+
+  function marcarFilaComoNoAplica(fila) {
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const chkPagado = fila.querySelector(".chk-pagado");
+    const chkConfirmado = fila.querySelector(".chk-confirmado");
+    const chkNoAplica = fila.querySelector(".chk-no-aplica");
+    const aviso = fila.querySelector(".aviso-no-aplica-fila");
+
+    select.value = "";
+    select.disabled = true;
+    input.value = "";
+    input.disabled = true;
+    if (chkPagado) { chkPagado.checked = false; chkPagado.disabled = true; }
+    if (chkConfirmado) { chkConfirmado.checked = false; chkConfirmado.disabled = true; }
+    if (chkNoAplica) chkNoAplica.checked = true;
+
+    fila.dataset.noAplica = "true";
+    aviso.style.display = "block";
+    aviso.className = "aviso-no-aplica aviso-no-aplica-fila";
+    aviso.innerHTML = `ℹ️ No aplica para esta salida <a href="#" onclick="desmarcarNoAplicaFila(this); return false;" style="margin-left:10px; font-weight:normal; text-decoration:underline; color:#555;">deshacer</a>`;
+  }
+
+  function alternarNoAplicaFila(checkbox) {
+    const fila = checkbox.closest(".fila-proveedor");
+    if (checkbox.checked) {
+      marcarFilaComoNoAplica(fila);
+      calcularGananciaGrupo();
+    }
+  }
+
+  function quitarNoAplicaFila(fila) {
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const chkPagado = fila.querySelector(".chk-pagado");
+    const chkConfirmado = fila.querySelector(".chk-confirmado");
+    const aviso = fila.querySelector(".aviso-no-aplica-fila");
+
+    delete fila.dataset.noAplica;
+    select.disabled = false;
+    input.disabled = false;
+    if (chkPagado) chkPagado.disabled = false;
+    if (chkConfirmado) chkConfirmado.disabled = false;
+    aviso.style.display = "none";
+    aviso.innerHTML = "";
+  }
+
+  function desmarcarNoAplicaFila(enlace) {
+    const fila = enlace.closest(".fila-proveedor");
+    const chk = fila.querySelector(".chk-no-aplica");
+    if (chk) chk.checked = false;
+    quitarNoAplicaFila(fila);
+    calcularGananciaGrupo();
+  }
+
+  async function cargarProveedores() {
+    const snap = await db.collection("proveedores").orderBy("nombre").get();
+    listaProveedores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    poblarTodosLosSelectsDeProveedor();
+  }
+
+  function poblarUnSelectDeProveedor(select, clave) {
+    const valorActual = select.value;
+    const etiqueta = ETIQUETA_CATEGORIA[clave];
+
+    let relevantes = listaProveedores.filter(p =>
+      p.activo !== false && (!p.categoria || p.categoria === etiqueta || (clave === "guia" && p.categoria === "Otro"))
+    );
+
+    function opciones(lista) {
+      return lista.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("");
+    }
+
+    const deEsteDestino = relevantes.filter(p => destinoActualSalida && p.destino === destinoActualSalida);
+    const universales = relevantes.filter(p => !p.destino);
+    const otros = relevantes.filter(p => p.destino && p.destino !== destinoActualSalida);
+
+    let html = `<option value="">-- Seleccione --</option>`;
+    if (deEsteDestino.length > 0) html += `<optgroup label="Proveedores de ${destinoActualSalida}">${opciones(deEsteDestino)}</optgroup>`;
+    if (universales.length > 0) html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
+    if (otros.length > 0) html += `<optgroup label="Otros destinos">${opciones(otros)}</optgroup>`;
+    html += `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
+
+    select.innerHTML = html;
+    if (valorActual && valorActual !== "__nuevo__") select.value = valorActual;
+  }
+
+  function poblarTodosLosSelectsDeProveedor() {
+    document.querySelectorAll(".select-proveedor").forEach(select => {
+      const clave = select.closest(".fila-proveedor")?.dataset.clave;
+      if (clave) poblarUnSelectDeProveedor(select, clave);
+    });
+  }
+
+  async function manejarSeleccionProveedor(select) {
+    if (select.value !== "__nuevo__") return;
+    const nombre = prompt("Nombre del nuevo proveedor:");
+    if (!nombre || !nombre.trim()) { select.value = ""; return; }
+
+    const nombreLimpio = nombre.trim();
+    const yaExiste = listaProveedores.some(p => p.nombre.toLowerCase() === nombreLimpio.toLowerCase());
+
+    if (!yaExiste) {
+      const claveCategoria = select.closest(".fila-proveedor")?.dataset.clave;
+      const nuevoProveedor = {
+        nombre: nombreLimpio,
+        destino: destinoActualSalida || "",
+        categoria: ETIQUETA_CATEGORIA[claveCategoria] || "Otro",
+        activo: true,
+        creado_el: new Date()
+      };
+      try {
+        await db.collection("proveedores").add(nuevoProveedor);
+        listaProveedores.push(nuevoProveedor);
+        listaProveedores.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      } catch (e) {
+        console.error("Error al guardar el proveedor nuevo:", e);
+        alert("❌ No se pudo guardar el proveedor nuevo.");
+        select.value = "";
+        return;
+      }
+    }
+    poblarTodosLosSelectsDeProveedor();
+    select.value = nombreLimpio;
+  }
+
+  // ==========================================
+  // Modo de costeo: Paquete completo vs Desglosado
+  // ==========================================
+  function cambiarModoCosteo(modo) {
+    modoActual = modo;
+    document.getElementById("btnModoPaquete").classList.toggle("activo", modo === "paquete");
+    document.getElementById("btnModoDesglosado").classList.toggle("activo", modo === "desglosado");
+    document.getElementById("contenedorModoPaquete").style.display = modo === "paquete" ? "block" : "none";
+    document.getElementById("contenedorModoDesglosado").style.display = modo === "desglosado" ? "block" : "none";
+    calcularGananciaGrupo();
+  }
+
+  function actualizarResumenPaquete() {
+    const costoPorPersona = parseFloat(document.getElementById("paquete_costoPorPersona").value) || 0;
+    const costoTotal = costoPorPersona * totalPersonasGrupo;
+    document.getElementById("paquete_totalPersonasTexto").textContent = `${totalPersonasGrupo} persona${totalPersonasGrupo === 1 ? '' : 's'} en esta salida`;
+    document.getElementById("paquete_costoPorPersonaTexto").textContent = costoPorPersona.toFixed(2);
+    document.getElementById("paquete_costoTotalTexto").textContent = costoTotal.toFixed(2);
+    return costoTotal;
+  }
+
+  function marcarPaqueteComoPagado(monto, fechaPago) {
+    document.getElementById("paquete_costoPorPersona").disabled = true;
+    document.getElementById("paquete_proveedor").disabled = true;
+    const chk = document.getElementById("paquete_chkPagado");
+    chk.checked = true; chk.disabled = true;
+
+    const fecha = fechaPago?.toDate ? fechaPago.toDate() : (fechaPago ? new Date(fechaPago) : null);
+    document.getElementById("contenedorModoPaquete").dataset.real = monto;
+    if (fecha) document.getElementById("contenedorModoPaquete").dataset.fechaPagoReal = fecha.toISOString();
+
+    const fechaTexto = fecha ? ` el ${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : "";
+    const aviso = document.getElementById("paquete_avisoPagado");
+    aviso.style.display = "block";
+    aviso.className = "aviso-ya-pagado";
+    aviso.innerHTML = `✅ Ya pagado (real): $${monto.toFixed(2)}${fechaTexto} <a href="#" onclick="desmarcarPaquetePagado(); return false;" style="margin-left:10px; font-weight:normal; text-decoration:underline; color:#1b6e1b;">deshacer</a>`;
+  }
+
+  function alternarPaquetePagado(checkbox) {
+    if (!checkbox.checked) return;
+    const costoTotal = actualizarResumenPaquete();
+    if (costoTotal <= 0) {
+      alert("Ingresa el costo por persona antes de marcarlo como pagado.");
+      checkbox.checked = false;
+      return;
+    }
+    marcarPaqueteComoPagado(costoTotal, new Date());
+    calcularGananciaGrupo();
+  }
+
+  function desmarcarPaquetePagado() {
+    document.getElementById("paquete_costoPorPersona").disabled = false;
+    document.getElementById("paquete_proveedor").disabled = false;
+    const chk = document.getElementById("paquete_chkPagado");
+    chk.checked = false; chk.disabled = false;
+    delete document.getElementById("contenedorModoPaquete").dataset.real;
+    delete document.getElementById("contenedorModoPaquete").dataset.fechaPagoReal;
+    document.getElementById("paquete_avisoPagado").style.display = "none";
+    calcularGananciaGrupo();
+  }
+
+  function marcarPaqueteComoConfirmado(fechaConfirmado) {
+    const chk = document.getElementById("paquete_chkConfirmado");
+    chk.checked = true;
+    const fecha = fechaConfirmado?.toDate ? fechaConfirmado.toDate() : (fechaConfirmado ? new Date(fechaConfirmado) : null);
+    document.getElementById("contenedorModoPaquete").dataset.confirmado = "true";
+    if (fecha) document.getElementById("contenedorModoPaquete").dataset.fechaConfirmado = fecha.toISOString();
+
+    const fechaTexto = fecha ? ` el ${String(fecha.getDate()).padStart(2,'0')}/${String(fecha.getMonth()+1).padStart(2,'0')}/${fecha.getFullYear()}` : "";
+    const aviso = document.getElementById("paquete_avisoConfirmado");
+    aviso.style.display = "block";
+    aviso.className = "aviso-ya-confirmado";
+    aviso.innerHTML = `📞 Confirmado con el proveedor${fechaTexto} <a href="#" onclick="desmarcarPaqueteConfirmado(); return false;" style="margin-left:10px; font-weight:normal; text-decoration:underline; color:#1a5276;">deshacer</a>`;
+  }
+
+  function alternarPaqueteConfirmado(checkbox) {
+    if (checkbox.checked) {
+      marcarPaqueteComoConfirmado(new Date());
+    } else {
+      desmarcarPaqueteConfirmado();
+    }
+  }
+
+  function desmarcarPaqueteConfirmado() {
+    const chk = document.getElementById("paquete_chkConfirmado");
+    chk.checked = false;
+    delete document.getElementById("contenedorModoPaquete").dataset.confirmado;
+    delete document.getElementById("contenedorModoPaquete").dataset.fechaConfirmado;
+    document.getElementById("paquete_avisoConfirmado").style.display = "none";
+  }
+
+  // ==========================================
+  // Carga inicial
+  // ==========================================
+  async function precargarDatosSalida() {
+    if (!salidaId) {
+      alert("⚠️ Falta el parámetro de salida en la URL.");
+      return;
+    }
+    try {
+      const docSalida = await db.collection("salidas_grupales").doc(salidaId).get();
+      if (!docSalida.exists) {
+        alert("❌ No se encontró la salida grupal.");
+        return;
+      }
+      const salida = docSalida.data();
+      destinoActualSalida = salida.destino || "";
+      document.getElementById("destinoSalida").value = salida.destino || "";
+      document.getElementById("fechaSalidaTexto").value = formatearFechaCSG(salida.fechaSalida);
+
+      // Reservas de esta salida — de acá sale la Venta Total y las Comisiones.
+      const snapReservas = await db.collection("reservas").where("salidaGrupalId", "==", salidaId).get();
+      reservasDeEstaSalida = snapReservas.docs.map(d => ({ codigo: d.id, ...d.data() }));
+      totalPersonasGrupo = reservasDeEstaSalida.reduce((sum, r) => sum + calcularPersonasCSG(r), 0);
+      ventaTotalGrupo = reservasDeEstaSalida.reduce((sum, r) => sum + (Number(r.total) || 0), 0);
+
+      document.getElementById("detalleVentaGrupo").innerHTML = reservasDeEstaSalida.length === 0
+        ? `<span style="color:#999;">Todavía no hay reservas ligadas a esta salida.</span>`
+        : reservasDeEstaSalida.map(r => `${r.codigo} — ${r.nombreTitular || 'Titular'}: $${(Number(r.total) || 0).toFixed(2)}`).join("<br>") +
+          `<hr>💵 <strong>Total: $${ventaTotalGrupo.toFixed(2)}</strong> (${totalPersonasGrupo} persona${totalPersonasGrupo === 1 ? '' : 's'})`;
+
+      // Comisiones — solo lectura, se leen de costos_reservas de cada reserva.
+      comisionesTotalGrupo = 0;
+      const detalleComisiones = [];
+      for (const r of reservasDeEstaSalida) {
+        const docCostosReserva = await db.collection("costos_reservas").doc(r.codigo).get();
+        if (!docCostosReserva.exists) continue;
+        const cats = docCostosReserva.data().categorias;
+        if (!cats || !cats.comision) continue;
+        let items = Array.isArray(cats.comision) ? cats.comision : [cats.comision];
+        items.forEach(item => {
+          if (!item || item.no_aplica) return;
+          const monto = typeof item.real === "number" ? item.real : (item.proyectado || 0);
+          if (monto > 0) {
+            comisionesTotalGrupo += monto;
+            detalleComisiones.push(`${r.codigo} — ${item.proveedor || 'Sin asignar'}: $${monto.toFixed(2)}`);
+          }
+        });
+      }
+      document.getElementById("detalleComisionesGrupo").innerHTML = detalleComisiones.length === 0
+        ? `<span style="color:#999;">Sin comisiones registradas todavía.</span>`
+        : detalleComisiones.join("<br>") + `<hr>Total comisiones: $${comisionesTotalGrupo.toFixed(2)}`;
+
+      await cargarProveedores();
+      CATEGORIAS.forEach(cat => crearFilaCategoria(cat, {}));
+
+      const docCostos = await db.collection("costos_salidas_grupales").doc(salidaId).get();
+      if (docCostos.exists) {
+        datosExistentesCostos = docCostos.data();
+        const aviso = document.getElementById("avisoExistente");
+        aviso.style.display = "block";
+        aviso.innerHTML = `📋 Ya existen costos guardados para esta salida (estado: <strong>${datosExistentesCostos.estado || "Proyectado"}</strong>).`;
+
+        modoActual = datosExistentesCostos.modo || "desglosado";
+
+        if (modoActual === "paquete") {
+          const p = datosExistentesCostos.paquete || {};
+          document.getElementById("paquete_proveedor").value = p.proveedor || "";
+          document.getElementById("paquete_costoPorPersona").value = p.costoPorPersona || "";
+          actualizarResumenPaquete();
+          if (typeof p.real === "number") marcarPaqueteComoPagado(p.real, p.fecha_pago_real);
+          if (p.confirmado) marcarPaqueteComoConfirmado(p.fecha_confirmado);
+        } else {
+          document.getElementById("costoBoletos").value = datosExistentesCostos.boletos_real || "";
+          CATEGORIAS.forEach(cat => {
+            let items = datosExistentesCostos.categorias?.[cat];
+            if (!items) items = [];
+            else if (!Array.isArray(items)) items = [items];
+            items = items.filter(it => it && (it.proveedor || it.proyectado > 0 || typeof it.real === "number" || it.no_aplica));
+            if (items.length === 0) items = [{}];
+            contenedorFilas(cat).innerHTML = "";
+            items.forEach(item => crearFilaCategoria(cat, item));
+          });
+        }
+      } else {
+        actualizarResumenPaquete();
+      }
+
+      cambiarModoCosteo(modoActual);
+      calcularGananciaGrupo();
+    } catch (e) {
+      console.error("Error al cargar la salida grupal:", e);
+      alert("❌ No se pudo cargar la información de la salida.");
+    }
+  }
+
+  function calcularGananciaGrupo() {
+    let costoGrupo = 0;
+
+    if (modoActual === "paquete") {
+      costoGrupo = actualizarResumenPaquete();
+      const real = document.getElementById("contenedorModoPaquete").dataset.real;
+      if (real !== undefined) costoGrupo = parseFloat(real) || 0;
+    } else {
+      const boletos = parseFloat(document.getElementById("costoBoletos").value) || 0;
+      let totalCategorias = 0;
+      document.querySelectorAll("#contenedorModoDesglosado .fila-proveedor").forEach(fila => {
+        if (fila.dataset.real !== undefined) {
+          totalCategorias += parseFloat(fila.dataset.real) || 0;
+        } else {
+          const input = fila.querySelector(".input-proyectado");
+          totalCategorias += parseFloat(input.value) || 0;
+        }
+      });
+      costoGrupo = boletos + totalCategorias;
+    }
+
+    const ganancia = ventaTotalGrupo - costoGrupo - comisionesTotalGrupo;
+    document.getElementById("gananciaProyectada").textContent = ganancia.toFixed(2);
+
+    const spanPorcentaje = document.getElementById("porcentajeGanancia");
+    if (ventaTotalGrupo > 0) {
+      spanPorcentaje.textContent = `(${((ganancia / ventaTotalGrupo) * 100).toFixed(1)}%)`;
+    } else {
+      spanPorcentaje.textContent = "";
+    }
+  }
+
+  async function guardarCostosGrupo() {
+    if (!salidaId) return;
+
+    const datos = {
+      salidaId,
+      destino: destinoActualSalida,
+      modo: modoActual,
+      estado: datosExistentesCostos?.estado || "Proyectado",
+      creado_el: datosExistentesCostos?.creado_el || new Date(),
+      actualizado_el: new Date()
+    };
+
+    if (modoActual === "paquete") {
+      const contenedorPaquete = document.getElementById("contenedorModoPaquete");
+      const yaEsReal = contenedorPaquete.dataset.real !== undefined;
+      const yaConfirmado = contenedorPaquete.dataset.confirmado === "true";
+      datos.paquete = {
+        proveedor: document.getElementById("paquete_proveedor").value || "",
+        costoPorPersona: parseFloat(document.getElementById("paquete_costoPorPersona").value) || 0,
+        real: yaEsReal ? parseFloat(contenedorPaquete.dataset.real) : null,
+        fecha_pago_real: yaEsReal && contenedorPaquete.dataset.fechaPagoReal ? new Date(contenedorPaquete.dataset.fechaPagoReal) : null,
+        confirmado: yaConfirmado,
+        fecha_confirmado: yaConfirmado && contenedorPaquete.dataset.fechaConfirmado ? new Date(contenedorPaquete.dataset.fechaConfirmado) : null
+      };
+      datos.boletos_real = 0;
+      datos.categorias = {};
+    } else {
+      datos.boletos_real = parseFloat(document.getElementById("costoBoletos").value) || 0;
+      const categorias = {};
+      CATEGORIAS.forEach(cat => {
+        const filas = Array.from(contenedorFilas(cat).querySelectorAll(".fila-proveedor"));
+        categorias[cat] = filas.map(fila => {
+          const select = fila.querySelector(".select-proveedor");
+          const input = fila.querySelector(".input-proyectado");
+          const yaEsReal = fila.dataset.real !== undefined;
+          const yaConfirmado = fila.dataset.confirmado === "true";
+          const noAplica = fila.dataset.noAplica === "true";
+          return {
+            proveedor: select.value || "",
+            proyectado: parseFloat(input.value) || 0,
+            real: yaEsReal ? parseFloat(fila.dataset.real) : null,
+            fecha_pago_real: yaEsReal && fila.dataset.fechaPagoReal ? new Date(fila.dataset.fechaPagoReal) : null,
+            confirmado: yaConfirmado,
+            fecha_confirmado: yaConfirmado && fila.dataset.fechaConfirmado ? new Date(fila.dataset.fechaConfirmado) : null,
+            no_aplica: noAplica
+          };
+        }).filter(item => item.proveedor || item.proyectado > 0 || item.real !== null || item.no_aplica);
+      });
+      datos.categorias = categorias;
+      datos.paquete = null;
+    }
+
+    try {
+      await db.collection("costos_salidas_grupales").doc(salidaId).set(datos, { merge: true });
+      alert("✅ Costos del grupo guardados correctamente.");
+      window.location.href = "salidas_grupales.html";
+    } catch (e) {
+      console.error("Error al guardar los costos del grupo:", e);
+      alert("❌ Ocurrió un error al guardar los datos.");
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", precargarDatosSalida);
+</script>
+  <script src="topbar.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="auth-guard.js"></script>
+</body>
+</html>
