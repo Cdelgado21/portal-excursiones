@@ -518,6 +518,12 @@
         });
 
         // ---------- 3) Proveedores sin confirmar ----------
+        // NUEVO: para reservas Grupales con Salida Grupal asignada, los
+        // proveedores compartidos (Boletos/Hospedaje/Traslados/Tours/Guía)
+        // viven en costos_salidas_grupales — se revisan UNA SOLA VEZ por
+        // salida (no una vez por cada reserva del grupo). La Comisión
+        // sigue siendo por reserva, así que esa parte se revisa igual que
+        // antes, pero solo esa categoría.
         if (enRango.length > 0) {
           const costosSnap = await db.collection("costos_reservas").get();
           const costosPorCodigo = {};
@@ -526,33 +532,117 @@
             costosPorCodigo[d.codigo] = d;
           });
 
-          enRango.forEach(({ codigo, data }) => {
-            const costos = costosPorCodigo[codigo];
-            if (!costos || !costos.categorias) {
-              avisos.push({
-                texto: `${codigo} — ${data.nombreTitular || 'Titular'}: todavía no tiene proveedores registrados`,
-                url: `costos_agregar.html?reserva=${codigo}`
+          const salidasYaRevisadas = new Set();
+          let costosSalidasPorId = null;
+
+          for (const { codigo, data } of enRango) {
+            const esGrupalConSalida = data.tipoSalidaReserva === "Grupal" && !!data.salidaGrupalId;
+
+            if (!esGrupalConSalida) {
+              // Individual / Personalizado / Grupal sin salida asignada
+              // todavía — mismo comportamiento de siempre, las 4 categorías.
+              const costos = costosPorCodigo[codigo];
+              if (!costos || !costos.categorias) {
+                avisos.push({
+                  texto: `${codigo} — ${data.nombreTitular || 'Titular'}: todavía no tiene proveedores registrados`,
+                  url: `costos_agregar.html?reserva=${codigo}`
+                });
+                continue;
+              }
+              let faltan = 0;
+              ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+                let items = costos.categorias[clave];
+                if (!items) items = [];
+                else if (!Array.isArray(items)) items = [items];
+                items.forEach(item => {
+                  if (item.no_aplica) return;
+                  const tieneDatos = item.proveedor || item.proyectado > 0;
+                  if (tieneDatos && !item.confirmado) faltan++;
+                });
               });
-              return;
+              if (faltan > 0) {
+                avisos.push({
+                  texto: `${codigo} — ${data.nombreTitular || 'Titular'}: faltan confirmar ${faltan} proveedor${faltan === 1 ? '' : 'es'}`,
+                  url: `costos_agregar.html?reserva=${codigo}`
+                });
+              }
+              continue;
             }
-            let faltan = 0;
-            ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
-              let items = costos.categorias[clave];
-              if (!items) items = [];
-              else if (!Array.isArray(items)) items = [items];
+
+            // --- Reserva Grupal con salida asignada ---
+
+            // Comisión: sigue siendo por reserva.
+            const costosReserva = costosPorCodigo[codigo];
+            let faltanComision = 0;
+            if (costosReserva?.categorias?.comision) {
+              let items = costosReserva.categorias.comision;
+              if (!Array.isArray(items)) items = [items];
               items.forEach(item => {
-                if (item.no_aplica) return; // incluido en el tour — no cuenta como pendiente
+                if (item.no_aplica) return;
                 const tieneDatos = item.proveedor || item.proyectado > 0;
-                if (tieneDatos && !item.confirmado) faltan++;
+                if (tieneDatos && !item.confirmado) faltanComision++;
               });
-            });
-            if (faltan > 0) {
+            }
+            if (faltanComision > 0) {
               avisos.push({
-                texto: `${codigo} — ${data.nombreTitular || 'Titular'}: faltan confirmar ${faltan} proveedor${faltan === 1 ? '' : 'es'}`,
+                texto: `${codigo} — ${data.nombreTitular || 'Titular'}: falta confirmar la comisión`,
                 url: `costos_agregar.html?reserva=${codigo}`
               });
             }
-          });
+
+            // Proveedores del grupo: solo una vez por salidaGrupalId.
+            if (salidasYaRevisadas.has(data.salidaGrupalId)) continue;
+            salidasYaRevisadas.add(data.salidaGrupalId);
+
+            if (!costosSalidasPorId) {
+              const snapSalidas = await db.collection("costos_salidas_grupales").get();
+              costosSalidasPorId = {};
+              snapSalidas.forEach(doc => { costosSalidasPorId[doc.id] = doc.data(); });
+            }
+            const costosGrupo = costosSalidasPorId[data.salidaGrupalId];
+            const nombreDestinoGrupo = data.nombreDestino || data.destino || 'Salida grupal';
+
+            if (!costosGrupo) {
+              avisos.push({
+                texto: `Salida ${nombreDestinoGrupo} — todavía no tiene costos de grupo registrados`,
+                url: `costos_salida_grupal.html?salida=${data.salidaGrupalId}`
+              });
+              continue;
+            }
+
+            if (costosGrupo.modo === "paquete") {
+              const p = costosGrupo.paquete || {};
+              if (!p.costoPorPersona || p.costoPorPersona <= 0) {
+                avisos.push({
+                  texto: `Salida ${nombreDestinoGrupo} — todavía no tiene el costo del paquete registrado`,
+                  url: `costos_salida_grupal.html?salida=${data.salidaGrupalId}`
+                });
+              } else if (!p.confirmado) {
+                avisos.push({
+                  texto: `Salida ${nombreDestinoGrupo} — falta confirmar el costo del paquete con el proveedor`,
+                  url: `costos_salida_grupal.html?salida=${data.salidaGrupalId}`
+                });
+              }
+            } else {
+              let faltanGrupo = 0;
+              ["hospedaje", "traslados", "tours", "guia"].forEach(clave => {
+                let items = costosGrupo.categorias?.[clave];
+                if (!items) items = [];
+                else if (!Array.isArray(items)) items = [items];
+                items.forEach(item => {
+                  if (item.no_aplica) return;
+                  const tieneDatos = item.proveedor || item.proyectado > 0;
+                  if (tieneDatos && !item.confirmado) faltanGrupo++;
+                });
+              });
+              if (faltanGrupo > 0) {
+                avisos.push({
+                  texto: `Salida ${nombreDestinoGrupo} — faltan confirmar ${faltanGrupo} proveedor${faltanGrupo === 1 ? '' : 'es'} del grupo`,
+                  url: `costos_salida_grupal.html?salida=${data.salidaGrupalId}`
+                });
+              }
+            }
+          }
         }
 
         // ---------- 4) Check-in pendiente (ida y regreso) ----------
