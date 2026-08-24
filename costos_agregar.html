@@ -119,6 +119,16 @@
       color: #1a5276;
       font-weight: bold;
     }
+    .aviso-no-aplica {
+      margin-top: 8px;
+      padding: 8px 12px;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #555;
+      font-weight: bold;
+    }
     .nota-boletos {
       font-weight: normal;
       font-size: 13px;
@@ -280,6 +290,10 @@
           <label style="font-size:11px;">Confirmado</label>
           <input type="checkbox" class="chk-confirmado" onchange="alternarConfirmadoFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;" title="Marcar que el proveedor ya confirmó el servicio (independiente del pago)">
         </div>
+        <div style="flex: 0 0 auto; min-width:0; text-align:center;">
+          <label style="font-size:11px;">N/A</label>
+          <input type="checkbox" class="chk-no-aplica" onchange="alternarNoAplicaFila(this)" style="width:20px; height:20px; margin-top:9px; cursor:pointer;" title="Incluido en el tour — no aplica proveedor ni costo aparte">
+        </div>
         <div style="flex: 0 0 auto; min-width:0;">
           <label>&nbsp;</label>
           <button type="button" class="btn-quitar-fila" onclick="quitarFilaCategoria(this)" title="Quitar esta fila">🗑️</button>
@@ -287,6 +301,7 @@
       </div>
       <div class="aviso-real-fila" style="display:none;"></div>
       <div class="aviso-confirmado-fila" style="display:none;"></div>
+      <div class="aviso-no-aplica-fila" style="display:none;"></div>
     `;
     contenedor.appendChild(fila);
 
@@ -301,6 +316,10 @@
 
     if (datos.confirmado) {
       marcarFilaComoConfirmada(fila, datos.fecha_confirmado);
+    }
+
+    if (datos.no_aplica) {
+      marcarFilaComoNoAplica(fila);
     }
 
     return fila;
@@ -417,6 +436,66 @@
     const chk = fila.querySelector(".chk-confirmado");
     if (chk) chk.checked = false;
     quitarConfirmacionFila(fila);
+  }
+
+  // NUEVO: "N/A" — para categorías incluidas dentro del tour (ej. traslados
+  // que ya vienen en el paquete), donde no hay proveedor ni costo aparte
+  // que registrar. Marcar esto deja la fila fuera del conteo de "faltan
+  // confirmar proveedores" del dashboard, sin necesitar elegir un proveedor
+  // ni forzar un monto.
+  function marcarFilaComoNoAplica(fila) {
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const chkPagado = fila.querySelector(".chk-pagado");
+    const chkConfirmado = fila.querySelector(".chk-confirmado");
+    const chkNoAplica = fila.querySelector(".chk-no-aplica");
+    const aviso = fila.querySelector(".aviso-no-aplica-fila");
+
+    select.value = "";
+    select.disabled = true;
+    input.value = "";
+    input.disabled = true;
+    if (chkPagado) { chkPagado.checked = false; chkPagado.disabled = true; }
+    if (chkConfirmado) { chkConfirmado.checked = false; chkConfirmado.disabled = true; }
+    if (chkNoAplica) chkNoAplica.checked = true;
+
+    fila.dataset.noAplica = "true";
+
+    aviso.style.display = "block";
+    aviso.className = "aviso-no-aplica aviso-no-aplica-fila";
+    aviso.innerHTML = `ℹ️ Incluido en el tour — no aplica proveedor ni costo aparte <a href="#" onclick="desmarcarNoAplicaFila(this); return false;" style="margin-left:10px; font-weight:normal; text-decoration:underline; color:#555;">deshacer</a>`;
+  }
+
+  function alternarNoAplicaFila(checkbox) {
+    const fila = checkbox.closest(".fila-proveedor");
+    if (checkbox.checked) {
+      marcarFilaComoNoAplica(fila);
+      calcularGanancia();
+    }
+  }
+
+  function quitarNoAplicaFila(fila) {
+    const select = fila.querySelector(".select-proveedor");
+    const input = fila.querySelector(".input-proyectado");
+    const chkPagado = fila.querySelector(".chk-pagado");
+    const chkConfirmado = fila.querySelector(".chk-confirmado");
+    const aviso = fila.querySelector(".aviso-no-aplica-fila");
+
+    delete fila.dataset.noAplica;
+    select.disabled = false;
+    input.disabled = false;
+    if (chkPagado) chkPagado.disabled = false;
+    if (chkConfirmado) chkConfirmado.disabled = false;
+    aviso.style.display = "none";
+    aviso.innerHTML = "";
+  }
+
+  function desmarcarNoAplicaFila(enlace) {
+    const fila = enlace.closest(".fila-proveedor");
+    const chk = fila.querySelector(".chk-no-aplica");
+    if (chk) chk.checked = false;
+    quitarNoAplicaFila(fila);
+    calcularGanancia();
   }
 
   const btnVolver = document.getElementById("btnVolverReserva");
@@ -627,7 +706,7 @@
             if (!items) items = [];
             else if (!Array.isArray(items)) items = [items];
 
-            items = items.filter(it => it && (it.proveedor || it.proyectado > 0 || typeof it.real === "number"));
+            items = items.filter(it => it && (it.proveedor || it.proyectado > 0 || typeof it.real === "number" || it.no_aplica));
             if (items.length === 0) items = [{}];
 
             contenedorFilas(cat.clave).innerHTML = "";
@@ -687,6 +766,7 @@
         const input = fila.querySelector(".input-proyectado");
         const yaEsReal = fila.dataset.real !== undefined;
         const yaConfirmado = fila.dataset.confirmado === "true";
+        const noAplica = fila.dataset.noAplica === "true";
 
         return {
           proveedor: select.value || "",
@@ -694,9 +774,10 @@
           real: yaEsReal ? parseFloat(fila.dataset.real) : null,
           fecha_pago_real: yaEsReal && fila.dataset.fechaPagoReal ? new Date(fila.dataset.fechaPagoReal) : null,
           confirmado: yaConfirmado,
-          fecha_confirmado: yaConfirmado && fila.dataset.fechaConfirmado ? new Date(fila.dataset.fechaConfirmado) : null
+          fecha_confirmado: yaConfirmado && fila.dataset.fechaConfirmado ? new Date(fila.dataset.fechaConfirmado) : null,
+          no_aplica: noAplica
         };
-      }).filter(item => item.proveedor || item.proyectado > 0 || item.real !== null);
+      }).filter(item => item.proveedor || item.proyectado > 0 || item.real !== null || item.no_aplica);
 
       categorias[cat.clave] = items;
     });
