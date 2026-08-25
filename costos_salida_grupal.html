@@ -192,7 +192,8 @@
     <div class="fila">
       <div>
         <label>Proveedor (opcional)</label>
-        <input type="text" id="paquete_proveedor" placeholder="Ej. Mayorista XYZ">
+        <input type="text" id="paquete_proveedor" list="listaProveedoresDatalist" placeholder="Ej. Mayorista XYZ" autocomplete="off">
+        <datalist id="listaProveedoresDatalist"></datalist>
       </div>
       <div>
         <label>Costo por persona (USD)</label>
@@ -549,6 +550,20 @@
     const snap = await db.collection("proveedores").orderBy("nombre").get();
     listaProveedores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     poblarTodosLosSelectsDeProveedor();
+    poblarDatalistProveedores();
+  }
+
+  // NUEVO: datalist para el campo "Proveedor (opcional)" del modo Paquete
+  // completo — ese campo es texto libre (un mayorista de paquetes no
+  // siempre es un "proveedor" de categoría fija), pero ahora sugiere los
+  // nombres ya existentes para no crear variantes por escritura distinta.
+  function poblarDatalistProveedores() {
+    const datalist = document.getElementById("listaProveedoresDatalist");
+    if (!datalist) return;
+    datalist.innerHTML = listaProveedores
+      .filter(p => p.activo !== false)
+      .map(p => `<option value="${p.nombre}"></option>`)
+      .join("");
   }
 
   function poblarUnSelectDeProveedor(select, clave) {
@@ -590,29 +605,39 @@
     if (!nombre || !nombre.trim()) { select.value = ""; return; }
 
     const nombreLimpio = nombre.trim();
-    const yaExiste = listaProveedores.some(p => p.nombre.toLowerCase() === nombreLimpio.toLowerCase());
+    // NUEVO: comparación insensible a mayúsculas/espacios — si ya existe,
+    // se reutiliza el nombre EXACTO guardado en vez de crear un duplicado.
+    const existente = listaProveedores.find(p => p.nombre.trim().toLowerCase() === nombreLimpio.toLowerCase());
 
-    if (!yaExiste) {
-      const claveCategoria = select.closest(".fila-proveedor")?.dataset.clave;
-      const nuevoProveedor = {
-        nombre: nombreLimpio,
-        destino: destinoActualSalida || "",
-        categoria: ETIQUETA_CATEGORIA[claveCategoria] || "Otro",
-        activo: true,
-        creado_el: new Date()
-      };
-      try {
-        await db.collection("proveedores").add(nuevoProveedor);
-        listaProveedores.push(nuevoProveedor);
-        listaProveedores.sort((a, b) => a.nombre.localeCompare(b.nombre));
-      } catch (e) {
-        console.error("Error al guardar el proveedor nuevo:", e);
-        alert("❌ No se pudo guardar el proveedor nuevo.");
-        select.value = "";
-        return;
+    if (existente) {
+      if (existente.nombre !== nombreLimpio) {
+        alert(`Ya existe registrado como "${existente.nombre}" — se va a usar ese nombre para que quede junto en el historial de pagos.`);
       }
+      poblarTodosLosSelectsDeProveedor();
+      select.value = existente.nombre;
+      return;
+    }
+
+    const claveCategoria = select.closest(".fila-proveedor")?.dataset.clave;
+    const nuevoProveedor = {
+      nombre: nombreLimpio,
+      destino: destinoActualSalida || "",
+      categoria: ETIQUETA_CATEGORIA[claveCategoria] || "Otro",
+      activo: true,
+      creado_el: new Date()
+    };
+    try {
+      await db.collection("proveedores").add(nuevoProveedor);
+      listaProveedores.push(nuevoProveedor);
+      listaProveedores.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } catch (e) {
+      console.error("Error al guardar el proveedor nuevo:", e);
+      alert("❌ No se pudo guardar el proveedor nuevo.");
+      select.value = "";
+      return;
     }
     poblarTodosLosSelectsDeProveedor();
+    poblarDatalistProveedores();
     select.value = nombreLimpio;
   }
 
