@@ -678,6 +678,74 @@
     return `$${(valor || 0).toFixed(2)}`;
   }
 
+  // NUEVO: mismo criterio de conteo de personas ya usado en
+  // salidas_grupales.html y costos_salida_grupal.html.
+  function calcularPersonasFinanzas(data) {
+    const adultos = data.cantidadAdultos || 0;
+    const ninos = data.cantidadNinos || 0;
+    const bebes = data.cantidadBebes || 0;
+    const suma = adultos + ninos + bebes;
+    if (suma > 0) return suma;
+    if (Array.isArray(data.pasajeros) && data.pasajeros.length > 0) return data.pasajeros.length + 1;
+    return 1;
+  }
+
+  // NUEVO: analiza el costo total y estado de pago de UNA salida grupal
+  // completa (compartida por todas sus reservas) — mismo criterio de
+  // "mejor monto" (real si existe, si no proyectado) que se usa en todo
+  // el sistema. personasTotalGrupo se usa para el modo Paquete completo,
+  // que guarda el costo POR PERSONA, no el total.
+  function analizarCostosSalidaGrupal(costosGrupo, personasTotalGrupo) {
+    if (!costosGrupo) return { costoTotal: 0, todosPagados: true };
+
+    if (costosGrupo.modo === "paquete") {
+      const p = costosGrupo.paquete || {};
+      const esReal = typeof p.real === "number";
+      const costoTotal = esReal ? p.real : (Number(p.costoPorPersona || 0) * personasTotalGrupo);
+      const tieneDatos = costoTotal > 0;
+      return { costoTotal, todosPagados: tieneDatos ? esReal : true };
+    }
+
+    let costoTotal = Number(costosGrupo.boletos_real || 0);
+    let filasConDatos = costosGrupo.boletos_real > 0 ? 1 : 0;
+    let filasPagadas = costosGrupo.boletos_real > 0 ? 1 : 0; // boletos ya es "real" desde que se carga
+    ["hospedaje", "traslados", "tours", "guia"].forEach(clave => {
+      let items = costosGrupo.categorias?.[clave];
+      if (!items) items = [];
+      else if (!Array.isArray(items)) items = [items];
+      items.forEach(item => {
+        if (item.no_aplica) return;
+        const tieneDatos = item.proveedor || item.proyectado > 0 || typeof item.real === "number";
+        if (!tieneDatos) return;
+        filasConDatos++;
+        const esReal = typeof item.real === "number";
+        if (esReal) filasPagadas++;
+        costoTotal += esReal ? item.real : Number(item.proyectado || 0);
+      });
+    });
+    const todosPagados = filasConDatos === 0 ? true : (filasPagadas === filasConDatos);
+    return { costoTotal, todosPagados };
+  }
+
+  // NUEVO: analiza solo la categoría Comisión de una reserva (sigue
+  // siendo individual aunque la reserva sea Grupal).
+  function analizarCategoriaComision(categorias) {
+    let items = categorias?.comision;
+    if (!items) items = [];
+    else if (!Array.isArray(items)) items = [items];
+    let monto = 0, filasConDatos = 0, filasPagadas = 0;
+    items.forEach(item => {
+      if (item.no_aplica) return;
+      const tieneDatos = item.proveedor || item.proyectado > 0 || typeof item.real === "number";
+      if (!tieneDatos) return;
+      filasConDatos++;
+      const esReal = typeof item.real === "number";
+      if (esReal) filasPagadas++;
+      monto += esReal ? item.real : Number(item.proyectado || 0);
+    });
+    return { monto, todosPagados: filasConDatos === 0 ? true : (filasPagadas === filasConDatos) };
+  }
+
   function analizarCostosDeReserva(data) {
     const esModeloViejo = !data.categorias;
 
@@ -723,6 +791,10 @@
   let datosCostosPorCodigo = {};
   let datosCategoriasPorCodigo = {};
   let datosMovimientosGastos = [];
+  // NUEVO: costos compartidos por Salida Grupal — ver costos_salida_grupal.html.
+  let datosCostosSalidasPorId = {};
+  let datosPersonasPorSalida = {};
+  let datosSalidasPorId = {};
 
   async function cargarPanelFinanciero() {
     const hoy = new Date();
@@ -752,7 +824,10 @@
         activa: esActiva,
         creadoEl,
         vendedor: data.vendedor || '',
-        destino: data.nombreDestino || ''
+        destino: data.nombreDestino || '',
+        // NUEVO: para prorratear el costo de la Salida Grupal entre sus reservas.
+        personas: calcularPersonasFinanzas(data),
+        salidaGrupalId: (data.tipoSalidaReserva === "Grupal" && data.salidaGrupalId) ? data.salidaGrupalId : null
       };
 
       if (creadoEl) ventasCreadas.push({ fecha: creadoEl, monto: total, codigo: doc.id, titular: data.nombreTitular || '-' });
@@ -783,6 +858,63 @@
       costosPorCodigo[codigo] = { costoTotal, ganancia, todosPagados, boletos: Number(data.boletos_real || 0) };
       if (data.categorias) categoriasPorCodigo[codigo] = data.categorias;
     });
+
+    // NUEVO: personas por Salida Grupal — para prorratear el costo del
+    // grupo entre sus reservas (por cantidad de personas de cada una).
+    const personasPorSalida = {};
+    Object.values(reservasPorCodigo).forEach(r => {
+      if (!r.salidaGrupalId) return;
+      personasPorSalida[r.salidaGrupalId] = (personasPorSalida[r.salidaGrupalId] || 0) + r.personas;
+    });
+
+    // NUEVO: costos de las Salidas Grupales y sus datos básicos (destino,
+    // fecha) — para el prorrateo de acá y para la sección "Proyecciones
+    // de Pago por Proveedor" más abajo.
+    const costosSalidasPorId = {};
+    try {
+      const costosSalidasSnap = await db.collection("costos_salidas_grupales").get();
+      costosSalidasSnap.forEach(doc => { costosSalidasPorId[doc.id] = doc.data(); });
+    } catch (e) {
+      console.warn("No se pudieron cargar los costos de salidas grupales:", e);
+    }
+    const salidasPorId = {};
+    try {
+      const salidasSnap = await db.collection("salidas_grupales").get();
+      salidasSnap.forEach(doc => {
+        const d = doc.data();
+        salidasPorId[doc.id] = { destino: d.destino || '', fechaSalida: parseFechaReserva(d.fechaSalida) };
+      });
+    } catch (e) {
+      console.warn("No se pudieron cargar las salidas grupales:", e);
+    }
+
+    // NUEVO: para cada reserva Grupal cuya salida ya tiene costos
+    // registrados, se reemplaza su costo individual (que solo trae
+    // Comisión) por: comisión propia + su parte proporcional (por
+    // personas) del costo TOTAL del grupo.
+    Object.entries(reservasPorCodigo).forEach(([codigo, r]) => {
+      if (!r.salidaGrupalId) return;
+      const costosGrupo = costosSalidasPorId[r.salidaGrupalId];
+      if (!costosGrupo) return;
+
+      const personasTotalGrupo = personasPorSalida[r.salidaGrupalId] || r.personas;
+      const analisisGrupo = analizarCostosSalidaGrupal(costosGrupo, personasTotalGrupo);
+      const portion = personasTotalGrupo > 0 ? analisisGrupo.costoTotal * (r.personas / personasTotalGrupo) : 0;
+
+      const comisionInfo = analizarCategoriaComision(categoriasPorCodigo[codigo]);
+      const costoTotal = portion + comisionInfo.monto;
+      const ganancia = r.ingreso - costoTotal;
+      const todosPagados = analisisGrupo.todosPagados && comisionInfo.todosPagados;
+
+      costosPorCodigo[codigo] = {
+        costoTotal, ganancia, todosPagados, boletos: 0,
+        esGrupal: true, portionGrupo: portion, comisionMonto: comisionInfo.monto
+      };
+    });
+
+    datosCostosSalidasPorId = costosSalidasPorId;
+    datosPersonasPorSalida = personasPorSalida;
+    datosSalidasPorId = salidasPorId;
 
     datosReservasPorCodigo = reservasPorCodigo;
     datosCostosPorCodigo = costosPorCodigo;
@@ -1480,6 +1612,63 @@
       });
     });
 
+    // NUEVO: costos compartidos de Salidas Grupales — filtrados por la
+    // fecha de la SALIDA (equivale a "fecha de viaje" para el grupo).
+    Object.entries(datosCostosSalidasPorId).forEach(([salidaId, costosGrupo]) => {
+      const infoSalida = datosSalidasPorId[salidaId];
+      const fechaSalida = infoSalida?.fechaSalida;
+      if (!fechaSalida) return;
+      if (desde && fechaSalida < desde) return;
+      if (hasta && fechaSalida > hasta) return;
+
+      const nombreDestino = infoSalida?.destino || 'Salida grupal';
+      const personasTotalGrupo = datosPersonasPorSalida[salidaId] || 0;
+
+      if (costosGrupo.modo === "paquete") {
+        const p = costosGrupo.paquete || {};
+        const esReal = typeof p.real === "number";
+        if (esReal) return;
+        const monto = Number(p.costoPorPersona || 0) * personasTotalGrupo;
+        if (monto <= 0) return;
+
+        const llave = `${p.proveedor || 'Paquete sin proveedor asignado'}|paquete|${salidaId}`;
+        grupos[llave] = {
+          proveedor: p.proveedor || 'Paquete sin proveedor asignado',
+          categoria: 'Paquete Grupal',
+          total: monto,
+          reservas: [{ codigo: nombreDestino, monto, destino: nombreDestino, fecha: fechaSalida, esGrupo: true, salidaId }]
+        };
+      } else {
+        ["hospedaje", "traslados", "tours", "guia"].forEach(clave => {
+          let items = costosGrupo.categorias?.[clave];
+          if (!items) items = [];
+          else if (!Array.isArray(items)) items = [items];
+
+          items.forEach(item => {
+            if (item.no_aplica) return;
+            const esReal = typeof item.real === "number";
+            if (esReal) return;
+            const monto = Number(item.proyectado || 0);
+            if (!item.proveedor || monto <= 0) return;
+
+            const llave = `${item.proveedor}|${clave}|${salidaId}`;
+            if (!grupos[llave]) {
+              grupos[llave] = {
+                proveedor: item.proveedor,
+                categoria: (ETIQUETA_CATEGORIA_FINANZAS[clave] || clave) + ' (Grupal)',
+                total: 0,
+                reservas: []
+              };
+            }
+            grupos[llave].total += monto;
+            grupos[llave].reservas.push({
+              codigo: nombreDestino, monto, destino: nombreDestino, fecha: fechaSalida, esGrupo: true, salidaId
+            });
+          });
+        });
+      }
+    });
+
     return grupos;
   }
 
@@ -1555,8 +1744,14 @@
       .sort((a, b) => (a.fecha || 0) - (b.fecha || 0))
       .forEach(r => {
         const fila = document.createElement("tr");
+        // NUEVO: las filas que vienen de una Salida Grupal (r.esGrupo) van
+        // a costos_salida_grupal.html en vez de costos_agregar.html — su
+        // "código" en realidad es el nombre del destino, no una reserva.
+        const enlace = r.esGrupo
+          ? `<a class="enlace-fila" href="costos_salida_grupal.html?salida=${r.salidaId}" target="_blank">🚌 ${r.codigo}</a>`
+          : `<a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a>`;
         fila.innerHTML = `
-          <td data-etiqueta="Código"><a class="enlace-fila" href="costos_agregar.html?reserva=${r.codigo}" target="_blank">${r.codigo}</a></td>
+          <td data-etiqueta="Código">${enlace}</td>
           <td data-etiqueta="Destino">${r.destino}</td>
           <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(r.fecha)}</td>
           <td data-etiqueta="Monto proyectado">${formatoMoneda(r.monto)}</td>
@@ -1578,6 +1773,7 @@
     hospedaje: "🏨 Hospedaje",
     traslados: "🚐 Traslados",
     tours: "🎟️ Tours",
+    grupo: "🚌 Costo de Salida Grupal (prorrateado)",
     comision: "💼 Comisión",
     operativo: "🧾 Gastos Operativos"
   };
@@ -1589,12 +1785,20 @@
   }
 
   function calcularDesgloseCostos(codigo) {
+    // NUEVO: si la reserva es Grupal, el costo ya viene resuelto
+    // (prorrateado) desde cargarPanelFinanciero() — no hay categorías
+    // individuales de hospedaje/traslados/tours que leer para ella.
+    const info = datosCostosPorCodigo[codigo];
+    if (info?.esGrupal) {
+      return { boletos: 0, hospedaje: 0, traslados: 0, tours: 0, grupo: info.portionGrupo || 0, comision: info.comisionMonto || 0 };
+    }
     const categorias = datosCategoriasPorCodigo[codigo] || {};
     return {
       boletos: datosCostosPorCodigo[codigo]?.boletos || 0,
       hospedaje: sumarCategoriaMejorMonto(categorias.hospedaje),
       traslados: sumarCategoriaMejorMonto(categorias.traslados),
       tours: sumarCategoriaMejorMonto(categorias.tours),
+      grupo: 0,
       comision: sumarCategoriaMejorMonto(categorias.comision)
     };
   }
@@ -1640,7 +1844,7 @@
     let ingreso = 0;
     let ventaTotal = 0;
     let faltaPorCobrar = 0;
-    const desglose = { boletos: 0, hospedaje: 0, traslados: 0, tours: 0, comision: 0 };
+    const desglose = { boletos: 0, hospedaje: 0, traslados: 0, tours: 0, grupo: 0, comision: 0 };
     datosBalanceDetalle = [];
 
     conCostos.forEach(([codigo, r]) => {
@@ -1655,9 +1859,10 @@
       desglose.hospedaje += d.hospedaje;
       desglose.traslados += d.traslados;
       desglose.tours += d.tours;
+      desglose.grupo += d.grupo;
       desglose.comision += d.comision;
 
-      const costoViajeReserva = d.boletos + d.hospedaje + d.traslados + d.tours;
+      const costoViajeReserva = d.boletos + d.hospedaje + d.traslados + d.tours + d.grupo;
       datosBalanceDetalle.push({
         codigo,
         titular: r.titular || '-',
@@ -1670,7 +1875,7 @@
     });
     datosBalanceDetalle.sort((a, b) => b.ingresoCobrado - a.ingresoCobrado);
 
-    const costo = desglose.boletos + desglose.hospedaje + desglose.traslados + desglose.tours + desglose.comision;
+    const costo = desglose.boletos + desglose.hospedaje + desglose.traslados + desglose.tours + desglose.grupo + desglose.comision;
     const ganancia = ingreso - costo;
 
     datosOperativosPeriodoLista = datosMovimientosGastos
