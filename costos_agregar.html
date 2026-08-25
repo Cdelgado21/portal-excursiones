@@ -595,27 +595,40 @@
     }
 
     const nombreLimpio = nombre.trim();
-    const yaExiste = listaProveedores.some(p => p.nombre.toLowerCase() === nombreLimpio.toLowerCase());
+    // NUEVO: comparación insensible a mayúsculas/espacios — si ya existe un
+    // proveedor (o, para Comisión, una embajadora/vendedora) con ese nombre,
+    // se reutiliza el nombre EXACTO ya guardado en vez de crear un
+    // duplicado con capitalización distinta (lo que antes separaba a un
+    // mismo proveedor en dos entradas distintas del historial de pagos).
+    const existente = listaProveedores.find(p => p.nombre.trim().toLowerCase() === nombreLimpio.toLowerCase())
+      || listaUsuariosComision.find(u => u.nombre.trim().toLowerCase() === nombreLimpio.toLowerCase());
 
-    if (!yaExiste) {
-      const claveCategoria = select.closest(".fila-proveedor")?.dataset.clave;
-      const nuevoProveedor = {
-        nombre: nombreLimpio,
-        destino: destinoActualReserva || "",
-        categoria: ETIQUETA_CATEGORIA[claveCategoria] || "Otro",
-        activo: true,
-        creado_el: new Date()
-      };
-      try {
-        await db.collection("proveedores").add(nuevoProveedor);
-        listaProveedores.push(nuevoProveedor);
-        listaProveedores.sort((a, b) => a.nombre.localeCompare(b.nombre));
-      } catch (e) {
-        console.error("Error al guardar el proveedor nuevo:", e);
-        alert("❌ No se pudo guardar el proveedor nuevo.");
-        select.value = "";
-        return;
+    if (existente) {
+      if (existente.nombre !== nombreLimpio) {
+        alert(`Ya existe registrado como "${existente.nombre}" — se va a usar ese nombre para que quede junto en el historial de pagos.`);
       }
+      poblarTodosLosSelectsDeProveedor();
+      select.value = existente.nombre;
+      return;
+    }
+
+    const claveCategoria = select.closest(".fila-proveedor")?.dataset.clave;
+    const nuevoProveedor = {
+      nombre: nombreLimpio,
+      destino: destinoActualReserva || "",
+      categoria: ETIQUETA_CATEGORIA[claveCategoria] || "Otro",
+      activo: true,
+      creado_el: new Date()
+    };
+    try {
+      await db.collection("proveedores").add(nuevoProveedor);
+      listaProveedores.push(nuevoProveedor);
+      listaProveedores.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } catch (e) {
+      console.error("Error al guardar el proveedor nuevo:", e);
+      alert("❌ No se pudo guardar el proveedor nuevo.");
+      select.value = "";
+      return;
     }
 
     poblarTodosLosSelectsDeProveedor();
