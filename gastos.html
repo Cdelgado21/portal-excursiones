@@ -694,11 +694,71 @@
             descripcion: `${item.proveedor || 'Sin nombre'} — ${resumenReserva.titular || codigo}${referenciaColones}`,
             categoria: clave === "comision" ? "Comisión" : (clave === "hospedaje" ? "Hospedaje" : clave === "traslados" ? "Traslados" : "Tours"),
             monto: item.real,
+            origen: "reserva",
             codigo
           });
         });
       });
     });
+
+    // NUEVO: pagos ya marcados "real" en las Salidas Grupales (colección
+    // costos_salidas_grupales) — comparten el mismo Diario, con link a
+    // costos_salida_grupal.html en vez de costos_agregar.html.
+    try {
+      const salidasSnap = await db.collection("salidas_grupales").get();
+      const salidasPorId = {};
+      salidasSnap.forEach(doc => { salidasPorId[doc.id] = doc.data(); });
+
+      const costosSalidasSnap = await db.collection("costos_salidas_grupales").get();
+      costosSalidasSnap.forEach(doc => {
+        const data = doc.data();
+        const salidaId = doc.id;
+        const infoSalida = salidasPorId[salidaId] || {};
+        const nombreDestino = infoSalida.destino || data.destino || 'Salida grupal';
+
+        if (data.modo === "paquete") {
+          const p = data.paquete || {};
+          if (typeof p.real !== "number") return;
+          const fechaPago = p.fecha_pago_real?.toDate ? p.fecha_pago_real.toDate() : (p.fecha_pago_real ? new Date(p.fecha_pago_real) : null);
+          if (!fechaPago) return;
+          pagos.push({
+            tipo: "Proveedor",
+            fecha: fechaPago,
+            descripcion: `${p.proveedor || 'Paquete completo'} — Salida grupal: ${nombreDestino}`,
+            categoria: "Paquete Grupal",
+            monto: p.real,
+            origen: "salida",
+            salidaId
+          });
+        } else {
+          ["hospedaje", "traslados", "tours", "guia"].forEach(clave => {
+            let items = data.categorias?.[clave];
+            if (!items) items = [];
+            else if (!Array.isArray(items)) items = [items];
+
+            items.forEach(item => {
+              if (typeof item.real !== "number") return;
+              const fechaPago = item.fecha_pago_real?.toDate ? item.fecha_pago_real.toDate() : (item.fecha_pago_real ? new Date(item.fecha_pago_real) : null);
+              if (!fechaPago) return;
+
+              const etiquetaCategoria = clave === "guia" ? "Guía Acompañante" : (clave === "hospedaje" ? "Hospedaje" : clave === "traslados" ? "Traslados" : "Tours");
+              pagos.push({
+                tipo: "Proveedor",
+                fecha: fechaPago,
+                descripcion: `${item.proveedor || 'Sin nombre'} — Salida grupal: ${nombreDestino}`,
+                categoria: `${etiquetaCategoria} (Grupal)`,
+                monto: item.real,
+                origen: "salida",
+                salidaId
+              });
+            });
+          });
+        }
+      });
+    } catch (e) {
+      console.warn("No se pudieron cargar los pagos de salidas grupales:", e);
+    }
+
     datosPagosProveedoresComisiones = pagos;
   }
 
@@ -760,9 +820,17 @@
       const claseTipo = { "Operativo": "pastilla-operativo", "Proveedor": "pastilla-proveedor", "Comisión": "pastilla-comision" };
       todos.forEach(m => {
         const fila = document.createElement("tr");
-        const accion = m.tipo === "Operativo"
-          ? `<button type="button" onclick="eliminarMovimientoGasto('${m.id}')" style="background:#fbe2e0; color:#b23327; border:none; border-radius:6px; padding:5px 9px; cursor:pointer;">🗑️</button>`
-          : `<a href="costos_agregar.html?reserva=${m.codigo}" class="enlace-fila">Ver reserva</a>`;
+        // NUEVO: los pagos que vienen de una Salida Grupal (m.origen ===
+        // "salida") van a costos_salida_grupal.html en vez de
+        // costos_agregar.html — no tienen un "código" de reserva propio.
+        let accion;
+        if (m.tipo === "Operativo") {
+          accion = `<button type="button" onclick="eliminarMovimientoGasto('${m.id}')" style="background:#fbe2e0; color:#b23327; border:none; border-radius:6px; padding:5px 9px; cursor:pointer;">🗑️</button>`;
+        } else if (m.origen === "salida") {
+          accion = `<a href="costos_salida_grupal.html?salida=${m.salidaId}" class="enlace-fila">🚌 Ver salida</a>`;
+        } else {
+          accion = `<a href="costos_agregar.html?reserva=${m.codigo}" class="enlace-fila">Ver reserva</a>`;
+        }
         fila.innerHTML = `
           <td>${formatearFechaVisible(m.fecha)}</td>
           <td><span class="pastilla-tipo ${claseTipo[m.tipo]}">${m.tipo}</span></td>
