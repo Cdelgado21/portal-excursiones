@@ -10,101 +10,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* Menú lateral de navegación (mismo estilo que el resto del sistema) */
-    .toggle-btn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      font-size: 24px;
-      background: white;
-      color: #02535a;
-      border: none;
-      border-radius: 50%;
-      padding: 8px 12px;
-      z-index: 1100;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 250px;
-      height: 100%;
-      background-color: #02535a;
-      color: white;
-      padding: 20px;
-      transform: translateX(-250px);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    .sidebar.active {
-      transform: translateX(0);
-    }
-    .sidebar .user-info {
-      text-align: center;
-      margin-bottom: 20px;
-      margin-top: 40px;
-    }
-    .sidebar .user-info .avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-    .sidebar .user-info h3 {
-      font-size: 1rem;
-      margin: 0;
-      color: white;
-    }
-    .sidebar .user-info small {
-      font-size: 0.8rem;
-      color: #f4f7f8;
-    }
-    .nav-links {
-      list-style: none;
-      padding: 0;
-    }
-    .nav-links li a {
-      background-color: #f4f7f8;
-      color: #02535a;
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .nav-links li a:hover {
-      background-color: #e0e0e0;
-    }
-    .nav-links li a.activo {
-      background-color: #ffb703;
-      color: #02535a;
-    }
-    .nav-links .icon {
-      margin-right: 10px;
-      font-size: 1.2rem;
-    }
-    main#contenidoPrincipal {
-      margin-left: 0;
-      padding: 20px 20px 20px 70px;
-      transition: margin-left 0.3s ease;
-      box-sizing: border-box;
-    }
-    main#contenidoPrincipal.sidebar-visible {
-      margin-left: 250px;
-      padding-left: 20px;
-    }
-    @media screen and (max-width: 768px) {
-      main#contenidoPrincipal.sidebar-visible {
-        margin-left: 0;
-        padding-left: 70px;
-      }
-    }
-
     body {
       font-family: Arial, sans-serif;
       background: #f0f7f7;
@@ -187,6 +92,7 @@
       font-size: 0.85rem;
     }
     .btn-fila.eliminar { background-color: #c0392b; }
+    .btn-fila.historial { background-color: #02535a; }
     #modal {
       display: none;
       position: fixed;
@@ -280,30 +186,73 @@
     .btn-guardar-modal { background: #02535a; color: white; }
     .btn-cancelar-modal { background: #ccc; color: #333; }
     .vacio { text-align: center; color: #999; padding: 20px; }
+
+    /* NUEVO: modal de Historial de Pagos por proveedor. */
+    #modalHistorial {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 2500;
+    }
+    #modalHistorialContent {
+      background: white;
+      padding: 25px;
+      border-radius: 10px;
+      width: 92%;
+      max-width: 800px;
+      max-height: 85vh;
+      overflow-y: auto;
+    }
+    #modalHistorialContent h3 {
+      margin-top: 0;
+      color: #02535a;
+    }
+    .tarjetas-historial {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 15px 0;
+    }
+    .tarjeta-historial {
+      background: #f7fbfb;
+      border: 1px solid #dde8e8;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .tarjeta-historial .etiqueta {
+      font-size: 0.78rem;
+      color: #5f9296;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .tarjeta-historial .monto {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #02535a;
+      margin-top: 4px;
+    }
+    .campo-fecha-historial {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: #5f9296;
+      margin-bottom: 4px;
+    }
+    .cifra-pagado { color: #1b9e3c; font-weight: bold; }
+    .cifra-pendiente { color: #e07d3c; font-weight: bold; }
+    .enlace-fila-historial {
+      color: #02535a;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .enlace-fila-historial:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-
-  <div class="sidebar" id="sidebar">
-    <div class="user-info">
-      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
-      <h3 id="nombreUsuario">Cargando...</h3>
-      <small id="rolUsuario">-</small>
-    </div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
-      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
-      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="proveedores.html" class="activo"><span class="icon">🏷️</span>Proveedores</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
-      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
-    </ul>
-  </div>
 
   <main id="contenidoPrincipal">
 
@@ -390,6 +339,61 @@
     </div>
   </div>
 
+  <!-- NUEVO: modal de Historial de Pagos — suma costos_reservas (Individual)
+       y costos_salidas_grupales (Grupal), filtrable por fecha de viaje. -->
+  <div id="modalHistorial">
+    <div id="modalHistorialContent">
+      <h3 id="tituloModalHistorial">Historial de pagos</h3>
+
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:10px;">
+        <div>
+          <label class="campo-fecha-historial">Desde</label>
+          <input type="date" id="historialDesde" onchange="renderizarHistorial()" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+        </div>
+        <div>
+          <label class="campo-fecha-historial">Hasta</label>
+          <input type="date" id="historialHasta" onchange="renderizarHistorial()" style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+        </div>
+        <button type="button" onclick="limpiarFechasHistorial()" class="btn-fila" style="background:#eef6f6; color:#02535a;">Ver todas</button>
+      </div>
+      <p style="font-size:0.78rem; color:#999; margin-top:-4px;">Filtra por fecha de viaje (de la reserva o de la salida grupal, según corresponda).</p>
+
+      <div class="tarjetas-historial">
+        <div class="tarjeta-historial">
+          <div class="etiqueta">Total pagado</div>
+          <div class="monto cifra-pagado" id="historialTotalPagado">$0.00</div>
+        </div>
+        <div class="tarjeta-historial">
+          <div class="etiqueta">Total pendiente</div>
+          <div class="monto cifra-pendiente" id="historialTotalPendiente">$0.00</div>
+        </div>
+        <div class="tarjeta-historial">
+          <div class="etiqueta">Reservas / salidas</div>
+          <div class="monto" id="historialCantidad">0</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Origen</th>
+            <th>Destino</th>
+            <th>Fecha de viaje</th>
+            <th>Categoría</th>
+            <th>Monto</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="tablaHistorial"></tbody>
+      </table>
+      <div id="avisoSinHistorial" class="vacio" style="display:none;">No hay pagos registrados con este proveedor en el rango elegido.</div>
+
+      <div class="botones">
+        <button class="btn-cancelar-modal" onclick="cerrarModalHistorial()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   </main>
 
 <script>
@@ -407,6 +411,34 @@
 
   let proveedores = [];
   let destinosDisponibles = [];
+
+  // NUEVO: helpers compartidos con finanzas.html/gastos.html.
+  function parseFechaReserva(str) {
+    if (!str) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return new Date(str + "T00:00:00");
+    }
+    const partes = str.split("/");
+    if (partes.length === 3) {
+      const [dia, mes, año] = partes.map(Number);
+      if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) {
+        return new Date(año, mes - 1, dia);
+      }
+    }
+    return null;
+  }
+
+  function formatearFechaVisible(fecha) {
+    if (!fecha) return '-';
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const año = fecha.getFullYear();
+    return `${dia}/${mes}/${año}`;
+  }
+
+  function formatoMoneda(valor) {
+    return `$${(valor || 0).toFixed(2)}`;
+  }
   // NUEVO: URL de la diapositiva del hotel ya subida (si existe) en el
   // proveedor que se está creando/editando en el modal.
   let imagenSlideHotelActual = "";
@@ -435,6 +467,193 @@
     const snap = await db.collection("proveedores").orderBy("nombre").get();
     proveedores = snap.docs.map(d => ({ id: d.id, ...d.data() }));
     renderizarTabla();
+  }
+
+  // ==========================================
+  // NUEVO: Historial de Pagos por Proveedor — junta lo pagado/pendiente
+  // en costos_reservas (Individual) y costos_salidas_grupales (Grupal),
+  // agrupado por nombre de proveedor (item.proveedor). No duplica datos,
+  // solo lee — los pagos se editan desde costos_agregar.html /
+  // costos_salida_grupal.html.
+  // ==========================================
+
+  let datosMovimientosProveedor = [];
+
+  async function cargarHistorialPagos() {
+    const movimientos = [];
+
+    // --- Reservas individuales ---
+    const reservasSnap = await db.collection("reservas").get();
+    const reservasPorCodigo = {};
+    reservasSnap.forEach(doc => {
+      const d = doc.data();
+      reservasPorCodigo[doc.id] = {
+        titular: d.nombreTitular || '-',
+        destino: d.nombreDestino || '',
+        fecha: parseFechaReserva(d.fechaReserva)
+      };
+    });
+
+    const costosSnap = await db.collection("costos_reservas").get();
+    costosSnap.forEach(doc => {
+      const data = doc.data();
+      const codigo = data.codigo;
+      const infoReserva = reservasPorCodigo[codigo];
+
+      ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+        let items = data.categorias?.[clave];
+        if (!items) items = [];
+        else if (!Array.isArray(items)) items = [items];
+
+        items.forEach(item => {
+          if (item.no_aplica) return;
+          const tieneDatos = item.proveedor || item.proyectado > 0 || typeof item.real === "number";
+          if (!tieneDatos || !item.proveedor) return;
+          const esReal = typeof item.real === "number";
+
+          movimientos.push({
+            proveedor: item.proveedor,
+            monto: esReal ? item.real : Number(item.proyectado || 0),
+            pagado: esReal,
+            origen: "reserva",
+            codigo,
+            destino: infoReserva?.destino || '-',
+            fecha: infoReserva?.fecha || null
+          });
+        });
+      });
+    });
+
+    // --- Salidas grupales ---
+    const salidasSnap = await db.collection("salidas_grupales").get();
+    const salidasPorId = {};
+    salidasSnap.forEach(doc => {
+      const d = doc.data();
+      salidasPorId[doc.id] = { destino: d.destino || '', fecha: parseFechaReserva(d.fechaSalida) };
+    });
+
+    const costosSalidasSnap = await db.collection("costos_salidas_grupales").get();
+    costosSalidasSnap.forEach(doc => {
+      const data = doc.data();
+      const salidaId = doc.id;
+      const infoSalida = salidasPorId[salidaId] || {};
+      const destino = infoSalida.destino || data.destino || 'Salida grupal';
+      const fecha = infoSalida.fecha || null;
+
+      if (data.modo === "paquete") {
+        const p = data.paquete || {};
+        if (!p.proveedor) return;
+        const esReal = typeof p.real === "number";
+        movimientos.push({
+          proveedor: p.proveedor,
+          monto: esReal ? p.real : Number(p.costoPorPersona || 0),
+          pagado: esReal,
+          origen: "salida",
+          salidaId,
+          destino,
+          fecha,
+          categoriaExtra: "Paquete Grupal"
+        });
+      } else {
+        ["hospedaje", "traslados", "tours", "guia"].forEach(clave => {
+          let items = data.categorias?.[clave];
+          if (!items) items = [];
+          else if (!Array.isArray(items)) items = [items];
+
+          items.forEach(item => {
+            if (item.no_aplica) return;
+            const tieneDatos = item.proveedor || item.proyectado > 0 || typeof item.real === "number";
+            if (!tieneDatos || !item.proveedor) return;
+            const esReal = typeof item.real === "number";
+
+            movimientos.push({
+              proveedor: item.proveedor,
+              monto: esReal ? item.real : Number(item.proyectado || 0),
+              pagado: esReal,
+              origen: "salida",
+              salidaId,
+              destino,
+              fecha,
+              categoriaExtra: (clave === "guia" ? "Guía Acompañante" : clave === "hospedaje" ? "Hospedaje" : clave === "traslados" ? "Traslados" : "Tours") + " (Grupal)"
+            });
+          });
+        });
+      }
+    });
+
+    datosMovimientosProveedor = movimientos;
+  }
+
+  let proveedorHistorialActual = null;
+
+  function abrirModalHistorial(id) {
+    const p = proveedores.find(x => x.id === id);
+    if (!p) return;
+    proveedorHistorialActual = p;
+    document.getElementById("tituloModalHistorial").textContent = `Historial de pagos — ${p.nombre}`;
+    document.getElementById("historialDesde").value = "";
+    document.getElementById("historialHasta").value = "";
+    renderizarHistorial();
+    document.getElementById("modalHistorial").style.display = "flex";
+  }
+
+  function cerrarModalHistorial() {
+    document.getElementById("modalHistorial").style.display = "none";
+  }
+
+  function limpiarFechasHistorial() {
+    document.getElementById("historialDesde").value = "";
+    document.getElementById("historialHasta").value = "";
+    renderizarHistorial();
+  }
+
+  function renderizarHistorial() {
+    if (!proveedorHistorialActual) return;
+    const desdeStr = document.getElementById("historialDesde").value;
+    const hastaStr = document.getElementById("historialHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    const filtrados = datosMovimientosProveedor.filter(m => {
+      if (m.proveedor !== proveedorHistorialActual.nombre) return false;
+      if (!m.fecha) return !desde && !hasta; // sin fecha: solo se muestra si no hay filtro
+      if (desde && m.fecha < desde) return false;
+      if (hasta && m.fecha > hasta) return false;
+      return true;
+    }).sort((a, b) => (b.fecha || 0) - (a.fecha || 0));
+
+    const totalPagado = filtrados.filter(m => m.pagado).reduce((s, m) => s + m.monto, 0);
+    const totalPendiente = filtrados.filter(m => !m.pagado).reduce((s, m) => s + m.monto, 0);
+    const referenciasUnicas = new Set(filtrados.map(m => m.origen === "salida" ? `salida:${m.salidaId}` : `reserva:${m.codigo}`));
+
+    document.getElementById("historialTotalPagado").textContent = formatoMoneda(totalPagado);
+    document.getElementById("historialTotalPendiente").textContent = formatoMoneda(totalPendiente);
+    document.getElementById("historialCantidad").textContent = referenciasUnicas.size;
+
+    const tabla = document.getElementById("tablaHistorial");
+    tabla.innerHTML = "";
+
+    if (filtrados.length === 0) {
+      document.getElementById("avisoSinHistorial").style.display = "block";
+    } else {
+      document.getElementById("avisoSinHistorial").style.display = "none";
+      filtrados.forEach(m => {
+        const fila = document.createElement("tr");
+        const enlace = m.origen === "salida"
+          ? `<a class="enlace-fila-historial" href="costos_salida_grupal.html?salida=${m.salidaId}" target="_blank">🚌 Salida grupal</a>`
+          : `<a class="enlace-fila-historial" href="costos_agregar.html?reserva=${m.codigo}" target="_blank">${m.codigo}</a>`;
+        const categoria = m.categoriaExtra || (m.origen === "salida" ? "Grupal" : "Individual");
+        fila.innerHTML = `
+          <td>${enlace}</td>
+          <td>${m.destino}</td>
+          <td>${formatearFechaVisible(m.fecha)}</td>
+          <td>${categoria}</td>
+          <td>${formatoMoneda(m.monto)}</td>
+          <td>${m.pagado ? '<span class="cifra-pagado">✅ Pagado</span>' : '<span class="cifra-pendiente">⏳ Pendiente</span>'}</td>
+        `;
+        tabla.appendChild(fila);
+      });
+    }
   }
 
   function renderizarTabla() {
@@ -466,7 +685,8 @@
         <td>${p.destino || '<span style="color:#999;">Todos los destinos</span>'}</td>
         <td>${p.categoria || '-'}</td>
         <td><span class="badge ${activo ? 'badge-activo' : 'badge-inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
-        <td>
+        <td style="white-space:nowrap;">
+          <button class="btn-fila historial" onclick="abrirModalHistorial('${p.id}')">📋 Historial</button>
           <button class="btn-fila" onclick="editarProveedor('${p.id}')">✏️ Editar</button>
           <button class="btn-fila eliminar" onclick="eliminarProveedor('${p.id}', '${p.nombre.replace(/'/g, "\\'")}')">🗑️ Eliminar</button>
         </td>
@@ -616,52 +836,14 @@
   document.getElementById("filtroDestino").addEventListener("change", renderizarTabla);
   document.getElementById("filtroCategoria").addEventListener("change", renderizarTabla);
 
-  // Menú lateral de navegación (igual que el resto del sistema)
-  function inicializarMenuLateral() {
-    const usuario = JSON.parse(localStorage.getItem("usuario"));
-    const sidebar = document.getElementById("sidebar");
-    const contenido = document.getElementById("contenidoPrincipal");
-    const toggleBtn = document.querySelector('.toggle-btn');
-
-    if (usuario) {
-      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-      document.getElementById("rolUsuario").innerText = usuario.rol || "";
-    } else {
-      document.getElementById("nombreUsuario").innerText = "Invitado";
-    }
-
-    window.toggleSidebar = function () {
-      sidebar.classList.toggle('active');
-      contenido.classList.toggle('sidebar-visible');
-    };
-
-    window.cerrarSesionYRedirigir = function () {
-      localStorage.removeItem("usuario");
-      window.location.href = "login.html";
-    };
-
-    function checkScreenSize() {
-      if (window.innerWidth <= 768) {
-        sidebar.classList.remove('active');
-        contenido.classList.remove('sidebar-visible');
-      } else {
-        sidebar.classList.add('active');
-        contenido.classList.add('sidebar-visible');
-      }
-      toggleBtn.style.display = "block";
-    }
-
-    window.addEventListener('resize', checkScreenSize);
-    checkScreenSize();
-  }
-
   window.addEventListener("DOMContentLoaded", async () => {
-    inicializarMenuLateral();
     await cargarDestinosDisponibles();
     await cargarProveedores();
+    await cargarHistorialPagos();
   });
 </script>
   <script src="topbar.js"></script>
+  <script src="sidebar.js"></script>
   <!-- Verificación real de sesión (Firebase Authentication). -->
   <script src="auth-guard.js"></script>
 </body>
