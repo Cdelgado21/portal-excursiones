@@ -799,6 +799,16 @@
       return;
     }
 
+    // NUEVO: si ya existe otro proveedor con el mismo nombre (aunque sea
+    // solo distinto en mayúsculas o espacios), avisa antes de guardar —
+    // dos nombres "distintos" para el mismo proveedor quedan separados en
+    // el historial de pagos.
+    const duplicado = proveedores.find(p => p.id !== id && p.nombre.trim().toLowerCase() === nombre.toLowerCase());
+    if (duplicado) {
+      const continuar = confirm(`Ya existe un proveedor llamado "${duplicado.nombre}". Si guardás este con un nombre distinto (aunque sea solo de mayúsculas o espacios), van a quedar separados en el historial de pagos.\n\n¿Guardar de todas formas?`);
+      if (!continuar) return;
+    }
+
     const datos = {
       nombre, destino, categoria, activo,
       info: categoria === "Hospedaje" ? info : "",
