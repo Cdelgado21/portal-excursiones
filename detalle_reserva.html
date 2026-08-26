@@ -23,10 +23,6 @@
       padding: 0;
     }
 
-    /* FIX: los navegadores no le dan a los campos de formulario (select,
-       input, textarea, button) la misma fuente que al resto de la página
-       por defecto — usan la fuente del sistema operativo, que se ve
-       distinta a la Arial del resto del texto. Se fuerza a heredar. */
     input, select, textarea, button {
       font-family: inherit;
     }
@@ -105,24 +101,11 @@
       box-sizing: border-box;
     }
 
-    /* NUEVO (17/8/2026 — responsive): casi todos los campos del formulario
-       usan "flex: 1; min-width: 250px" (o 200/180/140px) para acomodarse en
-       2-3 columnas en pantallas anchas. En celular, ese min-width es
-       justo lo que provoca que los campos se salgan de la tarjeta —
-       cuando dos columnas de 250px no caben en un teléfono, flexbox no
-       siempre las manda a la línea de abajo correctamente, y en cambio se
-       desbordan. Esta regla fuerza a TODOS esos campos a ocupar el 100%
-       del ancho (una sola columna) en pantallas angostas, sin tener que
-       editar cada uno de los ~30 campos por separado. */
     @media screen and (max-width: 700px) {
       body { overflow-x: hidden; }
       [style*="min-width"] { min-width: 0 !important; }
       [style*="flex: 1"] { flex-basis: 100% !important; }
       input, select, textarea { max-width: 100%; box-sizing: border-box; }
-      /* Seguro extra: en vez de confiar en que el navegador calcule solo
-         cuántas columnas caben (auto-fit), se lo decimos explícito — una
-         sola columna, sin ambigüedad, para evitar comportamientos raros
-         de cálculo en algunos navegadores de celular. */
       #toursOpcionalesLista {
         grid-template-columns: 1fr !important;
         width: 100% !important;
@@ -248,9 +231,6 @@
     <div id="tiquetesVueloLista" style="margin-top:10px; font-size: 0.85rem;"></div>
   </div>
 
-  <!-- NUEVO: editor manual para tapar el precio del boleto antes de guardarlo. Se abre
-       automáticamente al seleccionar un archivo, pero también se puede reabrir con el
-       botón de arriba mientras no se haya guardado la reserva. -->
   <div id="modalEditorTiquete" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.6); z-index:10000; align-items:center; justify-content:center;">
     <div style="background:white; padding:20px; border-radius:12px; max-width:95vw; max-height:92vh; overflow:auto; position:relative;">
       <h3 style="margin-top:0; color:#02535a;">Tapar precio del boleto antes de guardar</h3>
@@ -363,9 +343,6 @@
 <section style="margin-top: 30px;">
   <h2 onclick="toggleSeccion(this)" style="background-color: #02535a; color: white; padding: 10px; border-radius: 8px; cursor:pointer; user-select:none;">Itinerario de Tours <span class="flecha-colapsable" style="float:right;">▼</span></h2>
 
-  <!-- NUEVO: el Destino SIEMPRE se elige del mismo desplegable, sin
-       importar el Tipo de Salida — incluso para Salida Personalizada, para
-       no tener que re-escribir un destino que ya existe en el catálogo. -->
   <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
     <div style="flex: 1; min-width: 250px;" id="contenedorDestinoCatalogo">
       <label><strong>Destino</strong></label>
@@ -379,10 +356,6 @@
     </div>
   </div>
 
-  <!-- NUEVO: Tipo de Salida siempre visible con sus 3 opciones fijas
-       (Grupal, Individual, Salida Personalizada) — Nivel se sigue armando
-       según lo que exista realmente en el catálogo para el destino
-       elegido. -->
   <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
     <div style="flex: 1; min-width: 200px;" id="contenedorTipoSalida">
       <label><strong>Tipo de Salida</strong></label>
@@ -399,9 +372,6 @@
     </div>
   </div>
 
-  <!-- NUEVO: solo visible cuando Tipo de Salida = Grupal — permite elegir a
-       cuál fecha concreta de salida pertenece esta reserva (ver
-       salidas_grupales.html), o crear una nueva ahí mismo si no existe. -->
   <div id="contenedorSalidaGrupal" style="margin-top: 15px; display:none;">
     <label><strong>Salida Grupal</strong></label>
     <select id="salidaGrupalId" onchange="alCambiarSalidaGrupal()" style="width: 100%; padding: 8px;">
@@ -409,8 +379,6 @@
     </select>
   </div>
 
-  <!-- NUEVO: creación rápida de una salida grupal nueva, sin salir de la
-       reserva — mismo patrón que "Crear destino nuevo". -->
   <div id="modalSalidaGrupalNueva" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:480px; position:relative;">
       <h3 style="margin-top:0; color:#02535a;">Crear Salida Grupal</h3>
@@ -425,16 +393,8 @@
     </div>
   </div>
 
-  <!-- Guarda el ID real del tour del catálogo una vez que Destino + Tipo +
-       Nivel dejan claro cuál es exactamente — el resto del código (guardar,
-       cargar reserva existente, etc.) sigue leyendo este mismo campo. -->
   <input type="hidden" id="destino">
 
-  <!-- NUEVO: Incluye / No incluye — ahora editable para CUALQUIER Tipo de
-       Salida (antes solo aplicaba a Personalizado). Para Grupal/Individual
-       se precarga automáticamente con lo que tenga el tour del catálogo
-       (ver cargarInfoTour), pero queda editable por si hay que ajustarlo
-       puntual para esta reserva sin tocar el catálogo. -->
   <div id="contenedorIncluyePersonalizado" style="margin-top: 15px;">
     <p style="font-size:0.85rem; color:#5f9296; margin: 0 0 6px 0;">Para Grupal/Individual se precarga desde el Catálogo de Tours — podés ajustarlo aquí solo para esta reserva, sin afectar el catálogo.</p>
     <div style="display: flex; flex-wrap: wrap; gap: 20px;">
@@ -456,10 +416,6 @@
 
   <div id="hotelesResumenContainer" style="margin-top: 20px;">
     <h3>Hoteles</h3>
-    <!-- FIX (17/8/2026 — responsive): en celular esta tabla se salía del
-         borde de la tarjeta porque no tenía dónde hacer scroll propio —
-         ahora el scroll horizontal queda contenido adentro del div, no en
-         toda la página. -->
     <div style="overflow-x: auto;">
     <table id="tablaHoteles" style="width: 100%; min-width: 560px; border-collapse: collapse;">
       <thead style="background: #02535a; color: white;">
@@ -476,8 +432,13 @@
     </div>
   </div>
 
-  <!-- NUEVO: revisar Para/CC/CCO/Asunto/Mensaje antes de enviar el
-       comprobante por correo — mismo patrón que en facturacion.html. -->
+  <div style="margin-top: 20px; padding: 12px; background: #f0f7f7; border-radius: 8px;">
+    <label for="comprobanteHotelFile">Adjuntar comprobante de reserva de hotel (PDF o imagen)</label>
+    <input type="file" id="comprobanteHotelFile" accept="image/*,application/pdf">
+    <div id="comprobanteHotelMensaje" style="margin-top:6px; font-size: 0.85rem;"></div>
+    <div id="comprobantesHotelLista" style="margin-top:10px; font-size: 0.85rem;"></div>
+  </div>
+
   <div id="modalRevisarComprobante" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:600px; max-height:88vh; overflow-y:auto; position:relative;">
       <h3 style="margin-top:0; color:#02535a;">✉️ Revisar correo antes de enviar</h3>
@@ -542,10 +503,6 @@
     </div>
   </div>
 
-  <!-- NUEVO: creación rápida de un destino nuevo, sin salir de la reserva.
-       Solo pide lo mínimo para poder seguir armando la reserva ahora mismo
-       — el resto de los detalles (precios, incluye, itinerario...) se
-       completan después en el Catálogo de Tours. -->
   <div id="modalDestinoNuevo" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.4); z-index:9999; align-items:center; justify-content:center;">
     <div style="background:white; padding:30px; border-radius:12px; width:90%; max-width:500px; position:relative;">
       <h3 style="margin-top:0; color:#02535a;">Crear destino nuevo</h3>
@@ -581,8 +538,6 @@
     <textarea id="itinerario" rows="4" placeholder="Ej. Día 1 Llegada..." style="width: 100%; padding: 8px;"></textarea>
   </div>
 
-  <!-- NUEVO: Tours Opcionales no aplica a salidas Personalizadas — se oculta
-       todo este bloque en ese caso. -->
   <div id="contenedorToursOpcionales">
     <div style="margin-top: 30px;">
       <label style="font-weight: bold;">Tours Opcionales</label>
@@ -643,9 +598,6 @@
   <section style="margin-top: 30px;">
     <h2 style="background-color: #02535a; color: white; padding: 10px; border-radius: 6px;">💰 Historial de Pagos</h2>
 
-    <!-- FIX (17/8/2026 — responsive): mismo motivo que la tabla de
-         hoteles arriba — sin este contenedor, esta tabla se salía de la
-         tarjeta en pantallas angostas. -->
     <div style="overflow-x: auto;">
     <table style="width: 100%; min-width: 560px; margin-top: 20px; border-collapse: collapse;">
       <thead style="background-color: #f0f0f0;">
@@ -781,19 +733,6 @@ function parsearMRZPasaporte(textoCompleto) {
   const codigoNacionalidad = linea2.substring(10, 13).replace(/</g, "");
   const sexoMRZ = linea2.substring(20, 21);
 
-  // FIX: en los pasaportes costarricenses VIEJOS, el campo principal del MRZ
-  // (posiciones 1-9) guarda el "Número de Secuencia" del pasaporte (ej.
-  // G225387), NO el número real de pasaporte que aparece impreso como
-  // "Número de pasaporte/ID No." — ese número real vive en el campo
-  // "Número Personal" del MRZ (posiciones 29-42).
-  //
-  // FIX 2: Costa Rica renovó el formato de pasaportes — los NUEVOS ya
-  // traen el número real de pasaporte directo en el campo principal, con
-  // una letra al inicio (ej. B00605301), y ESE valor hay que respetarlo tal
-  // cual. La regla de arriba solo debe aplicar cuando el campo principal
-  // parece un número de cédula vieja (puros dígitos, sin ninguna letra) —
-  // si no, se estaba pisando el número de pasaporte real y dejando la
-  // cédula en su lugar.
   const numeroPersonalMRZ = linea2.substring(28, 42).replace(/</g, "").trim();
   const pareceCedulaViejaEnCampoPrincipal = /^[0-9]+$/.test(numeroDocumentoPrincipal);
   const numeroDocumento = (codigoNacionalidad === "CRI" && numeroPersonalMRZ && pareceCedulaViejaEnCampoPrincipal)
@@ -1343,6 +1282,53 @@ async function eliminarTiqueteVuelo(indice) {
   }
 }
 
+window.comprobantesHotelActuales = [];
+function mostrarListaComprobantesHotel(lista) {
+  window.comprobantesHotelActuales = Array.isArray(lista) ? lista : [];
+  const contenedor = document.getElementById("comprobantesHotelLista");
+  if (!contenedor) return;
+  if (window.comprobantesHotelActuales.length === 0) {
+    contenedor.innerHTML = "";
+    return;
+  }
+  const filas = window.comprobantesHotelActuales.map((t, i) => {
+    const fecha = t.fecha ? new Date(t.fecha).toLocaleDateString('es-CR') : "";
+    return `<li>
+      <a href="${t.url}" target="_blank">📎 ${t.nombre || 'Comprobante'}</a>${fecha ? ` — subido el ${fecha}` : ""}
+      <button type="button" onclick="eliminarComprobanteHotel(${i})" style="margin-left:8px; background:transparent; color:#b00020; border:none; cursor:pointer; font-size:0.85rem; text-decoration:underline;">🗑️ Eliminar</button>
+    </li>`;
+  }).join("");
+  contenedor.innerHTML = `<strong>Comprobantes de hotel guardados:</strong><ul style="margin:6px 0 0 20px; padding:0;">${filas}</ul>`;
+}
+
+async function eliminarComprobanteHotel(indice) {
+  const codigo = window.codigoActualReserva || codigoReservaExistente;
+  if (!codigo) {
+    alert("⚠️ Primero guarda la reserva antes de poder eliminar comprobantes.");
+    return;
+  }
+  const item = window.comprobantesHotelActuales[indice];
+  if (!item) return;
+
+  const confirmar = confirm(`¿Eliminar el comprobante "${item.nombre}"?\n\nEsta acción no se puede deshacer.`);
+  if (!confirmar) return;
+
+  try {
+    try {
+      await storage.refFromURL(item.url).delete();
+    } catch (e) {
+      console.warn("No se pudo borrar el archivo de Storage (puede que ya no exista):", e);
+    }
+    const nuevaLista = window.comprobantesHotelActuales.filter((_, i) => i !== indice);
+    await db.collection("reservas").doc(codigo).update({ comprobantesHotel: nuevaLista });
+    mostrarListaComprobantesHotel(nuevaLista);
+    alert("✅ Comprobante eliminado.");
+  } catch (e) {
+    console.error("Error al eliminar comprobante de hotel:", e);
+    alert("❌ No se pudo eliminar el comprobante.");
+  }
+}
+
 function extraerEquipajeDelTexto(texto) {
   const resultados = [];
   const vistos = new Set();
@@ -1497,26 +1483,19 @@ async function procesarOCRTiquete(archivo) {
   }
 }
 
-// ==========================================
-// NUEVO: EDITOR MANUAL PARA TAPAR EL PRECIO DEL BOLETO
-// Reemplaza la dependencia del OCR automático (que no siempre encuentra la zona de
-// precio) por control manual: Cristopher dibuja el recuadro sobre el precio y esa
-// versión — no la original — es la que se sube a Storage y se pega al comprobante.
-// ==========================================
-
 window.editorTiqueteState = {
-  tipo: null,              // "pdf" | "imagen"
-  pdfDoc: null,             // documento cargado con pdf.js (para renderizar)
+  tipo: null,
+  pdfDoc: null,
   paginaActual: 1,
   totalPaginas: 1,
-  imagenElemento: null,     // <img> cargada, cuando el boleto es una foto
-  recuadrosPorPagina: {},   // { numeroPagina: [{x,y,width,height}, ...] } en coordenadas de canvas
-  escalaRender: 1,          // factor entre el canvas mostrado y el tamaño real (puntos PDF o píxeles de imagen)
+  imagenElemento: null,
+  recuadrosPorPagina: {},
+  escalaRender: 1,
   arrastrando: false,
   inicioX: 0,
   inicioY: 0,
   rectLive: null,
-  canvasBase: document.createElement("canvas"), // página/imagen ya renderizada, sin recuadros (para redibujar rápido)
+  canvasBase: document.createElement("canvas"),
   archivoOriginal: null,
   bytesOriginales: null
 };
@@ -1676,10 +1655,6 @@ function editorDeshacerRecuadro() {
   editorRedibujar();
 }
 
-// Convierte los recuadros dibujados (en coordenadas de canvas) al archivo final: para PDF
-// los "quema" como rectángulos blancos con pdf-lib; para imagen, los pinta directo sobre
-// un canvas a la resolución original. El archivo resultante reemplaza al del input de
-// archivo, para que lo que se suba a Storage sea la versión ya tapada.
 async function cerrarEditorTiquete(guardar) {
   const estado = window.editorTiqueteState;
   const modal = document.getElementById("modalEditorTiquete");
@@ -1788,15 +1763,9 @@ async function generarCodigoReserva() {
   return { codigo, numero: nuevoNumero, año: añoActual };
 }
 
-// NUEVO: guarda (o actualiza) al titular de la reserva en la colección de
-// Clientes — usando el teléfono como identificador, igual que ya hace
-// clientes.html. Se guardan también fecha de nacimiento y vencimiento de
-// pasaporte, pensando en futuros avisos automáticos (cumpleaños, pasaportes
-// por vencer). Si el cliente ya existía, se conserva su fecha de registro
-// original — no se pisa.
 async function sincronizarClienteDesdeTitular(datosReserva) {
   const telefonoCliente = (datosReserva.telefono || "").trim();
-  if (!telefonoCliente) return; // sin teléfono no hay forma de identificarlo como cliente
+  if (!telefonoCliente) return;
 
   try {
     const clienteRef = db.collection("clientes").doc(telefonoCliente);
@@ -1830,16 +1799,8 @@ async function guardarReserva() {
     const nacionalidadTitular = document.getElementById("nacionalidadTitular").value || "";
     const generoTitular = document.getElementById("generoTitular").value || "";
     const tipoSalidaActual = document.getElementById("tipoSalidaReserva").value;
-    // NUEVO: el Destino siempre se elige del mismo campo (destinoNombre),
-    // sin importar el Tipo de Salida. Lo único que cambia en Personalizado
-    // es que "destino" (el ID del tour del catálogo) queda vacío — no se
-    // liga a ningún tour específico.
     const destino = tipoSalidaActual === "Personalizado" ? "" : (document.getElementById("destino").value || "");
     const nombreDestino = document.getElementById("destinoNombre").value || "";
-    // FIX: Incluye/No incluye ahora se guarda para CUALQUIER Tipo de Salida
-    // (antes solo para Personalizado) — para Grupal/Individual se precarga
-    // desde el catálogo en cargarInfoTour(), pero queda editable para esta
-    // reserva puntual sin tocar el tour del catálogo.
     const incluyePersonalizado = document.getElementById("incluyePersonalizado").value || "";
     const no_incluyePersonalizado = document.getElementById("no_incluyePersonalizado").value || "";
     const total = parseFloat(document.getElementById("totalGeneral").value) || 0;
@@ -1847,8 +1808,6 @@ async function guardarReserva() {
     const abono = pagos.reduce((sum, p) => sum + p.monto, 0);
     const saldo = total - abono;
     const vendedor = document.getElementById("vendedor").value || "";
-    // NUEVO: solo aplica si el Tipo de Salida es Grupal y el selector está
-    // visible — para Individual/Personalizado queda vacío.
     const salidaGrupalId = (tipoSalidaActual === "Grupal" && document.getElementById("salidaGrupalId").value !== "__nuevo__")
       ? (document.getElementById("salidaGrupalId").value || "")
       : "";
@@ -1915,10 +1874,6 @@ async function guardarReserva() {
       if (!continuar) return;
     }
 
-    // NUEVO: si el Tipo de Salida es Grupal pero no quedó ninguna Salida
-    // Grupal seleccionada, la reserva se guarda sin poder agruparse por
-    // fecha en salidas_grupales.html — se avisa antes de guardar en vez de
-    // que quede así en silencio.
     if (tipoSalidaActual === "Grupal" && !salidaGrupalId) {
       const continuarSinSalida = confirm(
         "⚠️ No se seleccionó una Salida Grupal (fecha concreta) para esta reserva.\n\n" +
@@ -1952,9 +1907,6 @@ async function guardarReserva() {
     let codigo = codigoReservaExistente;
     let numero = null;
     let año = new Date().getFullYear();
-    // NUEVO: se guarda ANTES de que "codigo" se reasigne abajo — usado más
-    // adelante para avisarle a los admins solo cuando es una reserva
-    // recién creada, no en cada edición de una que ya existía.
     const esReservaNueva = !codigoReservaExistente;
 
     if (!codigo) {
@@ -1988,9 +1940,6 @@ async function guardarReserva() {
     const archivoTiqueteVuelo = document.getElementById("tiqueteVueloFile")?.files[0];
     if (archivoTiqueteVuelo) {
       const refTiquete = storage.ref().child(`tiquetes/${codigo}/${Date.now()}_${archivoTiqueteVuelo.name}`);
-      // NUEVO: contentDisposition "inline" — sin esto, el navegador trataba
-      // el archivo como una descarga forzada en vez de mostrarlo en una
-      // pestaña nueva al hacer clic en "📎 nombre" de la lista de abajo.
       await refTiquete.put(archivoTiqueteVuelo, {
         contentType: archivoTiqueteVuelo.type || "application/octet-stream",
         contentDisposition: "inline"
@@ -2003,13 +1952,22 @@ async function guardarReserva() {
       }];
     }
 
-    // FIX: antes este .set() no tenía merge:true — cada vez que se
-    // guardaba la reserva (aunque fuera solo para corregir un dato del
-    // titular), esto BORRABA por completo lo que ya se hubiera cargado en
-    // costos_agregar.html (categorias de hospedaje/traslados/tours/
-    // comisión), reseteaba el estado de vuelta a "Proyectado" aunque ya
-    // estuviera Cerrada, y pisaba creado_el con la fecha de hoy. Ahora se
-    // lee primero lo que ya existe, para conservarlo, y se usa merge:true.
+    let comprobantesHotel = datosExistentes?.comprobantesHotel || [];
+    const archivoComprobanteHotel = document.getElementById("comprobanteHotelFile")?.files[0];
+    if (archivoComprobanteHotel) {
+      const refComprobanteHotel = storage.ref().child(`comprobantes_hotel/${codigo}/${Date.now()}_${archivoComprobanteHotel.name}`);
+      await refComprobanteHotel.put(archivoComprobanteHotel, {
+        contentType: archivoComprobanteHotel.type || "application/octet-stream",
+        contentDisposition: "inline"
+      });
+      const urlComprobanteHotel = await refComprobanteHotel.getDownloadURL();
+      comprobantesHotel = [...comprobantesHotel, {
+        nombre: archivoComprobanteHotel.name,
+        url: urlComprobanteHotel,
+        fecha: new Date().toISOString()
+      }];
+    }
+
     const costosDocExistente = await db.collection("costos_reservas").doc(codigo).get();
     const costosPrevios = costosDocExistente.exists ? costosDocExistente.data() : {};
 
@@ -2024,16 +1982,12 @@ async function guardarReserva() {
 
     const datos = {
       codigo, numero, año,
-      // NUEVO: fecha en la que la reserva se creó por primera vez (distinta
-      // de fechaReserva, que es la fecha del vuelo/viaje). Se usa para
-      // reportes de ventas por período — se guarda una sola vez y nunca se
-      // pisa en ediciones posteriores. Las reservas creadas antes de este
-      // cambio no la tendrán, así que quedan fuera de esos reportes.
       creado_el: datosExistentes?.creado_el || new Date(),
       nombreTitular, cedula, correo, telefono,
       fechaNacimientoTitular, vencimientoPasaporteTitular,
       nacionalidadTitular, generoTitular, pasaporteTitularURL,
       tiquetesVuelo,
+      comprobantesHotel,
       vueloIda, vueloRegreso,
       codigosAerolineaAdicionales: Array.from(document.querySelectorAll(".fila-codigo-adicional")).map(fila => {
         const selectPara = fila.querySelector(".notaCodigoAdicional");
@@ -2048,15 +2002,9 @@ async function guardarReserva() {
       fechaReserva, destino, nombreDestino,
       tipoSalidaReserva: tipoSalidaActual,
       incluyePersonalizado, no_incluyePersonalizado,
-      // NUEVO: clientes.html busca las reservas de cada cliente por este
-      // campo — antes nunca se guardaba, así que el botón "🔍 Reservas" de
-      // esa pantalla nunca mostraba nada.
       telefonoCliente: telefono,
       total, abono, saldo, pagos,
-      // NUEVO: quién de la agencia cerró la venta.
       vendedor,
-      // NUEVO: a cuál Salida Grupal pertenece (ver salidas_grupales.html) —
-      // vacío para Individual/Personalizado, o si todavía no se eligió.
       salidaGrupalId,
       vuelosIntermedios: [],
       pasajeros: [],
@@ -2090,19 +2038,11 @@ async function guardarReserva() {
         pasaporteURL = await refPasajero.getDownloadURL();
       }
 
-      // NUEVO: boleto/itinerario de vuelo propio de este pasajero — se
-      // agrega a la MISMA lista tiquetesVuelo[] que ya arma el comprobante
-      // (fusionarComprobanteConBoletos), asi el PDF los incluye a todos sin
-      // tocar esa parte. pasajeroIndice solo sirve para poder mostrar de
-      // vuelta cual boleto es de cual pasajero al reabrir la reserva.
       const inputTiquetePasajero = p.querySelector(".tiqueteVueloPasajeroFile");
       const archivoTiquetePasajero = inputTiquetePasajero?.files[0];
       if (archivoTiquetePasajero) {
         const nombrePasajeroActual = p.querySelector(".nombrePasajero")?.value || `Pasajero ${i + 1}`;
         const refTiquetePasajero = storage.ref().child(`tiquetes/${codigo}/pasajero_${i}_${Date.now()}_${archivoTiquetePasajero.name}`);
-        // NUEVO: mismo fix de contentDisposition "inline" que el boleto
-        // general, para que también abra en pestaña nueva en vez de
-        // descargar.
         await refTiquetePasajero.put(archivoTiquetePasajero, {
           contentType: archivoTiquetePasajero.type || "application/octet-stream",
           contentDisposition: "inline"
@@ -2140,10 +2080,6 @@ async function guardarReserva() {
     await db.collection("reservas").doc(codigo).set(datos);
     alert("✅ Reserva guardada correctamente como " + codigo);
 
-    // NUEVO: aviso en la campanita para quien tenga rol "Administrador" —
-    // solo la primera vez que se guarda esta reserva, no en cada edición.
-    // Segundo parámetro (11/8/2026): url a donde navega si le hacen clic en
-    // la campanita — usa el mismo código de reserva de esta URL.
     if (esReservaNueva && window.crearNotificacionParaAdmins) {
       window.crearNotificacionParaAdmins(
         `🧳 Nueva reserva: ${codigo} — ${nombreTitular || 'sin nombre'} (${nombreDestino || destino || 'destino no especificado'})`,
@@ -2151,7 +2087,6 @@ async function guardarReserva() {
       );
     }
 
-    // NUEVO: mismo aviso, pero por correo — solo al crearla, no en cada edición.
     if (esReservaNueva && window.enviarCorreoAdmins && window.construirHtmlCorreoAviso) {
       window.enviarCorreoAdmins(
         `Excursiones Delgado | Nueva reserva: ${codigo}`,
@@ -2165,15 +2100,15 @@ async function guardarReserva() {
       );
     }
 
-    // NUEVO: el titular de la reserva se guarda (o se actualiza) también en
-    // Clientes — para poder usarlo después en campañas, felicitaciones de
-    // cumpleaños, avisos de vencimiento de pasaporte, etc. No bloquea el
-    // guardado de la reserva si esto llegara a fallar.
     await sincronizarClienteDesdeTitular(datos);
 
     mostrarListaTiquetesVuelo(tiquetesVuelo);
     document.getElementById("tiqueteVueloFile").value = "";
     document.getElementById("tiqueteVueloMensaje").innerHTML = "";
+
+    mostrarListaComprobantesHotel(comprobantesHotel);
+    document.getElementById("comprobanteHotelFile").value = "";
+    document.getElementById("comprobanteHotelMensaje").innerHTML = "";
 
     document.getElementById("btnCostos").href = `costos_agregar.html?reserva=${codigo}`;
     document.getElementById("btnCostos").style.display = "flex";
@@ -2510,9 +2445,6 @@ async function cargarDestinos() {
   }
 }
 
-// NUEVO: la lista de Destino se arma con los destinos únicos del catálogo,
-// más una opción para crear uno nuevo sin salir de la reserva (mismo patrón
-// que "Agregar nuevo proveedor").
 function poblarDestinoPrincipal() {
   const select = document.getElementById("destinoNombre");
   const valorAnterior = select.value;
@@ -2534,10 +2466,6 @@ function poblarDestinoPrincipal() {
   if (valorAnterior && valorAnterior !== "__crear_nuevo__") select.value = valorAnterior;
 }
 
-// NUEVO: al restaurar una reserva Personalizada guardada antes de este
-// cambio (cuando el destino se escribía aparte, sin pasar por el catálogo),
-// el nombre puede no existir como opción en el desplegable — se agrega como
-// respaldo para que se siga viendo correctamente.
 function asegurarOpcionDestino(nombre) {
   const select = document.getElementById("destinoNombre");
   if (!nombre) return;
@@ -2551,21 +2479,12 @@ function asegurarOpcionDestino(nombre) {
   select.value = nombre;
 }
 
-// Muestra/oculta los bloques según el Tipo de Salida: catálogo (Grupal o
-// Individual) vs Salida Personalizada (todo escrito a mano).
-// NUEVO: Personalizado ya NO oculta el Destino — se sigue usando el mismo
-// desplegable (exista el destino en el catálogo o se cree ahí mismo). Lo
-// único que cambia es que no se liga a un tour específico del catálogo, y
-// el Incluye/No incluye se escriben a mano en Personalizado, y se precargan
-// del tour en Grupal/Individual (ver cargarInfoTour) — pero el bloque en sí
-// queda visible y editable siempre.
 function aplicarModoPersonalizado() {
   document.getElementById("contenedorToursOpcionales").style.display = "none";
   document.getElementById("contenedorNivelReserva").style.display = "none";
   document.getElementById("nivelReserva").innerHTML = "";
   document.getElementById("destino").value = "";
   document.getElementById("toursOpcionalesLista").innerHTML = "";
-  // NUEVO: la Salida Grupal solo aplica a destinos Grupales del catálogo.
   document.getElementById("contenedorSalidaGrupal").style.display = "none";
 }
 
@@ -2573,9 +2492,6 @@ function aplicarModoCatalogo() {
   document.getElementById("contenedorToursOpcionales").style.display = "block";
 }
 
-// NUEVO: al elegir "➕ Crear nuevo destino..." en el propio desplegable de
-// Destino, se abre el modal de creación rápida — el desplegable vuelve a
-// quedar en blanco mientras tanto (es solo un disparador, no una selección).
 function alCambiarDestinoPrincipal() {
   const select = document.getElementById("destinoNombre");
   if (select.value === "__crear_nuevo__") {
@@ -2586,21 +2502,10 @@ function alCambiarDestinoPrincipal() {
   actualizarFlujoSegunSeleccion();
 }
 
-// Tipo de Salida siempre tiene las mismas 3 opciones fijas (Grupal,
-// Individual, Salida Personalizada) — cambiar cualquiera de los dos campos
-// (Destino o Tipo de Salida) pasa por aquí para mantenerlos coherentes.
 function alCambiarTipoSalida() {
   actualizarFlujoSegunSeleccion();
 }
 
-// NUEVO: función async (antes era sync) — así se puede esperar (await) a
-// que termine de cargar el desplegable de Salida Grupal antes de seguir.
-// Esto evita una condición de carrera: cargarReservaExistente() hacía esta
-// misma llamada dos veces casi al mismo tiempo (una disparada acá adentro,
-// sin esperar, y otra explícita después para restaurar la selección
-// guardada) — si la de acá adentro terminaba DESPUÉS de la explícita,
-// pisaba el desplegable entero y la reserva quedaba sin Salida Grupal
-// seleccionada aunque sí se hubiera guardado bien.
 async function actualizarFlujoSegunSeleccion() {
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
 
@@ -2615,9 +2520,6 @@ async function actualizarFlujoSegunSeleccion() {
   const contenedorNivel = document.getElementById("contenedorNivelReserva");
   const selectNivel = document.getElementById("nivelReserva");
 
-  // NUEVO: la Salida Grupal solo aplica cuando Tipo de Salida = Grupal y ya
-  // hay un destino elegido — para Individual no tiene sentido (no son
-  // salidas de grupo con fecha fija compartida).
   const contenedorSalidaGrupal = document.getElementById("contenedorSalidaGrupal");
   if (tipoSalida === "Grupal" && destinoNombre) {
     contenedorSalidaGrupal.style.display = "block";
@@ -2633,8 +2535,6 @@ async function actualizarFlujoSegunSeleccion() {
     return;
   }
 
-  // Individual: arma el Nivel SOLO con los niveles que existen para este
-  // destino — y si solo hay uno cargado en el catálogo, se selecciona solo.
   const nivelesDisponibles = (window.catalogoTours || [])
     .filter(t => t.nombre === destinoNombre && t.tipoSalida === "Individual" && t.nivel)
     .map(t => t.nivel);
@@ -2663,9 +2563,6 @@ function alCambiarNivelReserva() {
   resolverTourSeleccionado();
 }
 
-// Una vez que Destino + Tipo (+ Nivel, si aplica) dejan claro exactamente
-// cuál tour del catálogo es, se resuelve su ID real y se cargan sus datos
-// (duración, itinerario, tours opcionales, incluye/no incluye).
 function resolverTourSeleccionado() {
   const destinoNombre = document.getElementById("destinoNombre").value;
   const tipoSalida = document.getElementById("tipoSalidaReserva").value;
@@ -2676,7 +2573,6 @@ function resolverTourSeleccionado() {
     return;
   }
   if (tipoSalida === "Individual" && !nivel) {
-    // Falta elegir el nivel todavía — no se puede resolver un tour único.
     document.getElementById("destino").value = "";
     return;
   }
@@ -2701,20 +2597,11 @@ async function cargarInfoTour(destinoId) {
       document.getElementById("duracion").value = data.duracion || "";
       document.getElementById("itinerario").value = data.itinerario_tours || "";
 
-      // NUEVO: precarga Incluye/No incluye desde el tour del catálogo —
-      // solo si el campo está vacío, para no pisar un ajuste manual que ya
-      // se haya hecho puntual para esta reserva (por ejemplo si se cambió
-      // de tour después de haber editado el texto a mano).
       const campoIncluye = document.getElementById("incluyePersonalizado");
       const campoNoIncluye = document.getElementById("no_incluyePersonalizado");
       if (campoIncluye && !campoIncluye.value.trim()) campoIncluye.value = data.incluye || "";
       if (campoNoIncluye && !campoNoIncluye.value.trim()) campoNoIncluye.value = data.no_incluye || "";
 
-      // NUEVO: los tours opcionales ya no viven dentro de cada tour — son
-      // compartidos por destino (colección "tours_opcionales"), así que se
-      // cargan aparte, filtrando por el nombre del destino (no por el tour
-      // específico resuelto). Así "Globos en Teotihuacán" aparece igual en
-      // Flash, Esencial y Confort de CDMX sin tener que cargarlo 3 veces.
       const lista = document.getElementById("toursOpcionalesLista");
       lista.innerHTML = "";
 
@@ -2752,13 +2639,6 @@ function autoResizeTextarea(textarea) {
   textarea.style.height = (textarea.scrollHeight + 2) + 'px';
 }
 
-// FIX: los hoteles ya no se guardan dentro de cada tour — ahora se manejan
-// como proveedores (categoría "Hospedaje") en proveedores.html, así que se
-// leen de ahí. Se agrupan primero los del destino de esta reserva, igual que
-// ya se hace con los proveedores de costos en costos_agregar.html.
-// NUEVO: creación rápida de un destino nuevo desde la propia reserva, sin
-// tener que ir al Catálogo de Tours. Solo guarda lo mínimo (nombre, tipo de
-// salida, nivel) — el resto queda vacío hasta que se complete después.
 function abrirModalDestinoNuevo() {
   document.getElementById("modal_nombre_destino").value = "";
   document.getElementById("modal_tipoSalida_destino").value = "Grupal";
@@ -2785,8 +2665,6 @@ async function guardarDestinoNuevoModal() {
     return;
   }
 
-  // Mismo esquema de ID que usa detalle_tours.html, para que no choque con
-  // una variante ya existente del mismo destino.
   const sufijoVariante = tipoSalida === "Individual" && nivel ? `${tipoSalida}_${nivel}` : tipoSalida;
   const idTour = `${nombre}_${sufijoVariante}`.replace(/\s+/g, "_");
 
@@ -2818,8 +2696,6 @@ async function guardarDestinoNuevoModal() {
 
     cerrarModalDestinoNuevo();
 
-    // Refresca el desplegable de Destino y deja seleccionado justo el que
-    // se acaba de crear, junto con el Tipo de Salida y Nivel elegidos.
     poblarDestinoPrincipal();
     document.getElementById("destinoNombre").value = nombre;
     document.getElementById("tipoSalidaReserva").value = tipoSalida;
@@ -2835,13 +2711,6 @@ async function guardarDestinoNuevoModal() {
     alert("❌ No se pudo crear el destino. Intenta de nuevo.");
   }
 }
-
-// ==========================================
-// NUEVO: Salida Grupal — permite ligar esta reserva a una fecha concreta de
-// salida (ver salidas_grupales.html), para poder saber cuántas reservas y
-// personas tiene cada salida sin depender de que las fechas coincidan
-// exactas entre reservas distintas del mismo grupo.
-// ==========================================
 
 window.catalogoSalidasGrupales = [];
 
@@ -2920,9 +2789,6 @@ async function guardarSalidaGrupalNuevaModal() {
   }
 }
 
-// NUEVO: permite crear un proveedor de Hospedaje nuevo directo desde el
-// modal de "Agregar Hotel", sin tener que salir de la reserva — mismo
-// patrón que "Agregar nuevo proveedor" en costos_agregar.html.
 async function manejarSeleccionProveedorHotel(select) {
   if (select.value !== "__nuevo__") return;
 
@@ -2962,8 +2828,6 @@ async function manejarSeleccionProveedorHotel(select) {
 }
 
 function abrirModalHotel(filaAEditar) {
-  // NUEVO: si se pasa una fila (desde editarFilaHotel), el modal abre en
-  // modo edición — actualiza esa fila en vez de crear una nueva al guardar.
   window.filaHotelEnEdicion = filaAEditar || null;
   document.getElementById("tituloModalHotel").textContent = filaAEditar ? "Editar Hotel" : "Agregar Hotel";
 
@@ -2980,12 +2844,8 @@ function abrirModalHotel(filaAEditar) {
     const tour = (window.catalogoTours || []).find(t => t.id === destinoSeleccionado);
     destinoNombre = tour?.nombre || "";
   }
-  // Para Personalizado, destinoNombre queda vacío a propósito — se muestran
-  // todos los hoteles guardados, sin filtrar por destino.
   window.destinoActualParaHotel = destinoNombre;
 
-  // NUEVO: prellenar Tipo/Cantidad/Observaciones si es edición (esto no
-  // depende de la carga de proveedores, se puede hacer ya mismo).
   if (filaAEditar) {
     const celdas = filaAEditar.querySelectorAll("td");
     document.getElementById("modal_tipoHabitacion_hotel").value = celdas[1]?.innerText || "Doble";
@@ -3012,9 +2872,6 @@ function abrirModalHotel(filaAEditar) {
       return lista.map(p => `<option value="${p.nombre}">${p.nombre}</option>`).join("");
     }
 
-    // FIX: antes, si no había ningún hotel guardado, el modal se quedaba sin
-    // ninguna opción para agregar — ahora siempre aparece la opción de crear
-    // uno nuevo, sin tener que salir de la reserva.
     let html = "<option value=''>Seleccione un hotel</option>";
     if (deEsteDestino.length > 0) html += `<optgroup label="Hoteles de ${destinoNombre}">${opciones(deEsteDestino)}</optgroup>`;
     if (universales.length > 0) html += `<optgroup label="Todos los destinos">${opciones(universales)}</optgroup>`;
@@ -3022,7 +2879,6 @@ function abrirModalHotel(filaAEditar) {
     html += `<option value="__nuevo__">➕ Agregar nuevo proveedor...</option>`;
     selectHotel.innerHTML = html;
 
-    // NUEVO: si es edición, selecciona el hotel que ya tenía esta fila.
     if (window.filaHotelEnEdicion) {
       const celdas = window.filaHotelEnEdicion.querySelectorAll("td");
       selectHotel.value = celdas[0]?.innerText || "";
@@ -3072,7 +2928,6 @@ function guardarHotelModal() {
   `;
 
   if (window.filaHotelEnEdicion) {
-    // NUEVO: modo edición — actualiza la fila existente en vez de agregar una nueva.
     window.filaHotelEnEdicion.innerHTML = contenidoFila;
   } else {
     const tbody = document.getElementById("tablaHotelesBody");
@@ -3167,42 +3022,22 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("telefonoTitular").value = data.telefono || "";
     document.getElementById("equipaje").value = data.equipaje || "";
 
-    // FIX: Incluye/No incluye guardado de la reserva se carga SIEMPRE (antes
-    // solo para Personalizado) — para Grupal/Individual esto sirve como
-    // ajuste puntual guardado; si la reserva no tenía nada guardado todavía
-    // (reservas viejas o recién creadas), cargarInfoTour() más abajo lo
-    // precarga desde el tour del catálogo porque el campo queda vacío.
     document.getElementById("incluyePersonalizado").value = data.incluyePersonalizado || "";
     document.getElementById("no_incluyePersonalizado").value = data.no_incluyePersonalizado || "";
 
-    // NUEVO: el Destino de una reserva Personalizada se restaura en el mismo
-    // campo destinoNombre — si ese nombre ya no existe como opción (por
-    // ejemplo, una reserva vieja de antes de este cambio), se agrega como
-    // opción de respaldo para que se siga viendo correctamente.
     if (data.tipoSalidaReserva === "Personalizado") {
       document.getElementById("tipoSalidaReserva").value = "Personalizado";
       asegurarOpcionDestino(data.nombreDestino || "");
       actualizarFlujoSegunSeleccion();
     } else {
-      // Reconstruye Destino → Tipo de Salida → Nivel a partir del tour
-      // guardado, para que los 3 selectores queden exactamente como cuando
-      // se creó la reserva (y se puedan editar con normalidad).
       const tourGuardado = (window.catalogoTours || []).find(t => t.id === data.destino);
       if (tourGuardado) {
         document.getElementById("destinoNombre").value = tourGuardado.nombre;
         document.getElementById("tipoSalidaReserva").value = tourGuardado.tipoSalida;
-        // FIX: actualizarFlujoSegunSeleccion() ahora es async y espera (await)
-        // su propia carga interna del desplegable de Salida Grupal — antes
-        // esa carga interna corría en paralelo con la restauración explícita
-        // de abajo, y la que terminara última podía pisar a la otra, dejando
-        // el desplegable vacío aunque la reserva sí tuviera guardado el ID.
         await actualizarFlujoSegunSeleccion();
         if (tourGuardado.tipoSalida === "Individual") {
           document.getElementById("nivelReserva").value = tourGuardado.nivel || "";
         }
-        // Restaura la Salida Grupal elegida — ya no hace falta volver a
-        // cargar la lista acá (actualizarFlujoSegunSeleccion ya la esperó),
-        // solo queda seleccionar el valor guardado.
         if (tourGuardado.tipoSalida === "Grupal" && data.salidaGrupalId) {
           document.getElementById("salidaGrupalId").value = data.salidaGrupalId;
         }
@@ -3243,6 +3078,7 @@ async function cargarReservaExistente(codigo) {
     }
 
     mostrarListaTiquetesVuelo(data.tiquetesVuelo || []);
+    mostrarListaComprobantesHotel(data.comprobantesHotel || []);
 
     if (Array.isArray(data.codigosAerolineaAdicionales)) {
       document.getElementById("codigosAerolineaAdicionalesContainer").innerHTML = "";
@@ -3364,9 +3200,6 @@ async function cargarReservaExistente(codigo) {
             }
           }
 
-          // NUEVO: muestra el/los boleto(s) de vuelo ya subidos para ESTE
-          // pasajero especifico (guardados con el mismo pasajeroIndice al
-          // momento de subirlos).
           const contTiquetePasajero = ult.querySelector(".tiqueteVueloPasajeroActual");
           if (contTiquetePasajero && Array.isArray(data.tiquetesVuelo)) {
             const propios = data.tiquetesVuelo.filter(t => t.pasajeroIndice === indicePasajero);
@@ -3481,9 +3314,6 @@ function cargarHistorialPagos() {
   if (btn) btn.style.display = "inline-block";
 }
 
-// NUEVO: elimina un pago ya registrado — mismo espiritu que "eliminarTiqueteVuelo()"
-// (confirma, quita de la lista en memoria, refresca pantalla y persiste el
-// cambio de inmediato en Firestore, sin esperar a que se guarde toda la reserva).
 async function eliminarPago(indice) {
   const pago = window.listaPagos?.[indice];
   if (!pago) return;
@@ -3496,7 +3326,7 @@ async function eliminarPago(indice) {
   actualizarTotales();
 
   const codigo = window.codigoActualReserva || codigoReservaExistente;
-  if (!codigo) return; // reserva todavia no guardada -- no hay nada que persistir aun
+  if (!codigo) return;
 
   try {
     await db.collection("reservas").doc(codigo).update({ pagos: window.listaPagos });
@@ -3506,16 +3336,10 @@ async function eliminarPago(indice) {
   }
 }
 
-// ==========================================
-// NUEVO: COMPROBANTE DE RESERVA (PDF + envío por correo)
-// Estructura calcada del comprobante que se arma manualmente hoy.
-// ==========================================
-
 const WORKER_COMPROBANTE_URL = "/.netlify/functions/comprobante-correo";
 
-const COLOR_MARCA = [2, 83, 90]; // #02535a
+const COLOR_MARCA = [2, 83, 90];
 
-// Datos fijos de la agencia (van igual en todos los comprobantes).
 const AGENCIA_CEDULA_JURIDICA = "2-0704-0582";
 const AGENCIA_CANATUR = "5683";
 const AGENCIA_TELEFONO = "+506 6132 8183";
@@ -3526,17 +3350,12 @@ const MESES_LARGO = ["enero","febrero","marzo","abril","mayo","junio","julio","a
 
 function formatearFechaComprobante(fecha) {
   if (!fecha) return "";
-  // FIX: las fechas guardadas como "AAAA-MM-DD" se interpretaban en UTC —
-  // como Costa Rica está en UTC-6, esto podía mostrar el día ANTERIOR al
-  // real. Se agrega la hora explícita para que se interprete en huso local.
   const fechaConHora = /^\d{4}-\d{2}-\d{2}$/.test(fecha) ? fecha + "T00:00:00" : fecha;
   const f = new Date(fechaConHora);
   if (isNaN(f.getTime())) return fecha;
   return f.toLocaleDateString("es-CR");
 }
 
-// Arma el texto "Del 10 al 14 Julio 2026" (o con dos meses si el viaje cruza de mes)
-// a partir de la fecha del vuelo de ida y de regreso.
 function formatearRangoFechas(fechaIda, fechaRegreso) {
   if (!fechaIda) return "";
   const dIda = new Date(fechaIda + "T00:00:00");
@@ -3552,7 +3371,6 @@ function formatearRangoFechas(fechaIda, fechaRegreso) {
   return `Del ${dIda.getDate()} de ${MESES_LARGO[dIda.getMonth()]} al ${dRegreso.getDate()} de ${MESES_LARGO[dRegreso.getMonth()]} ${dRegreso.getFullYear()}`;
 }
 
-// "2 adultos, 1 niño" — a partir de las cantidades ya guardadas en la reserva.
 function obtenerResumenPasajeros(datos) {
   const partes = [];
   if (datos.cantidadAdultos > 0) partes.push(`${datos.cantidadAdultos} adulto${datos.cantidadAdultos > 1 ? "s" : ""}`);
@@ -3561,8 +3379,6 @@ function obtenerResumenPasajeros(datos) {
   return partes.join(", ");
 }
 
-// "Hotel Obo, Medellín" — primer hotel agregado + ciudad (tomada del nombre del destino,
-// quitando el "(Nivel)" que se le agrega a los tours Individual).
 function obtenerHotelPrincipal(datos) {
   const hotel = (datos.hoteles || [])[0];
   if (!hotel || !hotel.nombre) return "";
@@ -3570,9 +3386,6 @@ function obtenerHotelPrincipal(datos) {
   return ciudad ? `${hotel.nombre}, ${ciudad}` : hotel.nombre;
 }
 
-// Convierte el texto libre de "Itinerario" (una línea por día, ej. "Día 1 Llegada a Medellín")
-// en un arreglo [{numero, texto}, ...] para armar la tabla por columnas, igual que en el
-// comprobante manual. Si una línea no empieza con "Día N", se pega al día anterior detectado.
 function parsearItinerarioPorDias(texto) {
   if (!texto) return [];
   const lineas = texto.split("\n").map(l => l.trim()).filter(Boolean);
@@ -3588,15 +3401,7 @@ function parsearItinerarioPorDias(texto) {
   return dias;
 }
 
-// Trae incluye/no_incluye directamente del tour en Firestore (detalle_reserva.html hoy no
-// guarda esos campos dentro de la reserva, así que se leen en el momento de generar el PDF).
 async function obtenerIncluyeDelTour(destinoId, datosReserva) {
-  // FIX: ahora el campo editable de la reserva (incluyePersonalizado /
-  // no_incluyePersonalizado) es la fuente de verdad para CUALQUIER Tipo de
-  // Salida, no solo Personalizado — refleja los ajustes puntuales que se
-  // hayan hecho para esta reserva. Si por algún motivo llegara vacío
-  // (reservas viejas guardadas antes de este cambio), se cae al incluye/
-  // no_incluye del tour del catálogo como respaldo.
   if (datosReserva?.incluyePersonalizado || datosReserva?.no_incluyePersonalizado) {
     return {
       incluye: datosReserva.incluyePersonalizado || "",
@@ -3688,7 +3493,6 @@ async function generarPaginasComprobante(datos) {
     y += 6;
   }
 
-  // Párrafo normal, con salto de línea automático según el ancho útil de la página.
   function parrafo(texto, tamano) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(tamano || 9);
@@ -3701,7 +3505,6 @@ async function generarPaginasComprobante(datos) {
     });
   }
 
-  // Título + lista de viñetas a partir de un texto con una línea por ítem.
   function listaConViñetas(etiqueta, textoMultilinea) {
     if (!textoMultilinea) return;
     asegurarEspacio(8);
@@ -3725,7 +3528,6 @@ async function generarPaginasComprobante(datos) {
     y += 3;
   }
 
-  // ===== CONFIRMACIÓN DE RESERVA =====
   titulo("Confirmación de Reserva");
   linea("Código de reserva", datos.codigo);
   linea("Destino", (datos.nombreDestino || datos.destino || "").split(" (")[0]);
@@ -3736,7 +3538,6 @@ async function generarPaginasComprobante(datos) {
   linea("Tours adicionales incluidos", (datos.toursOpcionales || []).join(", ") || "------");
   y += 4;
 
-  // ===== DETALLE DEL CLIENTE =====
   titulo("Detalle del Cliente");
   linea("Nombre del Cliente", datos.nombreTitular);
   linea("Cédula/Pasaporte", datos.cedula);
@@ -3744,7 +3545,6 @@ async function generarPaginasComprobante(datos) {
   linea("Correo", datos.correo);
   y += 4;
 
-  // ===== INCLUYE EN EL PAQUETE =====
   if (incluye || no_incluye) {
     titulo("Incluye en el Paquete");
     listaConViñetas("Incluye:", incluye);
@@ -3752,7 +3552,6 @@ async function generarPaginasComprobante(datos) {
     y += 2;
   }
 
-  // ===== ITINERARIO DE VIAJE (tabla por día) =====
   const diasItinerario = parsearItinerarioPorDias(datos.itinerario);
   if (diasItinerario.length > 0) {
     titulo("Itinerario de Viaje");
@@ -3771,12 +3570,8 @@ async function generarPaginasComprobante(datos) {
     y += 4;
   }
 
-  // ===== RESUMEN DE TARIFAS =====
   titulo("Resumen de Tarifas");
   const nombrePaquete = (datos.nombreDestino || "Paquete").split(" (")[0];
-  // FIX: antes solo mostraba el precio de Adultos, aunque el paquete
-  // tuviera precio de Nino y/o Bebe cargado -- ahora arma el texto con
-  // todas las tarifas que apliquen (segun haya precio > 0).
   const partesTarifa = [];
   if (datos.precioAdulto) partesTarifa.push(`$${Number(datos.precioAdulto).toFixed(2)} Adultos`);
   if (datos.precioNino) partesTarifa.push(`$${Number(datos.precioNino).toFixed(2)} Niños`);
@@ -3814,7 +3609,6 @@ async function generarPaginasComprobante(datos) {
   parrafo("La tarifa no incluye IVA. Si requiere factura, por favor confirmar a su asesor.", 8);
   y += 4;
 
-  // ===== HISTORIAL DE PAGOS REALIZADOS =====
   titulo("Historial de Pagos Realizados");
   const pagos = datos.pagos || [];
   const totalReserva = Number(datos.total || 0);
@@ -3851,7 +3645,6 @@ async function generarPaginasComprobante(datos) {
   parrafo("El saldo restante debe de estar cancelado 15 días antes del viaje. En caso de que el cliente no cumpla con lo estipulado, la agencia hará un recordatorio y de no ponerse al día se realizará la anulación de los servicios contratados en su totalidad, cobrando hasta el 100% de lo abonado por concepto de penalidad, sin que pueda solicitarse de ninguna manera su devolución.", 8);
   y += 4;
 
-  // ===== CONTACTO DE LA AGENCIA =====
   titulo("Contacto de la Agencia");
   parrafo("Excursiones Delgado / Cristopher Delgado Naranjo", 9.5);
   parrafo(`Cédula Persona Física: ${AGENCIA_CEDULA_JURIDICA}`, 9.5);
@@ -3862,7 +3655,6 @@ async function generarPaginasComprobante(datos) {
   parrafo("Agencia de viajes 100% costarricense", 9.5);
   y += 4;
 
-  // ===== REQUISITOS, CONDICIONES Y POLÍTICAS DE VIAJE =====
   titulo("Requisitos, Condiciones y Políticas de Viaje");
   parrafo("Todos los pasajeros deben verificar si situación migratoria, la misma se debe de encontrar al día (Salidas para menores, pensiones alimenticias, entre otros). Excursiones Delgado no se hace responsable en caso de impedimentos de salidas afueras del país. En caso de que se dé un impedimento de salida por parte del cliente, automáticamente se dará razón por la pérdida económica del paquete turístico el cual no puede ser abonado para futuros viajes.");
   y += 2;
@@ -3885,7 +3677,6 @@ async function generarPaginasComprobante(datos) {
   parrafo("Excursiones Delgado no se hace responsable por impedimentos de salida, causas de fuerza mayor u otros factores externos a la operación de la agencia.");
   y += 4;
 
-  // ===== AVISO PREVIO A LOS BOLETOS ADJUNTOS =====
   if (Array.isArray(datos.tiquetesVuelo) && datos.tiquetesVuelo.length > 0) {
     titulo("Comprobante de Adquisición de Boletos Aéreos");
     parrafo("En la siguiente página puede observar los tiquetes adquiridos de su reserva, por favor confirmar los nombres, destino y fechas.");
@@ -3905,25 +3696,12 @@ async function descargarTiqueteComoBytes(tiquete) {
   return await blob.arrayBuffer();
 }
 
-// ==========================================
-// NUEVO: TAPADO AUTOMÁTICO DEL PRECIO INTERNO EN LOS BOLETOS ADJUNTOS
-// El comprobante que recibe el cliente no debe mostrar lo que la agencia pagó por el
-// boleto. Esto usa el mismo Vision OCR que ya se usa para leer comprobantes de vuelo,
-// pero pidiendo las coordenadas de cada bloque de texto (no solo el texto plano) para
-// ubicar dónde empieza la sección de pago/tarifa y tapar desde ahí hacia abajo.
-// ⚠️ Es "mejor esfuerzo": no todos los formatos de aerolínea traen estas palabras
-// exactas, así que Cristopher debe revisar visualmente el PDF final antes de enviarlo,
-// sobre todo con aerolíneas que no se hayan probado todavía.
-// ==========================================
-
 const MARCADORES_PRECIO_TIQUETE = [
   "PAYMENT DETAILS", "FARE DETAILS", "FARE CALCULATION", "TOTAL AMOUNT",
   "FORM OF PAYMENT", "ENDORSEMENTS", "TAXES:", "CC CA", "FARE:",
   "DETALLES DE PAGO", "TARIFA:", "MONTO TOTAL", "PRECIO TOTAL", "FORMA DE PAGO"
 ];
 
-// Igual que llamarVisionOCR, pero devuelve la anotación completa (con coordenadas de
-// cada bloque de texto) en vez de solo el texto plano.
 async function llamarVisionOCRConCoordenadas(base64) {
   const respuesta = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=${VISION_API_KEY}`, {
     method: "POST",
@@ -3940,9 +3718,6 @@ async function llamarVisionOCRConCoordenadas(base64) {
   return datos.responses?.[0]?.fullTextAnnotation || null;
 }
 
-// Recorre los bloques de texto detectados y devuelve la coordenada Y (en píxeles, desde
-// arriba de la imagen) donde empieza el bloque más alto que contenga alguna palabra clave
-// de precio/pago. Si no encuentra ninguna, devuelve null (no se tapa nada en esa página).
 function encontrarInicioZonaPrecio(fullTextAnnotation) {
   if (!fullTextAnnotation || !Array.isArray(fullTextAnnotation.pages)) return null;
   let mejorY = null;
@@ -3964,8 +3739,6 @@ function encontrarInicioZonaPrecio(fullTextAnnotation) {
   return mejorY;
 }
 
-// Renderiza una página de PDF a imagen (para el OCR) y devuelve también el tamaño real
-// del canvas usado, necesario para convertir coordenadas de píxel a coordenadas de página.
 async function renderizarPaginaPDFaImagenConTamano(pdf, numeroPagina) {
   const pagina = await pdf.getPage(numeroPagina);
   const viewport = pagina.getViewport({ scale: 2 });
@@ -3980,7 +3753,6 @@ async function renderizarPaginaPDFaImagenConTamano(pdf, numeroPagina) {
   };
 }
 
-// Lee el ancho y alto reales de una imagen (para boletos que se adjuntaron como foto).
 async function obtenerDimensionesImagen(bytes) {
   const blob = new Blob([bytes]);
   const url = URL.createObjectURL(blob);
@@ -3996,11 +3768,9 @@ async function obtenerDimensionesImagen(bytes) {
   }
 }
 
-// Tapa con un rectángulo blanco la parte de una página de pdf-lib que va desde
-// "fraccionDesdeArriba" (0 = tope de la página, 1 = fondo) hacia abajo.
 function taparDesdeFraccion(pagina, fraccionDesdeArriba) {
   const { width, height } = pagina.getSize();
-  const yCorte = height * (1 - fraccionDesdeArriba); // convierte a coordenada PDF (0 = abajo)
+  const yCorte = height * (1 - fraccionDesdeArriba);
   pagina.drawRectangle({
     x: 0,
     y: 0,
@@ -4010,12 +3780,9 @@ function taparDesdeFraccion(pagina, fraccionDesdeArriba) {
   });
 }
 
-// Intenta tapar la zona de precio de un boleto en PDF, página por página (hasta 3, igual
-// que el límite ya usado para el OCR de lectura). Devuelve true si logró tapar al menos
-// una zona, false si no encontró ninguna (para poder avisarle a Cristopher que revise a mano).
 async function taparPrecioEnPaginasPDF(bytesOriginales, paginasCopiadas) {
   let tapoAlgo = false;
-  const bytesParaOCR = bytesOriginales.slice(0); // copia aparte: pdf.js puede consumir el buffer
+  const bytesParaOCR = bytesOriginales.slice(0);
   const pdfParaOCR = await pdfjsLib.getDocument({ data: bytesParaOCR }).promise;
   const totalPaginas = Math.min(pdfParaOCR.numPages, paginasCopiadas.length, 3);
 
@@ -4036,7 +3803,6 @@ async function taparPrecioEnPaginasPDF(bytesOriginales, paginasCopiadas) {
   return tapoAlgo;
 }
 
-// Igual que la anterior, pero para boletos adjuntados como foto/imagen (una sola "página").
 async function taparPrecioEnImagen(bytesImagen, paginaDestino, xImagen, yImagen, anchoImagen, altoImagen) {
   const dimensiones = await obtenerDimensionesImagen(bytesImagen);
   const base64 = btoa(new Uint8Array(bytesImagen).reduce((data, byte) => data + String.fromCharCode(byte), ""));
@@ -4045,7 +3811,6 @@ async function taparPrecioEnImagen(bytesImagen, paginaDestino, xImagen, yImagen,
   if (yInicioPrecio === null) return false;
 
   const fraccionDesdeArriba = yInicioPrecio / dimensiones.alto;
-  // yCorte: altura desde la base de la imagen dibujada hasta donde empieza el precio.
   const yCorte = yImagen + altoImagen * (1 - fraccionDesdeArriba);
   paginaDestino.drawRectangle({
     x: xImagen,
@@ -4111,9 +3876,6 @@ async function fusionarComprobanteConBoletos(pdfJsPDF, tiquetesVuelo) {
         }
       }
     } catch (e) {
-      // NUEVO: la causa más común de que esto falle en silencio es que el bucket de
-      // Firebase Storage no tenga configurado CORS para el dominio del sitio — el
-      // navegador bloquea el fetch() aunque el archivo sí exista y sea público.
       console.error(`No se pudo anexar el comprobante de vuelo "${tiquete.nombre}":`, e);
       errores.push(`${tiquete.nombre || "un comprobante"} (${e.message || e})`);
     }
@@ -4124,7 +3886,8 @@ async function fusionarComprobanteConBoletos(pdfJsPDF, tiquetesVuelo) {
 
 async function construirComprobanteCompleto(datos) {
   const pdfJsPDF = await generarPaginasComprobante(datos);
-  return await fusionarComprobanteConBoletos(pdfJsPDF, datos.tiquetesVuelo || []);
+  const listaArchivosAdjuntar = [...(datos.tiquetesVuelo || []), ...(datos.comprobantesHotel || [])];
+  return await fusionarComprobanteConBoletos(pdfJsPDF, listaArchivosAdjuntar);
 }
 
 
@@ -4161,9 +3924,6 @@ async function descargarComprobante() {
   }
 }
 
-// NUEVO: en vez de enviar directo, primero abre un modal de revisión
-// (Para/CC/CCO/Asunto/Mensaje editables) — mismo patrón que se armó en
-// facturacion.html. El envío real solo pasa al confirmar ahí.
 async function enviarComprobantePorCorreo() {
   const mensajeEl = document.getElementById("comprobanteMensaje");
   mensajeEl.innerHTML = "";
@@ -4171,18 +3931,11 @@ async function enviarComprobantePorCorreo() {
   const datos = await obtenerDatosReservaActual();
   if (!datos) return;
 
-  // NUEVO: como el campo "Para" ahora es editable en el modal, ya no hace
-  // falta bloquear el envío si la reserva no tiene correo guardado — se
-  // puede escribir ahí mismo. Solo queda vacío por defecto en ese caso.
   window.datosReservaParaComprobante = datos;
 
   document.getElementById("comprobante_modal_para").value = datos.correo || "";
   document.getElementById("comprobante_modal_cc").value = "";
   document.getElementById("comprobante_modal_cco").value = "";
-  // NUEVO: el Asunto y Mensaje se prellenan con el mismo texto personalizado
-  // de siempre (con el código de reserva y el nombre del titular), no un
-  // texto genérico — así, si no se toca nada, el correo sale exactamente
-  // igual a como salía antes de agregar este modal.
   document.getElementById("comprobante_modal_asunto").value = `¡Bienvenido a bordo! Tu reserva ${datos.codigo} con Excursiones Delgado ✈️`;
   document.getElementById("comprobante_modal_mensaje").value =
     `¡Bienvenido a bordo! Tu reserva ${datos.codigo} con Excursiones Delgado ya está confirmada, y nos emociona muchísimo acompañarte en esta nueva aventura.\n\n` +
@@ -4233,9 +3986,6 @@ async function confirmarEnvioComprobante() {
 
     const base64Final = btoa(new Uint8Array(bytesFinal).reduce((data, byte) => data + String.fromCharCode(byte), ""));
 
-    // NUEVO: cc/cco/asunto/mensaje — ojo, la Apps Script del otro lado
-    // tiene que leer estos campos y usarlos en MailApp.sendEmail para que
-    // realmente tengan efecto (puede que hoy tenga un asunto/mensaje fijo).
     const respuesta = await fetch(WORKER_COMPROBANTE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -4275,8 +4025,6 @@ async function confirmarEnvioComprobante() {
 
 </main>
 
-<!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez de
-     confiar solo en lo que dijera localStorage. -->
 <script src="topbar.js"></script>
 <script src="sidebar.js"></script>
 <script src="auth-guard.js"></script>
