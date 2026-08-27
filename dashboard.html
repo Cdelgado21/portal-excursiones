@@ -524,6 +524,14 @@
     // ==========================================
 
     const DIAS_AVISO_PENDIENTE = 15;
+    // NUEVO: Hospedaje mantiene el aviso a 15 días, pero Traslados y Tours
+    // ahora avisan más cerca del viaje (7 días) — son más fáciles de
+    // resolver rápido y avisar con 15 días de anticipación generaba ruido
+    // para algo que igual se confirma la última semana.
+    const DIAS_AVISO_TRASLADOS_TOURS = 7;
+    function diasPermitidosParaCategoria(clave) {
+      return (clave === "traslados" || clave === "tours") ? DIAS_AVISO_TRASLADOS_TOURS : DIAS_AVISO_PENDIENTE;
+    }
 
     async function cargarAlertasInternas() {
       const contenedor = document.getElementById("listaAlertasInternas");
@@ -607,7 +615,8 @@
           const salidasYaRevisadas = new Set();
           let costosSalidasPorId = null;
 
-          for (const { codigo, data } of enRango) {
+          for (const { codigo, data, fecha } of enRango) {
+            const diasParaViaje = Math.round((fecha - hoy) / 86400000);
             const esGrupalConSalida = data.tipoSalidaReserva === "Grupal" && !!data.salidaGrupalId;
 
             if (!esGrupalConSalida) {
@@ -625,6 +634,7 @@
               }
               let faltan = 0;
               ["hospedaje", "traslados", "tours", "comision"].forEach(clave => {
+                if (diasParaViaje > diasPermitidosParaCategoria(clave)) return;
                 let items = costos.categorias[clave];
                 if (!items) items = [];
                 else if (!Array.isArray(items)) items = [items];
@@ -711,6 +721,7 @@
             } else {
               let faltanGrupo = 0;
               ["hospedaje", "traslados", "tours", "guia"].forEach(clave => {
+                if (diasParaViaje > diasPermitidosParaCategoria(clave)) return;
                 let items = costosGrupo.categorias?.[clave];
                 if (!items) items = [];
                 else if (!Array.isArray(items)) items = [items];
