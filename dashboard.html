@@ -884,11 +884,23 @@
       }
     }
 
-    cargarAlertasInternas();
-    cargarProximosViajes();
-    cargarVendedoresDestacados();
-    cargarCumpleanosSemana();
-    cargarTareasAsignadas();
+    // NUEVO: esperar a que Firebase Auth confirme la sesión ANTES de
+    // consultar Firestore. Antes estas 5 funciones se llamaban directo al
+    // cargar la página — pero firebase.auth() restaura la sesión guardada
+    // de forma asíncrona, así que había una carrera: si las consultas
+    // salían antes de que Auth terminara de confirmar quién sos, las
+    // reglas de seguridad las rechazaban con "Missing or insufficient
+    // permissions" (se ve en la carga inicial, sobre todo con internet más
+    // lento). onAuthStateChanged() se dispara justo cuando Auth ya tiene
+    // la respuesta, sea cual sea.
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (!user) return; // auth-guard.js se encarga de redirigir a login
+      cargarAlertasInternas();
+      cargarProximosViajes();
+      cargarVendedoresDestacados();
+      cargarCumpleanosSemana();
+      cargarTareasAsignadas();
+    });
   </script>
   <!-- Barra superior compartida — siempre al final, después de que
        Firebase ya quedó inicializado arriba. -->
