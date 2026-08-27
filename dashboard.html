@@ -58,12 +58,10 @@
       font-size: 0.95rem;
     }
 
-    /* NUEVO: alertas agrupadas por reserva/salida — antes cada aviso era
-       una fila suelta, y una reserva con 3-4 problemas generaba 3-4 filas
-       casi idénticas (mismo código, mismo titular) seguidas, lo que hacía
-       ruido visual. Ahora cada reserva/salida es UNA tarjeta colapsable
-       (<details>), cerrada por defecto, mostrando solo el título con la
-       cantidad de avisos — se expande con un clic para ver el detalle. */
+    /* Alertas agrupadas por reserva/salida — cada reserva/salida es UNA
+       tarjeta colapsable (<details>), cerrada por defecto, mostrando solo
+       el título con la cantidad de avisos — se expande con un clic para
+       ver el detalle. */
     .grupo-alerta {
       background: #B3CBCD;
       margin: 6px 0;
@@ -142,106 +140,6 @@
       margin-bottom: 6px;
     }
 
-    /* Botón toggle */
-    .toggle-btn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      font-size: 24px;
-      background: white;
-      color: #02535a;
-      border: none;
-      border-radius: 50%;
-      padding: 8px 12px;
-      z-index: 1100;
-      cursor: pointer;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 250px;
-      height: 100%;
-      background-color: #02535a;
-      color: white;
-      padding: 20px;
-      transform: translateX(-250px);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-
-    .sidebar.active {
-      transform: translateX(0);
-    }
-
-    .user-info {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .user-info .avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-
-    .user-info h3 {
-      font-size: 1rem;
-      margin: 0;
-    }
-
-    .user-info small {
-      font-size: 0.8rem;
-      color: #f4f7f8;
-    }
-
-    .nav-links {
-      list-style: none;
-      padding: 0;
-    }
-
-    .nav-links li a {
-      background-color: #f4f7f8;
-      color: #02535a;
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-
-    .nav-links li a:hover {
-      background-color: #e0e0e0;
-    }
-
-    .nav-links .icon {
-      margin-right: 10px;
-      font-size: 1.2rem;
-    }
-
-    /* Contenido principal */
-    main {
-      margin-left: 0;
-      padding: 20px;
-      transition: margin-left 0.3s ease;
-    }
-
-    main.sidebar-visible {
-      margin-left: 250px;
-    }
-
-    @media screen and (max-width: 768px) {
-      main.sidebar-visible {
-        margin-left: 0;
-      }
-    }
-
     /* Alerta de Reunión de Guía de Viaje — mismo criterio visual que la
        alerta de "Cobro Urgente" ya usada en finanzas.html. */
     .alerta-reunion {
@@ -313,9 +211,9 @@
     .fila-aviso-pendiente:last-child { margin-bottom: 0; }
     .fila-aviso-pendiente:hover { background: #f6cfcb; text-decoration: underline; }
 
-    /* NUEVO: "Tareas asignadas" — cada fila con su botón de "✅ Hecha",
-       mismo lenguaje visual que las alertas de arriba pero en un tono
-       neutro (no es una alerta de urgencia, es una lista de pendientes). */
+    /* "Tareas asignadas" — cada fila con su botón de "✅ Hecha", mismo
+       lenguaje visual que las alertas de arriba pero en un tono neutro (no
+       es una alerta de urgencia, es una lista de pendientes). */
     .fila-tarea-asignada {
       display: flex;
       justify-content: space-between;
@@ -352,28 +250,8 @@
   </style>
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
 
-  <div class="sidebar" id="sidebar">
-    <div class="user-info">
-      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
-      <h3 id="nombreUsuario">Cargando...</h3>
-      <small id="rolUsuario">-</small>
-    </div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
-      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
-      <li><a href="tours.html"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
-      <li><a href="#" onclick="cerrarSesion()"><span class="icon">🚪</span>Cerrar sesión</a></li>
-    </ul>
-  </div>
-
-  <main id="contenido">
+<main id="contenidoPrincipal">
     <h2>Bienvenido al Panel de Control</h2>
 
     <div class="dashboard-section dashboard-cards">
@@ -419,17 +297,16 @@
       </ul>
     </div>
 
-    <!-- NUEVO: ya no es una lista fija — se llenan con tareas reales que
-         te haya asignado un compañero desde el botón "➕ Nuevo comunicado /
-         tarea" de la campanita (topbar.js), en cualquier página del
-         sistema. -->
+    <!-- Ya no es una lista fija — se llenan con tareas reales que te haya
+         asignado un compañero desde el botón "➕ Nuevo comunicado / tarea"
+         de la campanita (topbar.js), en cualquier página del sistema. -->
     <div class="dashboard-section tareas">
       <h2>📋 Tareas asignadas</h2>
       <div id="listaTareasAsignadas" style="display:flex; flex-direction:column; gap:8px;">
         <p style="color:#999;">Cargando...</p>
       </div>
     </div>
-  </main>
+</main>
 
   <script>
     // Misma configuración de Firebase que usa el resto del sistema.
@@ -444,43 +321,12 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
+    // NOTA: "usuario" en localStorage se sigue usando solo para identificar
+    // al dueño de las Tareas Asignadas (usuario.id) — la verificación REAL
+    // de sesión ya la hace auth-guard.js (Firebase Authentication), así que
+    // ya no hace falta el redirect manual ni pintar nombre/rol acá: eso
+    // ahora lo muestra el menú lateral compartido (sidebar.js).
     const usuario = JSON.parse(localStorage.getItem("usuario"));
-    const sidebar = document.getElementById("sidebar");
-    const main = document.getElementById("contenido");
-    const toggleBtn = document.querySelector('.toggle-btn');
-
-    if (usuario) {
-      document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-      document.getElementById("rolUsuario").innerText = usuario.rol || "";
-    } else {
-      alert("No tienes una sesión activa. Redirigiendo...");
-      window.location.href = "login.html";
-    }
-
-    function cerrarSesion() {
-      localStorage.removeItem("usuario");
-      window.location.href = "login.html";
-    }
-
-    function toggleSidebar() {
-      sidebar.classList.toggle('active');
-      main.classList.toggle('sidebar-visible');
-    }
-
-    function checkScreenSize() {
-      if (window.innerWidth <= 768) {
-        sidebar.classList.remove('active');
-        main.classList.remove('sidebar-visible');
-        toggleBtn.style.display = "block";
-      } else {
-        sidebar.classList.add('active');
-        main.classList.add('sidebar-visible');
-        toggleBtn.style.display = "block"; // Mostrar también en escritorio
-      }
-    }
-
-    window.addEventListener('resize', checkScreenSize);
-    window.addEventListener('load', checkScreenSize);
 
     // ==========================================
     // Alerta de Reunión de Guía de Viaje — igual criterio que ya se usa en
@@ -513,6 +359,12 @@
       return `${dia}/${mes}/${fecha.getFullYear()}`;
     }
 
+    // NUEVO: cantidad total de personas de una reserva (adultos+niños+bebés) —
+    // usado para mostrar "Destino - X personas" en cada tarjeta de alerta.
+    function personasDeReserva(data) {
+      return (Number(data.cantidadAdultos) || 0) + (Number(data.cantidadNinos) || 0) + (Number(data.cantidadBebes) || 0);
+    }
+
     // ==========================================
     // Alertas internas — junta 3 tipos de aviso operativo para reservas que
     // viajan en los próximos 15 días:
@@ -524,10 +376,10 @@
     // ==========================================
 
     const DIAS_AVISO_PENDIENTE = 15;
-    // NUEVO: Hospedaje mantiene el aviso a 15 días, pero Traslados y Tours
-    // ahora avisan más cerca del viaje (7 días) — son más fáciles de
-    // resolver rápido y avisar con 15 días de anticipación generaba ruido
-    // para algo que igual se confirma la última semana.
+    // Hospedaje mantiene el aviso a 15 días, pero Traslados y Tours avisan
+    // más cerca del viaje (7 días) — son más fáciles de resolver rápido y
+    // avisar con 15 días de anticipación generaba ruido para algo que igual
+    // se confirma la última semana.
     const DIAS_AVISO_TRASLADOS_TOURS = 7;
     function diasPermitidosParaCategoria(clave) {
       return (clave === "traslados" || clave === "tours") ? DIAS_AVISO_TRASLADOS_TOURS : DIAS_AVISO_PENDIENTE;
@@ -552,15 +404,29 @@
           enRango.push({ codigo: doc.id, data, fecha });
         });
 
+        // NUEVO: total de personas de TODA una Salida Grupal (suma de todas
+        // las reservas ligadas a esa salida, no solo las que están dentro
+        // de la ventana de 15 días) — para mostrar "Destino - X personas"
+        // en la tarjeta de la salida completa.
+        function personasDeSalida(salidaId) {
+          return todasReservas
+            .filter(r => r.data.salidaGrupalId === salidaId)
+            .reduce((sum, r) => sum + personasDeReserva(r.data), 0);
+        }
+
         const avisos = [];
 
-        // NUEVO: cada aviso ahora lleva "grupo" (clave para agrupar) y
-        // "grupoLabel" (título de la tarjeta) además de "mensaje" (el
-        // detalle puntual, sin repetir código/titular que ya va en el
-        // título del grupo). "texto" se mantiene con el mensaje completo
-        // por si algo más lo necesita, pero ya no se usa para el render.
+        // Cada aviso lleva "grupo" (clave para agrupar) y "grupoLabel"
+        // (título de la tarjeta, con destino y cantidad de personas) además
+        // de "mensaje" (el detalle puntual, sin repetir código/titular que
+        // ya va en el título del grupo).
         function grupoDeReserva(codigo, data) {
-          return { grupo: codigo, grupoLabel: `${codigo} — ${data.nombreTitular || 'Titular'}` };
+          const destino = data.nombreDestino || data.destino || 'Destino no especificado';
+          const personas = personasDeReserva(data);
+          return {
+            grupo: codigo,
+            grupoLabel: `${codigo} — ${data.nombreTitular || 'Titular'} — ${destino} - ${personas} persona${personas === 1 ? '' : 's'}`
+          };
         }
 
         // ---------- 1) Reunión de guía sin marcar ----------
@@ -569,7 +435,6 @@
             avisos.push({
               ...grupoDeReserva(codigo, data),
               mensaje: `falta la reunión de guía de viaje`,
-              texto: `${codigo} — ${data.nombreTitular || 'Titular'}: falta la reunión de guía de viaje`,
               url: `detalle_reserva.html?codigo=${codigo}`
             });
           }
@@ -581,7 +446,6 @@
             avisos.push({
               ...grupoDeReserva(codigo, data),
               mensaje: `falta la foto del pasaporte (titular)`,
-              texto: `${codigo} — ${data.nombreTitular || 'Titular'}: falta la foto del pasaporte`,
               url: `detalle_reserva.html?codigo=${codigo}`
             });
           }
@@ -590,7 +454,6 @@
               avisos.push({
                 ...grupoDeReserva(codigo, data),
                 mensaje: `falta la foto del pasaporte (${p.nombre || 'Acompañante ' + (i + 1)})`,
-                texto: `${codigo} — ${p.nombre || 'Acompañante ' + (i + 1)}: falta la foto del pasaporte`,
                 url: `detalle_reserva.html?codigo=${codigo}`
               });
             }
@@ -598,12 +461,12 @@
         });
 
         // ---------- 3) Proveedores sin confirmar ----------
-        // NUEVO: para reservas Grupales con Salida Grupal asignada, los
+        // Para reservas Grupales con Salida Grupal asignada, los
         // proveedores compartidos (Boletos/Hospedaje/Traslados/Tours/Guía)
         // viven en costos_salidas_grupales — se revisan UNA SOLA VEZ por
-        // salida (no una vez por cada reserva del grupo). La Comisión
-        // sigue siendo por reserva, así que esa parte se revisa igual que
-        // antes, pero solo esa categoría.
+        // salida (no una vez por cada reserva del grupo). La Comisión sigue
+        // siendo por reserva, así que esa parte se revisa igual que antes,
+        // pero solo esa categoría.
         if (enRango.length > 0) {
           const costosSnap = await db.collection("costos_reservas").get();
           const costosPorCodigo = {};
@@ -627,7 +490,6 @@
                 avisos.push({
                   ...grupoDeReserva(codigo, data),
                   mensaje: `todavía no tiene proveedores registrados`,
-                  texto: `${codigo} — ${data.nombreTitular || 'Titular'}: todavía no tiene proveedores registrados`,
                   url: `costos_agregar.html?reserva=${codigo}`
                 });
                 continue;
@@ -648,7 +510,6 @@
                 avisos.push({
                   ...grupoDeReserva(codigo, data),
                   mensaje: `faltan confirmar ${faltan} proveedor${faltan === 1 ? '' : 'es'}`,
-                  texto: `${codigo} — ${data.nombreTitular || 'Titular'}: faltan confirmar ${faltan} proveedor${faltan === 1 ? '' : 'es'}`,
                   url: `costos_agregar.html?reserva=${codigo}`
                 });
               }
@@ -673,7 +534,6 @@
               avisos.push({
                 ...grupoDeReserva(codigo, data),
                 mensaje: `falta confirmar la comisión`,
-                texto: `${codigo} — ${data.nombreTitular || 'Titular'}: falta confirmar la comisión`,
                 url: `costos_agregar.html?reserva=${codigo}`
               });
             }
@@ -689,13 +549,16 @@
             }
             const costosGrupo = costosSalidasPorId[data.salidaGrupalId];
             const nombreDestinoGrupo = data.nombreDestino || data.destino || 'Salida grupal';
-            const grupoSalida = { grupo: `salida_${data.salidaGrupalId}`, grupoLabel: `🚌 Salida ${nombreDestinoGrupo}` };
+            const totalPersonasSalida = personasDeSalida(data.salidaGrupalId);
+            const grupoSalida = {
+              grupo: `salida_${data.salidaGrupalId}`,
+              grupoLabel: `🚌 Salida ${nombreDestinoGrupo} - ${totalPersonasSalida} persona${totalPersonasSalida === 1 ? '' : 's'}`
+            };
 
             if (!costosGrupo) {
               avisos.push({
                 ...grupoSalida,
                 mensaje: `todavía no tiene costos de grupo registrados`,
-                texto: `Salida ${nombreDestinoGrupo} — todavía no tiene costos de grupo registrados`,
                 url: `costos_salida_grupal.html?salida=${data.salidaGrupalId}`
               });
               continue;
@@ -707,14 +570,12 @@
                 avisos.push({
                   ...grupoSalida,
                   mensaje: `todavía no tiene el costo del paquete registrado`,
-                  texto: `Salida ${nombreDestinoGrupo} — todavía no tiene el costo del paquete registrado`,
                   url: `costos_salida_grupal.html?salida=${data.salidaGrupalId}`
                 });
               } else if (!p.confirmado) {
                 avisos.push({
                   ...grupoSalida,
                   mensaje: `falta confirmar el costo del paquete con el proveedor`,
-                  texto: `Salida ${nombreDestinoGrupo} — falta confirmar el costo del paquete con el proveedor`,
                   url: `costos_salida_grupal.html?salida=${data.salidaGrupalId}`
                 });
               }
@@ -735,7 +596,6 @@
                 avisos.push({
                   ...grupoSalida,
                   mensaje: `faltan confirmar ${faltanGrupo} proveedor${faltanGrupo === 1 ? '' : 'es'} del grupo`,
-                  texto: `Salida ${nombreDestinoGrupo} — faltan confirmar ${faltanGrupo} proveedor${faltanGrupo === 1 ? '' : 'es'} del grupo`,
                   url: `costos_salida_grupal.html?salida=${data.salidaGrupalId}`
                 });
               }
@@ -768,7 +628,6 @@
               avisos.push({
                 ...grupoDeReserva(codigo, data),
                 mensaje: `✈️ el vuelo de IDA sale mañana, hacer el check-in`,
-                texto: `✈️ ${codigo} — ${data.nombreTitular || 'Titular'}: el vuelo de IDA sale mañana, hacer el check-in`,
                 url: `detalle_reserva.html?codigo=${codigo}`
               });
               if (!data.avisoCheckinIdaEnviado && window.enviarCorreoAdmins && window.construirHtmlCorreoAviso) {
@@ -793,7 +652,6 @@
               avisos.push({
                 ...grupoDeReserva(codigo, data),
                 mensaje: `✈️ el vuelo de REGRESO sale mañana, hacer el check-in`,
-                texto: `✈️ ${codigo} — ${data.nombreTitular || 'Titular'}: el vuelo de REGRESO sale mañana, hacer el check-in`,
                 url: `detalle_reserva.html?codigo=${codigo}`
               });
               if (!data.avisoCheckinRegresoEnviado && window.enviarCorreoAdmins && window.construirHtmlCorreoAviso) {
@@ -816,8 +674,8 @@
         if (avisos.length === 0) {
           contenedor.innerHTML = `<li style="background:#e0f5e0; color:#1b6e1b; font-weight:bold;">✅ Sin alertas pendientes en los próximos ${DIAS_AVISO_PENDIENTE} días.</li>`;
         } else {
-          // NUEVO: agrupar los avisos por reserva (o por salida grupal, en
-          // el caso de los proveedores compartidos) para que cada una
+          // Agrupar los avisos por reserva (o por salida grupal, en el
+          // caso de los proveedores compartidos) para que cada una
           // aparezca como UNA sola tarjeta colapsable, en vez de una fila
           // repetida por cada problema encontrado. Se mantiene el orden de
           // aparición (Map conserva el orden de inserción).
@@ -960,12 +818,12 @@
     }
 
     // ==========================================
-    // NUEVO: Tareas asignadas — notificaciones tipo "tarea" dirigidas al
-    // usuario logueado, que sigan en estado "Pendiente". Se crean desde
-    // el botón "➕ Nuevo comunicado / tarea" de la campanita (topbar.js),
-    // disponible en cualquier página del sistema. La consulta usa 3
-    // igualdades sin ordenar por fecha en el servidor (se ordena acá, en
-    // JS) para no necesitar un índice compuesto nuevo en Firestore.
+    // Tareas asignadas — notificaciones tipo "tarea" dirigidas al usuario
+    // logueado, que sigan en estado "Pendiente". Se crean desde el botón
+    // "➕ Nuevo comunicado / tarea" de la campanita (topbar.js), disponible
+    // en cualquier página del sistema. La consulta usa 3 igualdades sin
+    // ordenar por fecha en el servidor (se ordena acá, en JS) para no
+    // necesitar un índice compuesto nuevo en Firestore.
     // ==========================================
 
     async function cargarTareasAsignadas() {
@@ -1035,6 +893,9 @@
   <!-- Barra superior compartida — siempre al final, después de que
        Firebase ya quedó inicializado arriba. -->
   <script src="topbar.js"></script>
+  <!-- Menú lateral compartido (LECCIÓN: cada página con código pasado a
+       revisar/migrar en el mismo turno si todavía no lo tenía). -->
+  <script src="sidebar.js"></script>
   <!-- Verificación real de sesión (Firebase Authentication), en vez de
        confiar solo en lo que diga localStorage. Va al final para que
        "gane" sobre cualquier función de cerrar sesión que ya exista arriba. -->
