@@ -10,102 +10,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-/* NUEVO: menú lateral de navegación (mismo estilo que el resto del
-   sistema) — esta página nunca lo había tenido. */
-.toggle-btn {
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  font-size: 24px;
-  background: white;
-  color: #02535a;
-  border: none;
-  border-radius: 50%;
-  padding: 8px 12px;
-  z-index: 1100;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-}
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 250px;
-  height: 100%;
-  background-color: #02535a;
-  color: white;
-  padding: 20px;
-  transform: translateX(-250px);
-  transition: transform 0.3s ease;
-  z-index: 1000;
-  overflow-y: auto;
-}
-.sidebar.active {
-  transform: translateX(0);
-}
-.sidebar .user-info {
-  text-align: center;
-  margin-bottom: 20px;
-  margin-top: 40px;
-}
-.sidebar .user-info .avatar {
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  margin-bottom: 10px;
-}
-.sidebar .user-info h3 {
-  font-size: 1rem;
-  margin: 0;
-  color: white;
-}
-.sidebar .user-info small {
-  font-size: 0.8rem;
-  color: #f4f7f8;
-}
-.nav-links {
-  list-style: none;
-  padding: 0;
-}
-.nav-links li a {
-  background-color: #f4f7f8;
-  color: #02535a;
-  padding: 8px 12px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  margin-bottom: 8px;
-  font-weight: bold;
-}
-.nav-links li a:hover {
-  background-color: #e0e0e0;
-}
-.nav-links li a.activo {
-  background-color: #ffb703;
-  color: #02535a;
-}
-.nav-links .icon {
-  margin-right: 10px;
-  font-size: 1.2rem;
-}
-main#contenidoPrincipal {
-  margin-left: 0;
-  padding: 20px 20px 20px 70px;
-  transition: margin-left 0.3s ease;
-  box-sizing: border-box;
-}
-main#contenidoPrincipal.sidebar-visible {
-  margin-left: 250px;
-  padding-left: 20px;
-}
-@media screen and (max-width: 768px) {
-  main#contenidoPrincipal.sidebar-visible {
-    margin-left: 0;
-    padding-left: 70px;
-  }
-}
-
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
   background: #f0f7f7;
@@ -169,7 +73,7 @@ h2 {
   background-color: #036a6d;
 }
 
-/* NUEVO: barra de búsqueda y filtro por experiencia */
+/* Barra de búsqueda y filtro por experiencia */
 .barra-filtros {
   display: flex;
   gap: 10px;
@@ -228,7 +132,7 @@ tbody tr:last-child td { border-bottom: none; }
   white-space: nowrap;
 }
 
-/* NUEVO: pastilla de "Experiencia" — un color distinto por variante, para
+/* Pastilla de "Experiencia" — un color distinto por variante, para
    distinguirlas de un vistazo (colores ya usados en el resto del sistema,
    nada inventado). */
 .pastilla-experiencia {
@@ -316,27 +220,6 @@ tbody tr:last-child td { border-bottom: none; }
 </style>
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-
-  <div class="sidebar" id="sidebar">
-    <div class="user-info">
-      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
-      <h3 id="nombreUsuario">Cargando...</h3>
-      <small id="rolUsuario">-</small>
-    </div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="cotizaciones.html"><span class="icon">📄</span>Cotizaciones</a></li>
-      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
-      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
-      <li><a href="tours.html" class="activo"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
-      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
-    </ul>
-  </div>
 
   <main id="contenidoPrincipal">
 
@@ -377,10 +260,6 @@ tbody tr:last-child td { border-bottom: none; }
   </main>
 
   <script>
-    // FIX: firebaseConfig estaba incompleto (le faltaban storageBucket,
-    // messagingSenderId y appId) y tenía la misma apiKey mal escrita que ya
-    // encontramos en otros archivos — se corrige aquí para que quede igual a
-    // la configuración real usada en el resto del sistema.
     const firebaseConfig = {
       apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
       authDomain: "tours-460717.firebaseapp.com",
@@ -404,7 +283,7 @@ tbody tr:last-child td { border-bottom: none; }
   container.appendChild(div);
 }
 
-    // NUEVO: orden lógico de las variantes dentro de cada destino — primero
+    // Orden lógico de las variantes dentro de cada destino — primero
     // Grupal (si existe), luego Flash, Esencial, Confort.
     const ORDEN_VARIANTE = { "Grupal": 0, "Flash": 1, "Esencial": 2, "Confort": 3 };
 
@@ -423,10 +302,13 @@ tbody tr:last-child td { border-bottom: none; }
       db.collection("tours").get().then(snapshot => {
         todosLosTours = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         renderizarTabla();
+      }).catch(e => {
+        console.error("Error al cargar los tours:", e);
+        document.getElementById("tabla-body").innerHTML = `<tr><td colspan="4" style="text-align:center; color:#a35b00;">⚠️ No se pudieron cargar los tours.</td></tr>`;
       });
     }
 
-    // NUEVO: agrupa ignorando tildes y mayúsculas/minúsculas — así "Medellin",
+    // Agrupa ignorando tildes y mayúsculas/minúsculas — así "Medellin",
     // "Medellín" y "MEDELLÍN" se reconocen como el mismo destino para efectos
     // de agrupar y ordenar, aunque el texto guardado en cada tour sea
     // distinto. El texto real de cada tour NO se toca ni se corrige solo.
@@ -469,10 +351,10 @@ tbody tr:last-child td { border-bottom: none; }
         const grupoActual = normalizarDestino(t.nombre);
         const esNuevoDestino = grupoActual !== grupoAnterior;
 
-        // NUEVO: si sigue en el mismo grupo pero el texto exacto cambió
-        // (tilde, mayúscula, espacio de más...), se marca con un aviso —
-        // para que Cristopher lo vea y lo corrija cuando quiera, sin que el
-        // sistema lo cambie por su cuenta.
+        // Si sigue en el mismo grupo pero el texto exacto cambió (tilde,
+        // mayúscula, espacio de más...), se marca con un aviso — para que
+        // Cristopher lo vea y lo corrija cuando quiera, sin que el sistema
+        // lo cambie por su cuenta.
         const escrituraDistinta = !esNuevoDestino && t.nombre !== textoAnteriorEnGrupo;
 
         grupoAnterior = grupoActual;
@@ -536,53 +418,22 @@ function abrirOpcionales(tourId) {
   window.open(`opcionales.html?tourId=${tourId}`, '_blank');
 }
 
-    // NUEVO: menú lateral de navegación (igual que el resto del sistema)
-    function inicializarMenuLateral() {
-      const usuario = JSON.parse(localStorage.getItem("usuario"));
-      const sidebar = document.getElementById("sidebar");
-      const contenido = document.getElementById("contenidoPrincipal");
-      const toggleBtn = document.querySelector('.toggle-btn');
-
-      if (usuario) {
-        document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-        document.getElementById("rolUsuario").innerText = usuario.rol || "";
-      } else {
-        document.getElementById("nombreUsuario").innerText = "Invitado";
-      }
-
-      window.toggleSidebar = function () {
-        sidebar.classList.toggle('active');
-        contenido.classList.toggle('sidebar-visible');
-      };
-
-      window.cerrarSesionYRedirigir = function () {
-        localStorage.removeItem("usuario");
-        window.location.href = "login.html";
-      };
-
-      function checkScreenSize() {
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('active');
-          contenido.classList.remove('sidebar-visible');
-        } else {
-          sidebar.classList.add('active');
-          contenido.classList.add('sidebar-visible');
-        }
-        toggleBtn.style.display = "block";
-      }
-
-      window.addEventListener('resize', checkScreenSize);
-      checkScreenSize();
-    }
-
-    window.onload = function () {
-      inicializarMenuLateral();
+    // NUEVO: espera a que Firebase Auth confirme la sesión antes de
+    // consultar Firestore — mismo fix aplicado en dashboard.html, evita el
+    // error intermitente "Missing or insufficient permissions" cuando la
+    // consulta salía antes de que Auth terminara de restaurar la sesión.
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (!user) return; // auth-guard.js se encarga de redirigir a login
       cargarTours();
-    };
+    });
   </script>
+  <!-- Barra superior compartida — va antes del menú lateral compartido. -->
   <script src="topbar.js"></script>
-  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
-       de confiar solo en lo que dijera localStorage. -->
+  <!-- Menú lateral compartido (antes cada página tenía su propio sidebar
+       copiado a mano, sin sincronizar). -->
+  <script src="sidebar.js"></script>
+  <!-- Verificación real de sesión (Firebase Authentication), en vez de
+       confiar solo en lo que dijera localStorage. -->
   <script src="auth-guard.js"></script>
 </body>
 </html>
