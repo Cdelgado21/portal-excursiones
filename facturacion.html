@@ -675,24 +675,10 @@ if (reservaID) {
     agregarFilaArticulo(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
   }
 
-  // NUEVO: agrega los tours opcionales comprados como líneas de factura.
-  // La reserva solo guarda el NOMBRE del tour opcional elegido, así que hay
-  // que buscar su precio en el catálogo (colección "tours", mismo destino).
-  if (Array.isArray(data.toursOpcionales) && data.toursOpcionales.length > 0 && data.destino) {
-    try {
-      const tourDoc = await db.collection("tours").doc(data.destino).get();
-      if (tourDoc.exists) {
-        const catalogoOpcionales = tourDoc.data().tours_opcionales || [];
-        data.toursOpcionales.forEach(nombreElegido => {
-          const encontrado = catalogoOpcionales.find(o => o.nombre === nombreElegido);
-          const precio = encontrado ? Number(encontrado.precio) || 0 : 0;
-          agregarFilaArticulo(`Tour opcional: ${nombreElegido}`, precio, 1);
-        });
-      }
-    } catch (e) {
-      console.error("No se pudieron cargar los precios de tours opcionales:", e);
-    }
-  }
+  // NOTA: los tours opcionales comprados NO se desglosan como líneas
+  // aparte en la factura a propósito — la idea es que el cliente vea un
+  // solo paquete (ya vienen incluidos en el precio total de la reserva),
+  // no un detalle línea por línea que sugiera cargos separados.
 
   recalcularTotalesFactura();
 
