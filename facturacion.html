@@ -630,14 +630,6 @@ if (reservaID) {
     checkboxFacturaElectronica.checked = !!data.requiereFacturaElectronica;
   }
 
-  const adultos = Number(data.cantidadAdultos) || 0;
-  const ninos   = Number(data.cantidadNinos)   || 0;
-  const bebes   = Number(data.cantidadBebes)   || 0;
-
-  const precioAdulto = Number(data.precioAdulto) || 0;
-  const precioNino   = Number(data.precioNino)   || 0;
-  const precioBebe   = Number(data.precioBebe)   || 0;
-
   const tabla = document.getElementById("tablaArticulos");
   tabla.innerHTML = "";
 
@@ -658,9 +650,30 @@ if (reservaID) {
     }
   }
 
-  agregarFilaArticulo(`${nombreBonito} - Adultos`, precioAdulto, adultos);
-  agregarFilaArticulo(`${nombreBonito} - Niños`,   precioNino,   ninos);
-  agregarFilaArticulo(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
+  // NUEVO: si la reserva usó el modo "Precio diferenciado por tipo de
+  // habitación" (Sencilla/Doble/Triple, ver detalle_reserva.html), el
+  // detalle de factura se arma directo desde esas líneas — cada una ya
+  // trae su propio precio unitario. El modo viejo (cantidadAdultos ×
+  // precioAdulto, etc.) sigue funcionando igual para todas las reservas
+  // que NO usan ese modo.
+  if (data.precioPorHabitacion && Array.isArray(data.lineasPrecioHabitacion) && data.lineasPrecioHabitacion.length > 0) {
+    data.lineasPrecioHabitacion.forEach(linea => {
+      const descripcion = `${nombreBonito} - ${linea.categoria || 'Persona'} (Hab. ${linea.tipoHabitacion || '-'})`;
+      agregarFilaArticulo(descripcion, Number(linea.precioUnitario) || 0, Number(linea.cantidad) || 0);
+    });
+  } else {
+    const adultos = Number(data.cantidadAdultos) || 0;
+    const ninos   = Number(data.cantidadNinos)   || 0;
+    const bebes   = Number(data.cantidadBebes)   || 0;
+
+    const precioAdulto = Number(data.precioAdulto) || 0;
+    const precioNino   = Number(data.precioNino)   || 0;
+    const precioBebe   = Number(data.precioBebe)   || 0;
+
+    agregarFilaArticulo(`${nombreBonito} - Adultos`, precioAdulto, adultos);
+    agregarFilaArticulo(`${nombreBonito} - Niños`,   precioNino,   ninos);
+    agregarFilaArticulo(`${nombreBonito} - Bebés`,   precioBebe,   bebes);
+  }
 
   // NUEVO: agrega los tours opcionales comprados como líneas de factura.
   // La reserva solo guarda el NOMBRE del tour opcional elegido, así que hay
