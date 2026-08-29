@@ -3587,6 +3587,29 @@ async function obtenerIncluyeDelTour(destinoId, datosReserva) {
   return { incluye: "", no_incluye: "" };
 }
 
+// NUEVO: días mínimos de anticipación para cancelar sin penalidad completa
+// (y texto de cancelación específico del proveedor, si lo tiene) — se leen
+// del tour del catálogo para personalizar el Contrato de Viaje. Si el tour
+// no define nada (reservas Personalizadas, o tours viejos sin este campo
+// aún), se usan 20 días por defecto, que es el estándar histórico de la
+// agencia.
+async function obtenerPoliticaCancelacionDelTour(destinoId) {
+  if (!destinoId) return { diasCancelacion: 20, cancelacionOverride: "" };
+  try {
+    const doc = await db.collection("tours").doc(destinoId).get();
+    if (doc.exists) {
+      const d = doc.data();
+      return {
+        diasCancelacion: d.diasCancelacion || 20,
+        cancelacionOverride: d.cancelacionOverride || ""
+      };
+    }
+  } catch (e) {
+    console.error("No se pudo cargar la política de cancelación del tour:", e);
+  }
+  return { diasCancelacion: 20, cancelacionOverride: "" };
+}
+
 async function obtenerDatosReservaActual() {
   const codigo = window.codigoActualReserva || codigoReservaExistente;
   if (!codigo) {
@@ -3873,6 +3896,100 @@ async function generarPaginasComprobante(datos) {
     y += 2;
     parrafo("Además, aparece el código de reserva, donde usted puede corroborar la reserva ante la aerolínea.");
   }
+
+  // ==========================================
+  // NUEVO: CONTRATO Y POLÍTICAS DE VIAJE — texto legal completo,
+  // personalizado con los datos de esta reserva y con la política de
+  // cancelación específica del tour contratado (días estándar de la
+  // agencia, o el texto propio de un mayorista si el tour lo define).
+  // Se agrega como páginas extra del MISMO comprobante — no como PDF
+  // aparte — para que salga siempre adjunto sin depender de que el
+  // backend de correo soporte más de un adjunto.
+  // ==========================================
+  const { diasCancelacion, cancelacionOverride } = await obtenerPoliticaCancelacionDelTour(datos.destino);
+  const totalAbonadoContrato = (datos.pagos || []).reduce((s, p) => s + (Number(p.monto) || 0), 0);
+
+  doc.addPage();
+  dibujarFondoInterior(doc);
+  y = 30;
+
+  titulo("Contrato y Políticas de Viaje");
+
+  parrafo("La empresa Excursiones Delgado trabaja bajo el nombre de una persona física Christofer Delgado Naranjo, cédula 207040582, la empresa se encuentra inscrita en CANATUR #5683 y certificada por el Ministerio de Economía y Comercio como PYME, la empresa turística que actúa como agente o intermediario de otras compañías de servicios tales como: hospedaje, tiquetes aéreos, transporte, de agencias de viajes mayoristas, cruceros, excursiones, y otros. Los pagos deberán ser realizados mediante depósito bancario, transferencia electrónica, o link de pago (tarjeta de crédito o débito). El monto pactado será en dólares americanos; en caso de que el cliente realice el pago en colones, será al tipo de cambio del Banco Nacional de Costa Rica vigente al día del pago.");
+  y += 4;
+
+  linea("Reserva N°", datos.codigo);
+  linea("Titular", datos.nombreTitular);
+  linea("Cédula", datos.cedula);
+  linea("Destino", (datos.nombreDestino || datos.destino || "").split(" (")[0]);
+  linea("Fecha de viaje", formatearFechaComprobante(datos.vueloIda?.fecha));
+  linea("Monto total", `$${Number(datos.total || 0).toFixed(2)}`);
+  linea("Abonado a la fecha", `$${totalAbonadoContrato.toFixed(2)}`);
+  y += 4;
+
+  listaConViñetas("Detallamos nuestras cuentas bancarias:",
+    "Sinpe Móvil al 6132-8183\n" +
+    "Banco Nacional — IBAN Colones: CR04015120820010802127 / IBAN Dólares: CR08015102720020056566\n" +
+    "Banco BAC Credomatic — IBAN Colones: CR54010200009583976977 / IBAN Dólares: CR37010200009611739459\n" +
+    "Banco Davivienda — IBAN Colones: CR47010400142560261213 / IBAN Dólares: CR50010400142560262129\n" +
+    "Banco Popular — IBAN Colones: CR70016111004151943039 / IBAN Dólares: CR29016111001267887882"
+  );
+  parrafo("Pago con tarjetas en línea: nuestros precios ya incluyen el descuento por pago en efectivo o transferencia; si se realiza con tarjeta existe un recargo del 5%. Debe coordinarse con nuestro agente autorizado.", 8);
+  y += 4;
+
+  titulo("Cancelaciones de Viaje");
+
+  parrafo("1. Por fuerza mayor: en caso de que sea necesario un cambio de fecha, un cambio de nombre de pasajero, o bien la cancelación total de su viaje, podría hacerlo, pero puede haber cargos adicionales si cumple alguno de los siguientes requisitos: muerte de un familiar directo en primer o segundo grado de consanguinidad; hospitalización, incapacidad, cita programada, accidente demostrado; embarazo (no se puede viajar con más de 32 semanas de gestación); o desastres naturales o eventos climatológicos que involucren la integridad de los pasajeros en destino. En todos los casos deberá enviar un correo formal a su ejecutivo de viajes, explicando la situación y adjuntando los comprobantes legales correspondientes.");
+  y += 3;
+
+  if (cancelacionOverride && cancelacionOverride.trim()) {
+    parrafo("2. Cancelaciones de viaje en servicios terrestres (condiciones específicas de este proveedor):");
+    parrafo(cancelacionOverride.trim());
+  } else {
+    parrafo(`2. Cancelaciones de viaje en servicios terrestres: una vez reservado un servicio, en caso de que algún cliente cancele el viaje por el motivo que fuese, asumirá el 100% de lo pagado, salvo que se indique lo contrario en la confirmación de reserva; sin embargo, cuando la cancelación se realice al menos ${diasCancelacion} días antes de la fecha de inicio del viaje, la empresa será un ente de mediación entre el cliente y el operador para lograr una menor penalidad y acordar posibles soluciones como cambios de fecha. En los casos en que del todo no se desee viajar y se logren menores penalidades, quedará como saldo a favor para utilizar en los mismos servicios contratados o con cualquier otro servicio que ofrezca la empresa y/o agencia, lo cual se le estaría indicando al cliente.`);
+    parrafo("En caso de cancelación por motivo de atraso del cliente, o por incumplimiento de horarios sin justificación real, el cliente deberá asumir el monto correspondiente al 100% de las penalidades. En regla general los hoteles pueden aplicar un no-show si el cliente no llega a la hora del check-in, por lo que si se ve obligado a llegar más tarde de la hora indicada, se recomienda avisar para evitar inconvenientes. Para los tours, generalmente salen en hora exacta y en otros casos esperan alrededor de 10 minutos, por lo que siempre se recomienda llegar 15 minutos antes a la hora indicada en su boucher de servicios.");
+  }
+  y += 3;
+
+  parrafo("3. Cancelaciones de viaje en vuelos aéreos: una vez reservado y/o emitido un vuelo aéreo, estos no son reembolsables ni endosables; si el boleto no es utilizado no existirá reembolso alguno (no aplica si cumple con algún requisito de cancelación por fuerza mayor). En caso de que el boleto haya sido emitido, no es posible realizar ningún tipo de cambio a excepción de que la aerolínea lo permita según sus condiciones y reglamento, debiendo pagar la penalidad y diferencias tarifarias por el cambio de fecha y/o destino.");
+  y += 3;
+
+  parrafo("4. Cancelaciones por parte de operadores y/o agencia: en caso de que la cancelación se dé por causas de Agencia Excursiones Delgado, la Agencia asume la responsabilidad total y ofrecerá al cliente una alternativa igual o similar en cuanto al destino y condiciones, para que el cliente pueda realizar el viaje en un lapso de 72 horas a la fecha del viaje programado. Si la cancelación se da por causas de la línea aérea, tour operador, hoteles o cualquier proveedor, estos asumirán la responsabilidad de ofrecer o cubrir los servicios, y la Agencia se encargará de realizar los trámites y reclamos correspondientes. Se entiende por alternativa igual o similar aquella que comprenda el mismo tipo de transporte (si el vuelo era directo, el cliente podrá aceptar una alternativa con escala(s)); en el caso del hotel, uno de la misma modalidad y categoría. Si el cliente no estuviera de acuerdo con los cambios, se le otorgará un recibo como saldo a favor utilizable en un plazo no mayor a 12 meses. La Agencia se reserva el derecho de efectuar otros cambios en el itinerario terrestre por diferencias de tarifa, las cuales el cliente deberá asumir. La Agencia no acepta responsabilidad ni compensación alguna por casos fortuitos o de fuerza mayor (guerras, motines, huelgas, desastres naturales, actos terroristas, condiciones climatológicas u otras situaciones adversas fuera de su control).");
+  y += 3;
+
+  parrafo("5. Impedimentos de salida y requisitos migratorios: si al cliente se le presenta cualquier impedimento de salida (ej. pensión alimentaria, visa no aprobada, permiso de salida de menores de edad, o cualquier impedimento legal ante Migración), el cliente asume entera responsabilidad, incluyendo ajustes de tarifa, penalidades o hasta la compra total de algún servicio contratado. La Agencia no se hace responsable por impedimentos de salida del país; es responsabilidad del pasajero mantener sus documentos vigentes y al día. En caso de impedimento de salida de destinos terrestres como Panamá y Nicaragua, el regreso hacia San José es por cuenta del cliente, con una penalidad del 100%. Los trámites migratorios (pasaporte, visa de entrada) son totalmente personales, al igual que el pago de los impuestos de salida de cada país.");
+  y += 4;
+
+  titulo("Sobre Reservaciones y Pagos");
+  parrafo("Los servicios turísticos ofrecidos o cotizados están sujetos a disponibilidad y cambios sin previo aviso antes de confirmar la compra; la única forma de garantizar el precio ofrecido es mediante una confirmación de nuestra parte para que el cliente proceda con el pago inicial, ya que las tarifas aéreas, hoteleras y de los servicios turísticos cambian de un día a otro. Una vez que el cliente realice el pago inicial, por ningún motivo se cambiará el monto total pactado en este contrato, a menos que por solicitud del cliente se tengan que adicionar o cambiar algunos servicios.");
+  y += 2;
+  parrafo("La Agencia indicará al cliente, mediante el documento de confirmación, los montos y fechas límites de pago. En caso de que el cliente no cumpla con lo estipulado, la Agencia hará un recordatorio y, de no ponerse al día, se realizará la anulación total de los servicios contratados, cobrando hasta el 100% de lo abonado por concepto de penalidad, sin que pueda solicitarse de ninguna manera su devolución.");
+  y += 4;
+
+  titulo("Documentos, Saldos a Favor y Devoluciones");
+  parrafo("Los pasajeros deberán presentar documentación vigente (identidad, pasaporte y/o visa); el pasaporte debe tener una vigencia mayor a seis meses posteriores a la fecha de salida. La Agencia no se hace responsable por documentos personales incompletos, dudosos o falsos. Los boletos se emiten según la información del pasaporte; si el cliente brinda solo la cédula, deberá asumir cualquier gasto derivado de diferencias entre esta y el pasaporte con el que viaje.");
+  y += 2;
+  parrafo("Se emitirá la factura correspondiente una vez realizado el primer abono, y se enviarán estados de cuenta periódicamente. La confirmación de los boletos aéreos se entregará en un plazo no mayor a 2 días posteriores a la compra; los documentos finales del viaje se entregarán como máximo 2 días posteriores al envío del comprobante de pago final.");
+  y += 2;
+  parrafo("El recibo como saldo a favor se emitirá de acuerdo con la moneda del pago (USD o CRC) y tendrá una vigencia de 12 meses desde su emisión, utilizable en cualquiera de nuestros servicios turísticos 15 días después de emitido. La Agencia se reserva el derecho de contar con 8 días hábiles a partir de la notificación de cancelación para realizar dicho recibo. De hacerse por solicitud o responsabilidad del cliente, la Agencia podrá cobrar entre $1 y $100 por gastos administrativos. Las notas de crédito no aplican para tarifas en promociones o de último minuto.");
+  y += 2;
+  parrafo("Las devoluciones de dinero únicamente se efectuarán en los casos autorizados, en un máximo de 60 días posteriores a la emisión del recibo como saldo a favor, y del mismo modo en que se efectuó el pago. Si el pago fue con tarjeta de crédito, la devolución será un contra-cargo a la misma tarjeta, asumiendo el cliente la comisión bancaria correspondiente. Si el cliente desea que la devolución se haga a otra persona, se requiere autorización por escrito autenticada por un Notario.");
+  y += 4;
+
+  titulo("Equipaje, Actividades y Salud");
+  parrafo("En caso de que su equipaje sufriera algún daño, el cliente deberá dirigirse al counter de la aerolínea y externar su queja al recibir su maleta; en caso de pérdida de valor, deberá notificarlo a la brevedad. La Agencia dará seguimiento al caso con la respectiva aerolínea.");
+  y += 2;
+  parrafo("Al visitar áreas silvestres, parques nacionales u otros lugares de aventura, la Agencia asume que el pasajero está en buena condición física para el desarrollo del mismo; el cliente debe mostrar sinceridad sobre su estado de salud. Los viajeros con problemas de salud deberán comunicarlo a la empresa antes de iniciar el viaje; la Agencia o sus guías podrán descalificar a cualquier integrante que muestre señales de enfermedad o cuya participación ponga en riesgo al grupo, sin derecho a reembolso. Se recomienda que cada pasajero adquiera su propio seguro médico de viaje.");
+  y += 2;
+  parrafo("La Agencia y los operadores contratados se reservan el derecho de operar los tours nacionales de acuerdo al mínimo de personas establecido; en caso de no operar, se procederá con la devolución del dinero o la reprogramación de la fecha según acuerdo entre ambas partes.");
+  y += 4;
+
+  titulo("Plazo, Vigencia y Aceptación del Contrato");
+  parrafo("Este contrato rige a partir de la fecha de su reserva y finaliza una vez el cliente regrese de su viaje y confirme que no hubo incumplimiento en el mismo y que todos los servicios ofrecidos fueron recibidos de manera exitosa.");
+  y += 3;
+  parrafo("El presente contrato y sus condiciones se consideran notificados al cliente en el momento en que son enviados al correo electrónico registrado en la reserva. El cliente contará con un plazo de 3 días naturales a partir de dicho envío para presentar por escrito, al mismo correo o al WhatsApp de contacto de la agencia, cualquier observación u objeción sobre su contenido. Transcurrido ese plazo sin haberse recibido observación alguna, se entenderá que el cliente ha leído, comprendido y aceptado en su totalidad los términos y condiciones aquí descritos.");
+  y += 3;
+  parrafo("Es todo. Al continuar con esta reserva, el cliente acepta y aprueba lo expresado, aceptando los términos y condiciones que se mencionan.");
 
   return doc;
 }
