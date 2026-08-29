@@ -446,9 +446,9 @@
     quitarConfirmacionFila(fila);
   }
 
-  // NUEVO: "N/A" — para categorías incluidas dentro del tour (ej. traslados
-  // que ya vienen en el paquete), donde no hay proveedor ni costo aparte
-  // que registrar. Marcar esto deja la fila fuera del conteo de "faltan
+  // "N/A" — para categorías incluidas dentro del tour (ej. traslados que ya
+  // vienen en el paquete), donde no hay proveedor ni costo aparte que
+  // registrar. Marcar esto deja la fila fuera del conteo de "faltan
   // confirmar proveedores" del dashboard, sin necesitar elegir un proveedor
   // ni forzar un monto.
   function marcarFilaComoNoAplica(fila) {
@@ -595,7 +595,7 @@
     }
 
     const nombreLimpio = nombre.trim();
-    // NUEVO: comparación insensible a mayúsculas/espacios — si ya existe un
+    // Comparación insensible a mayúsculas/espacios — si ya existe un
     // proveedor (o, para Comisión, una embajadora/vendedora) con ese nombre,
     // se reutiliza el nombre EXACTO ya guardado en vez de crear un
     // duplicado con capitalización distinta (lo que antes separaba a un
@@ -636,7 +636,7 @@
   }
 
   let datosExistentesCostos = null;
-  let esReservaGrupal = false; // NUEVO: Grupal + salidaGrupalId asignada — oculta Boletos/Hospedaje/Traslados/Tours
+  let esReservaGrupal = false; // Grupal + salidaGrupalId asignada — oculta Boletos/Hospedaje/Traslados/Tours
 
   async function precargarDatosReserva() {
     if (!codigo) return;
@@ -649,9 +649,9 @@
       document.getElementById("fechaViaje").value = data.vueloIda?.fecha || "";
       document.getElementById("ventaTotal").value = venta;
 
-      // NUEVO: si es Grupal con Salida Grupal asignada, los costos
-      // compartidos (Boletos/Hospedaje/Traslados/Tours) viven en
-      // costos_salida_grupal.html — acá solo queda la Comisión.
+      // Si es Grupal con Salida Grupal asignada, los costos compartidos
+      // (Boletos/Hospedaje/Traslados/Tours) viven en costos_salida_grupal.html
+      // — acá solo queda la Comisión.
       esReservaGrupal = data.tipoSalidaReserva === "Grupal" && !!data.salidaGrupalId;
       if (esReservaGrupal) {
         document.getElementById("contenedorCostosIndividuales").style.display = "none";
@@ -660,17 +660,41 @@
         aviso.innerHTML = `🚌 Esta reserva pertenece a una Salida Grupal — los Boletos, Hospedaje, Traslados y Tours se cargan una sola vez para todo el grupo. <a href="costos_salida_grupal.html?salida=${data.salidaGrupalId}" style="color:#02535a; font-weight:bold;">Ir a Costos de la Salida →</a>`;
       }
 
-      const adultos = data.cantidadAdultos || 0;
-      const ninos = data.cantidadNinos || 0;
-      const bebes = data.cantidadBebes || 0;
-      const precioAdulto = data.precioAdulto || 0;
-      const precioNino = data.precioNino || 0;
-      const precioBebe = data.precioBebe || 0;
+      // NUEVO: si la reserva usó el modo "Precio diferenciado por tipo de
+      // habitación" (ver detalle_reserva.html), el desglose ya NO puede
+      // asumir un solo precio por Adulto/Niño/Bebé — cada línea trae su
+      // propio precio según el tipo de habitación. Se recalcula sumando
+      // esas líneas reales, y se muestran tal cual en vez del formato
+      // genérico de Adultos/Niños/Bebés.
+      let totalCalculado = 0;
+      let htmlDesglose = "";
 
-      const totalAdultos = adultos * precioAdulto;
-      const totalNinos = ninos * precioNino;
-      const totalBebes = bebes * precioBebe;
-      const totalCalculado = totalAdultos + totalNinos + totalBebes;
+      if (data.precioPorHabitacion && Array.isArray(data.lineasPrecioHabitacion) && data.lineasPrecioHabitacion.length > 0) {
+        htmlDesglose = data.lineasPrecioHabitacion.map(l => {
+          const cantidad = Number(l.cantidad) || 0;
+          const precio = Number(l.precioUnitario) || 0;
+          const subtotal = cantidad * precio;
+          totalCalculado += subtotal;
+          return `🛏️ ${l.tipoHabitacion || '-'} — ${l.categoria || '-'}: ${cantidad} × $${precio} = <strong>$${subtotal.toFixed(2)}</strong>`;
+        }).join("<br>");
+      } else {
+        const adultos = data.cantidadAdultos || 0;
+        const ninos = data.cantidadNinos || 0;
+        const bebes = data.cantidadBebes || 0;
+        const precioAdulto = data.precioAdulto || 0;
+        const precioNino = data.precioNino || 0;
+        const precioBebe = data.precioBebe || 0;
+
+        const totalAdultos = adultos * precioAdulto;
+        const totalNinos = ninos * precioNino;
+        const totalBebes = bebes * precioBebe;
+        totalCalculado = totalAdultos + totalNinos + totalBebes;
+
+        htmlDesglose =
+          `👤 Adultos: ${adultos} × $${precioAdulto} = <strong>$${totalAdultos.toFixed(2)}</strong><br>` +
+          `🧒 Niños: ${ninos} × $${precioNino} = <strong>$${totalNinos.toFixed(2)}</strong><br>` +
+          `👶 Bebés: ${bebes} × $${precioBebe} = <strong>$${totalBebes.toFixed(2)}</strong>`;
+      }
 
       const diferencia = Math.abs(venta - totalCalculado);
       let advertencia = "";
@@ -682,9 +706,7 @@
       }
 
       document.getElementById("detalleVenta").innerHTML = `
-        👤 Adultos: ${adultos} × $${precioAdulto} = <strong>$${totalAdultos.toFixed(2)}</strong><br>
-        🧒 Niños: ${ninos} × $${precioNino} = <strong>$${totalNinos.toFixed(2)}</strong><br>
-        👶 Bebés: ${bebes} × $${precioBebe} = <strong>$${totalBebes.toFixed(2)}</strong><br>
+        ${htmlDesglose}<br>
         <hr>
         💵 <strong>Total Calculado:</strong> $${totalCalculado.toFixed(2)}<br>
         ${advertencia}
@@ -756,9 +778,9 @@
 
   function calcularGanancia() {
     const venta = parseFloat(document.getElementById("ventaTotal").value) || 0;
-    // NUEVO: en una reserva Grupal, Boletos/Hospedaje/Traslados/Tours viven
-    // en costos_salida_grupal.html — acá la "ganancia" de esta pantalla
-    // solo resta la Comisión, para no mostrar un número engañoso.
+    // En una reserva Grupal, Boletos/Hospedaje/Traslados/Tours viven en
+    // costos_salida_grupal.html — acá la "ganancia" de esta pantalla solo
+    // resta la Comisión, para no mostrar un número engañoso.
     const boletos = esReservaGrupal ? 0 : (parseFloat(document.getElementById("costoBoletos").value) || 0);
 
     let totalCategorias = 0;
@@ -795,9 +817,9 @@
       return;
     }
 
-    // NUEVO: en una reserva Grupal, solo se guarda/toca la categoría
-    // Comisión — Boletos/Hospedaje/Traslados/Tours se dejan intactos (viven
-    // en costos_salida_grupal.html, no se deben pisar desde acá).
+    // En una reserva Grupal, solo se guarda/toca la categoría Comisión —
+    // Boletos/Hospedaje/Traslados/Tours se dejan intactos (viven en
+    // costos_salida_grupal.html, no se deben pisar desde acá).
     const categorias = {};
     CATEGORIAS.forEach(cat => {
       if (esReservaGrupal && cat.clave !== "comision") return;
