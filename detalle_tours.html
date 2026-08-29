@@ -10,102 +10,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
   <link rel="stylesheet" href="topbar.css">
   <style>
-    /* NUEVO: menú lateral de navegación (mismo estilo que el resto del
-       sistema) — esta página nunca lo había tenido. */
-    .toggle-btn {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      font-size: 24px;
-      background: white;
-      color: #02535a;
-      border: none;
-      border-radius: 50%;
-      padding: 8px 12px;
-      z-index: 1100;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 250px;
-      height: 100%;
-      background-color: #02535a;
-      color: white;
-      padding: 20px;
-      transform: translateX(-250px);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-      overflow-y: auto;
-    }
-    .sidebar.active {
-      transform: translateX(0);
-    }
-    .sidebar .user-info {
-      text-align: center;
-      margin-bottom: 20px;
-      margin-top: 40px;
-    }
-    .sidebar .user-info .avatar {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      margin-bottom: 10px;
-    }
-    .sidebar .user-info h3 {
-      font-size: 1rem;
-      margin: 0;
-      color: white;
-    }
-    .sidebar .user-info small {
-      font-size: 0.8rem;
-      color: #f4f7f8;
-    }
-    .nav-links {
-      list-style: none;
-      padding: 0;
-    }
-    .nav-links li a {
-      background-color: #f4f7f8;
-      color: #02535a;
-      padding: 8px 12px;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      margin-bottom: 8px;
-      font-weight: bold;
-    }
-    .nav-links li a:hover {
-      background-color: #e0e0e0;
-    }
-    .nav-links li a.activo {
-      background-color: #ffb703;
-      color: #02535a;
-    }
-    .nav-links .icon {
-      margin-right: 10px;
-      font-size: 1.2rem;
-    }
-    main#contenidoPrincipal {
-      margin-left: 0;
-      padding: 20px 20px 20px 70px;
-      transition: margin-left 0.3s ease;
-      box-sizing: border-box;
-    }
-    main#contenidoPrincipal.sidebar-visible {
-      margin-left: 250px;
-      padding-left: 20px;
-    }
-    @media screen and (max-width: 768px) {
-      main#contenidoPrincipal.sidebar-visible {
-        margin-left: 0;
-        padding-left: 70px;
-      }
-    }
-
     body {
       font-family: 'Segoe UI', Arial, sans-serif;
       background: #f0f7f7;
@@ -210,14 +114,14 @@
       font-size: 24px;
       cursor: pointer;
     }
-    /* NUEVO: aviso visual de que el nivel de experiencia solo aplica a salidas individuales */
+    /* Aviso visual de que el nivel de experiencia solo aplica a salidas individuales */
     .aviso-nivel {
       font-weight: normal;
       font-size: 13px;
       color: #777;
       margin-top: 4px;
     }
-    /* NUEVO: galería/preview de imágenes dentro del modal de tour opcional */
+    /* Galería/preview de imágenes dentro del modal de tour opcional */
     #opcionalFotosPreview {
       display: flex;
       flex-wrap: wrap;
@@ -278,7 +182,7 @@
       margin-right: 3px;
       border: 1px solid #ccc;
     }
-    /* NUEVO: preview de la diapositiva ya diseñada (imagen única, no collage) */
+    /* Preview de la diapositiva ya diseñada (imagen única, no collage) */
     #opcionalSlidePreview img {
       max-width: 220px;
       max-height: 130px;
@@ -298,7 +202,7 @@
       font-size: 13px;
       margin-top: 6px;
     }
-    /* NUEVO: preview del fondo de portada del destino */
+    /* Preview del fondo de portada del destino */
     #fondoPortadaDestinoPreview img {
       max-width: 320px;
       max-height: 180px;
@@ -318,7 +222,7 @@
       font-size: 13px;
       margin-top: 6px;
     }
-    /* NUEVO: preview de la diapositiva de Condiciones Generales del destino */
+    /* Preview de la diapositiva de Condiciones Generales del destino */
     #condicionesDestinoPreview img {
       max-width: 320px;
       max-height: 180px;
@@ -338,7 +242,7 @@
       font-size: 13px;
       margin-top: 6px;
     }
-    /* NUEVO: checklist de actividades incluidas por variante de tour */
+    /* Checklist de actividades incluidas por variante de tour */
     .tabla-incluidas th:first-child, .tabla-incluidas td:first-child {
       text-align: center;
       width: 40px;
@@ -363,28 +267,6 @@
   </style>
 </head>
 <body>
-  <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
-
-  <div class="sidebar" id="sidebar">
-    <div class="user-info">
-      <img src="https://cdn-icons-png.flaticon.com/512/219/219986.png" class="avatar" alt="Usuario">
-      <h3 id="nombreUsuario">Cargando...</h3>
-      <small id="rolUsuario">-</small>
-    </div>
-    <ul class="nav-links">
-      <li><a href="dashboard.html"><span class="icon">🏠</span>Inicio</a></li>
-      <li><a href="solicitud_cotizaciones.html"><span class="icon">📨</span>Solicitud de Cotización</a></li>
-      <li><a href="reservas.html"><span class="icon">🧳</span>Reservas</a></li>
-      <li><a href="reservas_historicas.html"><span class="icon">🕓</span>Reservas Históricas</a></li>
-      <li><a href="registro.html"><span class="icon">👥</span>Usuarios</a></li>
-      <li><a href="clientes.html"><span class="icon">🧑‍💼</span>Clientes</a></li>
-      <li><a href="tours.html" class="activo"><span class="icon">🌎</span>Productos</a></li>
-      <li><a href="proveedores.html"><span class="icon">🏷️</span>Proveedores</a></li>
-      <li><a href="finanzas.html"><span class="icon">💰</span>Finanzas</a></li>
-      <li><a href="configuracion.html"><span class="icon">⚙️</span>Configuración</a></li>
-      <li><a href="#" onclick="cerrarSesionYRedirigir()"><span class="icon">🚪</span>Cerrar sesión</a></li>
-    </ul>
-  </div>
 
   <main id="contenidoPrincipal">
 
@@ -395,7 +277,7 @@
     <input type="text" id="nombre" placeholder="Ej. Medellín — solo el lugar, sin el nivel (el nivel se elige aparte, abajo)" />
     <div style="font-size:13px; color:#777; margin-top:-4px;">Si ya existe un tour con este mismo destino, usa exactamente el mismo texto (ej. siempre "Medellín", nunca "medellin" o "Medellín, Colombia") para que las variantes queden agrupadas juntas en el catálogo.</div>
 
-    <!-- NUEVO: fondo de portada — es del DESTINO, no de esta variante en
+    <!-- Fondo de portada — es del DESTINO, no de esta variante en
          particular. Se sube una sola vez por destino y se reutiliza en
          Flash/Esencial/Confort/Grupal de ese mismo lugar, igual que el
          catálogo de actividades de abajo. -->
@@ -404,7 +286,7 @@
     <input type="file" id="fondoPortadaDestinoInput" accept="image/*" />
     <div id="fondoPortadaDestinoPreview"></div>
 
-    <!-- NUEVO: diapositiva de Condiciones Generales — igual que el fondo de
+    <!-- Diapositiva de Condiciones Generales — igual que el fondo de
          portada, es del DESTINO (varían de un lugar a otro), se sube UNA
          vez y aplica a todas las variantes de ese mismo destino. -->
     <label>Diapositiva de Condiciones Generales de este Destino</label>
@@ -412,7 +294,7 @@
     <input type="file" id="condicionesDestinoInput" accept="image/*" />
     <div id="condicionesDestinoPreview"></div>
 
-    <!-- NUEVO: distinción entre salida grupal (fecha fija, catálogo compartido)
+    <!-- Distinción entre salida grupal (fecha fija, catálogo compartido)
          y salida individual (personalizada, con 3 niveles de experiencia:
          Flash / Esencial / Confort). -->
     <label>Tipo de Salida</label>
@@ -453,9 +335,9 @@
     <label>Itinerario</label>
     <textarea id="itinerario_tours" placeholder="Ej. Tour Zoológico La Aurora, Tour de Pueblos (City Tour Antigua), Tour a Panajachel y el lago Atitlán, 1 día libre"></textarea>
 
-    <!-- NUEVO: los hoteles ya no se manejan aquí — se gestionan como
-         proveedores (categoría "Hospedaje") en proveedores.html, asociados
-         al destino correspondiente. -->
+    <!-- Los hoteles ya no se manejan aquí — se gestionan como proveedores
+         (categoría "Hospedaje") en proveedores.html, asociados al destino
+         correspondiente. -->
 
     <label>Catálogo de Actividades / Tours Opcionales</label>
     <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Esta lista (nombre, descripción, precio, fotos, diapositiva ya diseñada) es compartida por destino — se sube una sola vez y aplica a TODAS las variantes de este mismo destino. Lo que SÍ cambia por variante es la columna "Incluida", justo abajo.</div>
@@ -465,9 +347,9 @@
     </table>
     <button class="btn" onclick="abrirModalOpcional()">+ Agregar actividad al catálogo</button>
 
-    <!-- NUEVO: checklist de cuáles actividades del catálogo vienen
-         incluidas en ESTA variante puntual (ej. Confort incluye más que
-         Flash) — esto sí es propio de cada tour, no del catálogo compartido. -->
+    <!-- Checklist de cuáles actividades del catálogo vienen incluidas en
+         ESTA variante puntual (ej. Confort incluye más que Flash) — esto sí
+         es propio de cada tour, no del catálogo compartido. -->
     <label>Actividades Incluidas en este Paquete</label>
     <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Marca cuáles actividades del catálogo de arriba vienen incluidas en el precio de esta variante puntual (el destino y nivel elegidos arriba). Las que no marques se ofrecen como opcionales con su precio en la cotización.</div>
     <table class="tabla-incluidas">
@@ -477,6 +359,29 @@
 
     <label>Políticas y Condiciones</label>
     <textarea id="politicas"></textarea>
+
+    <!-- NUEVO: días mínimos de anticipación para cancelar sin la penalidad
+         completa — cada mayorista/proveedor tiene su propia ventana (ej.
+         Multirutas exige 30-60 días para Europa, otros paquetes con 15
+         días o 1 mes). Este número se usa para armar el Contrato de Viaje
+         que el sistema genera y adjunta al comprobante de cada reserva de
+         este tour — reemplaza el "20 días" genérico de la política general
+         por el plazo real de ESTE proveedor. -->
+    <label>Días mínimos de anticipación para cancelar sin penalidad completa</label>
+    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Según lo que exija el mayorista/proveedor de este paquete específico (ej. 15, 20, 30 o 60 días antes del viaje). Se usa para personalizar el Contrato de Viaje que se genera y envía junto con el comprobante de reserva.</div>
+    <input type="number" id="diasCancelacion" min="0" placeholder="Ej. 20" />
+
+    <!-- NUEVO: si un proveedor/mayorista específico (ej. Multirutas para
+         Europa) tiene su PROPIO esquema de cancelación distinto al
+         estándar de la agencia (tramos de días distintos, penalidades
+         distintas, depósitos no reembolsables), este texto reemplaza por
+         completo la sección "Cancelaciones de Viaje en Servicios
+         Terrestres" del Contrato de Viaje generado para reservas de este
+         tour — dejalo vacío para usar el texto estándar de la agencia
+         (con el número de días de arriba). -->
+    <label>Texto de cancelación específico de este proveedor (opcional)</label>
+    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Si este proveedor tiene su propio esquema de cancelación (ej. tramos de 60/30 días, penalidades distintas), pegalo aquí — reemplaza por completo la sección de cancelación estándar en el Contrato de Viaje de este tour. Si lo dejás vacío, se usa el texto estándar de la agencia con el número de días de arriba.</div>
+    <textarea id="cancelacionOverride" placeholder="Ej. texto de las políticas de cancelación del contrato firmado con el mayorista..."></textarea>
 
     <button class="boton-guardar" onclick="guardarTour()">Guardar Tour</button>
   </div>
@@ -494,7 +399,7 @@
       <label>Precio</label>
       <input type="number" id="opcionalPrecio" />
 
-      <!-- NUEVO: diapositiva ya diseñada (imagen única, tipo Canva/PowerPoint,
+      <!-- Diapositiva ya diseñada (imagen única, tipo Canva/PowerPoint,
            1280x720) — si existe, se usa tal cual en la Cotización Visual en
            vez de armar un collage automático con las fotos de abajo. -->
       <label>Diapositiva ya diseñada (opcional)</label>
@@ -515,10 +420,6 @@
   </main>
 
   <script>
-     // FIX: firebaseConfig estaba incompleto (le faltaban storageBucket,
-     // messagingSenderId y appId) y tenía la misma apiKey mal escrita que ya
-     // encontramos en otros archivos — se corrige aquí para que quede igual a
-     // la configuración real usada en el resto del sistema.
      const firebaseConfig = {
     apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
     authDomain: "tours-460717.firebaseapp.com",
@@ -534,11 +435,11 @@
     const params = new URLSearchParams(window.location.search);
   const tourId = params.get("id");
 
-  // NUEVO: cuáles actividades del catálogo (ids de tours_opcionales) vienen
+  // Cuáles actividades del catálogo (ids de tours_opcionales) vienen
   // incluidas en ESTA variante de tour.
   let actividadesIncluidasSeleccionadas = new Set();
 
-  // NUEVO: id de destino usado como doc en la colección "destinos_config"
+  // Id de destino usado como doc en la colección "destinos_config"
   // (fondo de portada compartido por destino) — mismo criterio de
   // normalización que se usa en el resto del sistema para agrupar variantes.
   function slugDestino(nombre) {
@@ -615,7 +516,7 @@
     e.target.value = "";
   });
 
-  // NUEVO: mismo patrón que el fondo de portada, para la diapositiva de
+  // Mismo patrón que el fondo de portada, para la diapositiva de
   // Condiciones Generales por destino.
   let condicionesDestinoUrl = "";
 
@@ -687,7 +588,7 @@
     e.target.value = "";
   });
 
-  // NUEVO: muestra/oculta el campo de Nivel según el Tipo de Salida elegido.
+  // Muestra/oculta el campo de Nivel según el Tipo de Salida elegido.
   function actualizarVisibilidadNivel() {
     const tipo = document.getElementById("tipoSalida").value;
     const contenedor = document.getElementById("contenedorNivel");
@@ -701,7 +602,7 @@ function guardarTour() {
   const tipoSalida = document.getElementById("tipoSalida").value;
   const nivel = tipoSalida === "Individual" ? document.getElementById("nivel").value : "";
 
-  // NUEVO: si es Individual, exige elegir un nivel — para no dejar un tour
+  // Si es Individual, exige elegir un nivel — para no dejar un tour
   // "Individual" sin nivel de experiencia asociado.
   if (tipoSalida === "Individual" && !nivel) {
     alert("⚠️ Selecciona el Nivel de Experiencia (Flash, Esencial o Confort) para una salida Individual.");
@@ -720,8 +621,12 @@ function guardarTour() {
     no_incluye: document.getElementById("no_incluye").value,
     itinerario_tours: document.getElementById("itinerario_tours").value,
     politicas: document.getElementById("politicas").value,
+    // NUEVO: días mínimos de anticipación para cancelar sin penalidad
+    // completa — usado para personalizar el Contrato de Viaje generado.
+    diasCancelacion: parseInt(document.getElementById("diasCancelacion").value) || 0,
+    cancelacionOverride: document.getElementById("cancelacionOverride").value || "",
     estado: "ACTIVO",
-    // NUEVO: actividades del catálogo incluidas en ESTA variante puntual.
+    // Actividades del catálogo incluidas en ESTA variante puntual.
     actividadesIncluidas: Array.from(actividadesIncluidasSeleccionadas)
   };
 
@@ -735,8 +640,8 @@ const sufijoVariante = tipoSalida === "Individual" && nivel ? `${tipoSalida}_${n
 const idNuevoTour = `${data.nombre}_${sufijoVariante}`.replace(/\s+/g, "_");
 
 async function guardarComoNuevo() {
-  // NUEVO: aviso de seguridad — si ya existe una variante con este mismo
-  // destino y nivel, confirma antes de sobrescribirla en silencio.
+  // Aviso de seguridad — si ya existe una variante con este mismo destino
+  // y nivel, confirma antes de sobrescribirla en silencio.
   const existente = await db.collection("tours").doc(idNuevoTour).get();
   if (existente.exists) {
     const continuar = confirm(`Ya existe un tour "${data.nombre}" con esta misma variante (${sufijoVariante.replace('_', ' ')}). ¿Deseas reemplazarlo con estos datos?`);
@@ -756,62 +661,6 @@ if (tourId) {
   guardarComoNuevo();
 }
 }
-
-if (tourId) {
-  db.collection("tours").doc(tourId).get().then(doc => {
-    if (doc.exists) {
-      const t = doc.data();
-      document.querySelector("h2").innerText = "Tour: " + (t.nombre || "Sin nombre");
-      document.getElementById("nombre").value = t.nombre || "";
-      document.getElementById("tipoSalida").value = t.tipoSalida || "Grupal";
-      document.getElementById("nivel").value = t.nivel || "";
-      actualizarVisibilidadNivel();
-      document.getElementById("duracion").value = t.duracion || "";
-      document.getElementById("precio_adulto").value = t.precio_adulto || "";
-      document.getElementById("precio_nino").value = t.precio_nino || "";
-      document.getElementById("precio_bebe").value = t.precio_bebe || "";
-      document.getElementById("incluye").value = t.incluye || "";
-      document.getElementById("no_incluye").value = t.no_incluye || "";
-      document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
-      document.getElementById("politicas").value = t.politicas || "";
-
-      actividadesIncluidasSeleccionadas = new Set(t.actividadesIncluidas || []);
-
-      // NUEVO: los tours opcionales y el fondo de portada son compartidos
-      // por destino, no por variante — se cargan directo desde el destino.
-      cargarOpcionalesDelDestino(t.nombre);
-      cargarFondoPortadaDelDestino(t.nombre);
-      cargarCondicionesDelDestino(t.nombre);
-  } else {
-        alert("El tour no existe.");
-      }
-    }).catch(err => {
-      console.error("Error al cargar tour:", err);
-    });
-} else {
-  actualizarVisibilidadNivel();
-
-  const destinoDesdeUrl = params.get("nombre");
-  if (destinoDesdeUrl) {
-    document.getElementById("nombre").value = destinoDesdeUrl;
-    document.getElementById("tipoSalida").value = "Individual";
-    actualizarVisibilidadNivel();
-    cargarOpcionalesDelDestino(destinoDesdeUrl);
-    cargarFondoPortadaDelDestino(destinoDesdeUrl);
-    cargarCondicionesDelDestino(destinoDesdeUrl);
-  }
-}
-
-// NUEVO: si se está creando un tour totalmente nuevo (sin destino
-// prellenado), en cuanto se escribe el nombre del destino se recarga el
-// catálogo y el fondo de portada que ya existan para ese destino.
-document.getElementById("nombre").addEventListener("blur", function () {
-  if (!tourId) {
-    cargarOpcionalesDelDestino(this.value.trim());
-    cargarFondoPortadaDelDestino(this.value.trim());
-    cargarCondicionesDelDestino(this.value.trim());
-  }
-});
 
   let destinoActualOpcionales = "";
   let catalogoActividadesActual = [];
@@ -1065,50 +914,80 @@ document.getElementById("nombre").addEventListener("blur", function () {
     }
   }
 
-    // NUEVO: menú lateral de navegación (igual que el resto del sistema)
-    function inicializarMenuLateral() {
-      const usuario = JSON.parse(localStorage.getItem("usuario"));
-      const sidebar = document.getElementById("sidebar");
-      const contenido = document.getElementById("contenidoPrincipal");
-      const toggleBtn = document.querySelector('.toggle-btn');
+  // NUEVO: espera a que Firebase Auth confirme la sesión antes de cargar el
+  // tour desde Firestore — mismo fix ya aplicado en dashboard.html y
+  // tours.html, evita el error intermitente "Missing or insufficient
+  // permissions" cuando la consulta salía antes de que Auth terminara de
+  // restaurar la sesión.
+  firebase.auth().onAuthStateChanged(function (user) {
+    if (!user) return; // auth-guard.js se encarga de redirigir a login
 
-      if (usuario) {
-        document.getElementById("nombreUsuario").innerText = usuario.nombre || "Usuario";
-        document.getElementById("rolUsuario").innerText = usuario.rol || "";
-      } else {
-        document.getElementById("nombreUsuario").innerText = "Invitado";
-      }
+    if (tourId) {
+      db.collection("tours").doc(tourId).get().then(doc => {
+        if (doc.exists) {
+          const t = doc.data();
+          document.querySelector("h2").innerText = "Tour: " + (t.nombre || "Sin nombre");
+          document.getElementById("nombre").value = t.nombre || "";
+          document.getElementById("tipoSalida").value = t.tipoSalida || "Grupal";
+          document.getElementById("nivel").value = t.nivel || "";
+          actualizarVisibilidadNivel();
+          document.getElementById("duracion").value = t.duracion || "";
+          document.getElementById("precio_adulto").value = t.precio_adulto || "";
+          document.getElementById("precio_nino").value = t.precio_nino || "";
+          document.getElementById("precio_bebe").value = t.precio_bebe || "";
+          document.getElementById("incluye").value = t.incluye || "";
+          document.getElementById("no_incluye").value = t.no_incluye || "";
+          document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
+          document.getElementById("politicas").value = t.politicas || "";
+          document.getElementById("diasCancelacion").value = t.diasCancelacion || "";
+          document.getElementById("cancelacionOverride").value = t.cancelacionOverride || "";
 
-      window.toggleSidebar = function () {
-        sidebar.classList.toggle('active');
-        contenido.classList.toggle('sidebar-visible');
-      };
+          actividadesIncluidasSeleccionadas = new Set(t.actividadesIncluidas || []);
 
-      window.cerrarSesionYRedirigir = function () {
-        localStorage.removeItem("usuario");
-        window.location.href = "login.html";
-      };
-
-      function checkScreenSize() {
-        if (window.innerWidth <= 768) {
-          sidebar.classList.remove('active');
-          contenido.classList.remove('sidebar-visible');
+          // Los tours opcionales y el fondo de portada son compartidos por
+          // destino, no por variante — se cargan directo desde el destino.
+          cargarOpcionalesDelDestino(t.nombre);
+          cargarFondoPortadaDelDestino(t.nombre);
+          cargarCondicionesDelDestino(t.nombre);
         } else {
-          sidebar.classList.add('active');
-          contenido.classList.add('sidebar-visible');
+          alert("El tour no existe.");
         }
-        toggleBtn.style.display = "block";
+      }).catch(err => {
+        console.error("Error al cargar tour:", err);
+      });
+    } else {
+      actualizarVisibilidadNivel();
+
+      const destinoDesdeUrl = params.get("nombre");
+      if (destinoDesdeUrl) {
+        document.getElementById("nombre").value = destinoDesdeUrl;
+        document.getElementById("tipoSalida").value = "Individual";
+        actualizarVisibilidadNivel();
+        cargarOpcionalesDelDestino(destinoDesdeUrl);
+        cargarFondoPortadaDelDestino(destinoDesdeUrl);
+        cargarCondicionesDelDestino(destinoDesdeUrl);
       }
-
-      window.addEventListener('resize', checkScreenSize);
-      checkScreenSize();
     }
+  });
 
-    inicializarMenuLateral();
+// Si se está creando un tour totalmente nuevo (sin destino prellenado), en
+// cuanto se escribe el nombre del destino se recarga el catálogo y el
+// fondo de portada que ya existan para ese destino.
+document.getElementById("nombre").addEventListener("blur", function () {
+  if (!tourId) {
+    cargarOpcionalesDelDestino(this.value.trim());
+    cargarFondoPortadaDelDestino(this.value.trim());
+    cargarCondicionesDelDestino(this.value.trim());
+  }
+});
   </script>
+  <!-- Barra superior compartida — va antes del menú lateral compartido. -->
   <script src="topbar.js"></script>
-  <!-- NUEVO: verificación real de sesión (Firebase Authentication), en vez
-       de confiar solo en lo que dijera localStorage. -->
+  <!-- Menú lateral compartido (antes cada página tenía su propio sidebar
+       copiado a mano, sin sincronizar). -->
+  <script src="sidebar.js"></script>
+  <!-- Verificación real de sesión (Firebase Authentication), en vez de
+       confiar solo en lo que dijera localStorage. -->
   <script src="auth-guard.js"></script>
 </body>
 </html>
