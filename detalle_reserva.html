@@ -3590,24 +3590,29 @@ async function obtenerIncluyeDelTour(destinoId, datosReserva) {
   return { incluye: "", no_incluye: "" };
 }
 
-// NUEVO: contrato de viaje específico del tour contratado (PDF real subido
-// en el catálogo de Tours) — si existe, se fusiona como páginas extra del
-// comprobante que se descarga/envía. Sin fallback global todavía: falta
-// conectar el contrato ESTÁNDAR por defecto (se subirá en Configuración)
-// para las reservas cuyo tour no tenga uno propio.
+// NUEVO: contrato de viaje de esta reserva — primero busca si el tour
+// contratado tiene un contrato PROPIO cargado en el catálogo (ej.
+// Multirutas); si no lo tiene (o la reserva es Personalizada, sin tour
+// asociado), cae al Contrato y Políticas de Viaje ESTÁNDAR configurado una
+// sola vez en Configuración.
 async function obtenerContratoDeViajeTour(destinoId) {
-  if (!destinoId) return null;
   try {
-    const doc = await db.collection("tours").doc(destinoId).get();
-    if (doc.exists) {
-      const url = doc.data().contratoViajeURL;
-      if (url) return { nombre: "Contrato y Políticas de Viaje", url };
+    if (destinoId) {
+      const doc = await db.collection("tours").doc(destinoId).get();
+      if (doc.exists) {
+        const url = doc.data().contratoViajeURL;
+        if (url) return { nombre: "Contrato y Políticas de Viaje", url };
+      }
     }
+    const docEstandar = await db.collection("configuracion").doc("contrato_viaje").get();
+    const urlEstandar = docEstandar.exists ? (docEstandar.data().contratoEstandarURL || "") : "";
+    if (urlEstandar) return { nombre: "Contrato y Políticas de Viaje", url: urlEstandar };
   } catch (e) {
-    console.error("No se pudo cargar el contrato de viaje del tour:", e);
+    console.error("No se pudo cargar el contrato de viaje:", e);
   }
   return null;
 }
+
 
 async function obtenerDatosReservaActual() {
   const codigo = window.codigoActualReserva || codigoReservaExistente;
