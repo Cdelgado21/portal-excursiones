@@ -553,35 +553,73 @@
 
 <section style="margin-top: 30px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
   <h2 onclick="toggleSeccion(this)" style="background-color: #02535a; color: white; padding: 10px; border-radius: 6px; cursor:pointer; user-select:none;">Resumen de Inversión <span class="flecha-colapsable" style="float:right;">▼</span></h2>
-  <h3>Desglose por Adultos, Niños o Bebés</h3>
-  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
-    <div style="flex: 1; min-width: 200px;">
-      <label>Cantidad de Adultos</label>
-      <input type="number" id="cantidadAdultos" value="0" oninput="calcularTotalGeneral()" class="campoInput">
+
+  <!-- NUEVO: algunos paquetes de mayorista (ej. Panamá Exótico) cobran
+       distinto según el tipo de habitación (Sencilla/Doble/Triple), no un
+       precio único por Adulto/Niño/Bebé. Este checkbox cambia el modo SOLO
+       para esta reserva puntual — no toca el catálogo de Tours. -->
+  <div style="margin: 15px 0; padding: 10px 14px; background: #f0f7f7; border-radius: 8px;">
+    <label style="display:flex; align-items:center; gap:8px; margin:0; font-weight:bold; cursor:pointer;">
+      <input type="checkbox" id="precioPorHabitacionCheck" onchange="alCambiarModoPrecio()" style="width:auto; margin:0;">
+      Precio diferenciado por tipo de habitación (Sencilla/Doble/Triple)
+    </label>
+  </div>
+
+  <div id="bloquePrecioSimple">
+    <h3>Desglose por Adultos, Niños o Bebés</h3>
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
+      <div style="flex: 1; min-width: 200px;">
+        <label>Cantidad de Adultos</label>
+        <input type="number" id="cantidadAdultos" value="0" oninput="calcularTotalGeneral()" class="campoInput">
+      </div>
+      <div style="flex: 1; min-width: 200px;">
+        <label>Cantidad de Niños</label>
+        <input type="number" id="cantidadNinos" value="0" oninput="calcularTotalGeneral()" class="campoInput">
+      </div>
+      <div style="flex: 1; min-width: 200px;">
+        <label>Cantidad de Bebés</label>
+        <input type="number" id="cantidadBebes" value="0" oninput="calcularTotalGeneral()" class="campoInput">
+      </div>
     </div>
-    <div style="flex: 1; min-width: 200px;">
-      <label>Cantidad de Niños</label>
-      <input type="number" id="cantidadNinos" value="0" oninput="calcularTotalGeneral()" class="campoInput">
-    </div>
-    <div style="flex: 1; min-width: 200px;">
-      <label>Cantidad de Bebés</label>
-      <input type="number" id="cantidadBebes" value="0" oninput="calcularTotalGeneral()" class="campoInput">
+
+    <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
+      <div style="flex: 1; min-width: 200px;">
+        <label>Precio por Adulto</label>
+        <input type="number" id="precioAdulto" value="0" oninput="calcularTotalGeneral()" class="campoInput">
+      </div>
+      <div style="flex: 1; min-width: 200px;">
+        <label>Precio por Niño</label>
+        <input type="number" id="precioNino" value="0" oninput="calcularTotalGeneral()" class="campoInput">
+      </div>
+      <div style="flex: 1; min-width: 200px;">
+        <label>Precio por Bebé</label>
+        <input type="number" id="precioBebe" value="0" oninput="calcularTotalGeneral()" class="campoInput">
+      </div>
     </div>
   </div>
 
-  <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
-    <div style="flex: 1; min-width: 200px;">
-      <label>Precio por Adulto</label>
-      <input type="number" id="precioAdulto" value="0" oninput="calcularTotalGeneral()" class="campoInput">
+  <!-- NUEVO: modo de precio por tipo de habitación — una fila por cada
+       combinación de Tipo de Habitación + Categoría que necesite un precio
+       distinto. Permite mezclar varios tipos en la misma reserva (ej. 2
+       adultos en Doble + 1 en Sencilla). -->
+  <div id="bloquePrecioHabitacion" style="display:none;">
+    <h3>Desglose por Tipo de Habitación</h3>
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; min-width: 520px; border-collapse: collapse;">
+        <thead style="background: #02535a; color: white;">
+          <tr>
+            <th style="padding:8px;">Tipo de Habitación</th>
+            <th style="padding:8px;">Categoría</th>
+            <th style="padding:8px;">Cantidad</th>
+            <th style="padding:8px;">Precio Unitario</th>
+            <th style="padding:8px;">Subtotal</th>
+            <th style="padding:8px;"></th>
+          </tr>
+        </thead>
+        <tbody id="tablaPrecioHabitacionBody"></tbody>
+      </table>
     </div>
-    <div style="flex: 1; min-width: 200px;">
-      <label>Precio por Niño</label>
-      <input type="number" id="precioNino" value="0" oninput="calcularTotalGeneral()" class="campoInput">
-    </div>
-    <div style="flex: 1; min-width: 200px;">
-      <label>Precio por Bebé</label>
-      <input type="number" id="precioBebe" value="0" oninput="calcularTotalGeneral()" class="campoInput">
-    </div>
+    <button type="button" onclick="agregarLineaPrecioHabitacion()" style="margin-top: 10px;">➕ Agregar línea</button>
   </div>
 
   <div style="margin-top: 15px;">
@@ -597,6 +635,7 @@
 
   <section style="margin-top: 30px;">
     <h2 style="background-color: #02535a; color: white; padding: 10px; border-radius: 6px;">💰 Historial de Pagos</h2>
+
 
     <div style="overflow-x: auto;">
     <table style="width: 100%; min-width: 560px; margin-top: 20px; border-collapse: collapse;">
@@ -1818,6 +1857,12 @@ async function guardarReserva() {
     const precioAdulto = parseFloat(document.getElementById("precioAdulto").value) || 0;
     const precioNino = parseFloat(document.getElementById("precioNino").value) || 0;
     const precioBebe = parseFloat(document.getElementById("precioBebe").value) || 0;
+    // NUEVO: modo de precio por tipo de habitación (Sencilla/Doble/Triple),
+    // opcional por reserva — cuando está activo, las líneas ya son la
+    // fuente de verdad del total (cantidadAdultos/Ninos/Bebes ya quedaron
+    // sincronizadas por calcularTotalPorHabitacion()).
+    const precioPorHabitacion = document.getElementById("precioPorHabitacionCheck")?.checked || false;
+    const lineasPrecioHabitacion = precioPorHabitacion ? window.lineasPrecioHabitacion : [];
 
     const vueloIda = {
       aerolinea: document.getElementById("aerolineaIda")?.value || "",
@@ -2010,6 +2055,7 @@ async function guardarReserva() {
       pasajeros: [],
       cantidadAdultos, cantidadNinos, cantidadBebes,
       precioAdulto, precioNino, precioBebe,
+      precioPorHabitacion, lineasPrecioHabitacion,
       equipaje: document.getElementById("equipaje")?.value || "",
       toursOpcionales: Array.from(document.querySelectorAll("input[name='opcionales']:checked")).map(e => e.value),
       duracion: document.getElementById("duracion")?.value || "",
@@ -2142,6 +2188,113 @@ function calcularTotalGeneral() {
     document.getElementById("saldoPendiente").textContent = saldo.toFixed(2);
   }
 }
+
+// ==========================================
+// NUEVO: Precio diferenciado por Tipo de Habitación (Sencilla/Doble/Triple)
+// — opción puntual por reserva (checkbox), sin tocar el catálogo de Tours.
+// Cada fila es {tipoHabitacion, categoria, cantidad, precioUnitario}.
+// ==========================================
+
+window.lineasPrecioHabitacion = [];
+
+function alCambiarModoPrecio() {
+  const activo = document.getElementById("precioPorHabitacionCheck").checked;
+  document.getElementById("bloquePrecioSimple").style.display = activo ? "none" : "block";
+  document.getElementById("bloquePrecioHabitacion").style.display = activo ? "block" : "none";
+
+  if (activo && window.lineasPrecioHabitacion.length === 0) {
+    // Arranca con una fila vacía para no dejar la tabla en blanco.
+    agregarLineaPrecioHabitacion();
+  } else if (activo) {
+    calcularTotalPorHabitacion();
+  } else {
+    calcularTotalGeneral();
+  }
+}
+
+function agregarLineaPrecioHabitacion(valores) {
+  window.lineasPrecioHabitacion.push(valores || { tipoHabitacion: "Doble", categoria: "Adulto", cantidad: 1, precioUnitario: 0 });
+  renderizarTablaPrecioHabitacion();
+  calcularTotalPorHabitacion();
+}
+
+function eliminarLineaPrecioHabitacion(indice) {
+  window.lineasPrecioHabitacion.splice(indice, 1);
+  renderizarTablaPrecioHabitacion();
+  calcularTotalPorHabitacion();
+}
+
+function actualizarLineaPrecioHabitacion(indice, campo, valor) {
+  const linea = window.lineasPrecioHabitacion[indice];
+  if (!linea) return;
+  linea[campo] = (campo === "cantidad" || campo === "precioUnitario") ? (parseFloat(valor) || 0) : valor;
+  renderizarTablaPrecioHabitacion();
+  calcularTotalPorHabitacion();
+}
+
+function renderizarTablaPrecioHabitacion() {
+  const tbody = document.getElementById("tablaPrecioHabitacionBody");
+  if (!tbody) return;
+  tbody.innerHTML = window.lineasPrecioHabitacion.map((l, i) => {
+    const subtotal = (l.cantidad || 0) * (l.precioUnitario || 0);
+    return `
+      <tr>
+        <td style="padding:6px;">
+          <select onchange="actualizarLineaPrecioHabitacion(${i}, 'tipoHabitacion', this.value)" style="width:100%; padding:6px;">
+            <option value="Sencilla" ${l.tipoHabitacion === "Sencilla" ? "selected" : ""}>Sencilla</option>
+            <option value="Doble" ${l.tipoHabitacion === "Doble" ? "selected" : ""}>Doble</option>
+            <option value="Triple" ${l.tipoHabitacion === "Triple" ? "selected" : ""}>Triple</option>
+          </select>
+        </td>
+        <td style="padding:6px;">
+          <select onchange="actualizarLineaPrecioHabitacion(${i}, 'categoria', this.value)" style="width:100%; padding:6px;">
+            <option value="Adulto" ${l.categoria === "Adulto" ? "selected" : ""}>Adulto</option>
+            <option value="Niño" ${l.categoria === "Niño" ? "selected" : ""}>Niño</option>
+            <option value="Bebé" ${l.categoria === "Bebé" ? "selected" : ""}>Bebé</option>
+          </select>
+        </td>
+        <td style="padding:6px;">
+          <input type="number" min="0" value="${l.cantidad}" oninput="actualizarLineaPrecioHabitacion(${i}, 'cantidad', this.value)" style="width:100%; padding:6px;">
+        </td>
+        <td style="padding:6px;">
+          <input type="number" min="0" value="${l.precioUnitario}" oninput="actualizarLineaPrecioHabitacion(${i}, 'precioUnitario', this.value)" style="width:100%; padding:6px;">
+        </td>
+        <td style="padding:6px; text-align:right; font-weight:bold; white-space:nowrap;">$${subtotal.toFixed(2)}</td>
+        <td style="padding:6px; text-align:center;">
+          <button type="button" onclick="eliminarLineaPrecioHabitacion(${i})" style="background:transparent; color:#b00020; border:none; cursor:pointer; font-size:16px;" title="Eliminar">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// Recalcula el Total General a partir de las líneas, y además mantiene
+// sincronizados cantidadAdultos/Ninos/Bebes (sumando cantidades por
+// categoría) para que el resto del sistema (validación de pasajeros,
+// finanzas, resumen del PDF) siga funcionando igual que con el modo simple.
+function calcularTotalPorHabitacion() {
+  let total = 0;
+  let adultos = 0, ninos = 0, bebes = 0;
+  window.lineasPrecioHabitacion.forEach(l => {
+    const cantidad = l.cantidad || 0;
+    total += cantidad * (l.precioUnitario || 0);
+    if (l.categoria === "Adulto") adultos += cantidad;
+    else if (l.categoria === "Niño") ninos += cantidad;
+    else if (l.categoria === "Bebé") bebes += cantidad;
+  });
+
+  document.getElementById("totalGeneral").value = total.toFixed(2);
+  document.getElementById("cantidadAdultos").value = adultos;
+  document.getElementById("cantidadNinos").value = ninos;
+  document.getElementById("cantidadBebes").value = bebes;
+
+  if (window.listaPagos) {
+    const totalPagado = window.listaPagos.reduce((sum, p) => sum + p.monto, 0);
+    const saldo = total - totalPagado;
+    document.getElementById("saldoPendiente").textContent = saldo.toFixed(2);
+  }
+}
+
 
 let vueloCounter = 1;
 let contadorCodigoAdicional = 0;
@@ -3095,6 +3248,19 @@ async function cargarReservaExistente(codigo) {
     document.getElementById("precioNino").value = data.precioNino || 0;
     document.getElementById("precioBebe").value = data.precioBebe || 0;
 
+    // NUEVO: restaurar el modo de precio por tipo de habitación, si esta
+    // reserva se guardó con esa opción activada.
+    document.getElementById("precioPorHabitacionCheck").checked = !!data.precioPorHabitacion;
+    if (data.precioPorHabitacion && Array.isArray(data.lineasPrecioHabitacion) && data.lineasPrecioHabitacion.length > 0) {
+      window.lineasPrecioHabitacion = data.lineasPrecioHabitacion.map(l => ({ ...l }));
+      document.getElementById("bloquePrecioSimple").style.display = "none";
+      document.getElementById("bloquePrecioHabitacion").style.display = "block";
+      renderizarTablaPrecioHabitacion();
+    } else {
+      document.getElementById("bloquePrecioSimple").style.display = "block";
+      document.getElementById("bloquePrecioHabitacion").style.display = "none";
+    }
+
     document.getElementById("vendedor").value = data.vendedor || "";
 
     await cargarInfoTour(data.destino);
@@ -3572,31 +3738,55 @@ async function generarPaginasComprobante(datos) {
 
   titulo("Resumen de Tarifas");
   const nombrePaquete = (datos.nombreDestino || "Paquete").split(" (")[0];
-  const partesTarifa = [];
-  if (datos.precioAdulto) partesTarifa.push(`$${Number(datos.precioAdulto).toFixed(2)} Adultos`);
-  if (datos.precioNino) partesTarifa.push(`$${Number(datos.precioNino).toFixed(2)} Niños`);
-  if (datos.precioBebe) partesTarifa.push(`$${Number(datos.precioBebe).toFixed(2)} Bebés`);
-  const precioMostrar = partesTarifa.join(" / ");
-  const filasTarifas = [
-    [
+  // NUEVO: si la reserva usa precio diferenciado por tipo de habitación,
+  // la tabla muestra una fila por cada línea (Tipo de Habitación +
+  // Categoría) en vez del resumen de Adultos/Niños/Bebés con un solo
+  // precio unitario.
+  let filasTarifas;
+  let encabezadoTarifas;
+  if (datos.precioPorHabitacion && Array.isArray(datos.lineasPrecioHabitacion) && datos.lineasPrecioHabitacion.length > 0) {
+    encabezadoTarifas = ["Descripción", "Tipo de Habitación", "Categoría", "Cantidad", "Precio unitario (USD)", "Subtotal (USD)"];
+    filasTarifas = datos.lineasPrecioHabitacion.map(l => [
       nombrePaquete,
-      datos.cantidadAdultos || "",
-      datos.cantidadNinos || "",
-      datos.cantidadBebes || "",
-      precioMostrar,
-      `$${Number(datos.total || 0).toFixed(2)}`
-    ],
-    [
+      l.tipoHabitacion || "-",
+      l.categoria || "-",
+      l.cantidad || 0,
+      `$${Number(l.precioUnitario || 0).toFixed(2)}`,
+      `$${((l.cantidad || 0) * (l.precioUnitario || 0)).toFixed(2)}`
+    ]);
+    filasTarifas.push([
       (datos.toursOpcionales || []).length > 0 ? `Tours adicionales (${datos.toursOpcionales.join(", ")})` : "Tours adicionales",
       "", "", "", "", "-"
-    ],
-    ["Otros cargos (si aplica)", "", "", "", "", "-"]
-  ];
+    ]);
+    filasTarifas.push(["Otros cargos (si aplica)", "", "", "", "", "-"]);
+  } else {
+    encabezadoTarifas = ["Descripción", "Adultos", "Niños", "Bebés", "Precio unitario (USD)", "Subtotal (USD)"];
+    const partesTarifa = [];
+    if (datos.precioAdulto) partesTarifa.push(`$${Number(datos.precioAdulto).toFixed(2)} Adultos`);
+    if (datos.precioNino) partesTarifa.push(`$${Number(datos.precioNino).toFixed(2)} Niños`);
+    if (datos.precioBebe) partesTarifa.push(`$${Number(datos.precioBebe).toFixed(2)} Bebés`);
+    const precioMostrar = partesTarifa.join(" / ");
+    filasTarifas = [
+      [
+        nombrePaquete,
+        datos.cantidadAdultos || "",
+        datos.cantidadNinos || "",
+        datos.cantidadBebes || "",
+        precioMostrar,
+        `$${Number(datos.total || 0).toFixed(2)}`
+      ],
+      [
+        (datos.toursOpcionales || []).length > 0 ? `Tours adicionales (${datos.toursOpcionales.join(", ")})` : "Tours adicionales",
+        "", "", "", "", "-"
+      ],
+      ["Otros cargos (si aplica)", "", "", "", "", "-"]
+    ];
+  }
   asegurarEspacio(40);
   doc.autoTable({
     startY: y,
     margin: { left: margen, right: margen },
-    head: [["Descripción", "Adultos", "Niños", "Bebés", "Precio unitario (USD)", "Subtotal (USD)"]],
+    head: [encabezadoTarifas],
     body: filasTarifas,
     foot: [["", "", "", "", "Total General", `$${Number(datos.total || 0).toFixed(2)}`]],
     theme: "plain",
