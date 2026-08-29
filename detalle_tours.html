@@ -360,28 +360,17 @@
     <label>Políticas y Condiciones</label>
     <textarea id="politicas"></textarea>
 
-    <!-- NUEVO: días mínimos de anticipación para cancelar sin la penalidad
-         completa — cada mayorista/proveedor tiene su propia ventana (ej.
-         Multirutas exige 30-60 días para Europa, otros paquetes con 15
-         días o 1 mes). Este número se usa para armar el Contrato de Viaje
-         que el sistema genera y adjunta al comprobante de cada reserva de
-         este tour — reemplaza el "20 días" genérico de la política general
-         por el plazo real de ESTE proveedor. -->
-    <label>Días mínimos de anticipación para cancelar sin penalidad completa</label>
-    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Según lo que exija el mayorista/proveedor de este paquete específico (ej. 15, 20, 30 o 60 días antes del viaje). Se usa para personalizar el Contrato de Viaje que se genera y envía junto con el comprobante de reserva.</div>
-    <input type="number" id="diasCancelacion" min="0" placeholder="Ej. 20" />
-
-    <!-- NUEVO: si un proveedor/mayorista específico (ej. Multirutas para
-         Europa) tiene su PROPIO esquema de cancelación distinto al
-         estándar de la agencia (tramos de días distintos, penalidades
-         distintas, depósitos no reembolsables), este texto reemplaza por
-         completo la sección "Cancelaciones de Viaje en Servicios
-         Terrestres" del Contrato de Viaje generado para reservas de este
-         tour — dejalo vacío para usar el texto estándar de la agencia
-         (con el número de días de arriba). -->
-    <label>Texto de cancelación específico de este proveedor (opcional)</label>
-    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Si este proveedor tiene su propio esquema de cancelación (ej. tramos de 60/30 días, penalidades distintas), pegalo aquí — reemplaza por completo la sección de cancelación estándar en el Contrato de Viaje de este tour. Si lo dejás vacío, se usa el texto estándar de la agencia con el número de días de arriba.</div>
-    <textarea id="cancelacionOverride" placeholder="Ej. texto de las políticas de cancelación del contrato firmado con el mayorista..."></textarea>
+    <!-- NUEVO: contrato/políticas de viaje específico de este proveedor —
+         si trabajás este paquete con un mayorista que tiene su PROPIO
+         contrato (ej. Multirutas para Europa, con sus propios tramos de
+         cancelación), subí aquí el PDF real de ese contrato. Se pega
+         automáticamente al comprobante de cada reserva de este tour. Si no
+         se sube nada, se usa el Contrato y Políticas de Viaje ESTÁNDAR de
+         la agencia (configurado una sola vez en Configuración). -->
+    <label>Contrato de Viaje de este proveedor (PDF, opcional)</label>
+    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Solo si este paquete se trabaja con un mayorista que tiene su propio contrato (ej. Multirutas). Se adjunta automáticamente al comprobante de cada reserva de este tour. Si no subís nada, se usa el Contrato y Políticas de Viaje estándar de la agencia.</div>
+    <input type="file" id="contratoViajeInput" accept="application/pdf" />
+    <div id="contratoViajePreview"></div>
 
     <button class="boton-guardar" onclick="guardarTour()">Guardar Tour</button>
   </div>
@@ -598,6 +587,54 @@
     }
   }
 
+  // NUEVO: contrato de viaje específico de este tour (PDF) — se sube de
+  // inmediato al elegir el archivo (mismo patrón que fondoPortadaDestino),
+  // pero como es propio de ESTA variante puntual (no del destino completo),
+  // se guarda en Firestore solo cuando se le da "Guardar Tour" — mientras
+  // tanto queda en esta variable, igual que fotosActuales/imagenSlideActual
+  // para las actividades del catálogo.
+  let contratoViajeUrlActual = "";
+
+  function renderizarContratoViajePreview() {
+    const contenedor = document.getElementById("contratoViajePreview");
+    if (!contratoViajeUrlActual) {
+      contenedor.innerHTML = "";
+      return;
+    }
+    contenedor.innerHTML = `
+      <a href="${contratoViajeUrlActual}" target="_blank" style="font-size:13px;">📎 Ver contrato cargado</a>
+      <button type="button" onclick="quitarContratoViaje()" style="background-color:#c0392b; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:13px; margin-left:10px;">🗑️ Quitar</button>
+    `;
+  }
+
+  function quitarContratoViaje() {
+    if (!confirm("¿Quitar el contrato de este tour? Al guardar, este tour volverá a usar el Contrato y Políticas de Viaje estándar de la agencia.")) return;
+    contratoViajeUrlActual = "";
+    document.getElementById("contratoViajeInput").value = "";
+    renderizarContratoViajePreview();
+  }
+
+  document.getElementById("contratoViajeInput").addEventListener("change", async function (e) {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+
+    const contenedor = document.getElementById("contratoViajePreview");
+    contenedor.innerHTML = `<span style="font-size:13px; color:#777;">⏳ Subiendo contrato...</span>`;
+
+    try {
+      const nombreArchivo = `${Date.now()}_${archivo.name}`;
+      const ref = storage.ref().child(`tours_contratos/${tourId || 'nuevo_' + Date.now()}/${nombreArchivo}`);
+      await ref.put(archivo, { contentType: "application/pdf" });
+      contratoViajeUrlActual = await ref.getDownloadURL();
+      renderizarContratoViajePreview();
+    } catch (err) {
+      console.error("Error al subir el contrato de viaje:", err);
+      alert("❌ No se pudo subir el contrato.");
+      contenedor.innerHTML = "";
+    }
+    e.target.value = "";
+  });
+
 function guardarTour() {
   const tipoSalida = document.getElementById("tipoSalida").value;
   const nivel = tipoSalida === "Individual" ? document.getElementById("nivel").value : "";
@@ -623,8 +660,7 @@ function guardarTour() {
     politicas: document.getElementById("politicas").value,
     // NUEVO: días mínimos de anticipación para cancelar sin penalidad
     // completa — usado para personalizar el Contrato de Viaje generado.
-    diasCancelacion: parseInt(document.getElementById("diasCancelacion").value) || 0,
-    cancelacionOverride: document.getElementById("cancelacionOverride").value || "",
+    contratoViajeURL: contratoViajeUrlActual,
     estado: "ACTIVO",
     // Actividades del catálogo incluidas en ESTA variante puntual.
     actividadesIncluidas: Array.from(actividadesIncluidasSeleccionadas)
@@ -939,8 +975,8 @@ if (tourId) {
           document.getElementById("no_incluye").value = t.no_incluye || "";
           document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
           document.getElementById("politicas").value = t.politicas || "";
-          document.getElementById("diasCancelacion").value = t.diasCancelacion || "";
-          document.getElementById("cancelacionOverride").value = t.cancelacionOverride || "";
+          contratoViajeUrlActual = t.contratoViajeURL || "";
+          renderizarContratoViajePreview();
 
           actividadesIncluidasSeleccionadas = new Set(t.actividadesIncluidas || []);
 
