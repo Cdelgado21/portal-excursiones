@@ -177,6 +177,7 @@
     <div class="config-nav">
       <button class="activo" data-seccion="cotizaciones-individuales" onclick="mostrarSeccion('cotizaciones-individuales')">📄 Cotizaciones Individuales</button>
       <button data-seccion="comunicacion-cliente" onclick="mostrarSeccion('comunicacion-cliente')">✈️ Comunicación con Cliente</button>
+      <button data-seccion="contrato-viaje" onclick="mostrarSeccion('contrato-viaje')">📜 Contrato de Viaje</button>
       <div class="proxima-seccion">Más secciones próximamente...</div>
     </div>
 
@@ -234,6 +235,21 @@
           <input type="file" id="inputBuenViaje" accept="image/*">
           <div class="estado-subida" id="estadoBuenViaje"></div>
           <div class="preview" id="previewBuenViaje"></div>
+        </div>
+
+      </div>
+
+      <!-- SECCIÓN: Contrato de Viaje -->
+      <div class="config-panel" id="panel-contrato-viaje">
+
+        <div class="subseccion-titulo">Contrato y Políticas de Viaje</div>
+
+        <div class="tarjeta">
+          <h3>Contrato Estándar (PDF)</h3>
+          <div class="descripcion">Se envía automáticamente junto con el comprobante de cada reserva cuyo tour del catálogo NO tenga su propio contrato cargado (ver "Contrato de Viaje de este proveedor" en el Catálogo de Tours, para casos como un mayorista con su propio contrato). Subilo una sola vez acá.</div>
+          <input type="file" id="inputContratoEstandar" accept="application/pdf">
+          <div class="estado-subida" id="estadoContratoEstandar"></div>
+          <div class="preview" id="previewContratoEstandar"></div>
         </div>
 
       </div>
@@ -340,8 +356,73 @@
     conectarInput("inputCierre", "imagenCierre", "estadoCierre", "previewCierre");
     conectarInput("inputBuenViaje", "imagenBuenViaje", "estadoBuenViaje", "previewBuenViaje");
 
+    // NUEVO: Contrato de Viaje ESTÁNDAR por defecto (PDF, no imagen) — vive
+    // en su propio documento, separado de "cotizacion_visual" porque no
+    // tiene nada que ver con la Cotización Visual. detalle_reserva.html lee
+    // este mismo documento cuando el tour de la reserva no tiene un
+    // contrato propio cargado.
+    const REF_CONFIG_CONTRATO_VIAJE = db.collection("configuracion").doc("contrato_viaje");
+
+    function renderizarPreviewContrato(url) {
+      const contenedor = document.getElementById("previewContratoEstandar");
+      if (!url) {
+        contenedor.innerHTML = `<div class="sin-imagen">Todavía no se ha subido ningún contrato.</div>`;
+        return;
+      }
+      contenedor.innerHTML = `
+        <a href="${url}" target="_blank" style="font-size:14px; color:#02535a; font-weight:bold;">📎 Ver contrato cargado</a><br>
+        <button type="button" onclick="quitarContratoEstandar()">🗑️ Quitar contrato</button>
+      `;
+    }
+
+    async function cargarContratoEstandar() {
+      try {
+        const doc = await REF_CONFIG_CONTRATO_VIAJE.get();
+        const url = doc.exists ? (doc.data().contratoEstandarURL || "") : "";
+        renderizarPreviewContrato(url);
+      } catch (err) {
+        console.error("Error al cargar el contrato estándar:", err);
+      }
+    }
+
+    async function subirContratoEstandar(archivo) {
+      const estado = document.getElementById("estadoContratoEstandar");
+      estado.textContent = "⏳ Subiendo contrato...";
+      try {
+        const nombreArchivo = `contrato_estandar_${Date.now()}_${archivo.name}`;
+        const ref = storage.ref().child(`configuracion_contrato_viaje/${nombreArchivo}`);
+        await ref.put(archivo, { contentType: "application/pdf" });
+        const url = await ref.getDownloadURL();
+        await REF_CONFIG_CONTRATO_VIAJE.set({ contratoEstandarURL: url }, { merge: true });
+        renderizarPreviewContrato(url);
+        estado.textContent = "✅ Contrato guardado — se usará en todas las reservas cuyo tour no tenga uno propio.";
+        setTimeout(() => { estado.textContent = ""; }, 4000);
+      } catch (err) {
+        console.error("Error al subir el contrato estándar:", err);
+        estado.textContent = "❌ No se pudo subir el contrato.";
+      }
+    }
+
+    async function quitarContratoEstandar() {
+      if (!confirm("¿Quitar el contrato estándar? Las reservas cuyo tour no tenga un contrato propio dejarán de llevar un Contrato de Viaje adjunto hasta que subas uno nuevo.")) return;
+      try {
+        await REF_CONFIG_CONTRATO_VIAJE.set({ contratoEstandarURL: "" }, { merge: true });
+        renderizarPreviewContrato("");
+      } catch (err) {
+        console.error("Error al quitar el contrato estándar:", err);
+        alert("❌ No se pudo quitar el contrato.");
+      }
+    }
+
+    document.getElementById("inputContratoEstandar").addEventListener("change", (e) => {
+      const archivo = e.target.files?.[0];
+      if (archivo) subirContratoEstandar(archivo);
+      e.target.value = "";
+    });
+
     window.addEventListener("DOMContentLoaded", () => {
       cargarImagenesCotizacionVisual();
+      cargarContratoEstandar();
     });
   </script>
   <script src="topbar.js"></script>
