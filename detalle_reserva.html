@@ -118,6 +118,11 @@
 
 <img id="fondoPortadaComprobante" src="fondo_portada_comprobante.png" style="display:none;">
 <img id="fondoInteriorComprobante" src="fondo_interior_comprobante.png" style="display:none;">
+<!-- NUEVO: portada propia para el Contrato de Adquisición de Servicios
+     (resumen) — mismo patrón que fondoPortadaComprobante de arriba. Subir
+     este archivo (el diseño "CONTRATO DE ADQUISICIÓN DE SERVICIOS") junto
+     a los demás fondos, con este nombre exacto. -->
+<img id="fondoPortadaContrato" src="fondo_portada_contrato.png" style="display:none;">
 
 <datalist id="listaAerolineas">
   <option value="Avianca">
@@ -4153,7 +4158,12 @@ async function generarDocumentoContratoResumen(datos) {
   const margen = 18;
   const anchoUtil = anchoP - margen * 2;
 
+  // NUEVO: portada propia (página 1) — mismo patrón que el comprobante.
   doc.setFont("helvetica", "normal");
+  const imgPortadaContrato = document.getElementById("fondoPortadaContrato");
+  doc.addImage(imgPortadaContrato, "PNG", 0, 0, anchoP, altoP);
+
+  doc.addPage();
   dibujarFondoInterior(doc);
   let y = 30;
 
