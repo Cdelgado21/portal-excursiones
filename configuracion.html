@@ -243,13 +243,22 @@
       <div class="config-panel" id="panel-contrato-viaje">
 
         <div class="subseccion-titulo">Contrato y Políticas de Viaje</div>
+        <p style="font-size:13px; color:#777; margin-top:-6px; margin-bottom:18px;">Se envían automáticamente junto con el comprobante de cada reserva cuyo tour del catálogo NO tenga su propio contrato cargado (ver "Contrato de Viaje de este proveedor" en el Catálogo de Tours, para casos como un mayorista con su propio contrato). Como las políticas cambian según el tipo de salida (ej. cambios de nombre en boletos: distinto en Individual que en Grupal), subí un PDF separado para cada uno — las reservas Personalizadas usan el mismo que Individual.</p>
 
         <div class="tarjeta">
-          <h3>Contrato Estándar (PDF)</h3>
-          <div class="descripcion">Se envía automáticamente junto con el comprobante de cada reserva cuyo tour del catálogo NO tenga su propio contrato cargado (ver "Contrato de Viaje de este proveedor" en el Catálogo de Tours, para casos como un mayorista con su propio contrato). Subilo una sola vez acá.</div>
-          <input type="file" id="inputContratoEstandar" accept="application/pdf">
-          <div class="estado-subida" id="estadoContratoEstandar"></div>
-          <div class="preview" id="previewContratoEstandar"></div>
+          <h3>Contrato Estándar — Salidas Grupales (PDF)</h3>
+          <div class="descripcion">Se usa para reservas con Tipo de Salida "Grupal" cuyo tour no tenga un contrato propio.</div>
+          <input type="file" id="inputContratoEstandarGrupal" accept="application/pdf">
+          <div class="estado-subida" id="estadoContratoEstandarGrupal"></div>
+          <div class="preview" id="previewContratoEstandarGrupal"></div>
+        </div>
+
+        <div class="tarjeta">
+          <h3>Contrato Estándar — Salidas Individuales / Personalizadas (PDF)</h3>
+          <div class="descripcion">Se usa para reservas con Tipo de Salida "Individual" o "Personalizado" cuyo tour no tenga un contrato propio.</div>
+          <input type="file" id="inputContratoEstandarIndividual" accept="application/pdf">
+          <div class="estado-subida" id="estadoContratoEstandarIndividual"></div>
+          <div class="preview" id="previewContratoEstandarIndividual"></div>
         </div>
 
       </div>
@@ -356,46 +365,51 @@
     conectarInput("inputCierre", "imagenCierre", "estadoCierre", "previewCierre");
     conectarInput("inputBuenViaje", "imagenBuenViaje", "estadoBuenViaje", "previewBuenViaje");
 
-    // NUEVO: Contrato de Viaje ESTÁNDAR por defecto (PDF, no imagen) — vive
+    // NUEVO: Contratos de Viaje ESTÁNDAR por defecto (PDF, no imagen) — viven
     // en su propio documento, separado de "cotizacion_visual" porque no
-    // tiene nada que ver con la Cotización Visual. detalle_reserva.html lee
-    // este mismo documento cuando el tour de la reserva no tiene un
-    // contrato propio cargado.
+    // tiene nada que ver con la Cotización Visual. Son DOS (Grupal e
+    // Individual), no uno solo — las políticas cambian según el tipo de
+    // salida (ej. cambios de nombre en boletos permitidos en Grupal, no en
+    // Individual). detalle_reserva.html lee este mismo documento y elige
+    // cuál de los dos usar según el tipoSalidaReserva de cada reserva,
+    // cuando el tour no tiene un contrato propio cargado.
     const REF_CONFIG_CONTRATO_VIAJE = db.collection("configuracion").doc("contrato_viaje");
 
-    function renderizarPreviewContrato(url) {
-      const contenedor = document.getElementById("previewContratoEstandar");
+    // campo: "contratoEstandarGrupalURL" o "contratoEstandarIndividualURL".
+    function renderizarPreviewContrato(idPreview, url, campo) {
+      const contenedor = document.getElementById(idPreview);
       if (!url) {
         contenedor.innerHTML = `<div class="sin-imagen">Todavía no se ha subido ningún contrato.</div>`;
         return;
       }
       contenedor.innerHTML = `
         <a href="${url}" target="_blank" style="font-size:14px; color:#02535a; font-weight:bold;">📎 Ver contrato cargado</a><br>
-        <button type="button" onclick="quitarContratoEstandar()">🗑️ Quitar contrato</button>
+        <button type="button" onclick="quitarContratoEstandar('${campo}', '${idPreview}')">🗑️ Quitar contrato</button>
       `;
     }
 
-    async function cargarContratoEstandar() {
+    async function cargarContratosEstandar() {
       try {
         const doc = await REF_CONFIG_CONTRATO_VIAJE.get();
-        const url = doc.exists ? (doc.data().contratoEstandarURL || "") : "";
-        renderizarPreviewContrato(url);
+        const data = doc.exists ? doc.data() : {};
+        renderizarPreviewContrato("previewContratoEstandarGrupal", data.contratoEstandarGrupalURL || "", "contratoEstandarGrupalURL");
+        renderizarPreviewContrato("previewContratoEstandarIndividual", data.contratoEstandarIndividualURL || "", "contratoEstandarIndividualURL");
       } catch (err) {
-        console.error("Error al cargar el contrato estándar:", err);
+        console.error("Error al cargar los contratos estándar:", err);
       }
     }
 
-    async function subirContratoEstandar(archivo) {
-      const estado = document.getElementById("estadoContratoEstandar");
+    async function subirContratoEstandar(archivo, campo, idEstado, idPreview) {
+      const estado = document.getElementById(idEstado);
       estado.textContent = "⏳ Subiendo contrato...";
       try {
-        const nombreArchivo = `contrato_estandar_${Date.now()}_${archivo.name}`;
+        const nombreArchivo = `${campo}_${Date.now()}_${archivo.name}`;
         const ref = storage.ref().child(`configuracion_contrato_viaje/${nombreArchivo}`);
         await ref.put(archivo, { contentType: "application/pdf" });
         const url = await ref.getDownloadURL();
-        await REF_CONFIG_CONTRATO_VIAJE.set({ contratoEstandarURL: url }, { merge: true });
-        renderizarPreviewContrato(url);
-        estado.textContent = "✅ Contrato guardado — se usará en todas las reservas cuyo tour no tenga uno propio.";
+        await REF_CONFIG_CONTRATO_VIAJE.set({ [campo]: url }, { merge: true });
+        renderizarPreviewContrato(idPreview, url, campo);
+        estado.textContent = "✅ Contrato guardado.";
         setTimeout(() => { estado.textContent = ""; }, 4000);
       } catch (err) {
         console.error("Error al subir el contrato estándar:", err);
@@ -403,26 +417,33 @@
       }
     }
 
-    async function quitarContratoEstandar() {
-      if (!confirm("¿Quitar el contrato estándar? Las reservas cuyo tour no tenga un contrato propio dejarán de llevar un Contrato de Viaje adjunto hasta que subas uno nuevo.")) return;
+    async function quitarContratoEstandar(campo, idPreview) {
+      if (!confirm("¿Quitar este contrato estándar? Las reservas de este tipo de salida cuyo tour no tenga un contrato propio dejarán de llevar un Contrato de Viaje adjunto hasta que subas uno nuevo.")) return;
       try {
-        await REF_CONFIG_CONTRATO_VIAJE.set({ contratoEstandarURL: "" }, { merge: true });
-        renderizarPreviewContrato("");
+        await REF_CONFIG_CONTRATO_VIAJE.set({ [campo]: "" }, { merge: true });
+        renderizarPreviewContrato(idPreview, "", campo);
       } catch (err) {
         console.error("Error al quitar el contrato estándar:", err);
         alert("❌ No se pudo quitar el contrato.");
       }
     }
 
-    document.getElementById("inputContratoEstandar").addEventListener("change", (e) => {
+    document.getElementById("inputContratoEstandarGrupal").addEventListener("change", (e) => {
       const archivo = e.target.files?.[0];
-      if (archivo) subirContratoEstandar(archivo);
+      if (archivo) subirContratoEstandar(archivo, "contratoEstandarGrupalURL", "estadoContratoEstandarGrupal", "previewContratoEstandarGrupal");
+      e.target.value = "";
+    });
+
+    document.getElementById("inputContratoEstandarIndividual").addEventListener("change", (e) => {
+      const archivo = e.target.files?.[0];
+      if (archivo) subirContratoEstandar(archivo, "contratoEstandarIndividualURL", "estadoContratoEstandarIndividual", "previewContratoEstandarIndividual");
+
       e.target.value = "";
     });
 
     window.addEventListener("DOMContentLoaded", () => {
       cargarImagenesCotizacionVisual();
-      cargarContratoEstandar();
+      cargarContratosEstandar();
     });
   </script>
   <script src="topbar.js"></script>
