@@ -257,6 +257,7 @@
   <div class="seccion" id="seccionProveedoresPendientes">
     <h3>🧾 Proveedores Pendientes de Pago — Salen este mes</h3>
     <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Reservas Grupales e Individuales cuyo viaje es este mes, con proveedores que todavía no están marcados como pagados en Costos. Digitá acá los que ya pagaste "por fuera" y aún no habías registrado.</p>
+    <p style="font-size:0.95rem; margin-top:10px;"><strong>Total pendiente:</strong> <span id="totalProveedoresPendientes" style="color:#c0392b; font-weight:bold;">$0.00</span> <span id="cantidadProveedoresPendientes" style="color:#888; font-size:0.85rem;">(0 pendientes)</span></p>
 
     <table>
       <thead>
@@ -843,6 +844,11 @@
   function renderizarProveedoresPendientes() {
     const tabla = document.getElementById("tablaProveedoresPendientes");
     tabla.innerHTML = "";
+
+    const totalPendiente = listaProveedoresPendientes.reduce((sum, p) => sum + (p.proyectado || 0), 0);
+    document.getElementById("totalProveedoresPendientes").textContent = formatoMoneda(totalPendiente);
+    document.getElementById("cantidadProveedoresPendientes").textContent =
+      `(${listaProveedoresPendientes.length} pendiente${listaProveedoresPendientes.length === 1 ? '' : 's'})`;
 
     if (listaProveedoresPendientes.length === 0) {
       document.getElementById("avisoSinProveedoresPendientes").style.display = "block";
