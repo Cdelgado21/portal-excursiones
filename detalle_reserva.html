@@ -4306,6 +4306,31 @@ async function generarDocumentoContratoResumen(datos) {
 
   parrafo("El presente contrato se considera notificado al cliente en el momento en que es enviado al correo electrónico registrado en la reserva. El cliente contará con un plazo de 3 días naturales a partir de dicho envío para presentar por escrito, al mismo correo o al WhatsApp de contacto de la agencia, cualquier observación u objeción sobre su contenido. Transcurrido ese plazo sin haberse recibido observación alguna, se entenderá que el cliente ha leído, comprendido y aceptado en su totalidad los términos y condiciones aquí descritos.");
 
+  // NUEVO: sello visual de tranquilidad para el cliente — NO es una firma
+  // digital real (esa requiere el token/certificado físico de Firma
+  // Digital de Costa Rica, firmado a mano por Cristopher después de
+  // descargar el PDF). Es solo un sello decorativo, a propósito sin
+  // ninguna palabra que sugiera validez legal o verificación
+  // criptográfica.
+  y += 10;
+  asegurarEspacio(24);
+  doc.setDrawColor(...COLOR_MARCA);
+  doc.setLineWidth(0.3);
+  doc.line(margen, y, margen + 75, y);
+  y += 5;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...COLOR_MARCA);
+  doc.text("Firmado por: Cristopher Delgado Naranjo", margen, y);
+  y += 5;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(90, 90, 90);
+  doc.text("Propietario, Excursiones Delgado", margen, y);
+  y += 5;
+  const fechaFirmaTexto = new Date().toLocaleDateString("es-CR", { dateStyle: "long" });
+  doc.text(`Fecha: ${fechaFirmaTexto}`, margen, y);
+
   return doc;
 }
 
