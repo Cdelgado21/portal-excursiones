@@ -360,6 +360,15 @@
     <label>Políticas y Condiciones</label>
     <textarea id="politicas"></textarea>
 
+    <!-- NUEVO: días de anticipación con los que el saldo debe estar
+         cancelado antes del viaje — varía según el tour (ej. Europa 30
+         días, Chile 15 días). Se usa en el párrafo del comprobante que
+         avisa cuándo vence el saldo, en vez del "15 días" fijo que tenía
+         antes sin importar el destino. -->
+    <label>Días de anticipación para cancelar el saldo antes del viaje</label>
+    <div style="font-size:13px; color:#777; margin-top:-4px; margin-bottom:6px;">Se usa en el comprobante de reserva, en el aviso de "el saldo restante debe estar cancelado X días antes del viaje". Si lo dejás vacío, se usa 15 días por defecto.</div>
+    <input type="number" id="diasPagoSaldo" min="0" placeholder="Ej. 15, o 30 para paquetes de Europa" />
+
     <!-- NUEVO: contrato/políticas de viaje específico de este proveedor —
          si trabajás este paquete con un mayorista que tiene su PROPIO
          contrato (ej. Multirutas para Europa, con sus propios tramos de
@@ -660,6 +669,7 @@ function guardarTour() {
     politicas: document.getElementById("politicas").value,
     // NUEVO: días mínimos de anticipación para cancelar sin penalidad
     // completa — usado para personalizar el Contrato de Viaje generado.
+    diasPagoSaldo: parseInt(document.getElementById("diasPagoSaldo").value) || 0,
     contratoViajeURL: contratoViajeUrlActual,
     estado: "ACTIVO",
     // Actividades del catálogo incluidas en ESTA variante puntual.
@@ -975,6 +985,7 @@ if (tourId) {
           document.getElementById("no_incluye").value = t.no_incluye || "";
           document.getElementById("itinerario_tours").value = t.itinerario_tours || "";
           document.getElementById("politicas").value = t.politicas || "";
+          document.getElementById("diasPagoSaldo").value = t.diasPagoSaldo || "";
           contratoViajeUrlActual = t.contratoViajeURL || "";
           renderizarContratoViajePreview();
 
