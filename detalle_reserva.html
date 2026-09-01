@@ -4134,32 +4134,183 @@ async function construirComprobanteCompleto(datos) {
   return await fusionarComprobanteConBoletos(pdfJsPDF, listaArchivosAdjuntar);
 }
 
-// NUEVO: descarga el Contrato de Viaje del tour de esta reserva como
-// archivo APARTE (no fusionado con el comprobante) — no requiere backend,
-// es una descarga directa del PDF ya guardado en Storage.
+// ==========================================
+// NUEVO: CONTRATO DE ADQUISICIÓN DE SERVICIOS — resumen corto y
+// personalizado por reserva (destino, fechas, monto, abonado, saldo),
+// inspirado en el formato de los contratos de mayoristas (ej. Multirutas):
+// va directo a los datos del trato, en vez del texto legal extenso.
+// Reemplaza al envío del Contrato de Viaje completo — las Políticas de
+// Cancelación completas (los PDFs subidos en Configuración, Grupal/
+// Individual, o el propio del tour si lo tiene) NO se tocan ni se
+// resumen — quedan intactas y se referencian con un link dentro de este
+// resumen, en vez de ir adjuntas completas.
+// ==========================================
+
+async function generarDocumentoContratoResumen(datos) {
+  const doc = new jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+  const anchoP = doc.internal.pageSize.getWidth();
+  const altoP = doc.internal.pageSize.getHeight();
+  const margen = 18;
+  const anchoUtil = anchoP - margen * 2;
+
+  doc.setFont("helvetica", "normal");
+  dibujarFondoInterior(doc);
+  let y = 30;
+
+  function asegurarEspacio(alto) {
+    if (y + alto > altoP - 30) {
+      doc.addPage();
+      dibujarFondoInterior(doc);
+      y = 30;
+    }
+  }
+
+  function titulo(texto) {
+    asegurarEspacio(14);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...COLOR_MARCA);
+    doc.text(texto.toUpperCase(), anchoP / 2, y, { align: "center" });
+    y += 3;
+    doc.setDrawColor(...COLOR_MARCA);
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(margen, y, anchoP - margen, y);
+    doc.setLineDashPattern([], 0);
+    y += 8;
+  }
+
+  function linea(etiqueta, valor) {
+    if (!valor) return;
+    asegurarEspacio(6);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(...COLOR_MARCA);
+    doc.text(`${etiqueta}:`, margen, y);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(40, 40, 40);
+    doc.text(String(valor), margen + 48, y);
+    y += 6;
+  }
+
+  function parrafo(texto, tamano) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(tamano || 9);
+    doc.setTextColor(40, 40, 40);
+    const lineas = doc.splitTextToSize(texto, anchoUtil);
+    lineas.forEach(l => {
+      asegurarEspacio(4.6);
+      doc.text(l, margen, y);
+      y += 4.6;
+    });
+  }
+
+  function listaConViñetas(etiqueta, textoMultilinea) {
+    if (!textoMultilinea) return;
+    asegurarEspacio(8);
+    if (etiqueta) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...COLOR_MARCA);
+      doc.text(etiqueta, margen, y);
+      y += 6;
+    }
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9.5);
+    doc.setTextColor(40, 40, 40);
+    textoMultilinea.split("\n").map(l => l.trim()).filter(Boolean).forEach(item => {
+      const itemLimpio = item.replace(/^[•\-\*]+\s*/, "");
+      const lineasItem = doc.splitTextToSize(`•  ${itemLimpio}`, anchoUtil - 4);
+      lineasItem.forEach((l, i) => {
+        asegurarEspacio(5);
+        doc.text(l, margen + (i > 0 ? 8 : 0), y);
+        y += 5;
+      });
+    });
+    y += 3;
+  }
+
+  const totalAbonado = (datos.pagos || []).reduce((s, p) => s + (Number(p.monto) || 0), 0);
+  const saldoPendiente = Number(datos.total || 0) - totalAbonado;
+  const diasPagoSaldo = await obtenerDiasPagoSaldoDelTour(datos.destino);
+  const { incluye, no_incluye } = await obtenerIncluyeDelTour(datos.destino, datos);
+  const contratoPoliticas = await obtenerContratoDeViajeTour(datos.destino, datos.tipoSalidaReserva);
+
+  titulo("Contrato de Adquisición de Servicios");
+
+  parrafo(
+    `Entre nosotros, Cristopher Delgado Naranjo, cédula ${AGENCIA_CEDULA_JURIDICA}, en calidad de propietario de la Agencia de Viajes Excursiones Delgado (de ahora en adelante EL VENDEDOR), afiliada a CANATUR #${AGENCIA_CANATUR}, con domicilio en Esparza, Puntarenas, Costa Rica, medios de contacto WhatsApp ${AGENCIA_TELEFONO} y correo ${AGENCIA_CORREO}; y ${datos.nombreTitular || "el/la titular de esta reserva"}, cédula ${datos.cedula || "---"}, con medios de contacto teléfono ${datos.telefono || "---"} y correo ${datos.correo || "---"}, conocido/a como EL COMPRADOR, establecen este contrato de compra del siguiente paquete de viajes.`
+  );
+  y += 4;
+
+  linea("Código de reserva", datos.codigo);
+  linea("Nombre del paquete", (datos.nombreDestino || datos.destino || "").split(" (")[0]);
+  linea("Fecha del viaje", formatearRangoFechas(datos.vueloIda?.fecha, datos.vueloRegreso?.fecha));
+  linea("Pasajeros", obtenerResumenPasajeros(datos));
+  y += 4;
+
+  titulo("Costos y Forma de Pago");
+  linea("Total del paquete", `$${Number(datos.total || 0).toFixed(2)}`);
+  linea("Abonado a la fecha", `$${totalAbonado.toFixed(2)}`);
+  linea("Saldo pendiente", `$${saldoPendiente.toFixed(2)}`);
+  y += 2;
+  parrafo(`Los abonos realizados no son reembolsables, transferibles ni endosables a ninguna otra persona. El saldo pendiente debe estar cancelado ${diasPagoSaldo} días antes de la fecha de salida del viaje, según lo indicado en el comprobante de esta reserva.`);
+  y += 4;
+
+  listaConViñetas("Cuentas bancarias para realizar el pago:",
+    "Sinpe Móvil al 6132-8183\n" +
+    "Banco Nacional — IBAN Colones: CR04015120820010802127 / IBAN Dólares: CR08015102720020056566\n" +
+    "Banco BAC Credomatic — IBAN Colones: CR54010200009583976977 / IBAN Dólares: CR37010200009611739459\n" +
+    "Banco Davivienda — IBAN Colones: CR47010400142560261213 / IBAN Dólares: CR50010400142560262129\n" +
+    "Banco Popular — IBAN Colones: CR70016111004151943039 / IBAN Dólares: CR29016111001267887882"
+  );
+
+  if (incluye || no_incluye) {
+    titulo("Paquete Incluye");
+    listaConViñetas("", incluye);
+    listaConViñetas("No incluye:", no_incluye);
+  }
+
+  titulo("Responsabilidades");
+  listaConViñetas("Del comprador:",
+    "Pasaporte con vigencia mayor a 6 meses a la fecha del viaje.\n" +
+    "Restricciones sanitarias y migratorias según lo disponga cada país.\n" +
+    "Visados según la nacionalidad de cada solicitante y país que lo solicite."
+  );
+  listaConViñetas("Del vendedor:",
+    "Cumplir con los servicios ofrecidos al cliente.\n" +
+    "Acompañamiento y seguimiento para lograr el bienestar del cliente durante el viaje."
+  );
+
+  titulo("Políticas de Cancelación");
+  parrafo("Las cancelaciones, cambios de fecha y cambios de nombre están sujetos a las políticas y penalidades establecidas por las aerolíneas, hoteles y demás proveedores de este paquete, así como al Contrato y Políticas de Viaje completas de Excursiones Delgado.");
+  if (contratoPoliticas?.url) {
+    asegurarEspacio(6);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(2, 90, 180);
+    doc.textWithLink("Ver el Contrato y Políticas de Viaje completas.", margen, y, { url: contratoPoliticas.url });
+    doc.setTextColor(40, 40, 40);
+    y += 6;
+  }
+  y += 4;
+
+  parrafo("El presente contrato se considera notificado al cliente en el momento en que es enviado al correo electrónico registrado en la reserva. El cliente contará con un plazo de 3 días naturales a partir de dicho envío para presentar por escrito, al mismo correo o al WhatsApp de contacto de la agencia, cualquier observación u objeción sobre su contenido. Transcurrido ese plazo sin haberse recibido observación alguna, se entenderá que el cliente ha leído, comprendido y aceptado en su totalidad los términos y condiciones aquí descritos.");
+
+  return doc;
+}
+
+// Descarga el Contrato de Adquisición de Servicios de esta reserva como
+// archivo APARTE (no fusionado con el comprobante) — se genera al momento,
+// no requiere backend.
 async function descargarContratoDeViaje() {
   const datos = await obtenerDatosReservaActual();
   if (!datos) return;
-  const contrato = await obtenerContratoDeViajeTour(datos.destino, datos.tipoSalidaReserva);
-  if (!contrato) {
-    alert("⚠️ Este tour no tiene un Contrato de Viaje propio cargado todavía (y aún no hay un contrato estándar por defecto configurado).");
-    return;
-  }
   try {
-    const respuesta = await fetch(contrato.url);
-    if (!respuesta.ok) throw new Error(`HTTP ${respuesta.status}`);
-    const blob = await respuesta.blob();
-    const url = URL.createObjectURL(blob);
-    const enlace = document.createElement("a");
-    enlace.href = url;
-    enlace.download = `Contrato_de_Viaje_${datos.codigo}.pdf`;
-    document.body.appendChild(enlace);
-    enlace.click();
-    document.body.removeChild(enlace);
-    URL.revokeObjectURL(url);
+    const doc = await generarDocumentoContratoResumen(datos);
+    doc.save(`Contrato_de_Viaje_${datos.codigo}.pdf`);
   } catch (e) {
-    console.error("Error al descargar el contrato de viaje:", e);
-    alert("❌ No se pudo descargar el contrato.");
+    console.error("Error al generar el contrato de viaje:", e);
+    alert("❌ No se pudo generar el contrato.");
   }
 }
 
@@ -4259,21 +4410,16 @@ async function confirmarEnvioComprobante() {
 
     const base64Final = btoa(new Uint8Array(bytesFinal).reduce((data, byte) => data + String.fromCharCode(byte), ""));
 
-    // NUEVO: el Contrato de Viaje del tour (si tiene uno propio cargado) se
-    // manda como SEGUNDO adjunto independiente — a pedido explícito de que
-    // vaya por aparte, no pegado dentro del comprobante. Si no hay contrato
-    // para este tour, o falla la descarga, el comprobante se envía igual
-    // (no bloquea el envío) — se avisa en el mensaje final.
+    // NUEVO: el Contrato de Adquisición de Servicios (resumen, generado al
+    // momento con los datos de esta reserva) se manda como SEGUNDO adjunto
+    // independiente — por aparte, no pegado dentro del comprobante. Si algo
+    // falla al generarlo, el comprobante se envía igual (no bloquea el
+    // envío) — se avisa en el mensaje final.
     let base64Contrato = null;
     let avisoContrato = "";
     try {
-      const contrato = await obtenerContratoDeViajeTour(datos.destino, datos.tipoSalidaReserva);
-      if (contrato) {
-        const respuestaContrato = await fetch(contrato.url);
-        if (!respuestaContrato.ok) throw new Error(`HTTP ${respuestaContrato.status}`);
-        const bufferContrato = await respuestaContrato.arrayBuffer();
-        base64Contrato = btoa(new Uint8Array(bufferContrato).reduce((data, byte) => data + String.fromCharCode(byte), ""));
-      }
+      const docContrato = await generarDocumentoContratoResumen(datos);
+      base64Contrato = docContrato.output("datauristring").split(",")[1];
     } catch (e) {
       console.error("No se pudo preparar el Contrato de Viaje para el envío:", e);
       avisoContrato = " (no se pudo adjuntar el Contrato de Viaje — descárgalo aparte y envíalo a mano)";
