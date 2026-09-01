@@ -3617,6 +3617,26 @@ async function obtenerContratoDeViajeTour(destinoId, tipoSalidaReserva) {
   return null;
 }
 
+// NUEVO: días de anticipación con los que el saldo debe estar cancelado
+// antes del viaje — varía por tour (ej. Europa 30 días, Chile 15 días). Se
+// usa en el párrafo del comprobante que avisa el vencimiento del saldo, en
+// vez del "15 días" fijo que tenía antes sin importar el destino. Si el
+// tour no define nada (o la reserva es Personalizada, sin tour asociado),
+// se usan 15 días por defecto.
+async function obtenerDiasPagoSaldoDelTour(destinoId) {
+  if (!destinoId) return 15;
+  try {
+    const doc = await db.collection("tours").doc(destinoId).get();
+    if (doc.exists) {
+      const dias = doc.data().diasPagoSaldo;
+      if (dias) return dias;
+    }
+  } catch (e) {
+    console.error("No se pudo cargar los días de pago del saldo del tour:", e);
+  }
+  return 15;
+}
+
 
 async function obtenerDatosReservaActual() {
   const codigo = window.codigoActualReserva || codigoReservaExistente;
@@ -3647,6 +3667,9 @@ async function generarPaginasComprobante(datos) {
   const anchoUtil = anchoP - margen * 2;
 
   const { incluye, no_incluye } = await obtenerIncluyeDelTour(datos.destino, datos);
+  // NUEVO: días de anticipación con los que el saldo debe estar cancelado
+  // antes del viaje — varía por tour (ej. Europa 30, Chile 15).
+  const diasPagoSaldo = await obtenerDiasPagoSaldoDelTour(datos.destino);
 
   const imgPortada = document.getElementById("fondoPortadaComprobante");
   doc.addImage(imgPortada, "PNG", 0, 0, anchoP, altoP);
@@ -3863,7 +3886,7 @@ async function generarPaginasComprobante(datos) {
     styles: { fontSize: 8.5, cellPadding: 2.5 }
   });
   y = doc.lastAutoTable.finalY + 5;
-  parrafo("El saldo restante debe de estar cancelado 15 días antes del viaje. En caso de que el cliente no cumpla con lo estipulado, la agencia hará un recordatorio y de no ponerse al día se realizará la anulación de los servicios contratados en su totalidad, cobrando hasta el 100% de lo abonado por concepto de penalidad, sin que pueda solicitarse de ninguna manera su devolución.", 8);
+  parrafo(`El saldo restante debe de estar cancelado ${diasPagoSaldo} días antes del viaje. En caso de que el cliente no cumpla con lo estipulado, la agencia hará un recordatorio y de no ponerse al día se realizará la anulación de los servicios contratados en su totalidad, cobrando hasta el 100% de lo abonado por concepto de penalidad, sin que pueda solicitarse de ninguna manera su devolución.`, 8);
   y += 4;
 
   titulo("Contacto de la Agencia");
