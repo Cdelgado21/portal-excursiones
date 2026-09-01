@@ -604,20 +604,14 @@
         }
 
         // ---------- 4) Check-in pendiente (ida y regreso) ----------
-        // NOTA: el sistema solo guarda la FECHA del vuelo, no la hora
-        // exacta (a propósito, por las variaciones de horario) — así que
-        // este aviso es una aproximación de "24 horas antes": aparece
-        // cuando falta exactamente 1 día para la fecha del vuelo, no a una
-        // hora precisa. El check-in de la mayoría de aerolíneas abre 24h
-        // antes de la salida.
-        // Usa TODA la lista de reservas (no "enRango", que solo mira 15
-        // días desde la fecha de IDA) porque el vuelo de REGRESO de un
-        // viaje largo puede caer más adelante que esa ventana.
-        // Además, manda un correo automático la PRIMERA vez que se detecta
-        // cada check-in (marcando una bandera en la reserva para no
-        // reenviarlo en cada visita al dashboard) — pero eso solo pasa si
-        // alguien efectivamente abre el dashboard ese día; no es un push
-        // real a una hora fija.
+        // Se muestra como aviso visual siempre que falte 1 día para el
+        // vuelo — el CORREO de este mismo aviso ya no se manda desde acá:
+        // ahora corre solo, todos los días, un Apps Script independiente
+        // (Code_AvisoCheckinDiario.gs con un Trigger de tiempo), para que
+        // no dependa de que alguien abra el dashboard justo ese día. Esta
+        // parte del dashboard queda solo como recordatorio visual para
+        // quien lo vea, usando la misma bandera para no mostrarlo como
+        // "sin enviar" en ningún otro lado.
         for (const { codigo, data } of todasReservas) {
           const fechaIda = parseFechaReserva(data.vueloIda?.fecha);
           const fechaRegreso = parseFechaReserva(data.vueloRegreso?.fecha);
@@ -630,19 +624,6 @@
                 mensaje: `✈️ el vuelo de IDA sale mañana, hacer el check-in`,
                 url: `detalle_reserva.html?codigo=${codigo}`
               });
-              if (!data.avisoCheckinIdaEnviado && window.enviarCorreoAdmins && window.construirHtmlCorreoAviso) {
-                window.enviarCorreoAdmins(
-                  `Excursiones Delgado | Check-in de IDA mañana: ${codigo}`,
-                  window.construirHtmlCorreoAviso("✈️ Check-in de ida pendiente", [
-                    ["Reserva", codigo],
-                    ["Titular", data.nombreTitular],
-                    ["Destino", data.nombreDestino || data.destino],
-                    ["Fecha de vuelo", data.vueloIda?.fecha],
-                    ["Aerolínea", data.vueloIda?.aerolinea]
-                  ], `${window.location.origin}/detalle_reserva.html?codigo=${codigo}`)
-                );
-                db.collection("reservas").doc(codigo).update({ avisoCheckinIdaEnviado: true }).catch(() => {});
-              }
             }
           }
 
@@ -654,19 +635,6 @@
                 mensaje: `✈️ el vuelo de REGRESO sale mañana, hacer el check-in`,
                 url: `detalle_reserva.html?codigo=${codigo}`
               });
-              if (!data.avisoCheckinRegresoEnviado && window.enviarCorreoAdmins && window.construirHtmlCorreoAviso) {
-                window.enviarCorreoAdmins(
-                  `Excursiones Delgado | Check-in de REGRESO mañana: ${codigo}`,
-                  window.construirHtmlCorreoAviso("✈️ Check-in de regreso pendiente", [
-                    ["Reserva", codigo],
-                    ["Titular", data.nombreTitular],
-                    ["Destino", data.nombreDestino || data.destino],
-                    ["Fecha de vuelo", data.vueloRegreso?.fecha],
-                    ["Aerolínea", data.vueloRegreso?.aerolinea]
-                  ], `${window.location.origin}/detalle_reserva.html?codigo=${codigo}`)
-                );
-                db.collection("reservas").doc(codigo).update({ avisoCheckinRegresoEnviado: true }).catch(() => {});
-              }
             }
           }
         }
