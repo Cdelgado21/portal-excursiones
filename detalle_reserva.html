@@ -4313,21 +4313,32 @@ async function generarDocumentoContratoResumen(datos) {
   // ninguna palabra que sugiera validez legal o verificación
   // criptográfica.
   y += 10;
-  asegurarEspacio(30);
-  doc.setDrawColor(...COLOR_MARCA);
-  doc.setLineWidth(0.3);
-  doc.line(margen, y, margen + 75, y);
-  y += 6;
+  asegurarEspacio(38);
 
-  // Bloque superior — nombre + "(FIRMA)" y fecha, en tamaño chico (como el
-  // sello de arriba en el ejemplo de Cristopher).
+  // Bloque de "firma" — nombre y apellidos cada uno en su línea, luego
+  // "(FIRMA)" y la fecha, y por último la línea divisoria debajo de todo.
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(90, 90, 90);
-  doc.text("CHRISTOFER DELGADO NARANJO (FIRMA)", margen, y);
-  y += 5;
+  doc.text("CHRISTOFER", margen, y);
+  y += 4.5;
+  doc.text("DELGADO", margen, y);
+  y += 4.5;
+  doc.text("NARANJO", margen, y);
+  y += 4.5;
+  doc.text("(FIRMA)", margen, y);
+  y += 4.5;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(90, 90, 90);
   const fechaFirmaTexto = new Date().toLocaleDateString("es-CR", { dateStyle: "long" });
   doc.text(`Fecha: ${fechaFirmaTexto}`, margen, y);
+  y += 5;
+
+  doc.setDrawColor(...COLOR_MARCA);
+  doc.setLineWidth(0.3);
+  doc.line(margen, y, margen + 75, y);
   y += 9;
 
   // Bloque inferior — nombre y empresa, en negrita y más grande (como la
