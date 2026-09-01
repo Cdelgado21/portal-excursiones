@@ -3592,10 +3592,12 @@ async function obtenerIncluyeDelTour(destinoId, datosReserva) {
 
 // NUEVO: contrato de viaje de esta reserva — primero busca si el tour
 // contratado tiene un contrato PROPIO cargado en el catálogo (ej.
-// Multirutas); si no lo tiene (o la reserva es Personalizada, sin tour
-// asociado), cae al Contrato y Políticas de Viaje ESTÁNDAR configurado una
-// sola vez en Configuración.
-async function obtenerContratoDeViajeTour(destinoId) {
+// Multirutas); si no lo tiene, cae al Contrato y Políticas de Viaje
+// ESTÁNDAR configurado en Configuración — pero ahí hay DOS versiones
+// (Grupal / Individual), porque las políticas cambian según el tipo de
+// salida (ej. cambios de nombre en boletos permitidos en Grupal, no en
+// Individual — Personalizado usa el mismo estándar que Individual).
+async function obtenerContratoDeViajeTour(destinoId, tipoSalidaReserva) {
   try {
     if (destinoId) {
       const doc = await db.collection("tours").doc(destinoId).get();
@@ -3605,7 +3607,9 @@ async function obtenerContratoDeViajeTour(destinoId) {
       }
     }
     const docEstandar = await db.collection("configuracion").doc("contrato_viaje").get();
-    const urlEstandar = docEstandar.exists ? (docEstandar.data().contratoEstandarURL || "") : "";
+    const data = docEstandar.exists ? docEstandar.data() : {};
+    const campo = tipoSalidaReserva === "Grupal" ? "contratoEstandarGrupalURL" : "contratoEstandarIndividualURL";
+    const urlEstandar = data[campo] || "";
     if (urlEstandar) return { nombre: "Contrato y Políticas de Viaje", url: urlEstandar };
   } catch (e) {
     console.error("No se pudo cargar el contrato de viaje:", e);
@@ -4110,13 +4114,10 @@ async function construirComprobanteCompleto(datos) {
 // NUEVO: descarga el Contrato de Viaje del tour de esta reserva como
 // archivo APARTE (no fusionado con el comprobante) — no requiere backend,
 // es una descarga directa del PDF ya guardado en Storage.
-// PENDIENTE: enviarlo por correo como segundo adjunto junto al comprobante
-// requiere ampliar el backend (Netlify function + Apps Script), que hoy
-// solo acepta un adjunto — por ahora solo está disponible para descarga.
 async function descargarContratoDeViaje() {
   const datos = await obtenerDatosReservaActual();
   if (!datos) return;
-  const contrato = await obtenerContratoDeViajeTour(datos.destino);
+  const contrato = await obtenerContratoDeViajeTour(datos.destino, datos.tipoSalidaReserva);
   if (!contrato) {
     alert("⚠️ Este tour no tiene un Contrato de Viaje propio cargado todavía (y aún no hay un contrato estándar por defecto configurado).");
     return;
@@ -4243,7 +4244,7 @@ async function confirmarEnvioComprobante() {
     let base64Contrato = null;
     let avisoContrato = "";
     try {
-      const contrato = await obtenerContratoDeViajeTour(datos.destino);
+      const contrato = await obtenerContratoDeViajeTour(datos.destino, datos.tipoSalidaReserva);
       if (contrato) {
         const respuestaContrato = await fetch(contrato.url);
         if (!respuestaContrato.ok) throw new Error(`HTTP ${respuestaContrato.status}`);
