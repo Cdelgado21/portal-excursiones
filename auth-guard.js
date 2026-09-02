@@ -130,6 +130,27 @@
     window.location.href = `login.html${sufijo}`;
   }
 
+  // NUEVO: páginas que solo puede ver quien tenga rol "Administrador" —
+  // cualquier otro rol (Cotizaciones/Reservas/Finanzas, etc.) queda
+  // tratado como "Colaborador" para efectos de acceso, sin tocar esas
+  // etiquetas existentes en registro.html. Esta misma lista también vive
+  // en sidebar.js (para ocultar el link del menú) — si se agrega una
+  // página nueva acá, hay que agregarla ahí también.
+  const ADMIN_ONLY_PAGES = [
+    "comisiones.html",
+    "costos_agregar.html",
+    "costos_salida_grupal.html",
+    "finanzas.html",
+    "gastos.html",
+    "configuracion.html",
+    "registro.html"
+  ];
+
+  function archivoActual() {
+    const partes = window.location.pathname.split("/");
+    return partes[partes.length - 1] || "dashboard.html";
+  }
+
   if (typeof firebase === "undefined" || !firebase.apps || !firebase.apps.length) {
     console.error("auth-guard.js: Firebase no está inicializado. Debe cargarse este script DESPUÉS de firebase.initializeApp(...).");
     return;
@@ -159,6 +180,18 @@
       if (datosUsuario.estado !== "Activo") {
         await firebase.auth().signOut();
         irALogin("usuario_inactivo");
+        return;
+      }
+
+      // NUEVO: control de acceso por rol — si esta página es solo para
+      // Administrador y quien inició sesión tiene otro rol, se corta acá
+      // mismo, antes de mostrar nada de la página ni quitar la pantalla de
+      // "Verificando sesión..." — así el contenido protegido nunca llega a
+      // verse, ni un instante.
+      const paginaActual = archivoActual();
+      if (ADMIN_ONLY_PAGES.includes(paginaActual) && datosUsuario.rol !== "Administrador") {
+        alert("No tenés permiso para acceder a esta página. Si creés que es un error, contactá a un Administrador.");
+        window.location.href = "dashboard.html";
         return;
       }
 
