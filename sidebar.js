@@ -42,6 +42,24 @@
     { archivo: "configuracion.html", icono: "⚙️", texto: "Configuración" }
   ];
 
+  // NUEVO: páginas que solo debe VER quien tenga rol "Administrador" — el
+  // bloqueo real (por si alguien entra por la URL directo) vive en
+  // auth-guard.js; esta lista acá solo controla si el link aparece en el
+  // menú. Debe coincidir con la misma lista de auth-guard.js.
+  const ADMIN_ONLY_PAGES = [
+    "comisiones.html",
+    "costos_agregar.html",
+    "costos_salida_grupal.html",
+    "finanzas.html",
+    "gastos.html",
+    "configuracion.html",
+    "registro.html"
+  ];
+
+  function esAdmin(usuario) {
+    return usuario?.rol === "Administrador";
+  }
+
   function inyectarEstilosSidebar() {
     if (document.getElementById("estilosSidebarSIED")) return;
     const estilo = document.createElement("style");
@@ -161,9 +179,14 @@
     return partes[partes.length - 1] || "dashboard.html";
   }
 
-  function construirNavHTML() {
+  function construirNavHTML(usuario) {
     const actual = archivoActual();
-    const items = MENU_ITEMS.map(item => `
+    const acceso = esAdmin(usuario);
+    // Mientras no se sepa el rol todavía (usuario null, primera carga antes
+    // de que auth-guard.js confirme), se ocultan los restringidos por
+    // defecto — más seguro que mostrarlos de más un instante.
+    const itemsVisibles = MENU_ITEMS.filter(item => !ADMIN_ONLY_PAGES.includes(item.archivo) || acceso);
+    const items = itemsVisibles.map(item => `
       <li>
         <a href="${item.archivo}" class="${item.archivo === actual ? 'activo' : ''}">
           <span class="icon">${item.icono}</span>${item.texto}
@@ -185,7 +208,7 @@
         <small>${usuario?.rol || "-"}</small>
       </div>
       <ul class="nav-links">
-        ${construirNavHTML()}
+        ${construirNavHTML(usuario)}
       </ul>
     `;
   }
@@ -233,22 +256,25 @@
     };
     toggleBtn.addEventListener("click", window.toggleSidebar);
 
-    const linkCerrar = document.getElementById("linkCerrarSesionSidebar");
-    if (linkCerrar) {
-      linkCerrar.addEventListener("click", (e) => {
-        e.preventDefault();
-        // NUEVO: reusa window.cerrarSesion si ya existe (auth-guard.js lo
-        // define con el cierre de sesión REAL de Firebase) — si por algún
-        // motivo esta página no cargó auth-guard.js, cae a un cierre
-        // simple de respaldo.
-        if (window.cerrarSesion) {
-          window.cerrarSesion();
-        } else {
-          localStorage.removeItem("usuario");
-          window.location.href = "login.html";
-        }
-      });
+    function adjuntarListenerCerrarSesion() {
+      const linkCerrar = document.getElementById("linkCerrarSesionSidebar");
+      if (linkCerrar) {
+        linkCerrar.addEventListener("click", (e) => {
+          e.preventDefault();
+          // NUEVO: reusa window.cerrarSesion si ya existe (auth-guard.js lo
+          // define con el cierre de sesión REAL de Firebase) — si por algún
+          // motivo esta página no cargó auth-guard.js, cae a un cierre
+          // simple de respaldo.
+          if (window.cerrarSesion) {
+            window.cerrarSesion();
+          } else {
+            localStorage.removeItem("usuario");
+            window.location.href = "login.html";
+          }
+        });
+      }
     }
+    adjuntarListenerCerrarSesion();
 
     window.addEventListener("resize", checkScreenSize);
     checkScreenSize();
@@ -256,7 +282,11 @@
     // NUEVO: si auth-guard.js todavía no terminó de verificar la sesión
     // cuando este script corrió, el nombre/rol del usuario van a quedar en
     // "Cargando..." — se actualizan solos apenas auth-guard.js confirme
-    // quién es (evento "usuarioVerificado").
+    // quién es (evento "usuarioVerificado"). Además, como el rol recién ahí
+    // queda CONFIRMADO (localStorage puede estar vacío o desactualizado en
+    // la primera carga), se reconstruye la lista de links completa con ese
+    // rol ya verificado — así un link restringido que se hubiera mostrado
+    // de más (o de menos) por dato viejo, queda corregido sin recargar.
     document.addEventListener("usuarioVerificado", (e) => {
       const u = e.detail;
       const nombreEl = sidebar.querySelector(".user-info h3");
@@ -265,6 +295,12 @@
       if (nombreEl) nombreEl.textContent = u.nombre || "Usuario";
       if (rolEl) rolEl.textContent = u.rol || "";
       if (avatarEl && u.fotoURL) avatarEl.src = u.fotoURL;
+
+      const navLinksEl = sidebar.querySelector(".nav-links");
+      if (navLinksEl) {
+        navLinksEl.innerHTML = construirNavHTML(u);
+        adjuntarListenerCerrarSesion();
+      }
     });
   }
 
