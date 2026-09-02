@@ -315,6 +315,16 @@
     const tabla = document.querySelector("#tablaReservas tbody");
     window.datosReservasPorCodigo = {};
 
+    // NUEVO: solo un Administrador puede eliminar/anular una reserva — un
+    // Colaborador puede seguir viendo y editando reservas con normalidad,
+    // pero el botón de eliminar ni siquiera se le muestra, y si de todos
+    // modos se llegara a llamar a la función (ej. por una versión vieja de
+    // la página en caché), se corta ahí también, como segunda barrera.
+    function esAdministrador() {
+      const usuario = JSON.parse(localStorage.getItem("usuario") || "null");
+      return usuario?.rol === "Administrador";
+    }
+
     function parseFechaReserva(str) {
       if (!str || typeof str !== "string") return null;
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
@@ -421,7 +431,7 @@
                 <button class="btn-icono" title="Enviar imagen de Buen Viaje por correo" onclick="abrirModalBuenViaje('${doc.id}')">🌴</button>
                 <button class="btn-icono" title="Enviar encuesta de satisfacción por correo (post-viaje)" onclick="abrirModalEncuesta('${doc.id}')">📝</button>
                 <a class="btn-icono" style="text-decoration:none; display:inline-flex;" href="costos_agregar.html?reserva=${doc.id}" title="Ir a marcar Pagado / Confirmado por cada proveedor">🏷️</a>
-                <button class="btn-icono eliminar" title="Eliminar reserva" onclick="eliminarReserva('${doc.id}')">🗑️</button>
+                ${esAdministrador() ? `<button class="btn-icono eliminar" title="Eliminar reserva" onclick="eliminarReserva('${doc.id}')">🗑️</button>` : ''}
               </div>
             </td>
           `;
@@ -1230,6 +1240,12 @@
     }
 
     function eliminarReserva(id) {
+      // Segunda barrera — aunque el botón esté oculto para Colaboradores,
+      // esto corta la acción igual si de algún modo se llegara a invocar.
+      if (!esAdministrador()) {
+        alert("Solo un Administrador puede eliminar una reserva.");
+        return;
+      }
       if (confirm("¿Deseas eliminar esta reserva?")) {
         db.collection("reservas").doc(id).delete().then(() => {
           alert("Reserva eliminada");
