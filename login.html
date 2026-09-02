@@ -521,13 +521,13 @@
       const modal = document.getElementById("modal-bienvenida");
       modal.textContent = `¡Bienvenido/a ${nombre}!`;
       modal.style.display = "block";
+      // NUEVO: todos entran siempre a dashboard.html, sin importar el rol —
+      // antes quien no fuera Administrador caía en menu.html (una página
+      // vieja, ya retirada). El propio sidebar.js/auth-guard.js se encargan
+      // de mostrar/bloquear cada sección según el rol.
       setTimeout(() => {
         modal.style.display = "none";
-        if (usuario.rol === "Administrador") {
-          window.location.href = "dashboard.html";
-        } else {
-          window.location.href = "menu.html";
-        }
+        window.location.href = "dashboard.html";
       }, 2000);
 
     } catch (error) {
