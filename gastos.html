@@ -205,6 +205,59 @@
       color: #5f9296;
       margin-top: 4px;
     }
+
+    /* NUEVO: filtro tipo Excel en el encabezado de una columna — flechita
+       que abre un menú de casillas con los valores únicos presentes. */
+    .filtro-header {
+      cursor: pointer;
+      margin-left: 4px;
+      font-size: 0.7rem;
+      user-select: none;
+    }
+    .filtro-header:hover { color: #ffd699; }
+    .dropdown-filtro {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+      padding: 8px;
+      z-index: 50;
+      min-width: 190px;
+      max-height: 240px;
+      overflow-y: auto;
+      color: #333;
+      font-weight: normal;
+      text-transform: none;
+      letter-spacing: normal;
+      font-size: 0.85rem;
+    }
+    .dropdown-filtro-acciones {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 6px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #eee;
+    }
+    .dropdown-filtro-acciones a {
+      color: #02535a;
+      font-size: 0.8rem;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .dropdown-filtro-acciones a:hover { text-decoration: underline; }
+    .dropdown-filtro-item {
+      display: block;
+      padding: 3px 0;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .dropdown-filtro-item input {
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
@@ -255,17 +308,41 @@
   </div>
 
   <div class="seccion" id="seccionProveedoresPendientes">
-    <h3>🧾 Proveedores Pendientes de Pago — Salen este mes</h3>
-    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Reservas Grupales e Individuales cuyo viaje es este mes, con proveedores que todavía no están marcados como pagados en Costos. Digitá acá los que ya pagaste "por fuera" y aún no habías registrado.</p>
-    <p style="font-size:0.95rem; margin-top:10px;"><strong>Total pendiente:</strong> <span id="totalProveedoresPendientes" style="color:#c0392b; font-weight:bold;">$0.00</span> <span id="cantidadProveedoresPendientes" style="color:#888; font-size:0.85rem;">(0 pendientes)</span></p>
+    <h3>🧾 Proveedores Pendientes de Pago</h3>
+    <p style="font-size:0.85rem; color:#888; margin-top:-6px;">Reservas Grupales e Individuales con proveedores que todavía no están marcados como pagados en Costos. Filtrá por fecha con el rango de abajo, o por Categoría/Proveedor haciendo clic en la flechita ▾ de esa columna (igual que en Excel) — y digitá acá los pagos que ya hiciste "por fuera" y aún no habías registrado.</p>
+
+    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:15px;">
+      <div>
+        <label class="campo-form">Desde</label>
+        <input type="date" id="pendientesDesde" onchange="aplicarFiltrosProveedoresPendientes()">
+      </div>
+      <div>
+        <label class="campo-form">Hasta</label>
+        <input type="date" id="pendientesHasta" onchange="aplicarFiltrosProveedoresPendientes()">
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button type="button" onclick="aplicarRangoPendientes('mes-actual')" class="btn-rango btn-rango-pendientes activo">Este mes</button>
+        <button type="button" onclick="aplicarRangoPendientesTodo()" class="btn-rango btn-rango-pendientes">Todo</button>
+      </div>
+    </div>
+
+    <p style="font-size:0.95rem;"><strong>Total pendiente:</strong> <span id="totalProveedoresPendientes" style="color:#c0392b; font-weight:bold;">$0.00</span> <span id="cantidadProveedoresPendientes" style="color:#888; font-size:0.85rem;">(0 pendientes)</span></p>
 
     <table>
       <thead>
         <tr>
           <th>Fecha viaje</th>
           <th>Destino / Titular</th>
-          <th>Categoría</th>
-          <th>Proveedor</th>
+          <th style="position:relative;">
+            Categoría
+            <span class="filtro-header" onclick="toggleFiltroColumna('categoria', event)" title="Filtrar por categoría">▾</span>
+            <div class="dropdown-filtro" id="dropdownFiltro_categoria"></div>
+          </th>
+          <th style="position:relative;">
+            Proveedor
+            <span class="filtro-header" onclick="toggleFiltroColumna('proveedor', event)" title="Filtrar por proveedor">▾</span>
+            <div class="dropdown-filtro" id="dropdownFiltro_proveedor"></div>
+          </th>
           <th>Proyectado</th>
           <th>Monto pagado</th>
           <th>Fecha de pago</th>
@@ -275,7 +352,7 @@
       </thead>
       <tbody id="tablaProveedoresPendientes"></tbody>
     </table>
-    <div id="avisoSinProveedoresPendientes" class="vacio" style="display:none;">No hay proveedores pendientes de pago para reservas de este mes. 🎉</div>
+    <div id="avisoSinProveedoresPendientes" class="vacio" style="display:none;">No hay proveedores pendientes de pago con estos filtros. 🎉</div>
   </div>
 
   <div class="seccion" id="seccionPlantillas">
@@ -708,7 +785,8 @@
   // ya se hicieron "por fuera" y no se habían registrado.
   // ==========================================
 
-  let listaProveedoresPendientes = [];
+  let listaProveedoresPendientesTodas = []; // sin filtrar
+  let listaProveedoresPendientes = []; // resultado tras aplicar los filtros
 
   const ETIQUETA_CATEGORIA_PENDIENTE = {
     hospedaje: "Hospedaje",
@@ -719,10 +797,6 @@
   };
 
   async function cargarProveedoresPendientesDelMes() {
-    const hoy = new Date();
-    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59);
-
     const pendientes = [];
 
     // ---------- Reservas Individuales/Personalizadas (y Grupales sin salida asignada) ----------
@@ -738,7 +812,7 @@
       if (!reserva) return;
 
       const fechaViaje = parseFechaFlexible(reserva.vueloIda?.fecha) || parseFechaFlexible(data.fecha_viaje);
-      if (!fechaViaje || fechaViaje < inicioMes || fechaViaje > finMes) return;
+      if (!fechaViaje) return;
 
       // Si es Grupal CON salida asignada, Hospedaje/Traslados/Tours viven
       // en costos_salidas_grupales (se listan más abajo) — acá solo
@@ -783,7 +857,7 @@
         const salidaId = doc.id;
         const infoSalida = salidasPorId[salidaId] || {};
         const fechaViaje = parseFechaFlexible(infoSalida.fechaSalida);
-        if (!fechaViaje || fechaViaje < inicioMes || fechaViaje > finMes) return;
+        if (!fechaViaje) return;
 
         const data = doc.data();
         const nombreDestino = infoSalida.destino || data.destino || "Salida grupal";
@@ -837,8 +911,130 @@
     }
 
     pendientes.sort((a, b) => a.fechaViaje - b.fechaViaje);
-    listaProveedoresPendientes = pendientes;
+    listaProveedoresPendientesTodas = pendientes;
+    inicializarDropdownsFiltro();
+    aplicarFiltrosProveedoresPendientes();
+  }
+
+  // ==========================================
+  // NUEVO: filtros tipo Excel en las columnas "Categoría" y "Proveedor" —
+  // cada una tiene su flechita ▾ que abre un menú de casillas con los
+  // valores únicos presentes; desmarcar un valor lo saca de la tabla. El
+  // filtro de Fecha sigue siendo el rango Desde/Hasta de arriba.
+  // ==========================================
+
+  const filtrosColumna = { categoria: new Set(), proveedor: new Set() };
+
+  function obtenerValorColumnaPendiente(p, columna) {
+    if (columna === "categoria") return p.modo === "paquete" ? "Paquete completo" : (ETIQUETA_CATEGORIA_PENDIENTE[p.clave] || p.clave);
+    if (columna === "proveedor") return p.proveedor;
+    return "";
+  }
+
+  function escaparHtmlAtributo(str) {
+    return String(str).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Se llama cada vez que se recarga la lista desde Firestore — arranca
+  // ambos filtros con TODOS los valores marcados (equivale a "sin filtro").
+  function inicializarDropdownsFiltro() {
+    ["categoria", "proveedor"].forEach(columna => {
+      const valoresUnicos = Array.from(new Set(listaProveedoresPendientesTodas.map(p => obtenerValorColumnaPendiente(p, columna))));
+      filtrosColumna[columna] = new Set(valoresUnicos);
+      renderizarDropdownFiltro(columna);
+    });
+  }
+
+  function renderizarDropdownFiltro(columna) {
+    const valoresUnicos = Array.from(new Set(listaProveedoresPendientesTodas.map(p => obtenerValorColumnaPendiente(p, columna)))).sort((a, b) => String(a).localeCompare(String(b)));
+    const seleccionados = filtrosColumna[columna];
+    const contenedor = document.getElementById(`dropdownFiltro_${columna}`);
+    if (!contenedor) return;
+
+    contenedor.innerHTML = `
+      <div class="dropdown-filtro-acciones">
+        <a href="#" onclick="marcarTodosFiltroColumna('${columna}', true); return false;">Todos</a>
+        <a href="#" onclick="marcarTodosFiltroColumna('${columna}', false); return false;">Ninguno</a>
+      </div>
+      ${valoresUnicos.map(v => `
+        <label class="dropdown-filtro-item">
+          <input type="checkbox" data-columna="${columna}" data-valor="${escaparHtmlAtributo(v)}" ${seleccionados.has(v) ? "checked" : ""} onchange="alternarValorFiltroColumna(this)">
+          ${v}
+        </label>
+      `).join("")}
+    `;
+  }
+
+  function alternarValorFiltroColumna(checkbox) {
+    const columna = checkbox.dataset.columna;
+    const valor = checkbox.dataset.valor;
+    if (checkbox.checked) filtrosColumna[columna].add(valor);
+    else filtrosColumna[columna].delete(valor);
+    aplicarFiltrosProveedoresPendientes();
+  }
+
+  function marcarTodosFiltroColumna(columna, marcar) {
+    const valoresUnicos = Array.from(new Set(listaProveedoresPendientesTodas.map(p => obtenerValorColumnaPendiente(p, columna))));
+    filtrosColumna[columna] = marcar ? new Set(valoresUnicos) : new Set();
+    renderizarDropdownFiltro(columna);
+    aplicarFiltrosProveedoresPendientes();
+  }
+
+  function toggleFiltroColumna(columna, evt) {
+    evt.stopPropagation();
+    document.querySelectorAll(".dropdown-filtro").forEach(el => {
+      if (el.id !== `dropdownFiltro_${columna}`) el.style.display = "none";
+    });
+    const el = document.getElementById(`dropdownFiltro_${columna}`);
+    el.style.display = el.style.display === "block" ? "none" : "block";
+  }
+
+  // Cierra cualquier dropdown de filtro abierto si se hace clic afuera.
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".dropdown-filtro") && !e.target.closest(".filtro-header")) {
+      document.querySelectorAll(".dropdown-filtro").forEach(el => el.style.display = "none");
+    }
+  });
+
+  // Filtro de Fecha (Desde/Hasta) — se combina con los dos de arriba, sin
+  // volver a consultar Firestore.
+  function aplicarFiltrosProveedoresPendientes() {
+    const desdeStr = document.getElementById("pendientesDesde").value;
+    const hastaStr = document.getElementById("pendientesHasta").value;
+    const desde = desdeStr ? new Date(desdeStr + "T00:00:00") : null;
+    const hasta = hastaStr ? new Date(hastaStr + "T23:59:59") : null;
+
+    listaProveedoresPendientes = listaProveedoresPendientesTodas.filter(p => {
+      if (desde && p.fechaViaje < desde) return false;
+      if (hasta && p.fechaViaje > hasta) return false;
+      if (!filtrosColumna.categoria.has(obtenerValorColumnaPendiente(p, "categoria"))) return false;
+      if (!filtrosColumna.proveedor.has(obtenerValorColumnaPendiente(p, "proveedor"))) return false;
+      return true;
+    });
+
     renderizarProveedoresPendientes();
+  }
+
+  function aplicarRangoPendientes(tipo) {
+    const hoy = new Date();
+    let desde, hasta;
+    if (tipo === "mes-actual") {
+      desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+      hasta = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+    }
+    document.getElementById("pendientesDesde").value = formatearFechaInput(desde);
+    document.getElementById("pendientesHasta").value = formatearFechaInput(hasta);
+    document.querySelectorAll(".btn-rango-pendientes").forEach(btn => btn.classList.remove("activo"));
+    document.querySelectorAll(".btn-rango-pendientes")[0]?.classList.add("activo");
+    aplicarFiltrosProveedoresPendientes();
+  }
+
+  function aplicarRangoPendientesTodo() {
+    document.getElementById("pendientesDesde").value = "";
+    document.getElementById("pendientesHasta").value = "";
+    document.querySelectorAll(".btn-rango-pendientes").forEach(btn => btn.classList.remove("activo"));
+    document.querySelectorAll(".btn-rango-pendientes")[1]?.classList.add("activo");
+    aplicarFiltrosProveedoresPendientes();
   }
 
   function renderizarProveedoresPendientes() {
@@ -1144,6 +1340,7 @@
     await cargarPlantillas();
     await cargarDatosBase();
     await cargarDiario();
+    aplicarRangoPendientes("mes-actual");
     await cargarProveedoresPendientesDelMes();
     aplicarRangoDiario("mes-actual");
 
