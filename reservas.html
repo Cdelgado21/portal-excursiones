@@ -282,15 +282,15 @@
     <table id="tablaReservas">
       <thead>
         <tr>
-          <th>Código</th>
-          <th>Fecha de Creación</th>
+          <th style="cursor:pointer; user-select:none;" onclick="alternarOrden('codigo')" title="Ordenar por código">Código <span id="indicadorOrden_codigo"></span></th>
+          <th style="cursor:pointer; user-select:none;" onclick="alternarOrden('fechaCreacion')" title="Ordenar por fecha de creación">Fecha de Creación <span id="indicadorOrden_fechaCreacion"></span></th>
           <th>Cliente</th>
           <th>Teléfono</th>
           <th>Correo</th>
-          <th>Destino</th>
+          <th style="cursor:pointer; user-select:none;" onclick="alternarOrden('destino')" title="Ordenar por destino">Destino <span id="indicadorOrden_destino"></span></th>
           <th>Personas</th>
-          <th style="cursor:pointer; user-select:none;" onclick="alternarOrdenFechaViaje()" title="Ordenar por fecha de viaje">Fecha de viaje <span id="indicadorOrdenFechaViaje">▲</span></th>
-          <th>Fecha de regreso</th>
+          <th style="cursor:pointer; user-select:none;" onclick="alternarOrden('fechaViaje')" title="Ordenar por fecha de viaje">Fecha de viaje <span id="indicadorOrden_fechaViaje">▲</span></th>
+          <th style="cursor:pointer; user-select:none;" onclick="alternarOrden('fechaRegreso')" title="Ordenar por fecha de regreso">Fecha de regreso <span id="indicadorOrden_fechaRegreso"></span></th>
           <th>Aerolínea</th>
           <th>Cód. Vuelo</th>
           <th style="text-align:center;">Reunión</th>
@@ -406,7 +406,7 @@
             mesesConReservas.add(claveMes);
           }
 
-          lista.push({ id: doc.id, data, fecha });
+          lista.push({ id: doc.id, data, fecha, fechaRegreso: parseFechaReserva(data.vueloRegreso?.fecha) });
         });
 
         // NUEVO: se guarda la lista completa en memoria (no solo pintada en
@@ -439,16 +439,57 @@
     // (para ver de un vistazo cuáles reservas salen más pronto). Las que no
     // tienen fecha de viaje registrada quedan siempre al final, sin
     // importar el sentido del orden. Se puede invertir haciendo clic en el
-    // encabezado de la columna.
-    window.ordenFechaViajeAsc = true;
+    // encabezado de la columna — y generalizado a 5 columnas: Código,
+    // Fecha de Creación, Destino, Fecha de viaje y Fecha de regreso.
+    window.ordenActual = { columna: "fechaViaje", ascendente: true };
+
+    // Convierte cada columna ordenable a un valor comparable — texto para
+    // Código/Destino (localeCompare, sensible a tildes), milisegundos para
+    // las fechas (para poder restar directo).
+    function obtenerValorOrden(item, columna) {
+      switch (columna) {
+        case "codigo":
+          return item.id || "";
+        case "destino":
+          return item.data.nombreDestino || item.data.destino || "";
+        case "fechaCreacion": {
+          const valor = item.data.creado_el;
+          if (!valor) return null;
+          const fecha = typeof valor.toDate === "function" ? valor.toDate() : new Date(valor);
+          return isNaN(fecha.getTime()) ? null : fecha.getTime();
+        }
+        case "fechaViaje":
+          return item.fecha ? item.fecha.getTime() : null;
+        case "fechaRegreso":
+          return item.fechaRegreso ? item.fechaRegreso.getTime() : null;
+        default:
+          return null;
+      }
+    }
 
     function ordenarYRenderizarReservas() {
+      const { columna, ascendente } = window.ordenActual;
+      const esTexto = columna === "codigo" || columna === "destino";
+
       const lista = (window.listaReservasActivas || []).slice();
       lista.sort((a, b) => {
-        if (!a.fecha && !b.fecha) return 0;
-        if (!a.fecha) return 1;
-        if (!b.fecha) return -1;
-        return window.ordenFechaViajeAsc ? (a.fecha - b.fecha) : (b.fecha - a.fecha);
+        const valorA = obtenerValorOrden(a, columna);
+        const valorB = obtenerValorOrden(b, columna);
+
+        if (esTexto) {
+          // Los textos vacíos ("-") siempre al final, en cualquier sentido.
+          if (!valorA && !valorB) return 0;
+          if (!valorA) return 1;
+          if (!valorB) return -1;
+          const comparacion = valorA.localeCompare(valorB, "es");
+          return ascendente ? comparacion : -comparacion;
+        }
+
+        // Fechas — las que no tienen valor quedan siempre al final.
+        if (valorA === null && valorB === null) return 0;
+        if (valorA === null) return 1;
+        if (valorB === null) return -1;
+        return ascendente ? (valorA - valorB) : (valorB - valorA);
       });
 
       tabla.innerHTML = "";
@@ -493,12 +534,23 @@
       // ocultas por un filtro.
       filtrarTablaReservas();
 
-      const indicador = document.getElementById("indicadorOrdenFechaViaje");
-      if (indicador) indicador.textContent = window.ordenFechaViajeAsc ? "▲" : "▼";
+      // Limpia las flechitas de las otras columnas y deja solo la de la
+      // columna activa, apuntando en el sentido correcto.
+      ["codigo", "fechaCreacion", "destino", "fechaViaje", "fechaRegreso"].forEach(col => {
+        const indicador = document.getElementById(`indicadorOrden_${col}`);
+        if (!indicador) return;
+        indicador.textContent = col === columna ? (ascendente ? "▲" : "▼") : "";
+      });
     }
 
-    function alternarOrdenFechaViaje() {
-      window.ordenFechaViajeAsc = !window.ordenFechaViajeAsc;
+    function alternarOrden(columna) {
+      if (window.ordenActual.columna === columna) {
+        window.ordenActual.ascendente = !window.ordenActual.ascendente;
+      } else {
+        // Al cambiar de columna, arranca en orden ascendente — para
+        // fechas es "más antigua/cercana primero" y para texto es A→Z.
+        window.ordenActual = { columna, ascendente: true };
+      }
       ordenarYRenderizarReservas();
     }
 
