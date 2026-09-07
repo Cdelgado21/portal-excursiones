@@ -289,7 +289,7 @@
           <th>Correo</th>
           <th>Destino</th>
           <th>Personas</th>
-          <th>Fecha de viaje</th>
+          <th style="cursor:pointer; user-select:none;" onclick="alternarOrdenFechaViaje()" title="Ordenar por fecha de viaje">Fecha de viaje <span id="indicadorOrdenFechaViaje">▲</span></th>
           <th>Fecha de regreso</th>
           <th>Aerolínea</th>
           <th>Cód. Vuelo</th>
@@ -376,9 +376,9 @@
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
 
-        let contadorActivas = 0;
         let contadorSinFecha = 0;
         const mesesConReservas = new Set();
+        const lista = [];
 
         snapshot.forEach(doc => {
           const data = doc.data();
@@ -399,47 +399,25 @@
           }
 
           if (!fecha) contadorSinFecha++;
-          contadorActivas++;
           window.datosReservasPorCodigo[doc.id] = data;
 
-          const fila = document.createElement("tr");
           if (fecha) {
             const claveMes = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
-            fila.dataset.mesAnio = claveMes;
             mesesConReservas.add(claveMes);
           }
-          fila.innerHTML = `
-            <td data-etiqueta="Código"><a href="detalle_reserva.html?codigo=${doc.id}" class="link-codigo-reserva">${doc.id}</a></td>
-            <td data-etiqueta="Fecha de Creación">${formatearFechaCreacion(data.creado_el)}</td>
-            <td data-etiqueta="Cliente">${data.nombreTitular || '-'}</td>
-            <td data-etiqueta="Teléfono">${data.telefono || '-'}</td>
-            <td data-etiqueta="Correo">${data.correo || '-'}</td>
-            <td data-etiqueta="Destino">${data.nombreDestino || data.destino || '-'}</td>
-            <td data-etiqueta="Personas">${calcularPersonas(data) ?? '-'}</td>
-            <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(data.fechaReserva)}</td>
-            <td data-etiqueta="Fecha de regreso">${data.vueloRegreso?.fecha ? formatearFechaVisible(data.vueloRegreso.fecha) : '-'}</td>
-            <td data-etiqueta="Aerolínea">${data.vueloIda?.aerolinea || '-'}</td>
-            <td data-etiqueta="Cód. Vuelo">${data.vueloIda?.codigo || '-'}</td>
-            <td data-etiqueta="Reunión" style="text-align:center;">
-              <input type="checkbox" class="check-reunion" ${data.reunionRealizada ? 'checked' : ''} onchange="marcarReunionRealizada('${doc.id}', this.checked)" title="¿Ya se hizo la reunión de guía de viaje?">
-            </td>
-            <td data-etiqueta="Acciones">
-              <div class="celda-acciones">
-                <button class="btn-icono" title="Editar reserva" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
-                <button class="btn-icono" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
-                <button class="btn-icono" title="Reporte para el tour operador en destino" onclick="generarReporteOperador('${doc.id}')">📄</button>
-                <button class="btn-icono" title="Enviar imagen de Buen Viaje por correo" onclick="abrirModalBuenViaje('${doc.id}')">🌴</button>
-                <button class="btn-icono" title="Enviar encuesta de satisfacción por correo (post-viaje)" onclick="abrirModalEncuesta('${doc.id}')">📝</button>
-                <a class="btn-icono" style="text-decoration:none; display:inline-flex;" href="costos_agregar.html?reserva=${doc.id}" title="Ir a marcar Pagado / Confirmado por cada proveedor">🏷️</a>
-                ${esAdministrador() ? `<button class="btn-icono eliminar" title="Eliminar reserva" onclick="eliminarReserva('${doc.id}')">🗑️</button>` : ''}
-              </div>
-            </td>
-          `;
-          tabla.appendChild(fila);
+
+          lista.push({ id: doc.id, data, fecha });
         });
 
+        // NUEVO: se guarda la lista completa en memoria (no solo pintada en
+        // la tabla) para poder reordenar por Fecha de viaje sin tener que
+        // volver a consultar Firestore cada vez que se le da clic al
+        // encabezado de esa columna.
+        window.listaReservasActivas = lista;
+        ordenarYRenderizarReservas();
+
         const contadorEl = document.getElementById("contador");
-        let texto = `${contadorActivas} reserva${contadorActivas === 1 ? '' : 's'} activa${contadorActivas === 1 ? '' : 's'}`;
+        let texto = `${lista.length} reserva${lista.length === 1 ? '' : 's'} activa${lista.length === 1 ? '' : 's'}`;
         if (contadorSinFecha > 0) {
           texto += ` (${contadorSinFecha} sin fecha de viaje registrada — revisar)`;
         }
@@ -455,6 +433,73 @@
           selectMes.appendChild(opt);
         });
       });
+    }
+
+    // NUEVO: orden por Fecha de viaje — más cercana primero por defecto
+    // (para ver de un vistazo cuáles reservas salen más pronto). Las que no
+    // tienen fecha de viaje registrada quedan siempre al final, sin
+    // importar el sentido del orden. Se puede invertir haciendo clic en el
+    // encabezado de la columna.
+    window.ordenFechaViajeAsc = true;
+
+    function ordenarYRenderizarReservas() {
+      const lista = (window.listaReservasActivas || []).slice();
+      lista.sort((a, b) => {
+        if (!a.fecha && !b.fecha) return 0;
+        if (!a.fecha) return 1;
+        if (!b.fecha) return -1;
+        return window.ordenFechaViajeAsc ? (a.fecha - b.fecha) : (b.fecha - a.fecha);
+      });
+
+      tabla.innerHTML = "";
+      lista.forEach(({ id: docId, data, fecha }) => {
+        const fila = document.createElement("tr");
+        if (fecha) {
+          const claveMes = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+          fila.dataset.mesAnio = claveMes;
+        }
+        fila.innerHTML = `
+            <td data-etiqueta="Código"><a href="detalle_reserva.html?codigo=${docId}" class="link-codigo-reserva">${docId}</a></td>
+            <td data-etiqueta="Fecha de Creación">${formatearFechaCreacion(data.creado_el)}</td>
+            <td data-etiqueta="Cliente">${data.nombreTitular || '-'}</td>
+            <td data-etiqueta="Teléfono">${data.telefono || '-'}</td>
+            <td data-etiqueta="Correo">${data.correo || '-'}</td>
+            <td data-etiqueta="Destino">${data.nombreDestino || data.destino || '-'}</td>
+            <td data-etiqueta="Personas">${calcularPersonas(data) ?? '-'}</td>
+            <td data-etiqueta="Fecha de viaje">${formatearFechaVisible(data.fechaReserva)}</td>
+            <td data-etiqueta="Fecha de regreso">${data.vueloRegreso?.fecha ? formatearFechaVisible(data.vueloRegreso.fecha) : '-'}</td>
+            <td data-etiqueta="Aerolínea">${data.vueloIda?.aerolinea || '-'}</td>
+            <td data-etiqueta="Cód. Vuelo">${data.vueloIda?.codigo || '-'}</td>
+            <td data-etiqueta="Reunión" style="text-align:center;">
+              <input type="checkbox" class="check-reunion" ${data.reunionRealizada ? 'checked' : ''} onchange="marcarReunionRealizada('${docId}', this.checked)" title="¿Ya se hizo la reunión de guía de viaje?">
+            </td>
+            <td data-etiqueta="Acciones">
+              <div class="celda-acciones">
+                <button class="btn-icono" title="Editar reserva" onclick="window.location.href='detalle_reserva.html?codigo=${docId}'">✏️</button>
+                <button class="btn-icono" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${docId}'">💰</button>
+                <button class="btn-icono" title="Reporte para el tour operador en destino" onclick="generarReporteOperador('${docId}')">📄</button>
+                <button class="btn-icono" title="Enviar imagen de Buen Viaje por correo" onclick="abrirModalBuenViaje('${docId}')">🌴</button>
+                <button class="btn-icono" title="Enviar encuesta de satisfacción por correo (post-viaje)" onclick="abrirModalEncuesta('${docId}')">📝</button>
+                <a class="btn-icono" style="text-decoration:none; display:inline-flex;" href="costos_agregar.html?reserva=${docId}" title="Ir a marcar Pagado / Confirmado por cada proveedor">🏷️</a>
+                ${esAdministrador() ? `<button class="btn-icono eliminar" title="Eliminar reserva" onclick="eliminarReserva('${docId}')">🗑️</button>` : ''}
+              </div>
+            </td>
+          `;
+        tabla.appendChild(fila);
+      });
+
+      // Vuelve a aplicar el buscador/filtro de mes que ya estuviera activo,
+      // para que reordenar no haga que reaparezcan filas que estaban
+      // ocultas por un filtro.
+      filtrarTablaReservas();
+
+      const indicador = document.getElementById("indicadorOrdenFechaViaje");
+      if (indicador) indicador.textContent = window.ordenFechaViajeAsc ? "▲" : "▼";
+    }
+
+    function alternarOrdenFechaViaje() {
+      window.ordenFechaViajeAsc = !window.ordenFechaViajeAsc;
+      ordenarYRenderizarReservas();
     }
 
     function normalizarTexto(str) {
