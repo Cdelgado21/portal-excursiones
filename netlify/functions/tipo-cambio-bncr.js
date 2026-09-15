@@ -21,7 +21,19 @@
 exports.handler = async function () {
   try {
     const url = "https://gee.bccr.fi.cr/IndicadoresEconomicos/Cuadros/frmConsultaTCVentanilla.aspx";
-    const respuesta = await fetch(url);
+    // FIX: el fetch sin cabeceras estaba recibiendo un 404 del BCCR, aunque
+    // la página en sí seguía funcionando normal para cualquiera que la
+    // visitara desde un navegador — es un patrón típico de sitios de
+    // bancos/gobierno que bloquean (o redirigen a un error) las peticiones
+    // que no traen pinta de venir de un navegador real. Se agregan estas
+    // cabeceras para que la petición se vea como la de un navegador normal.
+    const respuesta = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "es-CR,es;q=0.9,en;q=0.8"
+      }
+    });
 
     if (!respuesta.ok) {
       return {
