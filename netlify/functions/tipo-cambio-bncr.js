@@ -1,32 +1,31 @@
 // netlify/functions/tipo-cambio-bncr.js
 //
-// Consulta el tipo de cambio de VENTA del Banco Nacional de Costa Rica,
-// tomado de la página pública y oficial del Banco Central de Costa Rica
-// (BCCR) — "Tipo de Cambio de Ventanilla", que publica el tipo de cada
-// banco/entidad autorizada, no solo el de referencia del BCCR.
+// Consulta el tipo de cambio de VENTA del Banco Nacional de Costa Rica.
 //
-// Se usa esta página en vez del Servicio Web de Indicadores Económicos del
-// BCCR porque ese otro requiere registrarse con correo y token — esta
-// página es pública, no necesita autenticación.
+// CAMBIO DE FUENTE (14/9/2026): antes se leía directo de la página oficial
+// del BCCR (gee.bccr.fi.cr/.../frmConsultaTCVentanilla.aspx), pero esa
+// página empezó a devolver error 404 a cualquier petición automatizada
+// (aunque seguía funcionando perfecto para cualquiera que la visitara desde
+// un navegador normal) — es un patrón típico de sitios de bancos/gobierno
+// que bloquean pedidos que no traen pinta de venir de un navegador real.
+// Se probó agregar cabeceras de navegador (User-Agent, Accept, etc.) y
+// aun así seguía fallando, así que se cambió a esta fuente alternativa:
+// tipodecambio.info, un sitio que publica los MISMOS datos (toma la
+// información de las mismas entidades autorizadas que reporta el BCCR),
+// pero en una página simple que sí responde bien a peticiones automáticas.
 //
-// URL fuente: https://gee.bccr.fi.cr/IndicadoresEconomicos/Cuadros/frmConsultaTCVentanilla.aspx
+// URL fuente: https://www.tipodecambio.info/ventanilla.php?lang=es
 //
-// ADVERTENCIA IMPORTANTE: esto funciona leyendo el HTML de una página del
-// BCCR, no una API pensada para consumirse por código — si el BCCR cambia
-// el diseño de esa página en el futuro, esta función puede dejar de
-// encontrar la fila del Banco Nacional y empezar a fallar. Si eso pasa,
-// hay que volver a revisar cómo quedó la página y ajustar la búsqueda de
-// texto de acá abajo.
+// ADVERTENCIA IMPORTANTE: esto sigue funcionando leyendo el HTML de una
+// página pensada para personas, no una API pensada para consumirse por
+// código — si ese sitio cambia de diseño en el futuro, esta función puede
+// dejar de encontrar la fila del Banco Nacional y empezar a fallar. Si eso
+// pasa, hay que volver a revisar cómo quedó la página y ajustar la
+// búsqueda de texto de acá abajo (o buscar otra fuente alternativa).
 
 exports.handler = async function () {
   try {
-    const url = "https://gee.bccr.fi.cr/IndicadoresEconomicos/Cuadros/frmConsultaTCVentanilla.aspx";
-    // FIX: el fetch sin cabeceras estaba recibiendo un 404 del BCCR, aunque
-    // la página en sí seguía funcionando normal para cualquiera que la
-    // visitara desde un navegador — es un patrón típico de sitios de
-    // bancos/gobierno que bloquean (o redirigen a un error) las peticiones
-    // que no traen pinta de venir de un navegador real. Se agregan estas
-    // cabeceras para que la petición se vea como la de un navegador normal.
+    const url = "https://www.tipodecambio.info/ventanilla.php?lang=es";
     const respuesta = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -38,7 +37,7 @@ exports.handler = async function () {
     if (!respuesta.ok) {
       return {
         statusCode: 502,
-        body: JSON.stringify({ error: `El BCCR respondió con error (HTTP ${respuesta.status}) al consultar el tipo de cambio.` })
+        body: JSON.stringify({ error: `tipodecambio.info respondió con error (HTTP ${respuesta.status}) al consultar el tipo de cambio.` })
       };
     }
 
@@ -53,15 +52,16 @@ exports.handler = async function () {
       .replace(/&nbsp;/g, " ")
       .replace(/\s+/g, " ");
 
-    // Busca "Banco Nacional de Costa Rica" seguido de dos montos con coma
-    // decimal (formato costarricense, ej. "444,00" y "458,00") — el
-    // primero es Compra, el segundo es Venta, en ese orden en la tabla.
-    const coincidencia = texto.match(/Banco Nacional de Costa Rica\s*([\d]{1,3}[.,]\d{2})\s*([\d]{1,3}[.,]\d{2})/i);
+    // Busca "Banco Nacional de Costa Rica" seguido de dos montos — en esta
+    // fuente vienen con el símbolo ₡ y punto decimal (ej. "₡440.00" y
+    // "₡454.00"), a diferencia del formato con coma que usaba la página
+    // del BCCR. El primero es Compra, el segundo es Venta, en ese orden.
+    const coincidencia = texto.match(/Banco Nacional de Costa Rica[^\d]*?₡?\s*([\d]{1,3}[.,]\d{2})[^\d]*?₡?\s*([\d]{1,3}[.,]\d{2})/i);
 
     if (!coincidencia) {
       return {
         statusCode: 502,
-        body: JSON.stringify({ error: "No se pudo encontrar la fila de Banco Nacional en la página del BCCR — puede que hayan cambiado el formato de esa página." })
+        body: JSON.stringify({ error: "No se pudo encontrar la fila de Banco Nacional en tipodecambio.info — puede que hayan cambiado el formato de esa página." })
       };
     }
 
@@ -81,7 +81,7 @@ exports.handler = async function () {
         ok: true,
         compra,
         venta,
-        fuente: "BCCR — Tipo de Cambio de Ventanilla, Banco Nacional de Costa Rica",
+        fuente: "tipodecambio.info (datos de entidades autorizadas por el BCCR) — Banco Nacional de Costa Rica",
         consultadoEl: new Date().toISOString()
       })
     };
