@@ -86,6 +86,7 @@
 
   <div class="barra-superior">
     <a class="btn-volver" href="reservas.html">◀ Ver reservas activas</a>
+    <a class="btn-volver" id="btnReservasEliminadas" href="reservas_eliminadas.html" style="display:none; background-color:#5f9296;">🗑️ Eliminadas</a>
   </div>
 
   <input type="text" id="buscadorReservas" placeholder="🔍 Buscar por código, nombre, teléfono o destino..." oninput="filtrarTablaReservas()" style="width: 100%; max-width: 500px; padding: 10px 14px; border-radius: 8px; border: 1px solid #ccc; margin-bottom: 15px; font-size: 15px; box-sizing: border-box;">
@@ -125,6 +126,34 @@
     const db = firebase.firestore();
     const tabla = document.querySelector("#tablaReservas tbody");
     window.datosReservasPorCodigo = {};
+
+    // NUEVO (7/10/2026): esta página tenía su propio botón 🗑️ SIN ninguna
+    // revisión de rol — cualquier colaboradora podía borrar reservas
+    // históricas. Ahora es igual que en reservas.html: solo Administrador.
+    function esAdministrador() {
+      const usuario = (function () {
+        try { return JSON.parse(localStorage.getItem("usuario") || "null"); } catch (e) { return null; }
+      })();
+      return !!usuario && usuario.rol === "Administrador";
+    }
+
+    // NUEVO (7/10/2026): lectura segura del usuario guardado por auth-guard.js
+    // (si el dato estuviera dañado, devuelve null en vez de romper la página).
+    function usuarioSesion() {
+      try { return JSON.parse(localStorage.getItem("usuario") || "null"); }
+      catch (e) { return null; }
+    }
+
+    // El botón "🗑️ Eliminadas" (lleva a la pantalla donde se revisan y
+    // restauran las reservas eliminadas) solo se muestra a Administradores.
+    // Se revisa al cargar y otra vez cuando auth-guard.js confirma la sesión
+    // real, por si el dato guardado en el navegador estaba vacío o viejo.
+    function mostrarBotonEliminadasSiAdmin(usuario) {
+      const boton = document.getElementById("btnReservasEliminadas");
+      if (boton && usuario && usuario.rol === "Administrador") boton.style.display = "inline-block";
+    }
+    mostrarBotonEliminadasSiAdmin(usuarioSesion());
+    document.addEventListener("usuarioVerificado", (e) => mostrarBotonEliminadasSiAdmin(e.detail));
 
     // Misma función que reservas.html — convierte los dos formatos de fecha
     // que existen en la base de datos a un objeto Date comparable.
@@ -208,7 +237,7 @@
               <button class="editar-btn" onclick="window.location.href='detalle_reserva.html?codigo=${doc.id}'">✏️</button>
               <button class="editar-btn" title="Ir directo a la factura (agregar pagos, etc.)" onclick="window.location.href='facturacion.html?reserva=${doc.id}'">💰</button>
               <button class="editar-btn" title="Enviar encuesta de satisfacción por correo (post-viaje)" onclick="abrirModalEncuesta('${doc.id}')">📝</button>
-              <button class="eliminar-btn" onclick="eliminarReserva('${doc.id}')">🗑️</button>
+              ${esAdministrador() ? `<button class="eliminar-btn" title="Eliminar reserva (queda una copia en 🗑️ Eliminadas)" onclick="eliminarReserva('${doc.id}')">🗑️</button>` : ''}
             </td>
           `;
           tabla.appendChild(fila);
@@ -245,12 +274,60 @@
       }
     }
 
-    function eliminarReserva(id) {
-      if (confirm("¿Deseas eliminar esta reserva? Esta acción no se puede deshacer.")) {
-        db.collection("reservas").doc(id).delete().then(() => {
-          alert("Reserva eliminada");
+    // NUEVO (7/10/2026): eliminar CON RESPALDO. Antes la reserva se borraba sin
+    // dejar rastro (y daba miedo borrar una equivocada). Ahora, antes de
+    // borrarla, se guarda una copia completa en "reservas_eliminadas" — con
+    // quién la eliminó, cuándo y el motivo — y se puede revisar y restaurar
+    // desde la pantalla "🗑️ Eliminadas".
+    // La copia y el borrado van en UN solo lote: o se hacen las dos cosas o
+    // ninguna. Si por cualquier razón no se puede guardar la copia, la
+    // reserva NO se borra.
+    async function eliminarReserva(id) {
+      // Segunda barrera — aunque el botón esté oculto para Colaboradores,
+      // esto corta la acción igual si de algún modo se llegara a invocar.
+      if (!esAdministrador()) {
+        alert("Solo un Administrador puede eliminar una reserva.");
+        return;
+      }
+
+      try {
+        const ref = db.collection("reservas").doc(id);
+        const snap = await ref.get();
+        if (!snap.exists) {
+          alert("Esa reserva ya no existe.");
           location.reload();
+          return;
+        }
+        const d = snap.data();
+
+        // Se muestra QUÉ reserva es (titular, destino y fecha) para que sea
+        // fácil darse cuenta si se está por borrar la equivocada.
+        const motivo = prompt(
+          `¿Eliminar la reserva ${id}?\n\n` +
+          `${d.nombreTitular || "Sin nombre"} — ${d.nombreDestino || d.destino || "sin destino"} — viaje ${d.fechaReserva || "sin fecha"}\n\n` +
+          `Se guarda una copia en "🗑️ Eliminadas" y se puede restaurar.\n\n` +
+          `Motivo (opcional). Aceptar = eliminar · Cancelar = no hacer nada:`
+        );
+        if (motivo === null) return; // canceló: no se toca nada
+
+        const usuario = usuarioSesion();
+        const lote = db.batch();
+        lote.set(db.collection("reservas_eliminadas").doc(id), {
+          codigo: id,
+          datos: d,
+          eliminado_el: new Date(),
+          eliminado_por_id: (usuario && usuario.id) || "",
+          eliminado_por_nombre: (usuario && usuario.nombre) || "",
+          motivo: motivo.trim()
         });
+        lote.delete(ref);
+        await lote.commit();
+
+        alert(`✅ Reserva ${id} eliminada. Si fue un error, la podés restaurar desde "🗑️ Eliminadas".`);
+        location.reload();
+      } catch (e) {
+        console.error("Error al eliminar la reserva:", e);
+        alert("❌ No se pudo eliminar la reserva — no se borró nada.\n\nDetalle: " + (e.message || e));
       }
     }
 
