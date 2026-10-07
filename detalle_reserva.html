@@ -80,6 +80,13 @@
       height: 44px;
       box-sizing: border-box;
     }
+    /* NUEVO: mientras se está guardando, el botón queda atenuado y sin
+       respuesta al clic (ver guardarReserva) — antes no se veía ninguna
+       señal de que ya estaba guardando, y por eso se le daba clic de nuevo. */
+    .boton-principal:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
     .boton-principal {
       background-color: #02535a;
       color: white;
@@ -1795,16 +1802,20 @@ function toggleSeccion(encabezado) {
 async function generarCodigoReserva() {
   const añoActual = new Date().getFullYear();
   const counterRef = db.collection("counters").doc(`reserva-${añoActual}`);
-  const counterDoc = await counterRef.get();
 
-  let nuevoNumero = 1;
-  if (counterDoc.exists) {
-    nuevoNumero = counterDoc.data().ultimo || 0;
-    nuevoNumero++;
-  }
+  // FIX: antes esto leía el contador y lo escribía en dos pasos separados —
+  // si dos guardados coincidían, los dos leían el mismo número y generaban
+  // el MISMO código (una reserva pisaba a la otra). Ahora es una
+  // transacción: Firestore garantiza que cada guardado recibe un número
+  // distinto, aunque ocurran al mismo tiempo.
+  const nuevoNumero = await db.runTransaction(async (transaccion) => {
+    const counterDoc = await transaccion.get(counterRef);
+    const siguiente = (counterDoc.exists ? (counterDoc.data().ultimo || 0) : 0) + 1;
+    transaccion.set(counterRef, { ultimo: siguiente }, { merge: true });
+    return siguiente;
+  });
 
   const codigo = `ED-${String(nuevoNumero).padStart(3, "0")}-${añoActual}`;
-  await counterRef.set({ ultimo: nuevoNumero }, { merge: true });
   return { codigo, numero: nuevoNumero, año: añoActual };
 }
 
@@ -1833,8 +1844,110 @@ async function sincronizarClienteDesdeTitular(datosReserva) {
   }
 }
 
+// ==========================================
+// NUEVO (7/10/2026): protección contra reservas duplicadas.
+//
+// CAUSA que se encontró: el botón "Guardar Reserva" no se bloqueaba mientras
+// guardaba (suben archivos, varias escrituras...). Si tardaba, cada clic extra
+// arrancaba otro guardado completo — y como una reserva nueva todavía no tenía
+// código, cada uno generaba un código nuevo y creaba otra reserva. Además,
+// después del primer guardado la página seguía creyéndose "reserva nueva",
+// así que un segundo "Guardar" también creaba otra en vez de actualizar.
+//
+// Ahora hay tres defensas:
+//  1) Candado: mientras hay un guardado en curso, los clics extra se ignoran
+//     y el botón muestra "Guardando...".
+//  2) Aviso: antes de crear una reserva NUEVA se busca otra con el mismo
+//     titular, destino y fecha de ida — si existe, se pregunta antes de seguir.
+//  3) Una vez guardada, esta pantalla queda "amarrada" a esa reserva: un nuevo
+//     "Guardar" la ACTUALIZA, no crea otra.
+// ==========================================
+let guardandoReserva = false;
+
 async function guardarReserva() {
+  if (guardandoReserva) return; // ya hay un guardado en curso: se ignora el clic extra
+  guardandoReserva = true;
+
+  const boton = document.getElementById("btnGuardarReserva");
+  const textoOriginal = boton ? boton.textContent : "";
+  if (boton) {
+    boton.disabled = true;
+    boton.textContent = "⏳ Guardando...";
+  }
+
   try {
+    await guardarReservaInterno();
+  } finally {
+    // Pase lo que pase (éxito, error, o el usuario canceló un aviso), el
+    // candado se libera y el botón vuelve a quedar usable.
+    guardandoReserva = false;
+    if (boton) {
+      boton.disabled = false;
+      boton.textContent = textoOriginal;
+    }
+  }
+}
+
+// Para comparar sin que importen mayúsculas, tildes ni espacios de más:
+// "Ana Pérez" y "  ana  perez " cuentan como el mismo titular.
+function normalizarTextoComparacion(texto) {
+  return String(texto || "")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+// Las fechas de reservas viejas están a veces como "AAAA-MM-DD" y a veces
+// como "D/M/AAAA" — se llevan las dos a "AAAA-MM-DD" para poder compararlas.
+function normalizarFechaComparacion(valor) {
+  const texto = String(valor || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) return texto;
+  const partes = texto.split("/");
+  if (partes.length === 3) {
+    const [dia, mes, anio] = partes.map(Number);
+    if (dia && mes && anio) {
+      return `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+    }
+  }
+  return texto;
+}
+
+// Busca una reserva ya guardada con EXACTAMENTE el mismo titular, destino y
+// fecha de ida. Devuelve { codigo, data } o null.
+async function buscarReservaDuplicada({ nombreTitular, nombreDestino, fechaIda }) {
+  const claveTitular = normalizarTextoComparacion(nombreTitular);
+  const claveDestino = normalizarTextoComparacion(nombreDestino);
+  const claveFecha = normalizarFechaComparacion(fechaIda);
+
+  const snap = await db.collection("reservas").get();
+  for (const doc of snap.docs) {
+    const d = doc.data();
+    if (normalizarTextoComparacion(d.nombreTitular) !== claveTitular) continue;
+    if (normalizarTextoComparacion(d.nombreDestino || d.destino) !== claveDestino) continue;
+    if (normalizarFechaComparacion(d.fechaReserva) !== claveFecha) continue;
+    return { codigo: doc.id, data: d };
+  }
+  return null;
+}
+
+function textoFechaHoraCorto(valor) {
+  if (!valor) return "-";
+  const f = typeof valor.toDate === "function" ? valor.toDate() : new Date(valor);
+  if (isNaN(f.getTime())) return "-";
+  const dd = String(f.getDate()).padStart(2, "0");
+  const mm = String(f.getMonth() + 1).padStart(2, "0");
+  const hh = String(f.getHours()).padStart(2, "0");
+  const mi = String(f.getMinutes()).padStart(2, "0");
+  return `${dd}/${mm}/${f.getFullYear()} ${hh}:${mi}`;
+}
+
+async function guardarReservaInterno() {
+  try {
+    // Código con el que ya cuenta esta reserva: el de la URL (si se abrió una
+    // existente) o el que esta misma pantalla le asignó en un guardado
+    // anterior (si ya se guardó una vez sin recargar). Si no hay ninguno,
+    // es una reserva realmente nueva.
+    const codigoPrevio = codigoReservaExistente || window.codigoActualReserva || null;
+
     const nombreTitular = document.getElementById("nombreTitular").value || "";
     const cedula = document.getElementById("cedulaTitular").value || "";
     const correo = document.getElementById("correoTitular").value || "";
@@ -1897,7 +2010,7 @@ async function guardarReserva() {
     }
 
     const fechaIdaIngresada = document.getElementById("fechaIda").value;
-    if (!codigoReservaExistente && fechaIdaIngresada) {
+    if (!codigoPrevio && fechaIdaIngresada) {
       const hoySinHora = new Date();
       hoySinHora.setHours(0, 0, 0, 0);
       if (new Date(fechaIdaIngresada) < hoySinHora) {
@@ -1955,16 +2068,54 @@ async function guardarReserva() {
       return;
     }
 
-    let codigo = codigoReservaExistente;
+    let codigo = codigoPrevio;
     let numero = null;
     let año = new Date().getFullYear();
-    const esReservaNueva = !codigoReservaExistente;
 
     if (!codigo) {
+      // Reserva realmente nueva: ANTES de gastar un número de código, se
+      // revisa si ya existe una con el mismo titular, destino y fecha de ida.
+      // Si se cancela acá, no se consume ningún código.
+      const repetida = await buscarReservaDuplicada({
+        nombreTitular,
+        nombreDestino: nombreDestino || destino,
+        fechaIda: fechaIdaIngresada
+      });
+      if (repetida) {
+        const r = repetida.data;
+        const continuarIgual = confirm(
+          "⚠️ Ya existe una reserva con la misma información:\n\n" +
+          `${repetida.codigo} — ${r.nombreTitular || "sin nombre"}\n` +
+          `Destino: ${r.nombreDestino || r.destino || "-"} · Viaje: ${r.fechaReserva || "-"}\n` +
+          `Creada: ${textoFechaHoraCorto(r.creado_el)}\n\n` +
+          "Si le diste clic varias veces a \"Guardar\", lo más probable es que ya se haya guardado.\n\n" +
+          "¿Deseas guardar otra reserva igual de todas formas?"
+        );
+        if (!continuarIgual) return;
+      }
+
       const generado = await generarCodigoReserva();
       codigo = generado.codigo;
       numero = generado.numero;
       año = generado.año;
+    } else if (!codigoReservaExistente) {
+      // Segundo (o posterior) "Guardar" desde esta misma pantalla: se
+      // ACTUALIZA la reserva que ya se creó, no se crea otra. Salvaguarda: si
+      // el titular cambió por completo, se confirma antes de reemplazar los
+      // datos (por si se estaba reutilizando la pantalla para otro cliente).
+      const previaSnap = await db.collection("reservas").doc(codigo).get();
+      if (previaSnap.exists) {
+        const titularPrevio = previaSnap.data().nombreTitular || "";
+        if (normalizarTextoComparacion(titularPrevio) !== normalizarTextoComparacion(nombreTitular)) {
+          const actualizar = confirm(
+            `Esta pantalla ya guardó la reserva ${codigo} a nombre de "${titularPrevio}".\n\n` +
+            `Estás guardando con otro titular ("${nombreTitular}").\n\n` +
+            "¿Deseas ACTUALIZAR esa misma reserva con estos datos?\n\n" +
+            "(Para crear una reserva distinta, usa \"Agregar reserva\" en el menú de Reservas.)"
+          );
+          if (!actualizar) return;
+        }
+      }
     }
 
     if (!codigo || !año) {
@@ -1974,8 +2125,12 @@ async function guardarReserva() {
     window.codigoActualReserva = codigo;
     document.getElementById("valorCodigoReserva").textContent = codigo;
 
-    let datosExistentes = await db.collection("reservas").doc(codigo).get();
-    datosExistentes = datosExistentes.exists ? datosExistentes.data() : {};
+    // "Nueva" = el documento todavía no existe en la base de datos (así, si
+    // un primer intento falló a medio camino y se reintenta con el mismo
+    // código, igual se avisa a los administradores de la reserva nueva).
+    const docExistenteSnap = await db.collection("reservas").doc(codigo).get();
+    const esReservaNueva = !docExistenteSnap.exists;
+    const datosExistentes = docExistenteSnap.exists ? docExistenteSnap.data() : {};
     let fechaReserva = fechaIdaIngresada || datosExistentes?.fechaReserva || "";
 
     let pasaporteTitularURL = datosExistentes?.pasaporteTitularURL || "";
