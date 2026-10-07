@@ -143,7 +143,9 @@
     "finanzas.html",
     "gastos.html",
     "configuracion.html",
-    "registro.html"
+    "registro.html",
+    // NUEVO (7/10/2026): copias de las reservas eliminadas — solo Administrador.
+    "reservas_eliminadas.html"
   ];
 
   function archivoActual() {
