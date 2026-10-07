@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reservas Eliminadas - Excursiones Delgado</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="topbar.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f7f7;
+      margin: 0;
+      padding: 0;
+      color: #02535a;
+    }
+    h2 { margin-bottom: 4px; }
+    .subtitulo {
+      color: #5f9296;
+      font-size: 0.9rem;
+      margin-top: 0;
+      margin-bottom: 18px;
+    }
+
+    .aviso-info {
+      background: #fff8e6;
+      border: 1px solid #f3d98b;
+      color: #7a5b00;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.88rem;
+      margin-bottom: 20px;
+      line-height: 1.45;
+    }
+    .aviso-error {
+      background: #fdecea;
+      border: 1px solid #f5b5ae;
+      color: #8a1f14;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      line-height: 1.45;
+      display: none;
+    }
+
+    .tabla-container {
+      max-width: 100%;
+      overflow-x: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 14px;
+      box-shadow: 0 2px 14px rgba(2,83,90,0.08);
+    }
+    .barra-superior {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .btn-volver {
+      font-size: 14px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      background-color: #02535a;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-volver:hover { background-color: #036a6d; }
+
+    .fila-filtros { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    .fila-filtros input[type="text"] {
+      flex: 1;
+      min-width: 240px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #cfe3e4;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+    .fila-filtros input[type="text"]:focus {
+      outline: none;
+      border-color: #02535a;
+      box-shadow: 0 0 0 3px rgba(2, 83, 90, 0.1);
+    }
+
+    .contador { color: #5f9296; margin-bottom: 15px; font-size: 0.85rem; }
+    .vacio {
+      text-align: center;
+      color: #5f9296;
+      padding: 40px 10px;
+      font-size: 0.95rem;
+    }
+
+    table {
+      width: 100%;
+      min-width: 1000px;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    th {
+      background-color: #02535a;
+      color: white;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 14px 16px;
+      text-align: left;
+    }
+    th:first-child { border-top-left-radius: 10px; }
+    th:last-child { border-top-right-radius: 10px; text-align: center; }
+    td {
+      padding: 14px 16px;
+      font-size: 14.5px;
+      vertical-align: middle;
+      border-bottom: 1px solid #eef3f3;
+    }
+    tbody tr:hover { background-color: #f7fbfb; }
+    tbody tr:last-child td { border-bottom: none; }
+    .celda-motivo { max-width: 220px; color: #5f9296; font-size: 13.5px; }
+
+    .celda-acciones {
+      display: grid;
+      grid-template-columns: repeat(2, 34px);
+      gap: 6px;
+      justify-content: center;
+    }
+    .btn-icono {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      background-color: #eef6f6;
+      color: #02535a;
+    }
+    .btn-icono:hover { background-color: #02535a; color: white; }
+    .btn-icono.restaurar:hover { background-color: #1e8449; color: white; }
+    .btn-icono:disabled { opacity: 0.5; cursor: wait; }
+
+    /* Ventana con el detalle de una reserva eliminada */
+    .modal-detalle {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-detalle.abierto { display: flex; }
+    .modal-detalle-contenido {
+      background: white;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 720px;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 24px 26px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    }
+    .modal-detalle-contenido h3 { margin: 0 0 12px; color: #02535a; }
+    .modal-detalle-contenido h4 { margin: 18px 0 8px; color: #02535a; font-size: 0.95rem; }
+    .bloque-eliminacion {
+      background: #fdecea;
+      border: 1px solid #f5b5ae;
+      color: #8a1f14;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      line-height: 1.45;
+    }
+    .grid-detalle {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px 18px;
+      margin-top: 14px;
+    }
+    .grid-detalle div { font-size: 0.92rem; }
+    .grid-detalle strong {
+      display: block;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #5f9296;
+      margin-bottom: 2px;
+    }
+    .lista-pasajeros { margin: 0; padding-left: 20px; font-size: 0.92rem; line-height: 1.6; }
+    .tabla-pagos { width: 100%; min-width: 0; border-collapse: collapse; font-size: 0.88rem; }
+    .tabla-pagos th {
+      background: #eef6f6;
+      color: #02535a;
+      font-size: 0.75rem;
+      padding: 8px 10px;
+      border-radius: 0 !important;
+    }
+    .tabla-pagos td { padding: 8px 10px; }
+    .resumen-dinero { display: flex; gap: 22px; flex-wrap: wrap; font-size: 0.95rem; margin-bottom: 8px; }
+    .resumen-dinero span { color: #5f9296; font-size: 0.78rem; text-transform: uppercase; display: block; }
+    .botones-modal { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    .btn-cerrar-modal {
+      background: #eef6f6;
+      color: #02535a;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    @media screen and (max-width: 768px) {
+      .tabla-container { padding: 14px; }
+      table { min-width: 0; }
+      thead { position: absolute; left: -9999px; top: -9999px; }
+      table, tbody, tr { display: block; width: 100%; }
+      tbody tr {
+        margin-bottom: 16px;
+        border: 1px solid #dde8e8;
+        border-radius: 12px;
+        padding: 6px 14px;
+        box-shadow: 0 2px 8px rgba(2,83,90,0.06);
+      }
+      tbody tr:hover { background-color: transparent; }
+      td {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 10px 0;
+        border-bottom: 1px solid #eef3f3;
+        text-align: right;
+        white-space: normal;
+      }
+      td:last-child { border-bottom: none; }
+      td::before {
+        content: attr(data-etiqueta);
+        flex: 0 0 auto;
+        font-weight: bold;
+        color: #02535a;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        text-align: left;
+        padding-top: 2px;
+      }
+      td[data-etiqueta="Código"] { text-align: center; justify-content: center; font-size: 17px; padding-top: 14px; }
+      td[data-etiqueta="Código"]::before { content: ""; }
+      td[data-etiqueta="Acciones"] { justify-content: center; }
+      td[data-etiqueta="Acciones"]::before { content: ""; }
+      .celda-motivo { max-width: none; }
+      .grid-detalle { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <main id="contenidoPrincipal">
+
+  <h2>🗑️ Reservas Eliminadas</h2>
+  <p class="subtitulo">Cada vez que un Administrador elimina una reserva, queda una copia acá. Podés revisarla y, si fue un error, restaurarla.</p>
+
+  <div class="aviso-info">
+    ℹ️ Las copias se empezaron a guardar desde que se activó esta función. Las reservas que se eliminaron antes <strong>no quedaron registradas</strong> y no aparecen en esta lista.
+  </div>
+  <div class="aviso-error" id="avisoError"></div>
+
+  <div class="tabla-container">
+    <div class="barra-superior">
+      <a class="btn-volver" href="reservas.html">◀ Volver a reservas activas</a>
+    </div>
+
+    <div class="fila-filtros">
+      <input type="text" id="buscador" placeholder="🔍 Buscar por código, nombre, destino o motivo...">
+    </div>
+
+    <p class="contador" id="contador"></p>
+
+    <table id="tablaEliminadas">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Cliente</th>
+          <th>Destino</th>
+          <th>Fecha de viaje</th>
+          <th>Total</th>
+          <th>Pagado</th>
+          <th>Eliminada el</th>
+          <th>Eliminada por</th>
+          <th>Motivo</th>
+          <th style="text-align:center;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <div class="vacio" id="mensajeVacio" style="display:none;">No hay reservas eliminadas.</div>
+  </div>
+
+  </main>
+
+  <div class="modal-detalle" id="modalDetalle">
+    <div class="modal-detalle-contenido" id="modalDetalleContenido"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDUEZgkrW-3HbZu2BLej4v0mbDHZf2vRo8",
+      authDomain: "tours-460717.firebaseapp.com",
+      projectId: "tours-460717",
+      storageBucket: "tours-460717.firebasestorage.app",
+      messagingSenderId: "1000749333444",
+      appId: "1:1000749333444:web:73437891b59a96b6a4c291"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Copias ya cargadas: { codigo, datos, eliminadoEl, eliminadoPor, motivo }
+    let listaEliminadas = [];
+
+    // Los textos (nombres, motivos...) los escribe gente: se "escapan" antes
+    // de insertarlos como HTML, para que un símbolo raro no rompa la página.
+    function esc(valor) {
+      return String(valor ?? "")
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+
+    function aFecha(valor) {
+      if (!valor) return null;
+      const f = typeof valor.toDate === "function" ? valor.toDate() : new Date(valor);
+      return isNaN(f.getTime()) ? null : f;
+    }
+
+    function formatearFechaHora(valor) {
+      const f = aFecha(valor);
+      if (!f) return "-";
+      const dd = String(f.getDate()).padStart(2, "0");
+      const mm = String(f.getMonth() + 1).padStart(2, "0");
+      const hh = String(f.getHours()).padStart(2, "0");
+      const mi = String(f.getMinutes()).padStart(2, "0");
+      return `${dd}/${mm}/${f.getFullYear()} ${hh}:${mi}`;
+    }
+
+    // Las fechas de viaje están guardadas en dos formatos según la época del
+    // sistema ("AAAA-MM-DD" o "D/M/AAAA") — se muestran siempre igual.
+    function parseFechaReserva(str) {
+      if (!str || typeof str !== "string") return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return new Date(str + "T00:00:00");
+      const partes = str.split("/");
+      if (partes.length === 3) {
+        const [dia, mes, anio] = partes.map(Number);
+        if (!isNaN(dia) && !isNaN(mes) && !isNaN(anio)) return new Date(anio, mes - 1, dia);
+      }
+      return null;
+    }
+
+    function formatearFechaVisible(str) {
+      const f = parseFechaReserva(str);
+      if (!f) return str || "-";
+      return `${String(f.getDate()).padStart(2, "0")}/${String(f.getMonth() + 1).padStart(2, "0")}/${f.getFullYear()}`;
+    }
+
+    function formatoMoneda(n) {
+      return "$" + (Number(n) || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function calcularPagado(d) {
+      const pagos = Array.isArray(d.pagos) ? d.pagos : [];
+      if (pagos.length > 0) return pagos.reduce((suma, p) => suma + (Number(p.monto) || 0), 0);
+      return Number(d.abono) || 0;
+    }
+
+    function calcularPersonas(d) {
+      const suma = (d.cantidadAdultos || 0) + (d.cantidadNinos || 0) + (d.cantidadBebes || 0);
+      if (suma > 0) return suma;
+      if (Array.isArray(d.pasajeros) && d.pasajeros.length > 0) return d.pasajeros.length + 1;
+      return null;
+    }
+
+    function normalizarTexto(str) {
+      return (str || "").toString().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    function mostrarError(mensaje) {
+      const caja = document.getElementById("avisoError");
+      caja.innerHTML = mensaje;
+      caja.style.display = "block";
+    }
+
+    async function cargarEliminadas() {
+      try {
+        const snap = await db.collection("reservas_eliminadas").get();
+        listaEliminadas = snap.docs.map(doc => {
+          const x = doc.data();
+          return {
+            codigo: doc.id,
+            datos: x.datos || {},
+            eliminadoEl: aFecha(x.eliminado_el),
+            eliminadoPor: x.eliminado_por_nombre || "-",
+            motivo: x.motivo || ""
+          };
+        });
+        // Las más recientes primero.
+        listaEliminadas.sort((a, b) => (b.eliminadoEl ? b.eliminadoEl.getTime() : 0) - (a.eliminadoEl ? a.eliminadoEl.getTime() : 0));
+        document.getElementById("avisoError").style.display = "none";
+        renderizar();
+      } catch (e) {
+        console.error("Error al cargar las reservas eliminadas:", e);
+        mostrarError(
+          "❌ No se pudieron cargar las reservas eliminadas.<br>" +
+          "Si es la primera vez que se usa esta pantalla, revisá que las reglas de Firestore ya permitan a los " +
+          "Administradores leer y escribir la colección <strong>reservas_eliminadas</strong>.<br>" +
+          "<small>Detalle: " + esc(e.message || e) + "</small>"
+        );
+      }
+    }
+
+    function renderizar() {
+      const cuerpo = document.querySelector("#tablaEliminadas tbody");
+      cuerpo.innerHTML = "";
+
+      listaEliminadas.forEach(item => {
+        const d = item.datos;
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td data-etiqueta="Código"><strong>${esc(item.codigo)}</strong></td>
+          <td data-etiqueta="Cliente">${esc(d.nombreTitular || "-")}</td>
+          <td data-etiqueta="Destino">${esc(d.nombreDestino || d.destino || "-")}</td>
+          <td data-etiqueta="Fecha de viaje">${esc(formatearFechaVisible(d.fechaReserva))}</td>
+          <td data-etiqueta="Total">${formatoMoneda(d.total)}</td>
+          <td data-etiqueta="Pagado">${formatoMoneda(calcularPagado(d))}</td>
+          <td data-etiqueta="Eliminada el">${esc(formatearFechaHora(item.eliminadoEl))}</td>
+          <td data-etiqueta="Eliminada por">${esc(item.eliminadoPor)}</td>
+          <td data-etiqueta="Motivo" class="celda-motivo">${esc(item.motivo || "-")}</td>
+          <td data-etiqueta="Acciones">
+            <div class="celda-acciones">
+              <button class="btn-icono" title="Ver detalle" onclick="verDetalle('${esc(item.codigo)}')">👁️</button>
+              <button class="btn-icono restaurar" title="Restaurar reserva" onclick="restaurarReserva('${esc(item.codigo)}')">♻️</button>
+            </div>
+          </td>
+        `;
+        cuerpo.appendChild(fila);
+      });
+
+      document.getElementById("mensajeVacio").style.display = listaEliminadas.length === 0 ? "block" : "none";
+      document.getElementById("tablaEliminadas").style.display = listaEliminadas.length === 0 ? "none" : "";
+      window.textoContadorOriginal = `${listaEliminadas.length} reserva${listaEliminadas.length === 1 ? "" : "s"} eliminada${listaEliminadas.length === 1 ? "" : "s"}`;
+      filtrar();
+    }
+
+    function filtrar() {
+      const termino = normalizarTexto(document.getElementById("buscador").value);
+      let visibles = 0;
+      document.querySelectorAll("#tablaEliminadas tbody tr").forEach(fila => {
+        const coincide = normalizarTexto(fila.textContent).includes(termino);
+        fila.style.display = coincide ? "" : "none";
+        if (coincide) visibles++;
+      });
+      const contadorEl = document.getElementById("contador");
+      contadorEl.textContent = termino
+        ? `${visibles} resultado(s) para "${document.getElementById("buscador").value}"`
+        : (window.textoContadorOriginal || "");
+    }
+
+    function verDetalle(codigo) {
+      const item = listaEliminadas.find(x => x.codigo === codigo);
+      if (!item) return;
+      const d = item.datos;
+
+      const pagos = Array.isArray(d.pagos) ? d.pagos : [];
+      const pasajeros = [d.nombreTitular, ...(Array.isArray(d.pasajeros) ? d.pasajeros.map(p => p.nombre) : [])].filter(Boolean);
+      const total = Number(d.total) || 0;
+      const pagado = calcularPagado(d);
+
+      const filasPagos = pagos.length === 0
+        ? `<tr><td colspan="4" style="color:#5f9296;">Sin pagos registrados.</td></tr>`
+        : pagos.map(p => `
+            <tr>
+              <td>${esc(formatearFechaVisible(p.fecha))}</td>
+              <td>${esc(p.metodo || "-")}</td>
+              <td>${formatoMoneda(p.monto)}</td>
+              <td>${esc(p.nota || p.descripcion || "")}</td>
+            </tr>`).join("");
+
+      document.getElementById("modalDetalleContenido").innerHTML = `
+        <h3>${esc(codigo)} — ${esc(d.nombreTitular || "Sin nombre")}</h3>
+        <div class="bloque-eliminacion">
+          🗑️ Eliminada el ${esc(formatearFechaHora(item.eliminadoEl))} por ${esc(item.eliminadoPor)}
+          ${item.motivo ? `<br>Motivo: ${esc(item.motivo)}` : ""}
+        </div>
+
+        <div class="grid-detalle">
+          <div><strong>Destino</strong>${esc(d.nombreDestino || d.destino || "-")}</div>
+          <div><strong>Tipo de salida</strong>${esc(d.tipoSalidaReserva || "-")}</div>
+          <div><strong>Fecha de viaje</strong>${esc(formatearFechaVisible(d.fechaReserva))}</div>
+          <div><strong>Fecha de regreso</strong>${esc(d.vueloRegreso && d.vueloRegreso.fecha ? formatearFechaVisible(d.vueloRegreso.fecha) : "-")}</div>
+          <div><strong>Teléfono</strong>${esc(d.telefono || "-")}</div>
+          <div><strong>Correo</strong>${esc(d.correo || "-")}</div>
+          <div><strong>Vendedor(a)</strong>${esc(d.vendedor || "-")}</div>
+          <div><strong>Personas</strong>${esc(calcularPersonas(d) ?? "-")}</div>
+        </div>
+
+        <h4>Pasajeros</h4>
+        <ul class="lista-pasajeros">${pasajeros.length ? pasajeros.map(n => `<li>${esc(n)}</li>`).join("") : "<li>-</li>"}</ul>
+
+        <h4>Dinero</h4>
+        <div class="resumen-dinero">
+          <div><span>Total</span>${formatoMoneda(total)}</div>
+          <div><span>Pagado</span>${formatoMoneda(pagado)}</div>
+          <div><span>Saldo</span>${formatoMoneda(total - pagado)}</div>
+        </div>
+        <table class="tabla-pagos">
+          <thead><tr><th>Fecha</th><th>Método</th><th>Monto</th><th>Nota</th></tr></thead>
+          <tbody>${filasPagos}</tbody>
+        </table>
+
+        <div class="botones-modal">
+          <button class="btn-cerrar-modal" onclick="cerrarDetalle()">Cerrar</button>
+          <button class="btn-volver" onclick="cerrarDetalle(); restaurarReserva('${esc(codigo)}')">♻️ Restaurar esta reserva</button>
+        </div>
+      `;
+      document.getElementById("modalDetalle").classList.add("abierto");
+    }
+
+    function cerrarDetalle() {
+      document.getElementById("modalDetalle").classList.remove("abierto");
+    }
+
+    // Devuelve la reserva a la lista de activas con todos sus datos y pagos, y
+    // la saca de esta lista. Copia y borrado van en un solo lote (o se hacen
+    // las dos cosas o ninguna). Si ya existe una reserva activa con ese mismo
+    // código, NO se restaura encima — para no pisar nada.
+    async function restaurarReserva(codigo) {
+      try {
+        const archivoRef = db.collection("reservas_eliminadas").doc(codigo);
+        const reservaRef = db.collection("reservas").doc(codigo);
+
+        const archivoSnap = await archivoRef.get();
+        if (!archivoSnap.exists) {
+          alert("Esa copia ya no está en la lista (puede que ya se haya restaurado).");
+          await cargarEliminadas();
+          return;
+        }
+
+        const reservaActiva = await reservaRef.get();
+        if (reservaActiva.exists) {
+          alert(`⚠️ Ya existe una reserva activa con el código ${codigo}, así que no se puede restaurar encima de ella.\n\nRevisá esa reserva antes de seguir.`);
+          return;
+        }
+
+        const archivo = archivoSnap.data();
+        const d = archivo.datos || {};
+        const confirmar = confirm(
+          `¿Restaurar la reserva ${codigo}?\n\n` +
+          `${d.nombreTitular || "Sin nombre"} — ${d.nombreDestino || d.destino || "sin destino"} — viaje ${d.fechaReserva || "sin fecha"}\n\n` +
+          "Vuelve a aparecer en Reservas con todos sus datos y pagos."
+        );
+        if (!confirmar) return;
+
+        const lote = db.batch();
+        lote.set(reservaRef, d);
+        lote.delete(archivoRef);
+        await lote.commit();
+
+        alert(`✅ Reserva ${codigo} restaurada. Ya aparece de nuevo en Reservas.`);
+        await cargarEliminadas();
+      } catch (e) {
+        console.error("Error al restaurar la reserva:", e);
+        alert("❌ No se pudo restaurar la reserva — no se cambió nada.\n\nDetalle: " + (e.message || e));
+      }
+    }
+
+    document.getElementById("buscador").addEventListener("input", filtrar);
+    document.getElementById("modalDetalle").addEventListener("click", (e) => {
+      if (e.target.id === "modalDetalle") cerrarDetalle(); // clic en el fondo oscuro
+    });
+
+    // Se espera a que Firebase confirme la sesión antes de consultar la base
+    // de datos (si no, a veces sale "Missing or insufficient permissions").
+    firebase.auth().onAuthStateChanged(usuario => {
+      if (usuario) cargarEliminadas();
+    });
+  </script>
+  <script src="topbar.js"></script>
+  <script src="sidebar.js"></script>
+  <script src="auth-guard.js"></script>
+</body>
+</html>
