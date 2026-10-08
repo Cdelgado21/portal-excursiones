@@ -2102,8 +2102,45 @@ async function generarPDF() {
     }
 
     if (opcionalesRestantes.length > 0) {
+      // MEJORADO (8/10/2026): hojas de "Tours Opcionales".
+      // ANTES: si la tabla no cabía en una hoja, la librería de tablas agregaba hojas por su
+      // cuenta, y esas hojas salían EN BLANCO (sin fondo, título, barra naranja ni pie), una
+      // fila podía partirse entre dos hojas y la tabla llegaba hasta encima de los logos de abajo.
+      // AHORA: todas las hojas de la tabla tienen el mismo formato que la primera, cada fila
+      // queda completa en una hoja, la tabla se detiene antes de los logos del fondo, y se
+      // avisa que estos tours se pueden agregar a la cotización.
+      const hayDiaLibre = /d[ií]as?\s+libres?/i.test(data.itinerario || "");
+      const textoInvitacion = hayDiaLibre
+        ? "¿Tienes días libres en tu itinerario? Puedes agregar cualquiera de estos tours a tu cotización. Consulta con tu asesor."
+        : "Puedes agregar cualquiera de estos tours a tu cotización. Consulta con tu asesor.";
+
+      const MARGEN_SUPERIOR_TABLA = 130; // donde empieza la tabla en TODAS las hojas
+      const MARGEN_INFERIOR_TABLA = 130; // la tabla termina en y=590, antes de la forma crema y los logos del fondo
+
+      const dibujarNotaToursOpcionales = () => {
+        const x = 400, y = 44, ancho = 785;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        const lineas = doc.splitTextToSize(textoInvitacion, ancho - 32);
+        const alto = lineas.length * 23 + 22;
+        doc.setDrawColor(...ACENTO);
+        doc.setLineWidth(1.5);
+        doc.setLineDashPattern([6, 5], 0);
+        doc.rect(x, y, ancho, alto, "S");
+        doc.setLineDashPattern([], 0);
+        doc.setTextColor(...BLANCO);
+        doc.text(lineas, x + 16, y + 29);
+      };
+
+      // Lo que lleva CADA hoja de esta sección (además del fondo y la barra de nuevaSlide()).
+      const decorarHojaToursOpcionales = () => {
+        tituloSlide("Tours Opcionales", 90, 95);
+        dibujarNotaToursOpcionales();
+        piePagina(codigo);
+      };
+
       nuevaSlide();
-      tituloSlide("Tours Opcionales", 90, 95);
+      decorarHojaToursOpcionales();
 
       function vinetasDesdeTexto(texto) {
         const limpiar = t => t.replace(/^[•\-\*]+\s*/, "").trim();
@@ -2113,29 +2150,48 @@ async function generarPDF() {
         return items.map(item => `•  ${item}`).join("\n");
       }
 
+      // Mientras se dibuja ESTA tabla, cada hoja nueva que agregue la librería recibe el mismo
+      // formato que la primera (se restaura al terminar, pase lo que pase).
+      const addPageOriginal = doc.addPage;
+      doc.addPage = function (...args) {
+        const resultado = addPageOriginal.apply(doc, args);
+        dibujarFondo(fondoContenidoData);
+        doc.setFillColor(...ACENTO);
+        doc.rect(0, H - 6, W, 6, "F");
+        decorarHojaToursOpcionales();
+        // Dibujar la nota cambió el trazo: se vuelve al estilo de borde de la tabla.
+        doc.setDrawColor(...ACENTO);
+        doc.setLineDashPattern([4, 3], 0);
+        return resultado;
+      };
+
       doc.setDrawColor(...ACENTO);
       doc.setLineDashPattern([4, 3], 0);
-      doc.autoTable({
-        startY: 130,
-        head: [["Tour opcional", "Precio p.p", "Incluye"]],
-        body: opcionalesRestantes.map(o => [
-          o.nombre || "",
-          `$${o.precio ?? 0}`,
-          vinetasDesdeTexto(o.descripcion || "")
-        ]),
-        theme: "grid",
-        styles: { fontSize: 30, cellPadding: 16, valign: "middle", lineColor: ACENTO, lineWidth: 1 },
-        headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 31, halign: "center" },
-        bodyStyles: { fillColor: false, textColor: BLANCO },
-        columnStyles: {
-          0: { cellWidth: 260, fontStyle: "bold" },
-          1: { cellWidth: 170, halign: "center", fontStyle: "bold" },
-          2: { cellWidth: "auto" }
-        },
-        margin: { left: 220, right: 220 }
-      });
-      doc.setLineDashPattern([], 0);
-      piePagina(codigo);
+      try {
+        doc.autoTable({
+          startY: MARGEN_SUPERIOR_TABLA,
+          head: [["Tour opcional", "Precio p.p", "Incluye"]],
+          body: opcionalesRestantes.map(o => [
+            o.nombre || "",
+            `$${o.precio ?? 0}`,
+            vinetasDesdeTexto(o.descripcion || "")
+          ]),
+          theme: "grid",
+          styles: { fontSize: 30, cellPadding: 16, valign: "middle", lineColor: ACENTO, lineWidth: 1 },
+          headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 31, halign: "center" },
+          bodyStyles: { fillColor: false, textColor: BLANCO },
+          columnStyles: {
+            0: { cellWidth: 260, fontStyle: "bold" },
+            1: { cellWidth: 170, halign: "center", fontStyle: "bold" },
+            2: { cellWidth: "auto" }
+          },
+          rowPageBreak: "avoid", // una fila nunca se parte entre dos hojas
+          margin: { top: MARGEN_SUPERIOR_TABLA, bottom: MARGEN_INFERIOR_TABLA, left: 220, right: 220 }
+        });
+      } finally {
+        doc.addPage = addPageOriginal;
+        doc.setLineDashPattern([], 0);
+      }
     }
 
     if (urlCondicionesDestino) {
