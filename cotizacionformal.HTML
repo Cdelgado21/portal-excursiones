@@ -2103,12 +2103,11 @@ async function generarPDF() {
 
     if (opcionalesRestantes.length > 0) {
       // MEJORADO (8/10/2026): hojas de "Tours Opcionales".
-      // ANTES: si la tabla no cabía en una hoja, la librería de tablas agregaba hojas por su
-      // cuenta, y esas hojas salían EN BLANCO (sin fondo, título, barra naranja ni pie), una
-      // fila podía partirse entre dos hojas y la tabla llegaba hasta encima de los logos de abajo.
-      // AHORA: todas las hojas de la tabla tienen el mismo formato que la primera, cada fila
-      // queda completa en una hoja, la tabla se detiene antes de los logos del fondo, y se
-      // avisa que estos tours se pueden agregar a la cotización.
+      // v1: todas las hojas de la tabla tienen el mismo formato que la primera (fondo, título,
+      //     barra, pie), cada fila queda completa en una hoja y la tabla se detiene antes de los
+      //     logos del fondo.
+      // v2: la tabla se AJUSTA SOLA para ocupar la menor cantidad de hojas: una hoja si se puede,
+      //     máximo dos. Antes la letra era siempre de 30 px y 6 tours ocupaban 4 hojas.
       const hayDiaLibre = /d[ií]as?\s+libres?/i.test(data.itinerario || "");
       const textoInvitacion = hayDiaLibre
         ? "¿Tienes días libres en tu itinerario? Puedes agregar cualquiera de estos tours a tu cotización. Consulta con tu asesor."
@@ -2142,16 +2141,81 @@ async function generarPDF() {
       nuevaSlide();
       decorarHojaToursOpcionales();
 
-      function vinetasDesdeTexto(texto) {
+      function itemsDesdeTexto(texto) {
         const limpiar = t => t.replace(/^[•\-\*]+\s*/, "").trim();
-        const items = texto.includes("\n")
+        return texto.includes("\n")
           ? texto.split("\n").map(limpiar).filter(Boolean)
           : texto.split(",").map(limpiar).filter(Boolean);
-        return items.map(item => `•  ${item}`).join("\n");
+      }
+      // "lista": una viñeta por renglón (el formato de siempre).
+      function vinetasDesdeTexto(texto) {
+        return itemsDesdeTexto(texto).map(item => `•  ${item}`).join("\n");
+      }
+      // "corrido": las mismas viñetas seguidas en un párrafo — ocupa mucho menos alto.
+      function textoCorridoDesdeTexto(texto) {
+        return itemsDesdeTexto(texto).join("  •  ");
       }
 
-      // Mientras se dibuja ESTA tabla, cada hoja nueva que agregue la librería recibe el mismo
-      // formato que la primera (se restaura al terminar, pase lo que pase).
+      const limitar = (valor, min, max) => Math.min(max, Math.max(min, valor));
+
+      // Las opciones de la tabla salen de UN solo lugar, para que lo que se mide sea
+      // exactamente lo que después se dibuja. A 30 px es idéntica a la tabla de siempre.
+      function opcionesTablaOpcionales(formato, tamano) {
+        return {
+          startY: MARGEN_SUPERIOR_TABLA,
+          head: [["Tour opcional", "Precio p.p", "Incluye"]],
+          body: opcionalesRestantes.map(o => [
+            o.nombre || "",
+            `$${o.precio ?? 0}`,
+            formato === "lista" ? vinetasDesdeTexto(o.descripcion || "") : textoCorridoDesdeTexto(o.descripcion || "")
+          ]),
+          theme: "grid",
+          styles: { fontSize: tamano, cellPadding: Math.max(8, Math.round(tamano * 0.53)), valign: "middle", lineColor: ACENTO, lineWidth: 1 },
+          headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: tamano + 1, halign: "center" },
+          bodyStyles: { fillColor: false, textColor: BLANCO },
+          columnStyles: {
+            0: { cellWidth: limitar(Math.round(tamano * 8.7), 190, 260), fontStyle: "bold" },
+            1: { cellWidth: limitar(Math.round(tamano * 5.7), 100, 170), halign: "center", fontStyle: "bold" },
+            2: { cellWidth: "auto" }
+          },
+          rowPageBreak: "avoid", // una fila nunca se parte entre dos hojas
+          margin: { top: MARGEN_SUPERIOR_TABLA, bottom: MARGEN_INFERIOR_TABLA, left: 220, right: 220 }
+        };
+      }
+
+      // Mide cuántas hojas ocuparía la tabla, dibujándola en un PDF de prueba aparte
+      // (no toca el PDF real).
+      function hojasQueOcupa(formato, tamano) {
+        const prueba = new jsPDF({ unit: "px", format: [W, H], orientation: "landscape" });
+        prueba.autoTable(opcionesTablaOpcionales(formato, tamano));
+        return prueba.internal.getNumberOfPages();
+      }
+
+      // Se elige el diseño de MENOR cantidad de hojas, con la letra más grande que se pueda
+      // y sin bajar de un tamaño legible. Orden de preferencia:
+      //   1) lista, 1 hoja  2) párrafo, 1 hoja  3) lista, máx. 2 hojas  4) párrafo, máx. 2 hojas
+      const bajando = (desde, hasta) => Array.from({ length: desde - hasta + 1 }, (_, i) => desde - i);
+      const PLAN_DISENO = [
+        { formato: "lista",   tamanos: bajando(30, 20), maxHojas: 1 },
+        { formato: "corrido", tamanos: bajando(28, 18), maxHojas: 1 },
+        { formato: "lista",   tamanos: bajando(28, 18), maxHojas: 2 },
+        { formato: "corrido", tamanos: bajando(28, 16), maxHojas: 2 }
+      ];
+      let disenoTabla = null;
+      try {
+        for (const paso of PLAN_DISENO) {
+          const tamano = paso.tamanos.find(t => hojasQueOcupa(paso.formato, t) <= paso.maxHojas);
+          if (tamano) { disenoTabla = { formato: paso.formato, tamano }; break; }
+        }
+        // Si ni así cabe en dos hojas (muchísimos tours), letra mínima y las hojas que hagan falta.
+        if (!disenoTabla) disenoTabla = { formato: "corrido", tamano: 14 };
+      } catch (err) {
+        console.warn("No se pudo medir la tabla de tours opcionales; se usa el diseño de siempre:", err);
+        disenoTabla = { formato: "lista", tamano: 30 };
+      }
+
+      // Si aun así la tabla ocupa más de una hoja, cada hoja nueva que agregue la librería
+      // recibe el mismo formato que la primera (se restaura al terminar, pase lo que pase).
       const addPageOriginal = doc.addPage;
       doc.addPage = function (...args) {
         const resultado = addPageOriginal.apply(doc, args);
@@ -2168,26 +2232,7 @@ async function generarPDF() {
       doc.setDrawColor(...ACENTO);
       doc.setLineDashPattern([4, 3], 0);
       try {
-        doc.autoTable({
-          startY: MARGEN_SUPERIOR_TABLA,
-          head: [["Tour opcional", "Precio p.p", "Incluye"]],
-          body: opcionalesRestantes.map(o => [
-            o.nombre || "",
-            `$${o.precio ?? 0}`,
-            vinetasDesdeTexto(o.descripcion || "")
-          ]),
-          theme: "grid",
-          styles: { fontSize: 30, cellPadding: 16, valign: "middle", lineColor: ACENTO, lineWidth: 1 },
-          headStyles: { fillColor: TEAL, textColor: 255, fontStyle: "bold", fontSize: 31, halign: "center" },
-          bodyStyles: { fillColor: false, textColor: BLANCO },
-          columnStyles: {
-            0: { cellWidth: 260, fontStyle: "bold" },
-            1: { cellWidth: 170, halign: "center", fontStyle: "bold" },
-            2: { cellWidth: "auto" }
-          },
-          rowPageBreak: "avoid", // una fila nunca se parte entre dos hojas
-          margin: { top: MARGEN_SUPERIOR_TABLA, bottom: MARGEN_INFERIOR_TABLA, left: 220, right: 220 }
-        });
+        doc.autoTable(opcionesTablaOpcionales(disenoTabla.formato, disenoTabla.tamano));
       } finally {
         doc.addPage = addPageOriginal;
         doc.setLineDashPattern([], 0);
