@@ -311,6 +311,7 @@ body, input, textarea, select, button {
     <textarea id="itinerario" ></textarea>
 
     <div id="avisoActividadesIncluidas"></div>
+    <div id="listaActividadesIncluidas"></div>
   </section>
 <section>
   <h2>Vuelo y Hotel</h2>
@@ -1080,20 +1081,128 @@ async function cargarOpcionesDeDestino() {
     renderizarTablaOpcionales(opcionales);
   }
 
-  async function actualizarAvisoActividadesIncluidas() {
+  // NUEVO (8/10/2026): CAMBIAR una actividad incluida por otra, solo en ESTA
+  // cotización. Antes las actividades incluidas salían fijas de la variante del
+  // tour (ej. Isla Mujeres en Cancún) y no había forma de quitar una cuando el
+  // cliente no la quería. Ahora cada una tiene una casilla: al desmarcarla se
+  // quita de esta cotización (sin tocar el tour del catálogo) y no sale en el
+  // PDF. Para reemplazarla por otra, se marca la nueva en "Tours Opcionales".
+  let actividadesIncluidasQuitadas = new Set();   // ids quitados de ESTA cotización
+  let actividadesIncluidasActuales = [];          // [{ id, nombre }] de la variante actual
+  let cantidadActividadesMarcadasEnTour = 0;      // cuántas marca el tour (aunque alguna no esté en el catálogo)
+
+  function pintarAvisoActividadesIncluidas() {
     const aviso = document.getElementById("avisoActividadesIncluidas");
+    const total = actividadesIncluidasActuales.length;
+
+    if (total === 0) {
+      aviso.textContent = cantidadActividadesMarcadasEnTour > 0
+        ? `ℹ️ Esta variante marca ${cantidadActividadesMarcadasEnTour} actividad(es) como incluida(s), pero no se encontraron en el catálogo de este destino.`
+        : "ℹ️ Esta variante de tour no tiene actividades marcadas como incluidas (se editan en Productos → este tour → \"Actividades Incluidas en este Paquete\").";
+      return;
+    }
+
+    const listaQuitadas = actividadesIncluidasActuales.filter(a => actividadesIncluidasQuitadas.has(a.id));
+    const quitadas = listaQuitadas.length;
+    if (quitadas === 0) {
+      aviso.textContent = `ℹ️ ${total} actividad(es) incluida(s) en esta variante — cada una saldrá con su propio slide en la Cotización Visual.`;
+      return;
+    }
+
+    // Los textos "Incluye" e "Itinerario" son libres (se copian del catálogo) y NO
+    // cambian solos: se avisa si todavía mencionan una actividad quitada.
+    const menciones = actividadesQuitadasMencionadasEnTextos(listaQuitadas);
+    const base = `ℹ️ ${total - quitadas} de ${total} actividad(es) incluida(s) saldrán con su propio slide. Quitaste ${quitadas} de esta cotización.`;
+    aviso.textContent = menciones.length > 0
+      ? `${base} ⚠️ Todavía se menciona en el texto: ${menciones.join("; ")} — editalo a mano para que el PDF no la nombre.`
+      : `${base} Revisá que los textos de "Incluye" e "Itinerario" no la mencionen (esos textos se editan a mano).`;
+  }
+
+  function normalizarBusquedaTexto(texto) {
+    return String(texto || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  // "Tour Isla Mujeres" → "isla mujeres" (se busca sin el "Tour"/"Visita"... del principio,
+  // porque en el itinerario suele escribirse solo el lugar).
+  function claveBusquedaActividad(nombre) {
+    return normalizarBusquedaTexto(nombre).replace(/^(tour|excursion|visita|paseo)\s+((a|al|de|del|en|por)\s+)?((la|el|los|las)\s+)?/, "").trim();
+  }
+
+  function actividadesQuitadasMencionadasEnTextos(quitadas) {
+    const itinerario = normalizarBusquedaTexto(document.getElementById("itinerario").value);
+    const incluye = normalizarBusquedaTexto(document.getElementById("incluye").value);
+    const resultado = [];
+    quitadas.forEach(a => {
+      const clave = claveBusquedaActividad(a.nombre);
+      if (clave.length < 4) return;
+      const donde = [];
+      if (itinerario.includes(clave)) donde.push("Itinerario");
+      if (incluye.includes(clave)) donde.push("Incluye");
+      if (donde.length > 0) resultado.push(`"${a.nombre}" en ${donde.join(" e ")}`);
+    });
+    return resultado;
+  }
+
+  function pintarActividadesIncluidas() {
+    const lista = document.getElementById("listaActividadesIncluidas");
+    if (actividadesIncluidasActuales.length === 0) {
+      lista.innerHTML = "";
+    } else {
+      lista.innerHTML = `
+        <div style="margin-top:10px; padding:10px 12px; border:1px solid #cfe3e4; border-radius:6px; background:#fff;">
+          <div style="font-size:13px; color:#555; margin-bottom:4px;">
+            <strong>Actividades incluidas en esta variante.</strong> Si el cliente no quiere alguna, desmarcala: se quita <u>solo de esta cotización</u> (el tour del catálogo no cambia).
+            Para cambiarla por otra, marcá la nueva en "Tours Opcionales".
+          </div>
+          ${actividadesIncluidasActuales.map(a => `
+            <label style="display:flex; align-items:center; gap:8px; font-weight:normal; margin-top:6px; cursor:pointer;">
+              <input type="checkbox" class="chk-actividad-incluida" value="${escAttr(a.id)}" ${actividadesIncluidasQuitadas.has(a.id) ? "" : "checked"} style="width:auto; margin:0; padding:0; transform:scale(1.2);">
+              <span>${escAttr(a.nombre)}</span>
+            </label>
+          `).join("")}
+        </div>
+      `;
+    }
+    pintarAvisoActividadesIncluidas();
+  }
+
+  async function actualizarAvisoActividadesIncluidas() {
     if (!tourIdActual) {
-      aviso.textContent = "";
+      actividadesIncluidasActuales = [];
+      cantidadActividadesMarcadasEnTour = 0;
+      document.getElementById("avisoActividadesIncluidas").textContent = "";
+      document.getElementById("listaActividadesIncluidas").innerHTML = "";
       return;
     }
     const tourDoc = await db.collection("tours").doc(tourIdActual).get();
-    const incluidas = tourDoc.exists && Array.isArray(tourDoc.data().actividadesIncluidas) ? tourDoc.data().actividadesIncluidas : [];
-    if (incluidas.length === 0) {
-      aviso.textContent = "ℹ️ Esta variante de tour no tiene actividades marcadas como incluidas (se editan en Productos → este tour → \"Actividades Incluidas en este Paquete\").";
-    } else {
-      aviso.textContent = `ℹ️ ${incluidas.length} actividad(es) incluida(s) en esta variante — cada una saldrá con su propio slide en la Cotización Visual.`;
+    const ids = tourDoc.exists && Array.isArray(tourDoc.data().actividadesIncluidas) ? tourDoc.data().actividadesIncluidas : [];
+    cantidadActividadesMarcadasEnTour = ids.length;
+
+    let actuales = [];
+    if (ids.length > 0) {
+      const destino = document.getElementById("destino").value;
+      const catalogoSnap = await db.collection("tours_opcionales").where("destino", "==", destino).get();
+      actuales = catalogoSnap.docs
+        .filter(d => ids.includes(d.id))
+        .map(d => ({ id: d.id, nombre: d.data().nombre || d.id }));
     }
+    actividadesIncluidasActuales = actuales;
+    pintarActividadesIncluidas();
   }
+
+  // Un solo "escuchador" sobre el contenedor: sigue funcionando aunque la lista se vuelva a dibujar.
+  document.getElementById("listaActividadesIncluidas").addEventListener("change", function (e) {
+    const casilla = e.target;
+    if (!casilla || !casilla.classList || !casilla.classList.contains("chk-actividad-incluida")) return;
+    if (casilla.checked) actividadesIncluidasQuitadas.delete(casilla.value);
+    else actividadesIncluidasQuitadas.add(casilla.value);
+    pintarAvisoActividadesIncluidas();
+  });
+
+  // Mientras se edita "Itinerario" o "Incluye", el aviso se actualiza solo (la advertencia desaparece al borrar la mención).
+  ["itinerario", "incluye"].forEach(id => {
+    document.getElementById(id).addEventListener("input", pintarAvisoActividadesIncluidas);
+  });
 
   async function cargarHotelesDelDestino(destino, hotelGuardadoNombre) {
     const hotelSelect = document.getElementById("hotel");
@@ -1206,6 +1315,8 @@ function ajustarAlturaTextareas() {
 function rellenarCampos(data) {
    // NUEVO: tours opcionales marcados en esta cotización (se cargan ANTES de dibujar la tabla).
    toursOpcionalesSeleccionados = new Set(Array.isArray(data.tours_opcionales_seleccionados) ? data.tours_opcionales_seleccionados : []);
+   // NUEVO: actividades incluidas que se quitaron de esta cotización.
+   actividadesIncluidasQuitadas = new Set(Array.isArray(data.actividades_incluidas_quitadas) ? data.actividades_incluidas_quitadas : []);
    for (const key in data) {
   const campo = document.getElementById(key);
   if (campo) {
@@ -1271,6 +1382,7 @@ ajustarAlturaTextareas();
   const data = {
 tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
 tours_opcionales_seleccionados: obtenerToursOpcionalesSeleccionados(),
+actividades_incluidas_quitadas: Array.from(actividadesIncluidasQuitadas),
     telefono: document.getElementById("telefono").value,
     destino: document.getElementById("destino").value,
     tourId: tourIdActual,
@@ -1356,6 +1468,7 @@ function restablecerDatosDelTour() {
   if (!confirmacion) return;
 
   toursOpcionalesSeleccionados.clear(); // la selección también vuelve a cero
+  actividadesIncluidasQuitadas.clear(); // y las actividades quitadas vuelven a estar incluidas
 
   if (tourIdActual) {
     cargarDatosDelTourPorId(tourIdActual);
@@ -1633,6 +1746,10 @@ async function generarPDF() {
       }
     }
     const incluidos = catalogo.filter(a => actividadesIncluidasIds.includes(a.id));
+    // NUEVO: las actividades que se quitaron de ESTA cotización no salen en el PDF
+    // (ni como incluidas ni como opcionales ofrecidas: `opcionales` se calcula
+    // con la lista original, así que una actividad quitada tampoco se ofrece).
+    const incluidosParaPdf = incluidos.filter(a => !actividadesIncluidasQuitadas.has(a.id));
     const opcionales = catalogo.filter(a => !actividadesIncluidasIds.includes(a.id));
 
     // NUEVO: los opcionales que el cliente quiere agregar (marcados en la tabla)
@@ -1786,7 +1903,7 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    for (const actividad of [...incluidos, ...opcionalesElegidos]) {
+    for (const actividad of [...incluidosParaPdf, ...opcionalesElegidos]) {
       if (actividad.imagenSlide) {
         estado.textContent = `⏳ Cargando diapositiva de "${actividad.nombre}"...`;
         await agregarSlideImagenCompleta(actividad.imagenSlide);
