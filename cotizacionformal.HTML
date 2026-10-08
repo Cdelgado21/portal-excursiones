@@ -255,6 +255,15 @@ body, input, textarea, select, button {
   cursor: pointer;
   margin-left: 8px;
 }
+#avisoToursSeleccionados {
+  font-size: 13px;
+  color: #02535a;
+  background: #eaf4f4;
+  border: 1px solid #cfe3e4;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 8px;
+}
   </style>
 </head>
 <body>
@@ -371,8 +380,9 @@ body, input, textarea, select, button {
 
 <section>
   <h2>Tours Opcionales</h2>
-  <div style="font-size:13px; color:#777; margin-top:-8px; margin-bottom:8px;">Son las actividades del catálogo del destino que NO están marcadas como incluidas en esta variante de tour (eso se define en Productos → editar el tour → "Actividades Incluidas en este Paquete").</div>
+  <div style="font-size:13px; color:#777; margin-top:-8px; margin-bottom:8px;">Son las actividades del catálogo del destino que NO están marcadas como incluidas en esta variante de tour (eso se define en Productos → editar el tour → "Actividades Incluidas en este Paquete"). <strong>Marcá con la casilla los que el cliente quiere agregar:</strong> saldrán en la Cotización Visual con su propia diapositiva, igual que las actividades incluidas.</div>
   <div id="contenedor_tours_opcionales"></div>
+  <div id="avisoToursSeleccionados" style="display:none;"></div>
 </section>
 
 <div id="mensaje-restablecer" style="display:none; padding:10px; margin-top:10px; border-radius:5px; background:#d4edda; color:#155724; font-weight:bold;">
@@ -1110,6 +1120,36 @@ async function cargarOpcionesDeDestino() {
     }
   }
 
+// NUEVO (8/10/2026): tours opcionales que el CLIENTE QUIERE AGREGAR. Cada fila
+// tiene una casilla; los marcados salen en la Cotización Visual con su propia
+// diapositiva (igual que las actividades incluidas del paquete). Marcar un tour
+// NO cambia el Total: su precio ya debe ir dentro de "Precio por Adulto" / "Niño"
+// (lo incluye quien arma la cotización).
+// Los nombres marcados se recuerdan aparte para que no se pierdan cuando la
+// tabla se vuelve a dibujar (al cambiar de destino, al cargar una cotización guardada...).
+let toursOpcionalesSeleccionados = new Set();
+
+function escAttr(valor) {
+  return String(valor ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function obtenerToursOpcionalesSeleccionados() {
+  return Array.from(document.querySelectorAll("#contenedor_tours_opcionales .chk-tour-opcional:checked")).map(c => c.value);
+}
+
+function actualizarAvisoToursSeleccionados() {
+  const aviso = document.getElementById("avisoToursSeleccionados");
+  if (!aviso) return;
+  const marcados = obtenerToursOpcionalesSeleccionados();
+  if (marcados.length === 0) {
+    aviso.style.display = "none";
+    aviso.textContent = "";
+    return;
+  }
+  aviso.style.display = "block";
+  aviso.textContent = `✅ ${marcados.length} tour(s) opcional(es) marcado(s) — saldrá(n) con su propia diapositiva en la Cotización Visual, como las actividades incluidas. Recordá que su precio NO se suma solo al Total: tiene que ir ya dentro de "Precio por Adulto" / "Precio por Niño".`;
+}
+
 function renderizarTablaOpcionales(lista) {
   const contenedor = document.getElementById("contenedor_tours_opcionales");
   if (Array.isArray(lista) && lista.length > 0) {
@@ -1117,6 +1157,7 @@ function renderizarTablaOpcionales(lista) {
       <table style="width:100%; border-collapse: collapse; margin-top: 10px;">
         <thead>
           <tr style="background-color:#02535a; color:white;">
+            <th style="padding: 8px; border: 1px solid #ccc; width: 80px;">Agregar</th>
             <th style="padding: 8px; border: 1px solid #ccc;">Tour Opcional</th>
             <th style="padding: 8px; border: 1px solid #ccc;">Descripción</th>
             <th style="padding: 8px; border: 1px solid #ccc;">Precio ($)</th>
@@ -1125,9 +1166,12 @@ function renderizarTablaOpcionales(lista) {
         <tbody>
           ${lista.map(tour => `
             <tr>
+              <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">
+                <input type="checkbox" class="chk-tour-opcional" value="${escAttr(tour.nombre)}" ${toursOpcionalesSeleccionados.has(tour.nombre) ? "checked" : ""} title="Marcar para agregar este tour a la cotización" style="width:auto; margin:0; padding:0; transform: scale(1.3); cursor:pointer;">
+              </td>
               <td style="padding: 8px; border: 1px solid #ccc;">${tour.nombre}</td>
-              <td style="padding: 8px; border: 1px solid #ccc;">${tour.descripcion}</td>
-              <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">${tour.precio}</td>
+              <td style="padding: 8px; border: 1px solid #ccc;">${tour.descripcion ?? ""}</td>
+              <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">${tour.precio ?? ""}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -1136,7 +1180,18 @@ function renderizarTablaOpcionales(lista) {
   } else {
     contenedor.innerHTML = `<p style="color:#999">No hay tours opcionales disponibles.</p>`;
   }
+  actualizarAvisoToursSeleccionados();
 }
+
+// Un solo "escuchador" sobre el contenedor (en vez de uno por casilla): sigue
+// funcionando aunque la tabla se vuelva a dibujar.
+document.getElementById("contenedor_tours_opcionales").addEventListener("change", function (e) {
+  const casilla = e.target;
+  if (!casilla || !casilla.classList || !casilla.classList.contains("chk-tour-opcional")) return;
+  if (casilla.checked) toursOpcionalesSeleccionados.add(casilla.value);
+  else toursOpcionalesSeleccionados.delete(casilla.value);
+  actualizarAvisoToursSeleccionados();
+});
 
 function ajustarAlturaTextareas() {
   document.querySelectorAll("textarea").forEach(textarea => {
@@ -1149,6 +1204,8 @@ function ajustarAlturaTextareas() {
   });
 }
 function rellenarCampos(data) {
+   // NUEVO: tours opcionales marcados en esta cotización (se cargan ANTES de dibujar la tabla).
+   toursOpcionalesSeleccionados = new Set(Array.isArray(data.tours_opcionales_seleccionados) ? data.tours_opcionales_seleccionados : []);
    for (const key in data) {
   const campo = document.getElementById(key);
   if (campo) {
@@ -1213,6 +1270,7 @@ ajustarAlturaTextareas();
   }
   const data = {
 tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
+tours_opcionales_seleccionados: obtenerToursOpcionalesSeleccionados(),
     telefono: document.getElementById("telefono").value,
     destino: document.getElementById("destino").value,
     tourId: tourIdActual,
@@ -1249,10 +1307,10 @@ function obtenerToursOpcionalesDesdeDOM() {
 
   filas.forEach(fila => {
     const columnas = fila.querySelectorAll("td");
-    if (columnas.length === 3) {
-      const nombre = columnas[0].textContent.trim();
-      const descripcion = columnas[1].textContent.trim();
-      const precio = parseFloat(columnas[2].textContent.trim().replace("$", "")) || 0;
+    if (columnas.length === 4) { // la 1ª columna es la casilla "Agregar"
+      const nombre = columnas[1].textContent.trim();
+      const descripcion = columnas[2].textContent.trim();
+      const precio = parseFloat(columnas[3].textContent.trim().replace("$", "")) || 0;
       tours.push({ nombre, descripcion, precio });
     }
   });
@@ -1296,6 +1354,8 @@ function agregarEquipaje() {
 function restablecerDatosDelTour() {
   const confirmacion = confirm("¿Deseas restablecer toda la información del tour desde el catálogo?");
   if (!confirmacion) return;
+
+  toursOpcionalesSeleccionados.clear(); // la selección también vuelve a cero
 
   if (tourIdActual) {
     cargarDatosDelTourPorId(tourIdActual);
@@ -1575,6 +1635,14 @@ async function generarPDF() {
     const incluidos = catalogo.filter(a => actividadesIncluidasIds.includes(a.id));
     const opcionales = catalogo.filter(a => !actividadesIncluidasIds.includes(a.id));
 
+    // NUEVO: los opcionales que el cliente quiere agregar (marcados en la tabla)
+    // se tratan como las actividades incluidas — cada uno con su propia
+    // diapositiva — y dejan de aparecer en la lista de "Tours Opcionales"
+    // ofrecidos; los que no se marcaron siguen ahí como oferta.
+    const nombresOpcionalesMarcados = obtenerToursOpcionalesSeleccionados();
+    const opcionalesElegidos = opcionales.filter(o => nombresOpcionalesMarcados.includes(o.nombre));
+    const opcionalesRestantes = opcionales.filter(o => !nombresOpcionalesMarcados.includes(o.nombre));
+
     let hotelImagenSlide = "";
     if (data.hotel) {
       const hotelSnap = await db.collection("proveedores")
@@ -1718,7 +1786,7 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    for (const actividad of incluidos) {
+    for (const actividad of [...incluidos, ...opcionalesElegidos]) {
       if (actividad.imagenSlide) {
         estado.textContent = `⏳ Cargando diapositiva de "${actividad.nombre}"...`;
         await agregarSlideImagenCompleta(actividad.imagenSlide);
@@ -1902,7 +1970,7 @@ async function generarPDF() {
       piePagina(codigo);
     }
 
-    if (opcionales.length > 0) {
+    if (opcionalesRestantes.length > 0) {
       nuevaSlide();
       tituloSlide("Tours Opcionales", 90, 95);
 
@@ -1919,7 +1987,7 @@ async function generarPDF() {
       doc.autoTable({
         startY: 130,
         head: [["Tour opcional", "Precio p.p", "Incluye"]],
-        body: opcionales.map(o => [
+        body: opcionalesRestantes.map(o => [
           o.nombre || "",
           `$${o.precio ?? 0}`,
           vinetasDesdeTexto(o.descripcion || "")
