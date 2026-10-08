@@ -1279,7 +1279,7 @@ function renderizarTablaOpcionales(lista) {
                 <input type="checkbox" class="chk-tour-opcional" value="${escAttr(tour.nombre)}" ${toursOpcionalesSeleccionados.has(tour.nombre) ? "checked" : ""} title="Marcar para agregar este tour a la cotización" style="width:auto; margin:0; padding:0; transform: scale(1.3); cursor:pointer;">
               </td>
               <td style="padding: 8px; border: 1px solid #ccc;">${tour.nombre}</td>
-              <td style="padding: 8px; border: 1px solid #ccc;">${tour.descripcion ?? ""}</td>
+              <td style="padding: 8px; border: 1px solid #ccc; white-space: pre-line;">${tour.descripcion ?? ""}</td>
               <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">${tour.precio ?? ""}</td>
             </tr>
           `).join('')}
@@ -1575,6 +1575,20 @@ async function dibujarCollageFotos(doc, urls, x, y, areaW, areaH) {
       console.warn("No se pudo dibujar una foto del collage:", err);
     }
   }
+}
+
+// NUEVO (8/10/2026): si la descripción de una actividad tiene VARIAS líneas (una
+// lista, un ítem por renglón), se dibuja con viñetas en la diapositiva de
+// respaldo; si es un solo párrafo, queda exactamente igual que antes.
+function descripcionParaDiapositiva(texto) {
+  const limpio = String(texto || "");
+  if (!limpio.includes("\n")) return limpio;
+  return limpio
+    .split("\n")
+    .map(linea => linea.replace(/^[•\-\*]+\s*/, "").trim())
+    .filter(Boolean)
+    .map(linea => `•  ${linea}`)
+    .join("\n");
 }
 
 async function generarPDF() {
@@ -1920,7 +1934,7 @@ async function generarPDF() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(16);
         doc.setTextColor(...GRIS_CLARO);
-        const lineasDescripcion = doc.splitTextToSize(actividad.descripcion || "", anchoTexto);
+        const lineasDescripcion = doc.splitTextToSize(descripcionParaDiapositiva(actividad.descripcion), anchoTexto);
         doc.text(lineasDescripcion, 60, 150);
 
         if (tieneFotos) {
