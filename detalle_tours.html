@@ -392,8 +392,10 @@
       <label>Nombre</label>
       <input type="text" id="opcionalNombre" />
       <label>Descripción corta</label>
-      <div style="font-size:12px; color:#777; margin-top:-4px;">Se usa en la tabla y como respaldo de texto en la cotización visual si no hay diapositiva diseñada.</div>
-      <input type="text" id="opcionalDescripcion" />
+      <div style="font-size:12px; color:#777; margin-top:-4px;">Podés escribir una <strong>lista</strong>: un ítem por línea (Enter para pasar al siguiente) y saldrá con viñetas. Se usa en la tabla y como respaldo de texto en la cotización visual si no hay diapositiva diseñada.</div>
+      <!-- CAMBIO (8/10/2026): antes era un campo de UNA sola línea (input), que borra los
+           saltos de línea al pegar — por eso no se podía escribir una lista. -->
+      <textarea id="opcionalDescripcion" rows="6" style="min-height:120px; resize:vertical;" placeholder="Ej.&#10;Transportación Hotel – Muelle – Hotel&#10;Paseo en catamarán&#10;Equipo de snorkel"></textarea>
       <label>Precio</label>
       <input type="number" id="opcionalPrecio" />
 
@@ -749,7 +751,7 @@ if (tourId) {
 
     fila.innerHTML = `
       <td>${datos.nombre || ""}</td>
-      <td>${datos.descripcion || ""}</td>
+      <td style="white-space: pre-line;">${datos.descripcion || ""}</td>
       <td>${datos.precio ?? ""}</td>
       <td>${celdaDiapositiva}</td>
       <td>${celdaFotos}</td>
