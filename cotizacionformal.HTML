@@ -170,6 +170,91 @@ body, input, textarea, select, button {
   cursor: pointer;
   margin-left: 8px;
 }
+
+/* NUEVO (8/10/2026): botón y ventana para TAPAR PRECIOS de las capturas de vuelo. */
+.captura-vuelo-item .btn-tapar-captura {
+  background-color: #e07b39;
+}
+.captura-vuelo-item .btn-tapar-captura:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+#modalTaparPrecioVuelo {
+  display: none;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  z-index: 3100;
+  align-items: center;
+  justify-content: center;
+}
+#modalTaparPrecioVuelo .contenido-modal {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  max-width: 95vw;
+  max-height: 92vh;
+  overflow: auto;
+}
+#modalTaparPrecioVuelo h3 {
+  color: #02535a;
+  margin-top: 0;
+}
+#modalTaparPrecioVuelo .descripcion-editor {
+  font-size: 13px;
+  color: #777;
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+#modalTaparPrecioVuelo .aviso-tapar {
+  font-size: 12px;
+  color: #a35b00;
+  margin: 0 0 10px 0;
+}
+#modalTaparPrecioVuelo .barra-editor-tapar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+#modalTaparPrecioVuelo .barra-editor-tapar button {
+  border: none;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+}
+#taparContadorRecuadros {
+  font-size: 13px;
+  font-weight: bold;
+  color: #02535a;
+}
+#modalTaparPrecioVuelo .lienzo-tapar {
+  border: 1px solid #ccc;
+  overflow: auto;
+  max-height: 62vh;
+  background: #eee;
+}
+#canvasTaparPrecio {
+  cursor: crosshair;
+  display: block;
+  touch-action: none;
+}
+#modalTaparPrecioVuelo .botones-editor {
+  text-align: right;
+  margin-top: 15px;
+}
+#modalTaparPrecioVuelo .botones-editor button {
+  border: none;
+  padding: 9px 18px;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 8px;
+}
   </style>
 </head>
 <body>
@@ -315,6 +400,28 @@ body, input, textarea, select, button {
     </div>
   </div>
 
+  <!-- NUEVO (8/10/2026): ventana para TAPAR PRECIOS de una captura de vuelo.
+       Misma idea que el editor de boletos de detalle_reserva.html: se arrastra
+       un recuadro sobre cada precio y queda tapado con blanco. -->
+  <div id="modalTaparPrecioVuelo">
+    <div class="contenido-modal">
+      <h3>Tapar precios de la captura</h3>
+      <p class="descripcion-editor">Clic y arrastrá sobre cada precio para taparlo con un recuadro blanco. Podés tapar varias zonas.</p>
+      <p class="aviso-tapar" id="avisoTaparPrecio"></p>
+      <div class="barra-editor-tapar">
+        <button type="button" onclick="taparDeshacerRecuadro()" style="background:#b00020; color:white;">↩️ Deshacer último recuadro</button>
+        <span id="taparContadorRecuadros">Sin recuadros</span>
+      </div>
+      <div class="lienzo-tapar">
+        <canvas id="canvasTaparPrecio"></canvas>
+      </div>
+      <div class="botones-editor">
+        <button type="button" onclick="cerrarEditorTaparPrecio(false)" style="background:#ccc; color:#333;">Cancelar</button>
+        <button type="button" onclick="cerrarEditorTaparPrecio(true)" style="background:#0a7a2f; color:white;">💾 Guardar con precios tapados</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 
   const firebaseConfig = {
@@ -378,6 +485,7 @@ let hotelGuardado = null;
       <div class="captura-vuelo-item">
         <img src="${c.url}" alt="Captura ${i + 1}">
         <span class="nombre-captura">Captura ${i + 1}${capturasVuelo.length > 1 ? ' (tramo ' + (i + 1) + ')' : ''}</span>
+        <button type="button" class="btn-tapar-captura" onclick="taparPrecioCapturaVuelo(${i})">🖊️ Tapar precio</button>
         <button type="button" class="btn-ajustar-captura" onclick="abrirEditorPosicionVuelo(${i})">🖼️ Ajustar posición</button>
         <button type="button" class="btn-quitar-captura" onclick="quitarCapturaVuelo(${i})">🗑️ Quitar</button>
       </div>
@@ -392,6 +500,20 @@ let hotelGuardado = null;
   async function procesarArchivoVuelo(archivo) {
     if (!archivo) return;
 
+    // NUEVO: antes de subir nada, se abre el editor para tapar precios. Así la
+    // versión CON precios nunca llega a Storage — se sube solo la ya tapada.
+    // Cancelar = esta captura no se agrega.
+    let archivoFinal = archivo;
+    try {
+      const resultado = await abrirEditorTaparPrecio({ archivo });
+      if (!resultado) return;
+      archivoFinal = resultado.archivo || archivo;
+    } catch (err) {
+      console.error("No se pudo abrir el editor para tapar precios:", err);
+      const subirTalCual = confirm("No se pudo abrir el editor para tapar precios. ¿Subir la captura tal cual, sin tapar nada?");
+      if (!subirTalCual) return;
+    }
+
     const contenedor = document.getElementById("listaCapturasVuelo");
     const marcador = document.createElement("div");
     marcador.className = "captura-vuelo-item";
@@ -399,9 +521,9 @@ let hotelGuardado = null;
     contenedor.appendChild(marcador);
 
     try {
-      const nombreArchivo = `${Date.now()}_${archivo.name || "captura.png"}`;
+      const nombreArchivo = `${Date.now()}_${archivoFinal.name || "captura.png"}`;
       const ref = storage.ref().child(`cotizaciones_vuelos/${codigo}/${nombreArchivo}`);
-      await ref.put(archivo);
+      await ref.put(archivoFinal);
       const url = await ref.getDownloadURL();
       capturasVuelo.push({ url, pos: null });
     } catch (err) {
@@ -413,7 +535,7 @@ let hotelGuardado = null;
 
   document.getElementById("imagenVueloInput").addEventListener("change", async function (e) {
     const archivo = e.target.files?.[0];
-    await procesarArchivoVuelo(archivo);
+    await encolarArchivoVuelo(archivo);
     e.target.value = "";
   });
 
@@ -425,12 +547,282 @@ let hotelGuardado = null;
         const archivo = item.getAsFile();
         if (archivo) {
           e.preventDefault();
-          await procesarArchivoVuelo(archivo);
+          await encolarArchivoVuelo(archivo);
         }
         break;
       }
     }
   });
+
+  // ==========================================
+  // NUEVO (8/10/2026): TAPAR PRECIOS de las capturas del itinerario de vuelo.
+  // Funciona igual que el editor de boletos de detalle_reserva.html: se
+  // arrastra un recuadro sobre cada precio y queda tapado con blanco (se
+  // pueden dibujar varios y deshacer el último). Se abre solo al pegar o
+  // elegir una captura, y también con el botón "🖊️ Tapar precio" de cada una.
+  // ==========================================
+
+  // Las capturas se procesan de a UNA: si se pegan varias seguidas, la
+  // siguiente espera a que se termine de editar la anterior (así las
+  // ventanas no se encimen).
+  let colaCapturasVuelo = Promise.resolve();
+
+  function encolarArchivoVuelo(archivo) {
+    colaCapturasVuelo = colaCapturasVuelo
+      .then(() => procesarArchivoVuelo(archivo))
+      .catch(err => console.error("Error procesando una captura de vuelo:", err));
+    return colaCapturasVuelo;
+  }
+
+  const taparEstado = {
+    resolver: null,
+    imagen: null,
+    escalaX: 1,
+    escalaY: 1,
+    recuadros: [],
+    arrastrando: false,
+    inicioX: 0,
+    inicioY: 0,
+    rectLive: null,
+    archivoOriginal: null,
+    tipoMime: "image/png",
+    nombre: "captura.png",
+    canvasBase: document.createElement("canvas")
+  };
+
+  // Carga la imagen para editarla: desde el archivo recién pegado/elegido, o
+  // desde su dirección en Storage (para capturas ya guardadas).
+  function cargarImagenParaTapar({ archivo, url }) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("No se pudo leer la imagen."));
+      if (archivo) {
+        const lector = new FileReader();
+        lector.onload = () => { img.src = lector.result; };
+        lector.onerror = () => reject(new Error("No se pudo leer el archivo."));
+        lector.readAsDataURL(archivo);
+      } else {
+        img.crossOrigin = "anonymous";
+        img.src = url;
+      }
+    });
+  }
+
+  // Abre la ventana y devuelve una promesa que se resuelve al cerrarla:
+  //   null                                  → canceló
+  //   { archivo, cantidadRecuadros }        → guardó (archivo ya con lo tapado)
+  function abrirEditorTaparPrecio({ archivo, url }) {
+    return cargarImagenParaTapar({ archivo, url }).then(img => new Promise(resolve => {
+      if (taparEstado.resolver) taparEstado.resolver(null); // por si quedó una abierta
+      taparEstado.resolver = resolve;
+      taparEstado.imagen = img;
+      taparEstado.recuadros = [];
+      taparEstado.rectLive = null;
+      taparEstado.arrastrando = false;
+      taparEstado.archivoOriginal = archivo || null;
+      taparEstado.tipoMime = (archivo && archivo.type && archivo.type.startsWith("image/")) ? archivo.type : "image/png";
+      taparEstado.nombre = (archivo && archivo.name) || "captura.png";
+
+      document.getElementById("avisoTaparPrecio").textContent = archivo
+        ? "Si cancelás, esta captura no se agrega."
+        : "Si cancelás, la captura queda como estaba.";
+
+      taparPrepararLienzo();
+      document.getElementById("modalTaparPrecioVuelo").style.display = "flex";
+    }));
+  }
+
+  function taparPrepararLienzo() {
+    const img = taparEstado.imagen;
+    const anchoMaximo = Math.min(window.innerWidth * 0.85, 850);
+    const escala = Math.min(anchoMaximo / img.naturalWidth, 1);
+    const base = taparEstado.canvasBase;
+    base.width = Math.max(1, Math.round(img.naturalWidth * escala));
+    base.height = Math.max(1, Math.round(img.naturalHeight * escala));
+    taparEstado.escalaX = base.width / img.naturalWidth;
+    taparEstado.escalaY = base.height / img.naturalHeight;
+    base.getContext("2d").drawImage(img, 0, 0, base.width, base.height);
+
+    const visible = document.getElementById("canvasTaparPrecio");
+    visible.width = base.width;
+    visible.height = base.height;
+    taparRedibujar();
+  }
+
+  function taparRedibujar() {
+    const canvas = document.getElementById("canvasTaparPrecio");
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(taparEstado.canvasBase, 0, 0);
+
+    [...taparEstado.recuadros, taparEstado.rectLive].filter(Boolean).forEach(r => {
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.fillRect(r.x, r.y, r.width, r.height);
+      ctx.strokeStyle = "#b00020";
+      ctx.setLineDash([4, 3]);
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(r.x, r.y, r.width, r.height);
+      ctx.setLineDash([]);
+    });
+
+    const n = taparEstado.recuadros.length;
+    document.getElementById("taparContadorRecuadros").textContent =
+      n === 0 ? "Sin recuadros" : `${n} recuadro${n === 1 ? "" : "s"}`;
+  }
+
+  function taparDeshacerRecuadro() {
+    taparEstado.recuadros.pop();
+    taparRedibujar();
+  }
+
+  function inicializarEditorTaparPrecio() {
+    const canvas = document.getElementById("canvasTaparPrecio");
+
+    // Pasa del clic en pantalla a un punto de la imagen (aunque el lienzo se
+    // vea más chico o más grande que su tamaño real), sin salirse del borde.
+    function punto(e) {
+      const r = canvas.getBoundingClientRect();
+      const sx = r.width ? canvas.width / r.width : 1;
+      const sy = r.height ? canvas.height / r.height : 1;
+      return {
+        x: Math.min(Math.max((e.clientX - r.left) * sx, 0), canvas.width),
+        y: Math.min(Math.max((e.clientY - r.top) * sy, 0), canvas.height)
+      };
+    }
+
+    canvas.addEventListener("pointerdown", e => {
+      const p = punto(e);
+      taparEstado.arrastrando = true;
+      taparEstado.inicioX = p.x;
+      taparEstado.inicioY = p.y;
+      // Para que el arrastre siga aunque el mouse se salga del lienzo.
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+      e.preventDefault();
+    });
+
+    canvas.addEventListener("pointermove", e => {
+      if (!taparEstado.arrastrando) return;
+      const p = punto(e);
+      taparEstado.rectLive = {
+        x: Math.min(p.x, taparEstado.inicioX),
+        y: Math.min(p.y, taparEstado.inicioY),
+        width: Math.abs(p.x - taparEstado.inicioX),
+        height: Math.abs(p.y - taparEstado.inicioY)
+      };
+      taparRedibujar();
+    });
+
+    // Se escucha en "window" para cerrar el recuadro aunque se suelte el
+    // botón fuera del lienzo.
+    window.addEventListener("pointerup", () => {
+      if (!taparEstado.arrastrando) return;
+      taparEstado.arrastrando = false;
+      const r = taparEstado.rectLive;
+      if (r && r.width > 4 && r.height > 4) taparEstado.recuadros.push(r);
+      taparEstado.rectLive = null;
+      taparRedibujar();
+    });
+
+    canvas.addEventListener("pointercancel", () => {
+      taparEstado.arrastrando = false;
+      taparEstado.rectLive = null;
+      taparRedibujar();
+    });
+  }
+  inicializarEditorTaparPrecio();
+
+  function taparNombreConExtension(nombre, mime) {
+    const base = (nombre || "captura").replace(/\.[^.\/\\]+$/, "");
+    const ext = mime === "image/jpeg" ? "jpg" : mime === "image/webp" ? "webp" : "png";
+    return `${base}.${ext}`;
+  }
+
+  async function cerrarEditorTaparPrecio(guardar) {
+    const modal = document.getElementById("modalTaparPrecioVuelo");
+    const resolver = taparEstado.resolver;
+    const terminar = (valor) => {
+      modal.style.display = "none";
+      taparEstado.resolver = null;
+      taparEstado.imagen = null;
+      if (resolver) resolver(valor);
+    };
+
+    if (!guardar) return terminar(null);
+
+    const total = taparEstado.recuadros.length;
+    if (total === 0) {
+      const sinTapar = confirm("No dibujaste ningún recuadro para tapar. ¿Continuar sin tapar nada?");
+      if (!sinTapar) return; // se queda en el editor
+      return terminar({ archivo: taparEstado.archivoOriginal, cantidadRecuadros: 0 });
+    }
+
+    try {
+      // El tapado se aplica sobre la imagen en su tamaño ORIGINAL (no sobre la
+      // versión reducida que se ve en pantalla), así no pierde calidad.
+      const img = taparEstado.imagen;
+      const lienzo = document.createElement("canvas");
+      lienzo.width = img.naturalWidth;
+      lienzo.height = img.naturalHeight;
+      const ctx = lienzo.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      ctx.fillStyle = "#ffffff";
+      taparEstado.recuadros.forEach(r => {
+        ctx.fillRect(
+          r.x / taparEstado.escalaX,
+          r.y / taparEstado.escalaY,
+          r.width / taparEstado.escalaX,
+          r.height / taparEstado.escalaY
+        );
+      });
+
+      const blob = await new Promise(res => lienzo.toBlob(res, taparEstado.tipoMime, 0.95));
+      if (!blob) throw new Error("No se pudo generar la imagen.");
+      const tipoFinal = blob.type || taparEstado.tipoMime;
+      const archivo = new File([blob], taparNombreConExtension(taparEstado.nombre, tipoFinal), { type: tipoFinal });
+      terminar({ archivo, cantidadRecuadros: total });
+    } catch (err) {
+      console.error("Error al aplicar el tapado de precios:", err);
+      alert("❌ No se pudo aplicar el tapado. Intentá de nuevo.");
+    }
+  }
+
+  // Botón "🖊️ Tapar precio" de una captura ya cargada (incluso de una
+  // cotización guardada antes). La versión tapada se sube como archivo NUEVO y
+  // reemplaza a la anterior en esta cotización (conserva su "Ajustar
+  // posición"); el archivo viejo queda en Storage sin borrarse, por si esa
+  // cotización guardada todavía lo usa hasta que se vuelva a guardar.
+  async function taparPrecioCapturaVuelo(indice) {
+    const captura = capturasVuelo[indice];
+    if (!captura || !captura.url) return;
+
+    let resultado;
+    try {
+      resultado = await abrirEditorTaparPrecio({ url: captura.url });
+    } catch (err) {
+      console.error("No se pudo abrir la captura para tapar precios:", err);
+      alert("❌ No se pudo abrir la captura para editarla.");
+      return;
+    }
+    if (!resultado || resultado.cantidadRecuadros === 0 || !resultado.archivo) return;
+
+    const boton = document.querySelectorAll("#listaCapturasVuelo .btn-tapar-captura")[indice];
+    if (boton) {
+      boton.disabled = true;
+      boton.textContent = "⏳ Subiendo...";
+    }
+
+    try {
+      const nombreArchivo = `${Date.now()}_${resultado.archivo.name || "captura.png"}`;
+      const ref = storage.ref().child(`cotizaciones_vuelos/${codigo}/${nombreArchivo}`);
+      await ref.put(resultado.archivo);
+      captura.url = await ref.getDownloadURL();
+    } catch (err) {
+      console.error("Error al subir la captura con los precios tapados:", err);
+      alert("❌ No se pudo subir la captura con los precios tapados. La captura quedó como estaba.");
+    }
+    renderizarListaCapturasVuelo();
+  }
 
   const ESCALA_EDITOR_VUELO = 640 / 1280;
   let editorVueloImg = null;
