@@ -1004,12 +1004,14 @@ let hotelGuardado = null;
   console.log("✅ Cargando desde cotizacionformal", dataFormal);
   tourIdActual = dataFormal.tourId || docSolicitud.data().tourId || "";
   rellenarCampos(dataFormal);
+  seleccionarVarianteEnDesplegable(tourIdActual, dataFormal.destino);
   actualizarAvisoActividadesIncluidas();
   ajustarAlturaTextareas();
 } else {
   const dataSolicitud = docSolicitud.data();
   rellenarCampos(dataSolicitud);
   tourIdActual = dataSolicitud.tourId || "";
+  seleccionarVarianteEnDesplegable(tourIdActual, dataSolicitud.destino);
   if (tourIdActual) {
     await cargarDatosDelTourPorId(tourIdActual);
   } else {
@@ -1022,12 +1024,42 @@ async function cargarOpcionesDeDestino() {
     const destinosSnap = await db.collection("tours").get();
     const select = document.getElementById("destino");
     select.innerHTML = "<option value=''>-- Seleccione un destino --</option>";
-    destinosSnap.forEach(doc => {
+    const lista = destinosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const etiquetaBase = t => {
+      const exp = t.nivel || t.tipoSalida || "";
+      return exp ? `${t.nombre} - ${exp}` : (t.nombre || "");
+    };
+    const conteo = {};
+    lista.forEach(t => { const e = etiquetaBase(t); conteo[e] = (conteo[e] || 0) + 1; });
+    lista.sort((a, b) => etiquetaBase(a).localeCompare(etiquetaBase(b), "es"));
+    lista.forEach(t => {
+      let etiqueta = etiquetaBase(t);
+      // Si dos variantes quedan con el mismo texto, se distingue con el tipo de salida.
+      if (conteo[etiqueta] > 1 && t.tipoSalida && t.nivel) etiqueta += ` (${t.tipoSalida})`;
       const opt = document.createElement("option");
-      opt.value = doc.data().nombre;
-      opt.textContent = doc.data().nombre;
+      opt.value = t.id;                       // el valor es el ID de la variante
+      opt.dataset.nombre = t.nombre || "";    // el nombre limpio del destino
+      opt.textContent = etiqueta;
       select.appendChild(opt);
-  });
+    });
+  }
+
+  // Nombre limpio del destino (sin el tipo de experiencia), para hoteles, opcionales y PDF.
+  function nombreDestinoSeleccionado() {
+    const sel = document.getElementById("destino");
+    const opt = sel && sel.selectedOptions && sel.selectedOptions[0];
+    return (opt && opt.value && opt.dataset.nombre) || "";
+  }
+
+  // Selecciona en el desplegable la variante exacta (por ID); si no existe, la primera con ese nombre.
+  function seleccionarVarianteEnDesplegable(tourId, nombre) {
+    const sel = document.getElementById("destino");
+    if (tourId && Array.from(sel.options).some(o => o.value === tourId)) { sel.value = tourId; return true; }
+    if (nombre) {
+      const o = Array.from(sel.options).find(o => o.dataset.nombre === nombre);
+      if (o) { sel.value = o.value; return true; }
+    }
+    return false;
   }
 
   async function cargarDatosDelTourPorId(tourId) {
@@ -1038,27 +1070,30 @@ async function cargarOpcionesDeDestino() {
     }
     const data = doc.data();
     tourIdActual = tourId;
-    if (data.nombre) document.getElementById("destino").value = data.nombre;
+    seleccionarVarianteEnDesplegable(tourId, data.nombre);
     document.getElementById("duracion").value = data.duracion || "";
     document.getElementById("incluye").value = data.incluye || "";
     document.getElementById("no_incluye").value = data.no_incluye || "";
     document.getElementById("itinerario").value = data.itinerario_tours || "";
 
-    const destino = document.getElementById("destino").value;
+    const destino = nombreDestinoSeleccionado() || data.nombre || "";
     await refrescarTablaOpcionalesSegunTour(destino, tourId);
     await cargarHotelesDelDestino(destino, null);
     actualizarAvisoActividadesIncluidas();
   }
 
   async function cargarDatosDelTour() {
-    const destino = document.getElementById("destino").value;
-    if (!destino) return;
+    const idElegido = document.getElementById("destino").value;
+    if (!idElegido) return;
 
-    const snap = await db.collection("tours").where("nombre", "==", destino).get();
-    if (snap.empty) return;
+    const docTour = await db.collection("tours").doc(idElegido).get();
+    if (!docTour.exists) return;
 
-    const data = snap.docs[0].data();
-    tourIdActual = snap.docs[0].id;
+    const data = docTour.data();
+    const destino = data.nombre || nombreDestinoSeleccionado();
+    tourIdActual = docTour.id;
+    // Al cambiar de variante, lo marcado de la anterior ya no aplica.
+    actividadesIncluidasQuitadas.clear();
     document.getElementById("duracion").value = data.duracion || "";
     document.getElementById("incluye").value = data.incluye || "";
     document.getElementById("no_incluye").value = data.no_incluye || "";
@@ -1180,7 +1215,7 @@ async function cargarOpcionesDeDestino() {
 
     let actuales = [];
     if (ids.length > 0) {
-      const destino = document.getElementById("destino").value;
+      const destino = nombreDestinoSeleccionado();
       const catalogoSnap = await db.collection("tours_opcionales").where("destino", "==", destino).get();
       actuales = catalogoSnap.docs
         .filter(d => ids.includes(d.id))
@@ -1365,7 +1400,7 @@ ajustarAlturaTextareas();
   function validarCamposCotizacion() {
     const faltantes = [];
     if (!document.getElementById("telefono").value.trim()) faltantes.push("Teléfono");
-    if (!document.getElementById("destino").value) faltantes.push("Destino");
+    if (!nombreDestinoSeleccionado()) faltantes.push("Destino");
     if (!document.getElementById("fechas").value.trim()) faltantes.push("Fechas del viaje");
     if (!(parseInt(document.getElementById("adultos").value) > 0)) faltantes.push("Adultos (debe ser al menos 1)");
     if (!document.getElementById("hotel").value) faltantes.push("Hotel");
@@ -1384,7 +1419,7 @@ tours_opcionales: obtenerToursOpcionalesDesdeDOM(),
 tours_opcionales_seleccionados: obtenerToursOpcionalesSeleccionados(),
 actividades_incluidas_quitadas: Array.from(actividadesIncluidasQuitadas),
     telefono: document.getElementById("telefono").value,
-    destino: document.getElementById("destino").value,
+    destino: nombreDestinoSeleccionado(),
     tourId: tourIdActual,
     fechas: document.getElementById("fechas").value,
     adultos: parseInt(document.getElementById("adultos").value) || 0,
@@ -1615,7 +1650,7 @@ async function generarPDF() {
     const BLANCO = [255, 255, 255];
     const GRIS_CLARO = [210, 210, 210];
 
-    const destino = document.getElementById("destino")?.value || "Tour no definido";
+    const destino = nombreDestinoSeleccionado() || "Tour no definido";
 
     const data = {
       telefono: document.getElementById("telefono").value,
