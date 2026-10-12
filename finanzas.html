@@ -1623,6 +1623,9 @@
 
       const nombreDestino = infoSalida?.destino || 'Salida grupal';
       const personasTotalGrupo = datosPersonasPorSalida[salidaId] || 0;
+      // Si ya no queda ninguna reserva activa en esa salida (por ejemplo,
+      // se eliminaron todas), sus costos no cuentan como pagos pendientes.
+      if (personasTotalGrupo <= 0) return;
 
       if (costosGrupo.modo === "paquete") {
         const p = costosGrupo.paquete || {};
