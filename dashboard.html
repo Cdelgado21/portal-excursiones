@@ -113,6 +113,21 @@
       text-decoration: underline;
     }
 
+    /* Botones para quitar avisos */
+    .btn-quitar-aviso {
+      border: none; background: rgba(2,83,90,0.12); color: #02535a;
+      border-radius: 6px; padding: 2px 8px; font-size: 0.78rem; cursor: pointer;
+      white-space: nowrap; margin-left: 8px;
+    }
+    .btn-quitar-aviso:hover { background: rgba(2,83,90,0.25); }
+    .grupo-alerta .detalle-grupo-alerta li.fila-aviso { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .grupo-alerta .detalle-grupo-alerta li.fila-aviso a { flex: 1; }
+    .acciones-resumen { display: flex; align-items: center; gap: 6px; }
+    #zonaAvisosDescartados { margin-top: 10px; font-size: 0.85rem; }
+    #zonaAvisosDescartados summary { cursor: pointer; color: #02535a; font-weight: bold; }
+    #zonaAvisosDescartados ul { list-style: none; padding: 0; margin: 6px 0 0; }
+    #zonaAvisosDescartados li { background: #f1f1f1; border-radius: 6px; padding: 6px 10px; margin: 4px 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; color: #555; }
+
     table {
       width: 100%;
       background: white;
@@ -269,6 +284,7 @@
       <ul id="listaAlertasInternas">
         <li>Cargando...</li>
       </ul>
+      <div id="zonaAvisosDescartados"></div>
     </div>
 
     <div class="dashboard-section">
@@ -415,6 +431,15 @@
         }
 
         const avisos = [];
+
+        // Avisos que alguien ya quitó (se guardan en "avisos_descartados").
+        let descartados = {};
+        try {
+          const descSnap = await db.collection("avisos_descartados").get();
+          descSnap.forEach(doc => { descartados[doc.id] = doc.data(); });
+        } catch (e) {
+          console.warn("No se pudieron leer los avisos descartados:", e);
+        }
 
         // Cada aviso lleva "grupo" (clave para agrupar) y "grupoLabel"
         // (título de la tarjeta, con destino y cantidad de personas) además
@@ -622,6 +647,7 @@
               avisos.push({
                 ...grupoDeReserva(codigo, data),
                 mensaje: `✈️ el vuelo de IDA sale mañana, hacer el check-in`,
+                clave: `${codigo}|checkin-ida|${data.vueloIda?.fecha}`,
                 url: `detalle_reserva.html?codigo=${codigo}`
               });
             }
@@ -633,43 +659,134 @@
               avisos.push({
                 ...grupoDeReserva(codigo, data),
                 mensaje: `✈️ el vuelo de REGRESO sale mañana, hacer el check-in`,
+                clave: `${codigo}|checkin-regreso|${data.vueloRegreso?.fecha}`,
                 url: `detalle_reserva.html?codigo=${codigo}`
               });
             }
           }
         }
 
-        if (avisos.length === 0) {
-          contenedor.innerHTML = `<li style="background:#e0f5e0; color:#1b6e1b; font-weight:bold;">✅ Sin alertas pendientes en los próximos ${DIAS_AVISO_PENDIENTE} días.</li>`;
-        } else {
-          // Agrupar los avisos por reserva (o por salida grupal, en el
-          // caso de los proveedores compartidos) para que cada una
-          // aparezca como UNA sola tarjeta colapsable, en vez de una fila
-          // repetida por cada problema encontrado. Se mantiene el orden de
-          // aparición (Map conserva el orden de inserción).
-          const grupos = new Map();
-          avisos.forEach(a => {
-            if (!grupos.has(a.grupo)) {
-              grupos.set(a.grupo, { label: a.grupoLabel, items: [] });
-            }
-            grupos.get(a.grupo).items.push(a);
-          });
-
-          contenedor.innerHTML = Array.from(grupos.values()).map(g => `
-            <details class="grupo-alerta">
-              <summary>
-                <span>⚠️ ${g.label}</span>
-                <span class="contador-alerta">${g.items.length} aviso${g.items.length === 1 ? '' : 's'}</span>
-              </summary>
-              <ul class="detalle-grupo-alerta">
-                ${g.items.map(a => `<li><a href="${a.url}">${a.mensaje}</a></li>`).join("")}
-              </ul>
-            </details>
-          `).join("");
-        }
+        // Clave estable de cada aviso (sin números, para que "faltan 2" y
+        // "faltan 1" cuenten como el mismo aviso).
+        avisos.forEach(a => {
+          a.claveFinal = String(a.clave || `${a.grupo}|${String(a.mensaje).replace(/\d+/g, "#")}`);
+        });
+        window.__avisosTodos = avisos;
+        window.__avisosDescartados = descartados;
+        pintarAvisos();
       } catch (e) {
         console.error("Error al cargar las alertas internas:", e);
         contenedor.innerHTML = `<li style="color:#a35b00;">⚠️ No se pudieron cargar las alertas.</li>`;
+      }
+    }
+
+    // ---------- Avisos: pintar, quitar y restaurar ----------
+    function idDocAviso(clave) {
+      // Firestore no admite "/" en el id de un documento.
+      return clave.replace(/\//g, "-").slice(0, 700);
+    }
+
+    function pintarAvisos() {
+      const contenedor = document.getElementById("listaAlertasInternas");
+      const zona = document.getElementById("zonaAvisosDescartados");
+      const todos = window.__avisosTodos || [];
+      const descartados = window.__avisosDescartados || {};
+      const visibles = todos.filter(a => !descartados[idDocAviso(a.claveFinal)]);
+      const ocultos = todos.filter(a => descartados[idDocAviso(a.claveFinal)]);
+
+      if (visibles.length === 0) {
+        contenedor.innerHTML = `<li style="background:#e0f5e0; color:#1b6e1b; font-weight:bold;">✅ Sin alertas pendientes en los próximos ${DIAS_AVISO_PENDIENTE} días.</li>`;
+      } else {
+        // Agrupar por reserva (o por salida grupal) — una tarjeta colapsable
+        // por grupo. Map conserva el orden de aparición.
+        const grupos = new Map();
+        visibles.forEach(a => {
+          if (!grupos.has(a.grupo)) grupos.set(a.grupo, { clave: a.grupo, label: a.grupoLabel, items: [] });
+          grupos.get(a.grupo).items.push(a);
+        });
+        contenedor.innerHTML = Array.from(grupos.values()).map(g => `
+          <details class="grupo-alerta">
+            <summary>
+              <span>⚠️ ${g.label}</span>
+              <span class="acciones-resumen">
+                <span class="contador-alerta">${g.items.length} aviso${g.items.length === 1 ? '' : 's'}</span>
+                <button type="button" class="btn-quitar-aviso" title="Quitar todos los avisos de este grupo" onclick="quitarAvisosDeGrupo(event, decodeURIComponent('${encodeURIComponent(g.clave)}'))">✕ Quitar todos</button>
+              </span>
+            </summary>
+            <ul class="detalle-grupo-alerta">
+              ${g.items.map(a => `<li class="fila-aviso"><a href="${a.url}">${a.mensaje}</a><button type="button" class="btn-quitar-aviso" title="Quitar este aviso" onclick="quitarAviso(decodeURIComponent('${encodeURIComponent(a.claveFinal)}'))">✕ Quitar</button></li>`).join("")}
+            </ul>
+          </details>
+        `).join("");
+      }
+
+      if (ocultos.length === 0) {
+        zona.innerHTML = "";
+      } else {
+        zona.innerHTML = `
+          <details>
+            <summary>👁️ Avisos quitados (${ocultos.length})</summary>
+            <ul>
+              ${ocultos.map(a => `<li><span>${a.grupoLabel} — ${a.mensaje}</span><button type="button" class="btn-quitar-aviso" onclick="restaurarAviso(decodeURIComponent('${encodeURIComponent(a.claveFinal)}'))">↩ Restaurar</button></li>`).join("")}
+            </ul>
+          </details>`;
+      }
+    }
+
+    async function guardarDescarte(avisosLista) {
+      const lote = db.batch();
+      const ahora = new Date();
+      avisosLista.forEach(a => {
+        const id = idDocAviso(a.claveFinal);
+        const registro = {
+          clave: a.claveFinal,
+          grupo: a.grupo,
+          mensaje: a.mensaje,
+          descartado_el: ahora,
+          descartado_por: (usuario && usuario.nombre) || ""
+        };
+        lote.set(db.collection("avisos_descartados").doc(id), registro);
+        window.__avisosDescartados[id] = registro;
+      });
+      await lote.commit();
+    }
+
+    async function quitarAviso(clave) {
+      const aviso = (window.__avisosTodos || []).find(a => a.claveFinal === clave);
+      if (!aviso) return;
+      try {
+        await guardarDescarte([aviso]);
+        pintarAvisos();
+      } catch (e) {
+        console.error("No se pudo quitar el aviso:", e);
+        alert("❌ No se pudo quitar el aviso. Intentá de nuevo.");
+      }
+    }
+
+    async function quitarAvisosDeGrupo(ev, grupo) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const lista = (window.__avisosTodos || []).filter(a => a.grupo === grupo && !window.__avisosDescartados[idDocAviso(a.claveFinal)]);
+      if (lista.length === 0) return;
+      if (!confirm(`¿Quitar los ${lista.length} aviso(s) de este grupo?\n\nPodés restaurarlos desde "Avisos quitados".`)) return;
+      try {
+        await guardarDescarte(lista);
+        pintarAvisos();
+      } catch (e) {
+        console.error("No se pudieron quitar los avisos:", e);
+        alert("❌ No se pudieron quitar los avisos. Intentá de nuevo.");
+      }
+    }
+
+    async function restaurarAviso(clave) {
+      try {
+        const id = idDocAviso(clave);
+        await db.collection("avisos_descartados").doc(id).delete();
+        delete window.__avisosDescartados[id];
+        pintarAvisos();
+      } catch (e) {
+        console.error("No se pudo restaurar el aviso:", e);
+        alert("❌ No se pudo restaurar el aviso.");
       }
     }
 
